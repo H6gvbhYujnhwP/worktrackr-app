@@ -1,0 +1,20 @@
+{
+  "name": "@worktrackr/worker",
+  "version": "1.0.0",
+  "description": "WorkTrackr Cloud Background Worker",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "nodemon worker.js"
+  },
+  "dependencies": {
+    "@worktrackr/shared": "file:../shared",
+    "pg-boss": "^9.0.3",
+    "mailgun.js": "^9.4.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+

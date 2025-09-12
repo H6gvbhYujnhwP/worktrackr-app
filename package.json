@@ -1,0 +1,28 @@
+{
+  "name": "worktrackr-app",
+  "version": "1.0.0",
+  "description": "WorkTrackr Cloud - Customizable workflow and ticketing system",
+  "private": true,
+  "workspaces": [
+    "web",
+    "worker",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "start": "npm run start --workspace=web",
+    "worker": "npm run start --workspace=worker",
+    "db:migrate": "npm run migrate --workspace=shared",
+    "db:seed": "npm run seed --workspace=shared"
+  },
+  "keywords": [
+    "workflow",
+    "ticketing",
+    "multi-tenant",
+    "white-label"
+  ],
+  "author": "WorkTrackr Cloud",
+  "license": "UNLICENSED"
+}
+
