@@ -1,0 +1,382 @@
+import { useState } from 'react'
+import { Button } from '@/components/ui/button.jsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Badge } from '@/components/ui/badge.jsx'
+import { Ticket, Users, Workflow, CreditCard, CheckCircle, Star } from 'lucide-react'
+import worktrackrLogo from './assets/worktrackr_icon_only.png'
+import './App.css'
+
+function App() {
+  const [apiResult, setApiResult] = useState('')
+
+  const testAPI = async (endpoint, method = 'GET', data = null) => {
+    setApiResult('Testing ' + endpoint + '...')
+    
+    try {
+      const options = {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+      
+      if (data) {
+        options.body = JSON.stringify(data)
+      }
+      
+      const response = await fetch(endpoint, options)
+      const result = await response.json()
+      
+      if (response.ok) {
+        setApiResult(`✅ ${endpoint} - Success: ${JSON.stringify(result, null, 2)}`)
+      } else {
+        setApiResult(`❌ ${endpoint} - Error: ${JSON.stringify(result, null, 2)}`)
+      }
+    } catch (error) {
+      setApiResult(`❌ ${endpoint} - Network Error: ${error.message}`)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="logo-container">
+              <img src={worktrackrLogo} alt="WorkTrackr Cloud" className="w-12 h-12" />
+              <div className="logo-text">
+                Work<span className="trackr">Trackr</span> CLOUD
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <Button variant="outline">Login</Button>
+              <Button className="worktrackr-bg-black hover:bg-gray-800">Get Started</Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 text-center">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-5xl font-bold mb-6">
+            Custom Workflows. <span className="worktrackr-yellow">Zero Hassle.</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            The complete workflow and ticketing system designed for IT support providers, 
+            maintenance teams, and service organizations.
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800">
+              Start Free Trial
+            </Button>
+            <Button size="lg" variant="outline">
+              View Demo
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">
+            Everything you need to manage workflows
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <Card>
+              <CardHeader>
+                <Ticket className="w-8 h-8 worktrackr-yellow mb-2" />
+                <CardTitle>Smart Ticketing</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Create, assign, and track tickets with automated workflows and SLA monitoring.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Users className="w-8 h-8 worktrackr-yellow mb-2" />
+                <CardTitle>Multi-Tenant</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Partner accounts can manage multiple customer organizations with white-label branding.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Workflow className="w-8 h-8 worktrackr-yellow mb-2" />
+                <CardTitle>Custom Workflows</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Build automated workflows with triggers, actions, and escalation rules.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CreditCard className="w-8 h-8 worktrackr-yellow mb-2" />
+                <CardTitle>Billing Ready</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Integrated Stripe billing with subscription management and customer portals.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Simple, transparent pricing
+          </h2>
+          <p className="text-center text-gray-600 mb-12">
+            Choose the plan that fits your organization's needs
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Starter Plan */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Starter</CardTitle>
+                <CardDescription>Perfect for small teams</CardDescription>
+                <div className="text-3xl font-bold">
+                  £49<span className="text-lg font-normal text-gray-600">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Up to 5 users
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Basic ticketing
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Email notifications
+                  </li>
+                </ul>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
+                    orgId: 'test', 
+                    priceId: 'price_1S6VQPLCgRgCwthBm1FfHzIu'
+                  })}
+                >
+                  Choose Plan
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Pro Plan */}
+            <Card className="border-2 worktrackr-border-yellow relative">
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 worktrackr-bg-yellow text-black">
+                <Star className="w-3 h-3 mr-1" />
+                Most Popular
+              </Badge>
+              <CardHeader>
+                <CardTitle>Pro</CardTitle>
+                <CardDescription>For growing organizations</CardDescription>
+                <div className="text-3xl font-bold">
+                  £99<span className="text-lg font-normal text-gray-600">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Up to 25 users
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Workflow builder
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Reports & inspections
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Approvals
+                  </li>
+                </ul>
+                <Button 
+                  className="w-full worktrackr-bg-yellow text-black hover:bg-yellow-400"
+                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
+                    orgId: 'test', 
+                    priceId: 'price_1S6VTkLCgRgCwthBYNGmAqA7'
+                  })}
+                >
+                  Choose Plan
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Enterprise Plan */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Enterprise</CardTitle>
+                <CardDescription>For large organizations</CardDescription>
+                <div className="text-3xl font-bold">
+                  £299<span className="text-lg font-normal text-gray-600">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Unlimited users
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    Advanced workflows
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    API access
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
+                    White-labeling
+                  </li>
+                </ul>
+                <Button 
+                  className="w-full worktrackr-bg-black hover:bg-gray-800"
+                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
+                    orgId: 'test', 
+                    priceId: 'price_1S6W8GLCgRgCwthBHIt0Fahl'
+                  })}
+                >
+                  Choose Plan
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* API Testing Section */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8">
+            🧪 API Testing
+          </h2>
+          <p className="text-center text-gray-600 mb-8">
+            Test the WorkTrackr Cloud API endpoints
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
+            <Button 
+              onClick={() => testAPI('/health', 'GET')}
+              variant="outline"
+            >
+              Health Check
+            </Button>
+            <Button 
+              onClick={() => testAPI('/api/auth/register', 'POST', {
+                email: 'test@example.com', 
+                name: 'Test User', 
+                password: 'password123', 
+                organizationName: 'Test Org'
+              })}
+              variant="outline"
+            >
+              Test Registration
+            </Button>
+            <Button 
+              onClick={() => testAPI('/api/tickets', 'GET')}
+              variant="outline"
+            >
+              List Tickets
+            </Button>
+          </div>
+
+          {apiResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle>API Response</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
+                  {apiResult}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-black text-white py-12">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="logo-container mb-4">
+                <img src={worktrackrLogo} alt="WorkTrackr Cloud" className="w-8 h-8" />
+                <div className="text-lg font-bold text-white">
+                  Work<span className="worktrackr-yellow">Trackr</span> CLOUD
+                </div>
+              </div>
+              <p className="text-gray-400">
+                Custom workflows. Zero hassle.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>Features</li>
+                <li>Pricing</li>
+                <li>API</li>
+                <li>Documentation</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>About</li>
+                <li>Blog</li>
+                <li>Careers</li>
+                <li>Contact</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Support</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li>Help Center</li>
+                <li>Community</li>
+                <li>Status</li>
+                <li>Security</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2025 WorkTrackr Cloud. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+export default App
+
