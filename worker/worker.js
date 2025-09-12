@@ -2,15 +2,26 @@ require('dotenv').config();
 const PgBoss = require('pg-boss');
 const { query } = require('@worktrackr/shared/db');
 
-// Initialize Mailgun
-const formData = require('form-data');
-const Mailgun = require('mailgun.js');
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: 'api',
-  key: process.env.MAILGUN_API_KEY,
-  url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
-});
+// Initialize Mailgun only if not disabled
+let mg = null;
+if (!process.env.MAILGUN_DISABLED) {
+  try {
+    const formData = require('form-data');
+    const Mailgun = require('mailgun.js');
+    const mailgun = new Mailgun(formData);
+    mg = mailgun.client({
+      username: 'api',
+      key: process.env.MAILGUN_API_KEY,
+      url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
+    });
+    console.log('📧 Mailgun initialized');
+  } catch (error) {
+    console.warn('⚠️ Mailgun initialization failed:', error.message);
+    console.log('📧 Email functionality will be disabled');
+  }
+} else {
+  console.log('📧 Mailgun disabled via environment variable');
+}
 
 // Initialize PgBoss
 const boss = new PgBoss({
@@ -46,6 +57,12 @@ async function handleSendEmail(job) {
   const { to, subject, text, html, organizationId } = job.data;
 
   try {
+    // Check if Mailgun is available
+    if (!mg) {
+      console.log(`📧 Email queued but not sent (Mailgun disabled): ${subject} to ${to}`);
+      return { success: true, messageId: 'disabled', note: 'Mailgun disabled' };
+    }
+
     // Get organization branding
     const brandingResult = await query(
       'SELECT email_from_name FROM org_branding WHERE organisation_id = $1',

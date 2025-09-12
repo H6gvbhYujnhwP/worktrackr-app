@@ -11,7 +11,9 @@
     "@worktrackr/shared": "file:../shared",
     "pg-boss": "^9.0.3",
     "mailgun.js": "^9.4.1",
-    "dotenv": "^16.3.1"
+    "form-data": "^4.0.0",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
