@@ -2,25 +2,19 @@ require('dotenv').config();
 const PgBoss = require('pg-boss');
 const { query } = require('@worktrackr/shared/db');
 
-// Initialize Mailgun only if not disabled
-let mg = null;
-if (!process.env.MAILGUN_DISABLED) {
+// Initialize Resend
+let resend = null;
+if (process.env.RESEND_API_KEY) {
   try {
-    const formData = require('form-data');
-    const Mailgun = require('mailgun.js');
-    const mailgun = new Mailgun(formData);
-    mg = mailgun.client({
-      username: 'api',
-      key: process.env.MAILGUN_API_KEY,
-      url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
-    });
-    console.log('📧 Mailgun initialized');
+    const { Resend } = require('resend');
+    resend = new Resend(process.env.RESEND_API_KEY);
+    console.log('📧 Resend initialized');
   } catch (error) {
-    console.warn('⚠️ Mailgun initialization failed:', error.message);
+    console.warn('⚠️ Resend initialization failed:', error.message);
     console.log('📧 Email functionality will be disabled');
   }
 } else {
-  console.log('📧 Mailgun disabled via environment variable');
+  console.log('📧 Resend API key not provided - email functionality disabled');
 }
 
 // Initialize PgBoss
@@ -57,10 +51,10 @@ async function handleSendEmail(job) {
   const { to, subject, text, html, organizationId } = job.data;
 
   try {
-    // Check if Mailgun is available
-    if (!mg) {
-      console.log(`📧 Email queued but not sent (Mailgun disabled): ${subject} to ${to}`);
-      return { success: true, messageId: 'disabled', note: 'Mailgun disabled' };
+    // Check if Resend is available
+    if (!resend) {
+      console.log(`📧 Email queued but not sent (Resend not configured): ${subject} to ${to}`);
+      return { success: true, messageId: 'disabled', note: 'Resend not configured' };
     }
 
     // Get organization branding
@@ -73,18 +67,21 @@ async function handleSendEmail(job) {
       ? brandingResult.rows[0].email_from_name 
       : 'WorkTrackr Support';
 
+    // Use Resend's verified domain or onboarding domain
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
     const emailData = {
-      from: `${fromName} <noreply@${process.env.MAILGUN_DOMAIN}>`,
-      to,
+      from: `${fromName} <${fromEmail}>`,
+      to: [to],
       subject,
       text,
       html
     };
 
-    const result = await mg.messages.create(process.env.MAILGUN_DOMAIN, emailData);
+    const result = await resend.emails.send(emailData);
     
-    console.log(`✅ Email sent to ${to}:`, result.id);
-    return { success: true, messageId: result.id };
+    console.log(`✅ Email sent to ${to}:`, result.data?.id);
+    return { success: true, messageId: result.data?.id };
 
   } catch (error) {
     console.error('❌ Email send failed:', error);
