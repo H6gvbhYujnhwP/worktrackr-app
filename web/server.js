@@ -58,11 +58,6 @@ app.use(cookieParser());
 // Raw body for webhooks
 app.use('/webhooks', express.raw({ type: 'application/json' }));
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 // Authentication middleware
 async function authenticateToken(req, res, next) {
   const token = req.cookies.auth_token || req.headers.authorization?.replace('Bearer ', '');
@@ -87,16 +82,21 @@ async function authenticateToken(req, res, next) {
   }
 }
 
-// Serve static files from React build
-const clientDistPath = path.join(__dirname, 'client', 'dist');
-app.use(express.static(clientDistPath));
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
 
-// API Routes
+// API Routes (must be before static serving)
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 app.use('/api/billing', authenticateToken, billingRoutes);
 app.use('/webhooks', webhooksRoutes);
+
+// Serve static files from React build
+const clientDistPath = path.join(__dirname, 'client', 'dist');
+app.use(express.static(clientDistPath));
 
 // Catch-all handler for React Router (must be after API routes)
 app.get('*', (req, res) => {
