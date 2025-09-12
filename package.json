@@ -14,7 +14,10 @@
     "start": "npm run start --workspace=web",
     "worker": "npm run start --workspace=worker",
     "db:migrate": "npm run migrate --workspace=shared",
-    "db:seed": "npm run seed --workspace=shared"
+    "db:seed": "npm run seed --workspace=shared",
+    "client:install": "cd web/client && npm install",
+    "client:build": "cd web/client && npm run build",
+    "full:build": "npm install && npm run client:install && npm run client:build"
   },
   "keywords": [
     "workflow",

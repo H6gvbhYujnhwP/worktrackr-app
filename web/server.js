@@ -87,6 +87,10 @@ async function authenticateToken(req, res, next) {
   }
 }
 
+// Serve static files from React build
+const clientDistPath = path.join(__dirname, 'client', 'dist');
+app.use(express.static(clientDistPath));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
@@ -94,12 +98,9 @@ app.use('/api/organizations', authenticateToken, organizationsRoutes);
 app.use('/api/billing', authenticateToken, billingRoutes);
 app.use('/webhooks', webhooksRoutes);
 
-// Serve static files from React build
-app.use(express.static(path.join(__dirname, 'client/dist')));
-
-// Catch-all handler for React Router
+// Catch-all handler for React Router (must be after API routes)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+  res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 // Error handling middleware
