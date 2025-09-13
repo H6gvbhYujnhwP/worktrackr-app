@@ -43,7 +43,7 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ plan }) // server maps plan -> PRICE_* env
+        body: JSON.stringify({ plan, orgId: localStorage.getItem('orgId') }) // include orgId if present
       })
       const data = await resp.json().catch(() => ({}))
       if (!resp.ok || !data?.url) throw new Error(data?.error || 'Checkout failed')
@@ -72,7 +72,7 @@ function App() {
               <Button variant="outline">Login</Button>
               <Button
                 className="worktrackr-bg-black hover:bg-gray-800"
-                onClick={() => navigate('/pricing')}
+                onClick={() => navigate('/signup')}
                 aria-label="Start free trial"
               >
                 Get Started
@@ -92,7 +92,7 @@ function App() {
             The complete workflow and ticketing system designed for IT support providers, maintenance teams, and service organizations.
           </p>
           <div className="flex justify-center space-x-4">
-            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800" onClick={() => navigate('/pricing')}>
+            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800" onClick={() => navigate('/signup')}>
               Start Free Trial
             </Button>
             <Button size="lg" variant="outline">
