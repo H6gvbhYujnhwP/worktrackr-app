@@ -5,8 +5,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
-const { query, getOrgContext } = require('@worktrackr/shared/db');
+const { getOrgContext } = require('@worktrackr/shared/db');
 const authRoutes = require('./routes/auth');
 const ticketsRoutes = require('./routes/tickets');
 const organizationsRoutes = require('./routes/organizations');
@@ -14,28 +15,54 @@ const billingRoutes = require('./routes/billing');
 const webhooksRoutes = require('./routes/webhooks');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// Security middleware
+// Trust Render proxy (needed for HTTPS + cookies)
+app.set('trust proxy', 1);
+
+// Force HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.hostname}${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
+// Security headers
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: true,
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+      frameSrc: ["https://js.stripe.com"],
+      connectSrc: ["'self'", "https://api.stripe.com", "https://*.stripe.com"]
     },
   },
 }));
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use('/api/', limiter);
+app.use('/api/', apiLimiter);
+
+// Separate limit for webhooks
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60
+});
+app.use('/webhooks', webhookLimiter);
+
+// Raw body for Stripe BEFORE JSON parser
+app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
 // CORS configuration
 const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000').split(',');
@@ -55,26 +82,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Raw body for webhooks
-app.use('/webhooks', express.raw({ type: 'application/json' }));
-
 // Authentication middleware
 async function authenticateToken(req, res, next) {
   const token = req.cookies.auth_token || req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
+  if (!token) return res.status(401).json({ error: 'Access token required' });
 
   try {
-    const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
-    
-    // Get organization context
+
     const activeOrgId = req.headers['x-org-id'] || req.query.orgId;
     req.orgContext = await getOrgContext(decoded.userId, activeOrgId);
-    
+
     next();
   } catch (error) {
     console.error('Auth error:', error);
@@ -87,7 +106,7 @@ app.get('/health', (req, res) => {
   res.status(200).send('ok');
 });
 
-// API Routes (must be before static serving)
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
@@ -96,9 +115,9 @@ app.use('/webhooks', webhooksRoutes);
 
 // Serve static files from React build
 const clientDistPath = path.join(__dirname, 'client', 'dist');
-app.use(express.static(clientDistPath));
+app.use(express.static(clientDistPath, { maxAge: '1y', immutable: true }));
 
-// Catch-all handler for React Router (must be after API routes)
+// Catch-all handler for React Router
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
@@ -106,7 +125,7 @@ app.get('*', (req, res) => {
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
-  res.status(500).json({ 
+  res.status(500).json({
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
   });
@@ -120,4 +139,3 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
-
