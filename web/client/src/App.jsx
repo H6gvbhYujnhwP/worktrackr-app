@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
@@ -8,32 +9,50 @@ import './App.css'
 
 function App() {
   const [apiResult, setApiResult] = useState('')
+  const [busy, setBusy] = useState(null) // 'starter' | 'pro' | 'enterprise' | null
+  const navigate = useNavigate()
 
   const testAPI = async (endpoint, method = 'GET', data = null) => {
     setApiResult('Testing ' + endpoint + '...')
-    
     try {
       const options = {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: data ? JSON.stringify(data) : undefined
       }
-      
-      if (data) {
-        options.body = JSON.stringify(data)
-      }
-      
       const response = await fetch(endpoint, options)
-      const result = await response.json()
-      
+      const contentType = response.headers.get('content-type') || ''
+      const isJson = contentType.includes('application/json')
+      const result = isJson ? await response.json() : await response.text()
+
       if (response.ok) {
-        setApiResult(`✅ ${endpoint} - Success: ${JSON.stringify(result, null, 2)}`)
+        setApiResult(`✅ ${endpoint} - Success:\n${isJson ? JSON.stringify(result, null, 2) : result}`)
       } else {
-        setApiResult(`❌ ${endpoint} - Error: ${JSON.stringify(result, null, 2)}`)
+        setApiResult(`❌ ${endpoint} - Error:\n${isJson ? JSON.stringify(result, null, 2) : result}`)
       }
     } catch (error) {
       setApiResult(`❌ ${endpoint} - Network Error: ${error.message}`)
+    }
+  }
+
+  async function startCheckout(plan) {
+    try {
+      setBusy(plan)
+      const resp = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ plan }) // server maps plan -> PRICE_* env
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok || !data?.url) throw new Error(data?.error || 'Checkout failed')
+      window.location.href = data.url // redirect to Stripe Checkout
+    } catch (e) {
+      console.error('Checkout error:', e)
+      alert(e.message)
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -51,7 +70,13 @@ function App() {
             </div>
             <div className="flex space-x-4">
               <Button variant="outline">Login</Button>
-              <Button className="worktrackr-bg-black hover:bg-gray-800">Get Started</Button>
+              <Button
+                className="worktrackr-bg-black hover:bg-gray-800"
+                onClick={() => navigate('/pricing')}
+                aria-label="Start free trial"
+              >
+                Get Started
+              </Button>
             </div>
           </div>
         </div>
@@ -64,11 +89,10 @@ function App() {
             Custom Workflows. <span className="worktrackr-yellow">Zero Hassle.</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            The complete workflow and ticketing system designed for IT support providers, 
-            maintenance teams, and service organizations.
+            The complete workflow and ticketing system designed for IT support providers, maintenance teams, and service organizations.
           </p>
           <div className="flex justify-center space-x-4">
-            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800">
+            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800" onClick={() => navigate('/pricing')}>
               Start Free Trial
             </Button>
             <Button size="lg" variant="outline">
@@ -136,18 +160,14 @@ function App() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section (quick cards on home) */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Simple, transparent pricing
-          </h2>
-          <p className="text-center text-gray-600 mb-12">
-            Choose the plan that fits your organization's needs
-          </p>
-          
+          <h2 className="text-3xl font-bold text-center mb-4">Simple, transparent pricing</h2>
+          <p className="text-center text-gray-600 mb-12">7-day free trial on all plans</p>
+
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Starter Plan */}
+            {/* Starter */}
             <Card>
               <CardHeader>
                 <CardTitle>Starter</CardTitle>
@@ -158,33 +178,22 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Up to 5 users
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Basic ticketing
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Email notifications
-                  </li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Up to 5 users</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Basic ticketing</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Email notifications</li>
                 </ul>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   variant="outline"
-                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
-                    orgId: 'test', 
-                    priceId: 'price_1S6VQPLCgRgCwthBm1FfHzIu'
-                  })}
+                  disabled={busy === 'starter'}
+                  onClick={() => startCheckout('starter')}
                 >
-                  Choose Plan
+                  {busy === 'starter' ? 'Preparing…' : 'Choose Plan'}
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Pro Plan */}
+            {/* Pro */}
             <Card className="border-2 worktrackr-border-yellow relative">
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 worktrackr-bg-yellow text-black">
                 <Star className="w-3 h-3 mr-1" />
@@ -199,36 +208,22 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Up to 25 users
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Workflow builder
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Reports & inspections
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Approvals
-                  </li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Up to 25 users</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Workflow builder</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Reports & inspections</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Approvals</li>
                 </ul>
-                <Button 
+                <Button
                   className="w-full worktrackr-bg-yellow text-black hover:bg-yellow-400"
-                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
-                    orgId: 'test', 
-                    priceId: 'price_1S6VTkLCgRgCwthBYNGmAqA7'
-                  })}
+                  disabled={busy === 'pro'}
+                  onClick={() => startCheckout('pro')}
                 >
-                  Choose Plan
+                  {busy === 'pro' ? 'Preparing…' : 'Choose Plan'}
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Enterprise Plan */}
+            {/* Enterprise */}
             <Card>
               <CardHeader>
                 <CardTitle>Enterprise</CardTitle>
@@ -239,31 +234,17 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Unlimited users
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    Advanced workflows
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    API access
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />
-                    White-labeling
-                  </li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Unlimited users</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Advanced workflows</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />API access</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />White-labeling</li>
                 </ul>
-                <Button 
+                <Button
                   className="w-full worktrackr-bg-black hover:bg-gray-800"
-                  onClick={() => testAPI('/api/billing/checkout', 'POST', {
-                    orgId: 'test', 
-                    priceId: 'price_1S6W8GLCgRgCwthBHIt0Fahl'
-                  })}
+                  disabled={busy === 'enterprise'}
+                  onClick={() => startCheckout('enterprise')}
                 >
-                  Choose Plan
+                  {busy === 'enterprise' ? 'Preparing…' : 'Choose Plan'}
                 </Button>
               </CardContent>
             </Card>
@@ -274,46 +255,27 @@ function App() {
       {/* API Testing Section */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8">
-            🧪 API Testing
-          </h2>
-          <p className="text-center text-gray-600 mb-8">
-            Test the WorkTrackr Cloud API endpoints
-          </p>
+          <h2 className="text-3xl font-bold text-center mb-8">🧪 API Testing</h2>
+          <p className="text-center text-gray-600 mb-8">Test the WorkTrackr Cloud API endpoints</p>
           
           <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <Button 
-              onClick={() => testAPI('/health', 'GET')}
-              variant="outline"
-            >
-              Health Check
-            </Button>
-            <Button 
+            <Button onClick={() => testAPI('/health', 'GET')} variant="outline">Health Check</Button>
+            <Button
               onClick={() => testAPI('/api/auth/register', 'POST', {
-                email: 'test@example.com', 
-                name: 'Test User', 
-                password: 'password123', 
-                organizationName: 'Test Org'
+                email: 'test@example.com', name: 'Test User', password: 'password123', organizationName: 'Test Org'
               })}
               variant="outline"
             >
               Test Registration
             </Button>
-            <Button 
-              onClick={() => testAPI('/api/tickets', 'GET')}
-              variant="outline"
-            >
-              List Tickets
-            </Button>
+            <Button onClick={() => testAPI('/api/tickets', 'GET')} variant="outline">List Tickets</Button>
           </div>
 
           {apiResult && (
             <Card>
-              <CardHeader>
-                <CardTitle>API Response</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>API Response</CardTitle></CardHeader>
               <CardContent>
-                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
+                <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto whitespace-pre-wrap">
                   {apiResult}
                 </pre>
               </CardContent>
@@ -333,42 +295,27 @@ function App() {
                   Work<span className="worktrackr-yellow">Trackr</span> CLOUD
                 </div>
               </div>
-              <p className="text-gray-400">
-                Custom workflows. Zero hassle.
-              </p>
+              <p className="text-gray-400">Custom workflows. Zero hassle.</p>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>Features</li>
-                <li>Pricing</li>
-                <li>API</li>
-                <li>Documentation</li>
+                <li>Features</li><li>Pricing</li><li>API</li><li>Documentation</li>
               </ul>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>About</li>
-                <li>Blog</li>
-                <li>Careers</li>
-                <li>Contact</li>
+                <li>About</li><li>Blog</li><li>Careers</li><li>Contact</li>
               </ul>
             </div>
-            
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>Help Center</li>
-                <li>Community</li>
-                <li>Status</li>
-                <li>Security</li>
+                <li>Help Center</li><li>Community</li><li>Status</li><li>Security</li>
               </ul>
             </div>
           </div>
-          
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2025 WorkTrackr Cloud. All rights reserved.</p>
           </div>
@@ -379,4 +326,3 @@ function App() {
 }
 
 export default App
-
