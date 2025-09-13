@@ -1,9 +1,9 @@
+// web/routes/billing.js
 const express = require('express');
 const router = express.Router();
-
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// Helper: map short plan name -> env price id
+// Map plan → Stripe Price ID from env
 const PLAN_TO_PRICE = {
   starter: process.env.PRICE_STARTER,
   pro: process.env.PRICE_PRO,
@@ -16,7 +16,7 @@ router.post('/checkout', async (req, res) => {
     const price = priceId || PLAN_TO_PRICE[(plan || '').toLowerCase()];
     if (!price) return res.status(400).json({ error: 'Missing or invalid plan/priceId' });
 
-    // You can derive orgId from req.user / req.orgContext if your auth is live.
+    // If you have auth, derive orgId from req.user/req.orgContext. For now we tolerate unknown.
     const orgId = req.orgContext?.organisationId || 'unknown';
 
     const session = await stripe.checkout.sessions.create({
@@ -28,7 +28,7 @@ router.post('/checkout', async (req, res) => {
       },
       line_items: [{ price, quantity: 1 }],
       success_url: `${process.env.APP_BASE_URL}/dashboard?checkout=success`,
-      cancel_url: `${process.env.APP_BASE_URL}/?checkout=cancel`,
+      cancel_url:  `${process.env.APP_BASE_URL}/?checkout=cancel`,
     });
 
     return res.json({ url: session.url });
@@ -38,6 +38,7 @@ router.post('/checkout', async (req, res) => {
   }
 });
 
+// Optional: Billing Portal (wire later if needed)
 router.post('/portal', async (req, res) => {
   try {
     const { stripeCustomerId } = req.body || {};
