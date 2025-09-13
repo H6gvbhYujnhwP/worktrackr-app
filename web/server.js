@@ -106,6 +106,15 @@ app.get('/health', (req, res) => {
   res.status(200).send('ok');
 });
 
+// API version endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    name: 'WorkTrackr Cloud',
+    version: process.env.APP_VERSION || '1.0.0',
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
@@ -115,10 +124,19 @@ app.use('/webhooks', webhooksRoutes);
 
 // Serve static files from React build
 const clientDistPath = path.join(__dirname, 'client', 'dist');
-app.use(express.static(clientDistPath, { maxAge: '1y', immutable: true }));
 
-// Catch-all handler for React Router
+// 1) Long-cache only the hashed asset files
+app.use('/assets', express.static(path.join(clientDistPath, 'assets'), {
+  maxAge: '1y',
+  immutable: true
+}));
+
+// 2) Serve other static files (favicon, icons, etc.) with no cache
+app.use(express.static(clientDistPath, { maxAge: '0' }));
+
+// 3) SPA entry — explicitly no cache for index.html
 app.get('*', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
