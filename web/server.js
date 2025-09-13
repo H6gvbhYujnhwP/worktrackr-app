@@ -61,7 +61,7 @@ const webhookLimiter = rateLimit({
 });
 app.use('/webhooks', webhookLimiter);
 
-// Raw body for Stripe BEFORE JSON parser
+// Raw body for Stripe BEFORE JSON parser (needed for signature verification)
 app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
 // CORS configuration
@@ -119,7 +119,11 @@ app.get('/api/version', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
-app.use('/api/billing', authenticateToken, billingRoutes);
+
+// ⬇️ TEMP: expose billing without auth for checkout testing
+app.use('/api/billing', billingRoutes);
+// ⬆️ When ready, revert to: app.use('/api/billing', authenticateToken, billingRoutes);
+
 app.use('/webhooks', webhooksRoutes);
 
 // Serve static files from React build
