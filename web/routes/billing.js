@@ -10,25 +10,37 @@ const PLAN_TO_PRICE = {
   enterprise: process.env.PRICE_ENTERPRISE,
 };
 
+/**
+ * POST /api/billing/checkout
+ * body: { plan?: "starter"|"pro"|"enterprise", priceId?: string, orgId?: string }
+ * Returns: { url }  // Stripe Checkout URL
+ */
 router.post('/checkout', async (req, res) => {
   try {
-    const { plan, priceId } = req.body || {};
-    const price = priceId || PLAN_TO_PRICE[(plan || '').toLowerCase()];
-    if (!price) return res.status(400).json({ error: 'Missing or invalid plan/priceId' });
+    const { plan, priceId, orgId: orgIdFromBody } = req.body || {};
 
-    // If you have auth, derive orgId from req.user/req.orgContext. For now we tolerate unknown.
-    const orgId = req.orgContext?.organisationId || 'unknown';
+    // Resolve the Stripe Price
+    const price = priceId || PLAN_TO_PRICE[(plan || '').toLowerCase()];
+    if (!price) {
+      return res.status(400).json({ error: 'Missing or invalid plan/priceId' });
+    }
+
+    // Prefer org from auth middleware, else accept client-provided orgId (from signup)
+    const orgId =
+      (req.orgContext && req.orgContext.organisationId) ||
+      orgIdFromBody ||
+      'unknown';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_collection: 'always',
       subscription_data: {
         trial_period_days: 7,
-        metadata: { orgId }
+        metadata: { orgId }, // so webhooks can map subscription → organisation
       },
       line_items: [{ price, quantity: 1 }],
       success_url: `${process.env.APP_BASE_URL}/dashboard?checkout=success`,
-      cancel_url:  `${process.env.APP_BASE_URL}/?checkout=cancel`,
+      cancel_url: `${process.env.APP_BASE_URL}/?checkout=cancel`,
     });
 
     return res.json({ url: session.url });
@@ -38,11 +50,17 @@ router.post('/checkout', async (req, res) => {
   }
 });
 
-// Optional: Billing Portal (wire later if needed)
+/**
+ * POST /api/billing/portal
+ * body: { stripeCustomerId: string }
+ * Returns: { url }  // Stripe Billing Portal URL
+ */
 router.post('/portal', async (req, res) => {
   try {
-    const { stripeCustomerId } = req.body || {};
-    if (!stripeCustomerId) return res.status(400).json({ error: 'Missing stripeCustomerId' });
+    const { stripeCustomerId } = (req.body || {});
+    if (!stripeCustomerId) {
+      return res.status(400).json({ error: 'Missing stripeCustomerId' });
+    }
 
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
