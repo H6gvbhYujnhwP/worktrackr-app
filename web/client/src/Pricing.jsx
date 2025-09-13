@@ -19,7 +19,7 @@ export default function Pricing() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, orgId: localStorage.getItem('orgId') }),
       });
 
       const data = await resp.json();
