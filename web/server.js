@@ -13,6 +13,9 @@ const ticketsRoutes = require('./routes/tickets');
 const organizationsRoutes = require('./routes/organizations');
 const billingRoutes = require('./routes/billing');
 const webhooksRoutes = require('./routes/webhooks');
+const publicAuthRoutes = require('./routes/public-auth');
+app.use('/api/public-auth', publicAuthRoutes);
+
 
 const app = express();
 const PORT = process.env.PORT || 10000;
