@@ -1,13 +1,13 @@
 // web/routes/webhooks.js
 const express = require('express');
 const { query } = require('@worktrackr/shared/db');
+
 const router = express.Router();
 
 // Initialize Stripe
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-// IMPORTANT: In server.js you must mount raw body BEFORE json for this path:
-// app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
+// NOTE: server.js mounts express.raw on /webhooks/stripe BEFORE json()
 
 // Stripe webhook handler
 router.post('/stripe', async (req, res) => {
@@ -15,7 +15,6 @@ router.post('/stripe', async (req, res) => {
   let event;
 
   try {
-    // req.body must be the raw Buffer (see note above)
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
@@ -60,8 +59,7 @@ router.post('/stripe', async (req, res) => {
   }
 });
 
-// (Legacy) Mailgun inbound webhook handler — safe to keep for now.
-// You can later replace with Resend Inbound when you wire that up.
+// (Legacy) Mailgun inbound webhook handler
 router.post('/mailgun-inbound', async (req, res) => {
   try {
     const { recipient, sender, subject, 'body-plain': body } = req.body;
@@ -105,7 +103,7 @@ router.post('/mailgun-inbound', async (req, res) => {
   }
 });
 
-// Stripe webhook helpers
+/* ========== Stripe helpers ========== */
 
 async function handleCheckoutCompleted(session) {
   const orgId = session.metadata?.orgId;
@@ -122,11 +120,9 @@ async function handleCheckoutCompleted(session) {
 }
 
 async function handleSubscriptionUpdated(subscription) {
-  // BUGFIX: use let so we can fallback if metadata is missing
+  // FIX: must be 'let' because we may set it later
   let orgId = subscription.metadata?.orgId;
-
   if (!orgId) {
-    // Try to find org by customer ID
     const orgResult = await query(
       'SELECT id FROM organisations WHERE stripe_customer_id = $1',
       [subscription.customer]
@@ -135,11 +131,9 @@ async function handleSubscriptionUpdated(subscription) {
     orgId = orgResult.rows[0].id;
   }
 
-  // Identify main subscription item (not add-ons)
   const mainItem = subscription.items.data.find((item) =>
-    [process.env.PRICE_STARTER, process.env.PRICE_PRO, process.env.PRICE_ENTERPRISE].includes(
-      item.price.id
-    )
+    [process.env.PRICE_STARTER, process.env.PRICE_PRO, process.env.PRICE_ENTERPRISE]
+      .includes(item.price.id)
   );
   const planPriceId = mainItem ? mainItem.price.id : null;
 
@@ -166,9 +160,8 @@ async function handleSubscriptionUpdated(subscription) {
 
   const addOnItems = subscription.items.data.filter(
     (item) =>
-      ![process.env.PRICE_STARTER, process.env.PRICE_PRO, process.env.PRICE_ENTERPRISE].includes(
-        item.price.id
-      )
+      ![process.env.PRICE_STARTER, process.env.PRICE_PRO, process.env.PRICE_ENTERPRISE]
+        .includes(item.price.id)
   );
 
   for (const item of addOnItems) {
@@ -213,12 +206,10 @@ async function handleSubscriptionDeleted(subscription) {
 
 async function handlePaymentSucceeded(invoice) {
   console.log(`Payment succeeded for subscription ${invoice.subscription}`);
-  // TODO: update payment status / send confirmation as needed
 }
 
 async function handlePaymentFailed(invoice) {
   console.log(`Payment failed for subscription ${invoice.subscription}`);
-  // TODO: dunning / notify as needed
 }
 
 module.exports = router;
