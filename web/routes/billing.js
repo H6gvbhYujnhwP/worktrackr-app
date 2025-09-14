@@ -34,6 +34,7 @@ router.post('/checkout', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_collection: 'always',
+      allow_promotion_codes: true, // <-- optional enhancement
       subscription_data: {
         trial_period_days: 7,
         metadata: { orgId }, // so webhooks can map subscription → organisation
@@ -41,6 +42,7 @@ router.post('/checkout', async (req, res) => {
       line_items: [{ price, quantity: 1 }],
       success_url: `${process.env.APP_BASE_URL}/dashboard?checkout=success`,
       cancel_url: `${process.env.APP_BASE_URL}/?checkout=cancel`,
+      metadata: { orgId },
     });
 
     return res.json({ url: session.url });
