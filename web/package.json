@@ -1,23 +1,15 @@
 {
-  "name": "worktrackr-app",
+  "name": "web",
   "version": "1.0.0",
-  "description": "WorkTrackr Cloud - Customizable workflow and ticketing system",
   "private": true,
-  "workspaces": ["web", "worker", "shared"],
-  "overrides": { "date-fns": "^3.6.0" },
-  "engines": { "node": "20.x" },
-  "scripts": {
-    "dev": "npm run dev --workspace=web",
-    "build": "npm run build --workspace=web",
-    "start": "node web/server.js",
-    "worker": "npm run start --workspace=worker",
-    "db:migrate": "npm run migrate --workspace=shared",
-    "db:seed": "npm run seed --workspace=shared",
-    "client:install": "cd web/client && npm install",
-    "client:build": "cd web/client && npm run build",
-    "full:build": "npm install && npm run client:install && npm run client:build"
-  },
-  "keywords": ["workflow", "ticketing", "multi-tenant", "white-label"],
-  "author": "WorkTrackr Cloud",
-  "license": "UNLICENSED"
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^14.25.0"
+  }
 }
