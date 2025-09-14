@@ -1,35 +1,23 @@
 {
-  "name": "@worktrackr/web",
+  "name": "worktrackr-app",
   "version": "1.0.0",
-  "description": "WorkTrackr Cloud Web Application",
-  "main": "server.js",
+  "description": "WorkTrackr Cloud - Customizable workflow and ticketing system",
+  "private": true,
+  "workspaces": ["web", "worker", "shared"],
+  "overrides": { "date-fns": "^3.6.0" },
+  "engines": { "node": "20.x" },
   "scripts": {
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "nodemon server.js",
-    "client:dev": "cd client && npm run dev",
-    "build": "cd client && npm run build",
-    "start": "node server.js",
-    "client:build": "cd client && npm run build",
-    "client:install": "cd client && npm install"
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "start": "node web/server.js",
+    "worker": "npm run start --workspace=worker",
+    "db:migrate": "npm run migrate --workspace=shared",
+    "db:seed": "npm run seed --workspace=shared",
+    "client:install": "cd web/client && npm install",
+    "client:build": "cd web/client && npm run build",
+    "full:build": "npm install && npm run client:install && npm run client:build"
   },
-  "dependencies": {
-    "@worktrackr/shared": "file:../shared",
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5",
-    "cookie-parser": "^1.4.6",
-    "multer": "^1.4.5-lts.1",
-    "stripe": "^14.7.0",
-    "mailgun.js": "^9.4.1",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "zod": "^3.22.4",
-    "dotenv": "^16.3.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1",
-    "concurrently": "^8.2.2"
-  }
+  "keywords": ["workflow", "ticketing", "multi-tenant", "white-label"],
+  "author": "WorkTrackr Cloud",
+  "license": "UNLICENSED"
 }
-
