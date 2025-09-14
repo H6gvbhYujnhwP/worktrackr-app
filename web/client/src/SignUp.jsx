@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Input } from '@/components/ui/input.jsx';
+import { Label } from '@/components/ui/label.jsx';
+import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
+import { CheckCircle, ArrowLeft, Loader2, Shield, Users, Zap } from 'lucide-react';
+import worktrackrLogo from './assets/worktrackr_icon_only.png';
 
 export default function SignUp() {
   const nav = useNavigate();
@@ -104,127 +111,197 @@ export default function SignUp() {
     }
   }
 
-  const inputStyle = {
-    width: '100%',
-    padding: 10,
-    borderRadius: 8,
-    border: '1px solid #ddd',
-    fontSize: 16,
-  };
-
-  const errorInputStyle = {
-    ...inputStyle,
-    border: '1px solid #dc2626',
-    backgroundColor: '#fef2f2',
-  };
-
-  const errorTextStyle = {
-    color: '#dc2626',
-    fontSize: 14,
-    marginTop: 4,
-  };
-
   return (
-    <main style={{ maxWidth: 560, margin: '4rem auto', padding: '0 1rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 32, marginBottom: 8 }}>Create your account</h1>
-      <p style={{ color: '#555', marginBottom: 24 }}>Start your 7-day free trial.</p>
-
-      {generalError && (
-        <div role="alert" style={{ 
-          background: '#fff4f4', 
-          border: '1px solid #ffd7d7', 
-          color: '#a40000', 
-          padding: 12, 
-          borderRadius: 8, 
-          marginBottom: 12 
-        }}>
-          {generalError}
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="logo-container cursor-pointer" onClick={() => nav('/')}>
+              <img src={worktrackrLogo} alt="WorkTrackr Cloud" className="w-12 h-12" />
+              <div className="logo-text">
+                Work<span className="trackr">Trackr</span> CLOUD
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => nav('/')} className="flex items-center">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
+            </div>
+          </div>
         </div>
-      )}
+      </nav>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          <div style={{ marginBottom: 4, fontWeight: 500 }}>Name *</div>
-          <input 
-            name="name" 
-            value={form.name} 
-            onChange={onChange} 
-            required 
-            style={errors.name ? errorInputStyle : inputStyle}
-            placeholder="Enter your full name"
-          />
-          {errors.name && <div style={errorTextStyle}>{errors.name}</div>}
-        </label>
+      {/* Hero Section */}
+      <section className="py-12 px-4 bg-gray-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold mb-4">
+            Start Your <span className="worktrackr-yellow">Free Trial</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-2">
+            Join thousands of teams already using WorkTrackr Cloud
+          </p>
+          <p className="text-gray-500">
+            No credit card required • 7-day free trial • Cancel anytime
+          </p>
+        </div>
+      </section>
 
-        <label>
-          <div style={{ marginBottom: 4, fontWeight: 500 }}>Email *</div>
-          <input 
-            name="email" 
-            type="email" 
-            value={form.email} 
-            onChange={onChange} 
-            required 
-            style={errors.email ? errorInputStyle : inputStyle}
-            placeholder="Enter your email address"
-          />
-          {errors.email && <div style={errorTextStyle}>{errors.email}</div>}
-        </label>
+      {/* Main Content */}
+      <section className="py-12 px-4">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Create your account</CardTitle>
+              <CardDescription>
+                Get started with your workflow management platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {generalError && (
+                <Alert className="mb-6 border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800">
+                    {generalError}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-        <label>
-          <div style={{ marginBottom: 4, fontWeight: 500 }}>Password *</div>
-          <input 
-            name="password" 
-            type="password" 
-            value={form.password} 
-            onChange={onChange} 
-            required 
-            minLength={8}
-            style={errors.password ? errorInputStyle : inputStyle}
-            placeholder="Enter a password (min. 8 characters)"
-          />
-          {errors.password && <div style={errorTextStyle}>{errors.password}</div>}
-        </label>
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={form.name}
+                    onChange={onChange}
+                    placeholder="Enter your full name"
+                    className={errors.name ? 'border-red-500 focus:border-red-500' : ''}
+                    required
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-600">{errors.name}</p>
+                  )}
+                </div>
 
-        <label>
-          <div style={{ marginBottom: 4, fontWeight: 500 }}>Organization ID *</div>
-          <input 
-            name="orgId" 
-            value={form.orgId} 
-            onChange={onChange} 
-            required 
-            style={errors.orgId ? errorInputStyle : inputStyle}
-            placeholder="Enter your organization ID"
-          />
-          {errors.orgId && <div style={errorTextStyle}>{errors.orgId}</div>}
-        </label>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={onChange}
+                    placeholder="Enter your email address"
+                    className={errors.email ? 'border-red-500 focus:border-red-500' : ''}
+                    required
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-red-600">{errors.email}</p>
+                  )}
+                </div>
 
-        <button 
-          type="submit" 
-          disabled={busy} 
-          style={{ 
-            marginTop: 8, 
-            padding: '12px 16px', 
-            border: 'none', 
-            borderRadius: 10, 
-            background: busy ? '#9ca3af' : '#111827', 
-            color: '#fff', 
-            fontWeight: 700, 
-            cursor: busy ? 'not-allowed' : 'pointer',
-            fontSize: 16,
-          }}
-        >
-          {busy ? 'Creating account…' : 'Create account'}
-        </button>
-      </form>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={onChange}
+                    placeholder="Create a secure password (min. 8 characters)"
+                    className={errors.password ? 'border-red-500 focus:border-red-500' : ''}
+                    minLength={8}
+                    required
+                  />
+                  {errors.password && (
+                    <p className="text-sm text-red-600">{errors.password}</p>
+                  )}
+                </div>
 
-      <p style={{ 
-        marginTop: 16, 
-        fontSize: 14, 
-        color: '#666', 
-        textAlign: 'center' 
-      }}>
-        * All fields are required
-      </p>
-    </main>
+                <div className="space-y-2">
+                  <Label htmlFor="orgId">Organization ID *</Label>
+                  <Input
+                    id="orgId"
+                    name="orgId"
+                    value={form.orgId}
+                    onChange={onChange}
+                    placeholder="Enter your organization identifier"
+                    className={errors.orgId ? 'border-red-500 focus:border-red-500' : ''}
+                    required
+                  />
+                  {errors.orgId && (
+                    <p className="text-sm text-red-600">{errors.orgId}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full worktrackr-bg-black hover:bg-gray-800 text-white"
+                  disabled={busy}
+                  size="lg"
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </Button>
+              </form>
+
+              <p className="text-center text-sm text-gray-500 mt-4">
+                By creating an account, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Trust Indicators */}
+          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <Shield className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Secure & Private</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <Users className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Trusted by Teams</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <Zap className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Quick Setup</p>
+            </div>
+          </div>
+
+          {/* Features Preview */}
+          <Card className="mt-8 bg-gray-50">
+            <CardHeader>
+              <CardTitle className="text-lg text-center">What you'll get:</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 worktrackr-yellow mr-3 flex-shrink-0" />
+                  <span className="text-sm">Complete workflow management system</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 worktrackr-yellow mr-3 flex-shrink-0" />
+                  <span className="text-sm">Smart ticketing with automation</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 worktrackr-yellow mr-3 flex-shrink-0" />
+                  <span className="text-sm">Multi-tenant organization support</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 worktrackr-yellow mr-3 flex-shrink-0" />
+                  <span className="text-sm">7-day free trial on all plans</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </div>
   );
 }
