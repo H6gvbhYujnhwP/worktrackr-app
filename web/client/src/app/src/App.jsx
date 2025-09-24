@@ -1,40 +1,36 @@
+// web/client/src/app/src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+
 import { mockUsers, mockTickets, mockWorkflows, mockOrganization } from './data/mockData.js';
 import Dashboard from './components/Dashboard.jsx';
 import WorkflowBuilder from './components/WorkflowBuilder.jsx';
 import Login from './components/Login.jsx';
 import './App.css';
-import { TicketsAPI } from '../app/api'
-import { toApiTicket } from '../app/map'
 
+// ✅ Corrected imports: api.ts and map.ts live one level up from /src/
+import { TicketsAPI } from '../api';
+import { toApiTicket } from '../map';
 
-// Auth context
+// ---------------- Auth context ----------------
 const AuthContext = React.createContext();
-
 export const useAuth = () => {
   const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
 
-// Simulation context for managing all data
+// ---------------- Simulation context ----------------
 const SimulationContext = React.createContext();
-
 export const useSimulation = () => {
   const context = React.useContext(SimulationContext);
-  if (!context) {
-    throw new Error('useSimulation must be used within a SimulationProvider');
-  }
+  if (!context) throw new Error('useSimulation must be used within a SimulationProvider');
   return context;
 };
 
-// Email simulation service
+// ---------------- Email simulation (unchanged) ----------------
 const emailService = {
   logs: [],
-  
   sendEmail(to, subject, template, ticketId = null) {
     const email = {
       id: `email-${Date.now()}`,
@@ -43,28 +39,23 @@ const emailService = {
       subject,
       template,
       status: 'sent',
-      sentAt: new Date().toISOString()
+      sentAt: new Date().toISOString(),
     };
-    
     this.logs.unshift(email);
-    
-    // Simulate email notification in console
     console.log(`📧 EMAIL SENT:
 To: ${to}
 Subject: ${subject}
 Template: ${template}
 Ticket: ${ticketId || 'N/A'}
 Time: ${new Date().toLocaleString()}`);
-    
     return email;
   },
-  
   getLogs() {
     return this.logs;
-  }
+  },
 };
 
-// Simulation provider component
+// ---------------- Simulation provider ----------------
 const SimulationProvider = ({ children }) => {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState(mockUsers);
@@ -85,43 +76,42 @@ const SimulationProvider = ({ children }) => {
     })();
   }, []);
 
-  // Initialize booking calendar sync on component mount
+  // Initialize booking calendar sync
   useEffect(() => {
     let cleanup = () => {};
-    
-    // Dynamically import and initialize booking sync
-    import('./utils/initializeBookingSync.js').then(({ initializeBookingSync }) => {
-      cleanup = initializeBookingSync();
-    }).catch(error => {
-      console.error('Error initializing booking sync:', error);
-    });
-    
-    // Cleanup on unmount
+    import('./utils/initializeBookingSync.js')
+      .then(({ initializeBookingSync }) => {
+        cleanup = initializeBookingSync();
+      })
+      .catch((error) => {
+        console.error('Error initializing booking sync:', error);
+      });
     return cleanup;
   }, []);
 
-  // Create booking calendar entry from ticket (following CRM calendar pattern)
+  // Create booking from ticket
   const createBookingFromTicket = (ticket) => {
     if (!ticket.scheduled_date) return;
-    
-    // Fix corrupted date format (50925-02-02 -> 2025-09-25)
+
     let dateString = ticket.scheduled_date;
     if (dateString.startsWith('50925-')) {
       dateString = dateString.replace('50925-', '2025-09-');
     }
-    
     const scheduledDate = new Date(dateString);
-    
-    // Check if the date is valid
     if (isNaN(scheduledDate.getTime())) {
-      console.error('[createBookingFromTicket] Invalid scheduled_date:', ticket.scheduled_date, 'corrected to:', dateString);
+      console.error(
+        '[createBookingFromTicket] Invalid scheduled_date:',
+        ticket.scheduled_date,
+        'corrected to:',
+        dateString
+      );
       return;
     }
-    
+
     console.log('[createBookingFromTicket] Processing ticket with scheduled date:', dateString);
-    
-    const assignedUser = users?.find(u => u.id === ticket.assignedTo);
-    
+
+    const assignedUser = users?.find((u) => u.id === ticket.assignedTo);
+
     const booking = {
       id: `BK-${ticket.id}`,
       ticketId: ticket.id,
@@ -131,7 +121,7 @@ const SimulationProvider = ({ children }) => {
       service: ticket.title,
       date: scheduledDate.toISOString().split('T')[0],
       time: '09:00',
-      duration: (ticket.scheduled_duration_mins || 60),
+      duration: ticket.scheduled_duration_mins || 60,
       location: ticket.location || 'On-site',
       priority: ticket.priority || 'medium',
       status: 'scheduled',
@@ -139,46 +129,45 @@ const SimulationProvider = ({ children }) => {
       assignedTo: assignedUser?.name || 'Unassigned',
       metadata: {
         sector: ticket.sector || 'General',
-        reference: ticket.id
-      }
+        reference: ticket.id,
+      },
     };
-    
-    // Save to localStorage following CRM calendar pattern
+
     const existingBookings = JSON.parse(localStorage.getItem('ticketBookings') || '[]');
     const updatedBookings = [...existingBookings, booking];
     localStorage.setItem('ticketBookings', JSON.stringify(updatedBookings));
-    
+
     console.log('[App] Booking created from ticket:', booking);
   };
 
-  // Update booking 
+  // Update booking from ticket
   const updateBookingFromTicket = (ticket) => {
     if (!ticket.scheduled_date) return;
-    const assignedUser = users?.find(u => u.id === ticket.assignedTo);
+    const assignedUser = users?.find((u) => u.id === ticket.assignedTo);
     const existingBookings = JSON.parse(localStorage.getItem('ticketBookings') || '[]');
-    const updatedBookings = existingBookings.map(booking => {
+    const updatedBookings = existingBookings.map((booking) => {
       if (booking.ticketId === ticket.id) {
         return {
           ...booking,
-          date: (new Date(ticket.scheduled_date)).toISOString().split('T')[0],
-          duration: (ticket.scheduled_duration_mins || booking.duration),
+          date: new Date(ticket.scheduled_date).toISOString().split('T')[0],
+          duration: ticket.scheduled_duration_mins || booking.duration,
           notes: ticket.description,
           assignedTo: assignedUser?.name || 'Unassigned',
-          priority: ticket.priority || booking.priority
+          priority: ticket.priority || booking.priority,
         };
       }
       return booking;
     });
-    
+
     localStorage.setItem('ticketBookings', JSON.stringify(updatedBookings));
   };
 
-  // Create new ticket (persist to backend)
+  // Create ticket (persist to backend)
   const createTicket = async (ticketData) => {
     try {
       const payload = toApiTicket(ticketData);
       const { ticket } = await TicketsAPI.create(payload);
-      setTickets(prev => [ticket, ...prev]);
+      setTickets((prev) => [ticket, ...prev]);
       if (ticket.scheduled_date) {
         createBookingFromTicket(ticket);
       }
@@ -193,8 +182,7 @@ const SimulationProvider = ({ children }) => {
   const updateTicket = async (ticketId, updates) => {
     try {
       const { ticket: updatedFromServer } = await TicketsAPI.update(ticketId, updates);
-      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, ...updatedFromServer } : t));
-      // Update booking calendar if scheduled_date is present
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...updatedFromServer } : t)));
       if (updatedFromServer?.scheduled_date) {
         updateBookingFromTicket(updatedFromServer);
       }
@@ -206,111 +194,96 @@ const SimulationProvider = ({ children }) => {
 
   // Add comment to ticket
   const addComment = (ticketId, authorId, content, type = 'comment') => {
-    setTickets(prev => prev.map(ticket => {
-      if (ticket.id === ticketId) {
-        const newComment = {
-          id: `CMT-${Date.now()}`,
-          author: authorId,
-          authorName: users.find(u => u.id === authorId)?.name || 'Unknown User',
-          content,
-          createdAt: new Date().toISOString(),
-          type
-        };
-        
-        return {
-          ...ticket,
-          comments: [newComment, ...(ticket.comments || [])],
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return ticket;
-    }));
+    setTickets((prev) =>
+      prev.map((ticket) => {
+        if (ticket.id === ticketId) {
+          const newComment = {
+            id: `CMT-${Date.now()}`,
+            author: authorId,
+            authorName: users.find((u) => u.id === authorId)?.name || 'Unknown User',
+            content,
+            createdAt: new Date().toISOString(),
+            type,
+          };
+
+          return {
+            ...ticket,
+            comments: [newComment, ...(ticket.comments || [])],
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return ticket;
+      })
+    );
   };
 
-  // Assign ticket to a user
+  // Assign ticket
   const assignTicket = (ticketId, userId) => {
-    updateTicket(ticketId, { 
+    updateTicket(ticketId, {
       assignedTo: userId,
-      status: 'awaiting_assignment'
+      status: 'awaiting_assignment',
     });
-    
-    const user = users.find(u => u.id === userId);
+
+    const user = users.find((u) => u.id === userId);
     if (user) {
-      const ticket = tickets.find(t => t.id === ticketId);
+      const ticket = tickets.find((t) => t.id === ticketId);
       const email = emailService.sendEmail(
-        user.email, 
-        `Ticket Assigned: ${ticket?.title || 'Unknown Ticket'}`, 
+        user.email,
+        `Ticket Assigned: ${ticket?.title || 'Unknown Ticket'}`,
         'ticket_assigned',
         ticketId
       );
-      setEmailLogs(prev => [email, ...prev]);
+      setEmailLogs((prev) => [email, ...prev]);
     }
   };
 
   // Request approval
   const requestApproval = (ticketId, requesterId, reason = '') => {
-    const ticket = tickets.find(t => t.id === ticketId);
-    const requester = users.find(u => u.id === requesterId);
-    const managers = users.filter(u => u.role === 'admin' || u.role === 'manager');
-    
+    const ticket = tickets.find((t) => t.id === ticketId);
+    const requester = users.find((u) => u.id === requesterId);
+    const managers = users.filter((u) => u.role === 'admin' || u.role === 'manager');
+
     if (ticket && requester && managers.length > 0) {
       updateTicket(ticketId, {
         status: 'waiting_approval',
-        workflowStage: 'awaiting_authorization'
+        workflowStage: 'awaiting_authorization',
       });
-      
-      // Send approval request emails to all managers
-      managers.forEach(manager => {
-        const email = emailService.sendEmail(
-          manager.email,
-          `Approval Request: ${ticket.title}`,
-          'approval_request',
-          ticketId
-        );
-        setEmailLogs(prev => [email, ...prev]);
+
+      managers.forEach((manager) => {
+        const email = emailService.sendEmail(manager.email, `Approval Request: ${ticket.title}`, 'approval_request', ticketId);
+        setEmailLogs((prev) => [email, ...prev]);
       });
-      
-      // Add comment to ticket
-      const approvalComment = {
-        author: requesterId,
-        authorName: requester.name,
-        content: `Approval requested${reason ? `: ${reason}` : ''}`,
-        createdAt: new Date().toISOString(),
-        type: 'system'
-      };
-      
-      addComment(ticketId, requesterId, approvalComment.content);
+
+      addComment(ticketId, requesterId, `Approval requested${reason ? `: ${reason}` : ''}`, 'system');
     }
   };
 
-  // Approve/deny ticket
+  // Approve/deny
   const processApproval = (ticketId, approverId, decision, reason = '') => {
-    const approver = users.find(u => u.role === 'admin' || u.role === 'manager');
-    const ticket = tickets.find(t => t.id === ticketId);
-    
+    const approver = users.find((u) => u.role === 'admin' || u.role === 'manager');
+    const ticket = tickets.find((t) => t.id === ticketId);
+
     if (ticket && approver) {
       const status = decision === 'approve' ? 'approved' : 'denied';
       updateTicket(ticketId, {
         status,
         approverId,
         approvalDecision: decision,
-        approvalReason: reason
+        approvalReason: reason,
       });
-      
-      // Add comment and send email
+
       const email = emailService.sendEmail(
         ticket.requester?.email || 'notifications@worktrackr.cloud',
         `Ticket ${decision.toUpperCase()}: ${ticket.title}`,
         'approval_result',
         ticketId
       );
-      setEmailLogs(prev => [email, ...prev]);
-      
+      setEmailLogs((prev) => [email, ...prev]);
+
       addComment(ticketId, approverId, `Ticket ${decision}${reason ? `: ${reason}` : ''}`, 'system');
     }
   };
 
-  // Simulation context value
   const simulationValue = {
     tickets,
     users,
@@ -323,75 +296,62 @@ const SimulationProvider = ({ children }) => {
     addComment,
     assignTicket,
     requestApproval,
-    processApproval
+    processApproval,
   };
 
-  return (
-    <SimulationContext.Provider value={simulationValue}>
-      {children}
-    </SimulationContext.Provider>
-  );
+  return <SimulationContext.Provider value={simulationValue}>{children}</SimulationContext.Provider>;
 };
 
-// Auth provider (kept as-is)
+// ---------------- Auth provider (mock) ----------------
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  
+
   const login = (email, password) => {
-    // Simple mock auth
-    const foundUser = mockUsers.find(u => u.email === email) || mockUsers[0];
+    const foundUser = mockUsers.find((u) => u.email === email) || mockUsers[0];
     setUser(foundUser);
     return foundUser;
   };
-  
+
   const logout = () => setUser(null);
-  
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+
+  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
 };
 
-// Protected route wrapper
+// ---------------- Protected route ----------------
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 
-// Main Manus App
-function App() {
+// ---------------- Main Manus App (NO BrowserRouter here) ----------------
+export default function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <SimulationProvider>
-          <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/workflow-builder" 
-                element={
-                  <ProtectedRoute>
-                    <WorkflowBuilder />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </div>
-        </SimulationProvider>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <SimulationProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workflow-builder"
+              element={
+                <ProtectedRoute>
+                  <WorkflowBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </div>
+      </SimulationProvider>
+    </AuthProvider>
   );
 }
-
-export default App;
