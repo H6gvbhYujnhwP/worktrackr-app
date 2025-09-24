@@ -1,9 +1,10 @@
 // web/client/jsconfig.json
 {
   "compilerOptions": {
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*", "src/app/src/*"]
+      "@/*": ["src/app/src/*"],   // Manus "@/..." → src/app/src/*
+      "@app/*": ["src/*"]         // Public app "@app/..." → src/*
     }
   }
 }
