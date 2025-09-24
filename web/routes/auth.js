@@ -1,3 +1,4 @@
+// web/routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -362,6 +363,36 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('Auth check error:', error);
     res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+/* -------------------- NEW: lightweight session check --------------------
+   Purpose: quick "am I logged in?" endpoint for the SPA.
+   Returns { user, membership } if the auth cookie is valid; 401 otherwise.
+-------------------------------------------------------------------------*/
+router.get('/session', async (req, res) => {
+  try {
+    const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const rUser = await query('SELECT id, email, name FROM users WHERE id = $1 LIMIT 1', [decoded.userId]);
+    if (rUser.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    // simplest org context: first membership (if any)
+    const rMem = await query(
+      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [decoded.userId]
+    );
+
+    return res.json({
+      user: rUser.rows[0],
+      membership: rMem.rows[0] || null
+    });
+  } catch (err) {
+    console.error('Session check failed:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 });
 
