@@ -1,13 +1,15 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+// web/client/src/App.jsx
+import React, { useState } from 'react'
+import { useNavigate, Routes, Route } from 'react-router-dom'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Ticket, Users, Workflow, CreditCard, CheckCircle, Star } from 'lucide-react'
+import AppEntrypoint from './app/AppEntrypoint'
 import worktrackrLogo from './assets/worktrackr_icon_only.png'
 import './App.css'
 
-function App() {
+function HomePage() {
   const [apiResult, setApiResult] = useState('')
   const [busy, setBusy] = useState(null) // 'starter' | 'pro' | 'enterprise' | null
   const navigate = useNavigate()
@@ -108,7 +110,7 @@ function App() {
           <h2 className="text-3xl font-bold text-center mb-12">
             Everything you need to manage workflows
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card>
               <CardHeader>
                 <Ticket className="w-8 h-8 worktrackr-yellow mb-2" />
@@ -325,4 +327,18 @@ function App() {
   )
 }
 
-export default App
+export default function RootApp() {
+  return (
+    <Routes>
+      {/* Your existing landing page */}
+      <Route path="/" element={<HomePage />} />
+
+      {/* Mount Manus UI at /app/* */}
+      <Route path="/app/*" element={<AppEntrypoint />} />
+
+      {/* You can add other existing routes here as needed */}
+      {/* <Route path="/login" element={<Login />} /> */}
+      {/* <Route path="/signup" element={<Signup />} /> */}
+    </Routes>
+  )
+}
