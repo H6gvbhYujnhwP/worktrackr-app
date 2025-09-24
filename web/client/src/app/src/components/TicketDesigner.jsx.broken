@@ -1,0 +1,547 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Badge } from '@/components/ui/badge.jsx';
+import { Input } from '@/components/ui/input.jsx';
+import { Label } from '@/components/ui/label.jsx';
+import { Textarea } from '@/components/ui/textarea.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
+import { 
+  X, 
+  Save, 
+  ArrowLeft,
+  Plus,
+  Minus,
+  Check,
+  User,
+  Clock,
+  MapPin,
+  MessageSquare,
+  FileText,
+  Calendar,
+  AlertTriangle,
+  Tag,
+  Settings,
+  Mail,
+  Timer,
+  CheckCircle,
+  Users,
+  Paperclip
+} from 'lucide-react';
+
+// All available ticket elements
+const TICKET_ELEMENTS = {
+  // Basic Fields
+  title: { 
+    name: 'Title', 
+    icon: FileText, 
+    category: 'Basic Fields',
+    required: true,
+    description: 'Ticket title/subject'
+  },
+  description: { 
+    name: 'Description', 
+    icon: MessageSquare, 
+    category: 'Basic Fields',
+    required: true,
+    description: 'Detailed ticket description'
+  },
+  
+  // Classification
+  priority: { 
+    name: 'Priority', 
+    icon: AlertTriangle, 
+    category: 'Classification',
+    description: 'Low, Medium, High, Critical'
+  },
+  status: { 
+    name: 'Status', 
+    icon: CheckCircle, 
+    category: 'Classification',
+    required: true,
+    description: 'New, Assigned, In Progress, etc.'
+  },
+  category: { 
+    name: 'Category', 
+    icon: Tag, 
+    category: 'Classification',
+    description: 'HVAC, Plumbing, Electrical, etc.'
+  },
+  
+  // Assignment & Users
+  assignedUser: { 
+    name: 'Assigned User', 
+    icon: User, 
+    category: 'Assignment & Users',
+    description: 'Who is assigned to this ticket'
+  },
+  createdBy: { 
+    name: 'Created By', 
+    icon: Users, 
+    category: 'Assignment & Users',
+    required: true,
+    description: 'Who created the ticket'
+  },
+  
+  // Location & Time
+  location: { 
+    name: 'Location', 
+    icon: MapPin, 
+    category: 'Location & Time',
+    description: 'Physical location or address'
+  },
+  dueDate: { 
+    name: 'Due Date', 
+    icon: Calendar, 
+    category: 'Location & Time',
+    description: 'When the ticket should be completed'
+  },
+  
+  // Communication
+  comments: { 
+    name: 'Comments', 
+    icon: MessageSquare, 
+    category: 'Communication',
+    description: 'Timestamped comments and notes'
+  },
+  emailNotifications: { 
+    name: 'Email Notifications', 
+    icon: Mail, 
+    category: 'Communication',
+    description: 'Automatic email alerts'
+  },
+  
+  // Attachments & Files
+  fileAttachments: { 
+    name: 'File Attachments', 
+    icon: Paperclip, 
+    category: 'Attachments & Files',
+    description: 'Upload files, images, documents'
+  },
+  
+  // Time Tracking
+  timeTracking: { 
+    name: 'Time Tracking', 
+    icon: Timer, 
+    category: 'Time Tracking',
+    description: 'Start/stop work timer'
+  },
+  workSessions: { 
+    name: 'Work Sessions', 
+    icon: Clock, 
+    category: 'Time Tracking',
+    description: 'Record of all work sessions'
+  },
+  
+  // Workflow & Actions
+  quickActions: { 
+    name: 'Quick Actions', 
+    icon: Settings, 
+    category: 'Workflow & Actions',
+    description: 'Start Work, Stop Work, Mark Complete'
+  },
+  approvalSystem: { 
+    name: 'Approval System', 
+    icon: CheckCircle, 
+    category: 'Workflow & Actions',
+    description: 'Request approval from managers'
+  },
+  quickAssignment: { 
+    name: 'Quick Assignment', 
+    icon: Users, 
+    category: 'Workflow & Actions',
+    description: 'One-click user assignment'
+  }
+};
+
+// Default template (minimal required fields)
+const DEFAULT_TEMPLATE = {
+  title: true,
+  description: true,
+  status: true,
+  createdBy: true
+};
+
+export default function TicketDesigner({ onClose, onSave }) {
+  // Load saved template and order from localStorage
+  const loadSavedData = () => {
+    const savedTemplate = localStorage.getItem('worktrackr_ticket_template');
+    const savedOrder = localStorage.getItem('worktrackr_ticket_template_order');
+    
+    if (savedTemplate && savedOrder) {
+      return {
+        template: JSON.parse(savedTemplate),
+        order: JSON.parse(savedOrder)
+      };
+    }
+    
+    // Default template with required fields
+    const defaultTemplate = { ...DEFAULT_TEMPLATE };
+    const defaultOrder = Object.keys(defaultTemplate).filter(key => defaultTemplate[key]);
+    
+    return { template: defaultTemplate, order: defaultOrder };
+  };
+
+  const { template: initialTemplate, order: initialOrder } = loadSavedData();
+  const [selectedElements, setSelectedElements] = useState(initialTemplate);
+  const [elementOrder, setElementOrder] = useState(initialOrder);
+
+  // Group elements by category
+  const elementsByCategory = Object.entries(TICKET_ELEMENTS).reduce((acc, [key, element]) => {
+    if (!acc[element.category]) {
+      acc[element.category] = [];
+    }
+    acc[element.category].push({ key, ...element });
+    return acc;
+  }, {});
+
+  // Toggle element in template with order tracking
+  const toggleElement = (elementKey) => {
+    const element = TICKET_ELEMENTS[elementKey];
+    
+    // Don't allow removing required elements
+    if (element.required && selectedElements[elementKey]) {
+      return;
+    }
+    
+    setSelectedElements(prev => {
+      const newSelected = {
+        ...prev,
+        [elementKey]: !prev[elementKey]
+      };
+      
+      // Update order based on selection
+      if (!prev[elementKey]) {
+        // Adding element - add to end of order
+        setElementOrder(prevOrder => [...prevOrder, elementKey]);
+      } else {
+        // Removing element - remove from order
+        setElementOrder(prevOrder => prevOrder.filter(key => key !== elementKey));
+      }
+      
+      return newSelected;
+    });
+  };
+
+  // Save template and order
+  const handleSave = () => {
+    localStorage.setItem('worktrackr_ticket_template', JSON.stringify(selectedElements));
+    localStorage.setItem('worktrackr_ticket_template_order', JSON.stringify(elementOrder));
+    onSave(selectedElements);
+    onClose();
+  };
+
+  // Get element count
+  const selectedCount = Object.values(selectedElements).filter(Boolean).length;
+  const totalCount = Object.keys(TICKET_ELEMENTS).length;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[95vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b bg-gray-50">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={onClose} size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Customize Your Ticket</h2>
+              <p className="text-sm text-gray-600">
+                Design your ticket template by adding or removing elements ({selectedCount}/{totalCount} selected)
+              </p>
+            </div>
+          </div>
+          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+            <Save className="w-4 h-4 mr-2" />
+            Save Template
+          </Button>
+        </div>
+
+        <div className="flex h-[calc(95vh-120px)]">
+          {/* Left Panel - Element Library */}
+          <div className="w-1/2 border-r bg-gray-50 overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Available Elements</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Click any element to add or remove it from your ticket template
+              </p>
+              
+              {Object.entries(elementsByCategory).map(([category, elements]) => (
+                <div key={category} className="mb-6">
+                  <h4 className="font-medium text-gray-900 mb-3 text-sm uppercase tracking-wide">
+                    {category}
+                  </h4>
+                  <div className="space-y-2">
+                    {elements.map(({ key, name, icon: Icon, description, required }) => {
+                      const isSelected = selectedElements[key];
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => toggleElement(key)}
+                          disabled={required && isSelected}
+                          className={`w-full p-3 rounded-lg border text-left transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                          } ${required && isSelected ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{name}</span>
+                                {required && (
+                                  <Badge variant="secondary" className="text-xs">Required</Badge>
+                                )}
+                                {isSelected && (
+                                  <Check className="w-4 h-4 text-white ml-auto" />
+                                )}
+                              </div>
+                              <p className={`text-xs mt-1 ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
+                                {description}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Panel - Ticket Preview */}
+          <div className="w-1/2 bg-white overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Ticket Template Preview</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                This is how your ticket will look with the selected elements (in order of selection)
+              </p>
+              
+              {/* Ticket Preview Card */}
+              <Card className="border-2 border-dashed border-gray-300">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg text-gray-400">
+                        Ticket Preview
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        #TKT-XXX • {elementOrder.filter(key => selectedElements[key]).length} fields selected
+                      </CardDescription>
+                    </div>
+                    <X className="w-5 h-5 text-gray-300" />
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {/* Render elements in order */}
+                  {elementOrder.map((elementKey, index) => {
+                    if (!selectedElements[elementKey]) return null;
+                    
+                    const element = TICKET_ELEMENTS[elementKey];
+                    const Icon = element.icon;
+                    
+                    return (
+                      <div key={elementKey} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-600">
+                                {element.name}
+                              </span>
+                              {element.required && (
+                                <Badge variant="secondary" className="text-xs">Required</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {element.description}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs text-gray-500">
+                          #{index + 1}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                  
+                  {elementOrder.filter(key => selectedElements[key]).length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No elements selected</p>
+                      <p className="text-xs">Click elements on the left to add them</p>
+                    </div>
+                  )}                        [Priority]
+                      </Badge>
+                    )}
+                    {selectedElements.category && (
+                      <Badge variant="outline" className="text-gray-400 border-gray-300">
+                        [Category]
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {selectedElements.description && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Description</h4>
+                      <p className="text-gray-400 text-sm">
+                        [Ticket description will appear here]
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  {selectedElements.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-400">[Location]</span>
+                    </div>
+                  )}
+
+                  {/* Due Date */}
+                  {selectedElements.dueDate && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-400">Due: [Date]</span>
+                    </div>
+                  )}
+
+                  {/* Assignment */}
+                  {(selectedElements.assignedUser || selectedElements.createdBy) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-600">Assignment</h4>
+                      {selectedElements.assignedUser && (
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-400">Assigned to: [User]</span>
+                        </div>
+                      )}
+                      {selectedElements.createdBy && (
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-400">Created by: [User]</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* File Attachments */}
+                  {selectedElements.fileAttachments && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Attachments</h4>
+                      <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
+                        <Paperclip className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">[File upload area]</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Time Tracking */}
+                  {(selectedElements.timeTracking || selectedElements.workSessions) && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Time Tracking</h4>
+                      {selectedElements.timeTracking && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Timer className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-400">[Start/Stop Timer]</span>
+                        </div>
+                      )}
+                      {selectedElements.workSessions && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-400">Total time: [Duration]</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Comments */}
+                  {selectedElements.comments && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Comments</h4>
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <p className="text-sm text-gray-400">[Comments section]</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Actions */}
+                  {selectedElements.quickActions && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Quick Actions</h4>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button variant="outline" size="sm" disabled className="text-gray-400">
+                          Start Work
+                        </Button>
+                        <Button variant="outline" size="sm" disabled className="text-gray-400">
+                          Mark Complete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Assignment */}
+                  {selectedElements.quickAssignment && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Quick Assignment</h4>
+                      <div className="space-y-1">
+                        <Button variant="outline" size="sm" disabled className="w-full text-gray-400 justify-start">
+                          <User className="w-4 h-4 mr-2" />
+                          [User Name]
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Approval System */}
+                  {selectedElements.approvalSystem && (
+                    <div>
+                      <h4 className="font-medium text-gray-600 mb-2">Approval System</h4>
+                      <Button variant="outline" size="sm" disabled className="text-gray-400">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Request Approval
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Email Notifications */}
+                  {selectedElements.emailNotifications && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-blue-700">Email notifications enabled</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Template Summary */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Template Summary</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Your ticket template includes {selectedCount} elements:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(selectedElements)
+                    .filter(([_, selected]) => selected)
+                    .map(([key, _]) => (
+                      <Badge key={key} variant="secondary" className="text-xs">
+                        {TICKET_ELEMENTS[key].name}
+                      </Badge>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

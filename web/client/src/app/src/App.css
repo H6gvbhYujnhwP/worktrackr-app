@@ -1,0 +1,418 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+/* Mobile Responsiveness Fixes */
+@layer utilities {
+  /* Prevent horizontal overflow on mobile */
+  .mobile-container {
+    @apply max-w-full overflow-x-hidden px-2 sm:px-4;
+  }
+  
+  /* Responsive grid for CRM dashboard */
+  .crm-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+  
+  /* Responsive button layout */
+  .button-group {
+    @apply flex flex-wrap gap-2 justify-start;
+  }
+  
+  /* Mobile-friendly cards */
+  .mobile-card {
+    @apply w-full min-w-0 break-words;
+  }
+  
+  /* Responsive text */
+  .responsive-text {
+    @apply text-sm sm:text-base break-words;
+  }
+  
+  /* Mobile navigation */
+  .mobile-nav {
+    @apply flex flex-col sm:flex-row gap-2 sm:gap-4;
+  }
+  
+  /* Alphabet filter responsive */
+  .alphabet-filter {
+    @apply grid grid-cols-6 sm:grid-cols-13 lg:grid-cols-26 gap-1 text-xs sm:text-sm;
+  }
+  
+  /* Customer list responsive */
+  .customer-list {
+    @apply space-y-2 sm:space-y-4;
+  }
+  
+  /* Service table responsive */
+  .service-table {
+    @apply overflow-x-auto;
+  }
+  
+  .service-table table {
+    @apply min-w-full text-xs sm:text-sm;
+  }
+  
+  /* Input field responsive */
+  .mobile-input {
+    @apply w-full min-w-0 text-sm;
+  }
+  
+  /* Modal responsive */
+  .mobile-modal {
+    @apply w-full max-w-full sm:max-w-lg mx-2 sm:mx-auto;
+  }
+}
+
+/* Custom media queries for specific mobile fixes */
+@media (max-width: 640px) {
+  /* Force text wrapping on small screens */
+  .force-wrap {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Reduce padding on mobile */
+  .mobile-padding {
+    padding: 0.5rem !important;
+  }
+  
+  /* Stack buttons vertically on very small screens */
+  .stack-mobile {
+    flex-direction: column !important;
+  }
+  
+  /* Hide non-essential elements on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  /* Smaller font sizes for mobile */
+  .text-mobile {
+    font-size: 0.875rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screens */
+  .xs-padding {
+    padding: 0.25rem !important;
+  }
+  
+  .xs-text {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Ensure buttons don't overflow */
+  button {
+    min-width: 0 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+
+/* Ultra-compact mobile stats cards */
+@media (max-width: 640px) {
+  .mobile-card {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+  
+  .mobile-card > div {
+    padding: 2px !important;
+    height: 100% !important;
+  }
+  
+  .mobile-card p {
+    line-height: 1 !important;
+    margin: 0 !important;
+    font-size: 0.5rem !important;
+  }
+  
+  /* Make icons tiny on mobile */
+  .mobile-card svg {
+    width: 8px !important;
+    height: 8px !important;
+  }
+  
+  /* Minimal gap between cards for 4-column layout */
+  .grid.grid-cols-4 {
+    gap: 2px !important;
+  }
+  
+  /* Fix overlapping text in ticket status */
+  .ticket-status-text {
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* Mobile ticket status cards */
+@media (max-width: 640px) {
+  .mobile-ticket-card {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+  
+  .mobile-ticket-card > div {
+    padding: 3px !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .mobile-ticket-card p {
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    margin-bottom: 1px !important;
+  }
+  
+  .mobile-ticket-card .text-xs {
+    font-size: 0.55rem !important;
+    font-weight: 500 !important;
+  }
+  
+  .mobile-ticket-card svg {
+    display: none !important;
+  }
+  
+  /* Show labels on mobile, hide icons */
+  .mobile-ticket-card .block.sm\\:hidden {
+    display: block !important;
+  }
+}
+
+/* Mobile ticket tabs spacing fix */
+@media (max-width: 640px) {
+  /* Fix tab list spacing */
+  [role="tablist"] {
+    gap: 4px !important;
+    padding: 4px !important;
+    height: auto !important;
+  }
+  
+  /* Fix individual tab buttons */
+  .mobile-tab {
+    padding: 6px 2px !important;
+    height: auto !important;
+    min-height: 32px !important;
+    font-size: 0.65rem !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
+/* Desktop tabs - show full labels */
+@media (min-width: 641px) {
+  .mobile-tab:nth-child(1)::after {
+    content: " Tickets";
+  }
+  
+  .mobile-tab:nth-child(3)::after {
+    content: "ed";
+  }
+  
+
+}
+
+/* Ticket Customizer Modal Mobile Fixes */
+@media (max-width: 640px) {
+  .ticket-customizer-modal {
+    margin: 8px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+  
+  .mobile-field-card {
+    min-height: 80px !important;
+    height: auto !important;
+  }
+  
+  .mobile-field-card .line-clamp-2 {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    -webkit-box-orient: unset !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    line-height: 1.3 !important;
+    max-height: none !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  
+  .mobile-field-card span {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+  
+  .mobile-field-card .truncate {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  
+  /* Allow all text to wrap on mobile */
+  .mobile-field-card p,
+  .mobile-field-card span,
+  .mobile-field-card div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+  }
+}
+
+/* User Management Mobile Fixes */
+@media (max-width: 640px) {
+  .mobile-user-button {
+    min-width: 40px !important;
+    padding: 6px !important;
+  }
+  
+  /* Ensure user cards have proper padding and contain all elements */
+  .user-management-card {
+    padding: 16px !important;
+    overflow: hidden !important;
+  }
+  
+  /* Make sure all content stays within card boundaries */
+  .user-management-card > * {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+}
+
+
+

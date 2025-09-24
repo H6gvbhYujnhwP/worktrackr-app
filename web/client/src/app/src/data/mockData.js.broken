@@ -1,0 +1,917 @@
+// Mock data for WorkTrackr simulation
+
+export const mockUsers = [
+  {
+    id: '1',
+    name: 'John Admin',
+    email: 'admin@worktrackr.com',
+    role: 'admin',
+    isOrgOwner: true,
+    avatar: null,
+    department: 'Management',
+    emailNotifications: true,
+    status: 'active',
+    createdAt: '2024-01-15T10:00:00Z',
+    lastActive: '2024-01-20T14:30:00Z'
+  },
+  {
+    id: '2',
+    name: 'Sarah Manager',
+    email: 'sarah@worktrackr.com',
+    role: 'manager',
+    isOrgOwner: false,
+    avatar: null,
+    department: 'Operations',
+    emailNotifications: true,
+    status: 'active',
+    createdAt: '2024-01-16T09:00:00Z',
+    lastActive: '2024-01-20T13:45:00Z'
+  },
+  {
+    id: '3',
+    name: 'Mike Technician',
+    email: 'mike@worktrackr.com',
+    role: 'staff',
+    isOrgOwner: false,
+    avatar: null,
+    department: 'IT Support',
+    emailNotifications: true,
+    status: 'active',
+    createdAt: '2024-01-17T08:00:00Z',
+    lastActive: '2024-01-20T15:20:00Z'
+  },
+  {
+    id: '4',
+    name: 'Lisa Maintenance',
+    email: 'lisa@worktrackr.com',
+    role: 'staff',
+    isOrgOwner: false,
+    avatar: null,
+    department: 'Maintenance',
+    emailNotifications: false,
+    status: 'active',
+    createdAt: '2024-01-18T07:30:00Z',
+    lastActive: '2024-01-20T12:10:00Z'
+  },
+  {
+    id: '5',
+    name: 'David Inspector',
+    email: 'david@worktrackr.com',
+    role: 'staff',
+    isOrgOwner: false,
+    avatar: null,
+    department: 'Quality Control',
+    emailNotifications: true,
+    status: 'active',
+    createdAt: '2024-01-19T07:00:00Z',
+    lastActive: '2024-01-20T11:30:00Z'
+  }
+];
+
+export const mockTickets = [
+  {
+    id: 'TKT-001',
+    title: 'Broken Air Conditioning Unit - Building A',
+    description: 'The main AC unit in Building A lobby is not working. Temperature is rising and affecting tenant comfort.',
+    status: 'new',
+    priority: 'high',
+    location: 'Building A - Lobby',
+    createdBy: '2',
+    assignedTo: null,
+    createdAt: '2024-01-20T09:00:00Z',
+    updatedAt: '2024-01-20T09:00:00Z',
+    dueDate: '2024-01-22T17:00:00Z',
+    category: 'HVAC',
+    customFields: {
+      appliance: 'Carrier AC Unit Model XYZ-123',
+      urgency: '4',
+      tenantAffected: 'Yes',
+      estimatedCost: '$500-1000'
+    },
+    comments: [],
+    attachments: [],
+    workflowStage: 'awaiting_assignment'
+  },
+  {
+    id: 'TKT-002',
+    title: 'Plumbing Leak in Apartment 3B',
+    description: 'Water leak reported under kitchen sink. Tenant reports water damage to cabinet.',
+    status: 'assigned',
+    priority: 'medium',
+    location: 'Building B - Apartment 3B',
+    createdBy: '3',
+    assignedTo: '4',
+    createdAt: '2024-01-19T14:30:00Z',
+    updatedAt: '2024-01-20T08:15:00Z',
+    dueDate: '2024-01-21T12:00:00Z',
+    category: 'Plumbing',
+    customFields: {
+      appliance: 'Kitchen Sink Plumbing',
+      urgency: '3',
+      tenantAffected: 'Yes',
+      estimatedCost: '$200-400'
+    },
+    comments: [
+      {
+        id: 'c1',
+        author: '4',
+        authorName: 'Lisa Maintenance',
+        content: 'Scheduled for inspection tomorrow morning at 9 AM.',
+        createdAt: '2024-01-20T08:15:00Z'
+      }
+    ],
+    attachments: [],
+    workflowStage: 'investigation'
+  },
+  {
+    id: 'TKT-003',
+    title: 'Elevator Maintenance - Monthly Service',
+    description: 'Routine monthly elevator maintenance and safety inspection required.',
+    status: 'in_progress',
+    priority: 'low',
+    location: 'Building A - Elevator Bank',
+    createdBy: '1',
+    assignedTo: '5',
+    createdAt: '2024-01-18T10:00:00Z',
+    updatedAt: '2024-01-20T11:30:00Z',
+    dueDate: '2024-01-25T17:00:00Z',
+    category: 'Maintenance',
+    customFields: {
+      appliance: 'Otis Elevator System',
+      urgency: '2',
+      tenantAffected: 'No',
+      estimatedCost: '$300'
+    },
+    comments: [
+      {
+        id: 'c2',
+        author: '5',
+        authorName: 'David Inspector',
+        content: 'Started inspection. All safety systems functioning normally.',
+        createdAt: '2024-01-20T11:30:00Z'
+      }
+    ],
+    attachments: [],
+    workflowStage: 'work_in_progress'
+  },
+  {
+    id: 'TKT-004',
+    title: 'Security Camera Malfunction - Parking Garage',
+    description: 'Camera #7 in the parking garage is not recording. Need immediate repair for security.',
+    status: 'waiting_approval',
+    priority: 'high',
+    location: 'Parking Garage - Level 2',
+    createdBy: '2',
+    assignedTo: '3',
+    createdAt: '2024-01-20T07:45:00Z',
+    updatedAt: '2024-01-20T10:20:00Z',
+    dueDate: '2024-01-21T17:00:00Z',
+    category: 'Security',
+    customFields: {
+      appliance: 'Hikvision Security Camera DS-2CD2143G0-I',
+      urgency: '4',
+      tenantAffected: 'No',
+      estimatedCost: '$800-1200'
+    },
+    comments: [
+      {
+        id: 'c3',
+        author: '3',
+        authorName: 'Mike Technician',
+        content: 'Camera needs replacement. Requesting approval for purchase order.',
+        createdAt: '2024-01-20T10:20:00Z'
+      }
+    ],
+    attachments: [],
+    workflowStage: 'awaiting_authorization'
+  },
+  {
+    id: 'TKT-005',
+    title: 'Landscaping - Winter Cleanup',
+    description: 'Remove dead plants and prepare garden beds for spring planting.',
+    status: 'completed',
+    priority: 'low',
+    location: 'Building Exterior - Garden Areas',
+    createdBy: '1',
+    assignedTo: '4',
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-01-19T16:00:00Z',
+    dueDate: '2024-01-30T17:00:00Z',
+    category: 'Landscaping',
+    customFields: {
+      appliance: 'Garden Maintenance',
+      urgency: '1',
+      tenantAffected: 'No',
+      estimatedCost: '$400'
+    },
+    comments: [
+      {
+        id: 'c4',
+        author: '4',
+        authorName: 'Lisa Maintenance',
+        content: 'Cleanup completed. Garden beds ready for spring.',
+        createdAt: '2024-01-19T16:00:00Z'
+      }
+    ],
+    attachments: [],
+    workflowStage: 'completed'
+  },
+  {
+    id: 'TKT-006',
+    title: 'Internet Connectivity Issues - Office Suite 4A',
+    description: 'Tenant reporting intermittent internet connection drops affecting their business operations.',
+    status: 'parked',
+    priority: 'medium',
+    location: 'Building A - Office Suite 4A',
+    createdBy: '2',
+    assignedTo: '3',
+    createdAt: '2024-01-17T13:20:00Z',
+    updatedAt: '2024-01-19T09:30:00Z',
+    dueDate: '2024-01-23T17:00:00Z',
+    category: 'IT Support',
+    customFields: {
+      appliance: 'Network Infrastructure',
+      urgency: '3',
+      tenantAffected: 'Yes',
+      estimatedCost: '$200-500'
+    },
+    comments: [
+      {
+        id: 'c5',
+        author: '3',
+        authorName: 'Mike Technician',
+        content: 'Waiting for ISP to investigate line issues. Parked until external resolution.',
+        createdAt: '2024-01-19T09:30:00Z'
+      }
+    ],
+    attachments: [],
+export const mockTickets = [];
+
+export const mockWorkflows = [
+  {
+    id: 'wf-1',
+    name: 'Maintenance Request Workflow',
+    description: 'Standard workflow for maintenance requests with approval process',
+    isActive: true,
+    createdAt: '2024-01-15T10:00:00Z',
+    triggers: [
+      {
+        type: 'ticket.created',
+        conditions: [
+          { field: 'category', operator: 'equals', value: 'Maintenance' }
+        ]
+      }
+    ],
+    actions: [
+      { type: 'assign.team', target: 'maintenance_team' },
+      { type: 'request.approval', target: 'manager', threshold: '$500' },
+      { type: 'send.email', template: 'maintenance_created' }
+    ]
+  },
+  {
+    id: 'wf-2',
+    name: 'Emergency Response Workflow',
+    description: 'High-priority workflow for emergency situations',
+    isActive: true,
+    createdAt: '2024-01-15T10:30:00Z',
+    triggers: [
+      {
+        type: 'ticket.created',
+        conditions: [
+          { field: 'priority', operator: 'equals', value: 'high' }
+        ]
+      }
+    ],
+    actions: [
+      { type: 'assign.user', target: 'on_call_manager' },
+      { type: 'send.email', template: 'emergency_alert' },
+      { type: 'schedule.escalation', hours: 2 }
+    ]
+  }
+];
+
+export const mockOrganization = {
+  id: 'org-1',
+  name: 'Property Management Co.',
+  planName: 'Professional',
+  currentPeriodEnd: '2024-02-20T00:00:00Z',
+  trialEnd: null,
+  stripeCustomerId: 'cus_test123',
+  currentWorkflow: 'emergency_response_test',
+  workflows: [
+    {
+      id: 'emergency_response_test',
+      name: 'Emergency Response Test',
+      description: 'Custom emergency response workflow',
+      industry: 'Emergency Services',
+      isActive: true,
+      createdBy: 1,
+      createdAt: '2024-01-15',
+      stages: ['New', 'Dispatched', 'On Scene', 'Resolved', 'Closed'],
+      triggers: [
+        { type: 'ticket_created', condition: 'priority = High' },
+        { type: 'time_elapsed', condition: '30 minutes' }
+      ],
+      actions: [
+        { type: 'notify_manager', condition: 'priority = High' },
+        { type: 'escalate', condition: 'time_elapsed > 1 hour' }
+      ]
+    },
+    {
+      id: 'maintenance_workflow',
+      name: 'Maintenance Operations',
+      description: 'Standard maintenance workflow',
+      industry: 'Facilities Management',
+      isActive: false,
+      createdBy: 1,
+      createdAt: '2024-01-10',
+      stages: ['New', 'Assigned', 'In Progress', 'Completed', 'Closed'],
+      triggers: [
+        { type: 'ticket_created', condition: 'category = Maintenance' }
+      ],
+      actions: [
+        { type: 'assign_technician', condition: 'category = Maintenance' }
+      ]
+    }
+  ],
+  branding: {
+    productName: 'WorkTrackr Cloud',
+    primaryColor: '#0ea5e9',
+    accentColor: '#22c55e',
+    logoUrl: null
+  },
+  settings: {
+    emailNotifications: true,
+    slaTracking: true,
+    customFields: true
+  }
+};
+
+export const mockEmailLogs = [
+  {
+    id: 'email-1',
+    ticketId: 'TKT-001',
+    to: 'admin@worktrackr.com',
+    subject: 'New Ticket Created: Broken Air Conditioning Unit',
+    template: 'ticket_created',
+    status: 'sent',
+    sentAt: '2024-01-20T09:01:00Z'
+  },
+  {
+    id: 'email-2',
+    ticketId: 'TKT-002',
+    to: 'lisa@worktrackr.com',
+    subject: 'Ticket Assigned: Plumbing Leak in Apartment 3B',
+    template: 'ticket_assigned',
+    status: 'sent',
+    sentAt: '2024-01-20T08:16:00Z'
+  },
+  {
+    id: 'email-3',
+    ticketId: 'TKT-004',
+    to: 'sarah@worktrackr.com',
+    subject: 'Approval Required: Security Camera Replacement',
+    template: 'approval_request',
+    status: 'sent',
+    sentAt: '2024-01-20T10:21:00Z'
+  }
+];
+
+// Ticket status definitions
+export const ticketStatuses = {
+  new: { label: 'New', color: 'bg-blue-100 text-blue-800', icon: 'Plus' },
+  assigned: { label: 'Assigned', color: 'bg-yellow-100 text-yellow-800', icon: 'User' },
+  in_progress: { label: 'In Progress', color: 'bg-orange-100 text-orange-800', icon: 'Clock' },
+  waiting_approval: { label: 'Waiting Approval', color: 'bg-purple-100 text-purple-800', icon: 'AlertCircle' },
+  parked: { label: 'Parked', color: 'bg-gray-100 text-gray-800', icon: 'Pause' },
+  completed: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: 'CheckCircle' },
+  closed: { label: 'Deleted', color: 'bg-slate-100 text-slate-800', icon: 'X' }
+};
+
+// Priority definitions
+export const priorities = {
+  low: { label: 'Low', color: 'bg-green-100 text-green-800', value: 1 },
+  medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800', value: 2 },
+  high: { label: 'High', color: 'bg-red-100 text-red-800', value: 3 },
+  critical: { label: 'Critical', color: 'bg-red-200 text-red-900', value: 4 }
+};
+
+// Workflow stages
+export const workflowStages = {
+  awaiting_assignment: 'Awaiting Assignment',
+  investigation: 'Investigation',
+  awaiting_authorization: 'Awaiting Authorization',
+  materials_pending: 'Materials Pending',
+  work_in_progress: 'Work in Progress',
+  external_dependency: 'External Dependency',
+  completed: 'Completed',
+  closed: 'Closed'
+};
+
+// Categories
+export const categories = [
+  'HVAC',
+  'Plumbing',
+  'Electrical',
+  'Maintenance',
+  'Security',
+  'IT Support',
+  'Landscaping',
+  'Cleaning',
+  'Emergency',
+  'Other'
+];
+
+
+// Organization data
+export const mockOrganizationExtended = {
+  id: 'org-1',
+  name: 'Property Management Co.',
+  subscription: {
+    plan: 'pro',
+    maxUsers: 25,
+    currentUsers: 5,
+    additionalSeats: 0,
+    billingCycle: 'monthly',
+    amount: 99,
+    status: 'active',
+    nextBilling: '2024-02-20',
+    stripeCustomerId: 'cus_example123',
+    stripeSubscriptionId: 'sub_example456',
+    stripePlanPriceId: 'price_pro_99',
+    stripeAdditionalSeatPriceId: 'price_additional_seat_7'
+  },
+  settings: {
+    emailNotifications: {
+      newTickets: true,
+      assignments: true,
+      statusChanges: true,
+      approvals: true,
+      dailySummary: false
+    },
+    workflowSettings: {
+      autoAssignment: true,
+      approvalThreshold: 500,
+      escalationHours: 24
+    }
+  },
+  createdAt: '2024-01-01T00:00:00Z'
+};
+
+// Subscription plans
+export const subscriptionPlans = {
+  starter: { 
+    id: 'starter',
+    name: 'Starter', 
+    maxUsers: 5, 
+    price: 49,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_starter_49',
+    features: [
+      'Up to 5 users',
+      'Basic ticket management', 
+      'Email notifications', 
+      'Mobile app access',
+      'Standard support'
+    ]
+  },
+  pro: { 
+    id: 'pro',
+    name: 'Pro', 
+    maxUsers: 25, 
+    price: 99,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_pro_99',
+    features: [
+      'Up to 25 users',
+      'Advanced workflow automation', 
+      'Custom fields & forms', 
+      'Reporting & analytics', 
+      'Priority support',
+      'API access'
+    ]
+  },
+  enterprise: { 
+    id: 'enterprise',
+    name: 'Enterprise', 
+    maxUsers: 100, 
+    price: 299,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_enterprise_299',
+    features: [
+      'Up to 100 users',
+      'Advanced workflow builder', 
+      'White-label branding', 
+      'SSO integration',
+      'Dedicated support',
+      'Custom integrations',
+      'Advanced reporting'
+    ]
+  }
+};
+
+// Additional seat pricing
+export const additionalSeatPrice = {
+  price: 7,
+  currency: '£',
+  interval: 'month',
+  stripePriceId: 'price_additional_seat_7'
+};
+
+
+
+// Comprehensive workflow templates for various industries
+export const workflowTemplates = [
+  // Emergency Services
+  {
+    id: 'emergency_response',
+    name: 'Emergency Response',
+    industry: 'Emergency Services',
+    description: 'Critical incident response with rapid deployment and escalation protocols',
+    icon: '🚨',
+    stages: ['Alert Received', 'Dispatched', 'En Route', 'On Scene', 'Incident Resolved', 'Report Filed', 'Closed'],
+    customFields: [
+      { name: 'incident_type', label: 'Incident Type', type: 'select', options: ['Fire', 'Medical', 'Accident', 'Security', 'Natural Disaster'] },
+      { name: 'severity_level', label: 'Severity Level', type: 'select', options: ['Critical', 'High', 'Medium', 'Low'] },
+      { name: 'location_coordinates', label: 'GPS Coordinates', type: 'text' },
+      { name: 'response_team', label: 'Response Team', type: 'select', options: ['Fire Department', 'Paramedics', 'Police', 'Hazmat', 'Search & Rescue'] },
+      { name: 'estimated_arrival', label: 'ETA', type: 'datetime' }
+    ],
+    triggers: [
+      { type: 'ticket_created', condition: 'severity_level = Critical', action: 'immediate_dispatch' },
+      { type: 'time_elapsed', condition: '5 minutes', action: 'escalate_to_supervisor' },
+      { type: 'location_change', condition: 'responder_arrived', action: 'update_status_on_scene' }
+    ],
+    automations: [
+      { trigger: 'severity_level = Critical', action: 'notify_all_supervisors' },
+      { trigger: 'time_elapsed > 15_minutes', action: 'request_backup' },
+      { trigger: 'status = resolved', action: 'generate_incident_report' }
+    ]
+  },
+
+  // Delivery & Logistics
+  {
+    id: 'delivery_logistics',
+    name: 'Delivery & Logistics',
+    industry: 'Transportation & Logistics',
+    description: 'End-to-end delivery management with route optimization and customer notifications',
+    icon: '🚚',
+    stages: ['Order Received', 'Warehouse Pickup', 'In Transit', 'Out for Delivery', 'Delivered', 'Confirmed', 'Closed'],
+    customFields: [
+      { name: 'delivery_address', label: 'Delivery Address', type: 'text' },
+      { name: 'package_weight', label: 'Package Weight (kg)', type: 'number' },
+      { name: 'delivery_window', label: 'Delivery Window', type: 'select', options: ['Morning (9-12)', 'Afternoon (12-17)', 'Evening (17-20)', 'Next Day', 'Express'] },
+      { name: 'driver_assigned', label: 'Driver', type: 'user_select' },
+      { name: 'vehicle_type', label: 'Vehicle Type', type: 'select', options: ['Van', 'Truck', 'Motorcycle', 'Bicycle'] },
+      { name: 'tracking_number', label: 'Tracking Number', type: 'text' },
+      { name: 'customer_phone', label: 'Customer Phone', type: 'phone' },
+      { name: 'special_instructions', label: 'Special Instructions', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'order_received', condition: 'delivery_window = Express', action: 'priority_processing' },
+      { type: 'location_update', condition: 'driver_location_changed', action: 'update_customer_eta' },
+      { type: 'delivery_attempted', condition: 'customer_not_available', action: 'schedule_redelivery' }
+    ],
+    automations: [
+      { trigger: 'status = in_transit', action: 'send_customer_tracking_link' },
+      { trigger: 'status = out_for_delivery', action: 'notify_customer_eta' },
+      { trigger: 'delivery_confirmed', action: 'send_delivery_confirmation' }
+    ]
+  },
+
+  // Maintenance Services
+  {
+    id: 'maintenance_services',
+    name: 'Maintenance Services',
+    industry: 'Facilities Management',
+    description: 'Comprehensive maintenance workflow with preventive scheduling and asset tracking',
+    icon: '🔧',
+    stages: ['Request Submitted', 'Assessment', 'Parts Ordered', 'Scheduled', 'In Progress', 'Testing', 'Completed', 'Closed'],
+    customFields: [
+      { name: 'asset_id', label: 'Asset ID', type: 'text' },
+      { name: 'maintenance_type', label: 'Maintenance Type', type: 'select', options: ['Preventive', 'Corrective', 'Emergency', 'Upgrade'] },
+      { name: 'equipment_category', label: 'Equipment Category', type: 'select', options: ['HVAC', 'Electrical', 'Plumbing', 'Mechanical', 'IT Equipment', 'Safety Systems'] },
+      { name: 'technician_required', label: 'Technician Skill Level', type: 'select', options: ['Level 1', 'Level 2', 'Level 3', 'Specialist'] },
+      { name: 'parts_needed', label: 'Parts Required', type: 'textarea' },
+      { name: 'estimated_duration', label: 'Estimated Duration (hours)', type: 'number' },
+      { name: 'safety_requirements', label: 'Safety Requirements', type: 'textarea' },
+      { name: 'downtime_impact', label: 'Downtime Impact', type: 'select', options: ['None', 'Low', 'Medium', 'High', 'Critical'] }
+    ],
+    triggers: [
+      { type: 'maintenance_type', condition: 'Emergency', action: 'immediate_assignment' },
+      { type: 'parts_availability', condition: 'parts_in_stock', action: 'schedule_work' },
+      { type: 'downtime_impact', condition: 'Critical', action: 'notify_management' }
+    ],
+    automations: [
+      { trigger: 'parts_ordered', action: 'update_estimated_completion' },
+      { trigger: 'work_completed', action: 'schedule_quality_check' },
+      { trigger: 'preventive_maintenance_due', action: 'create_maintenance_ticket' }
+    ]
+  },
+
+  // Electrical Services
+  {
+    id: 'electrical_services',
+    name: 'Electrical Services',
+    industry: 'Electrical Contracting',
+    description: 'Electrical work management with safety protocols and compliance tracking',
+    icon: '⚡',
+    stages: ['Service Request', 'Safety Assessment', 'Permit Required', 'Work Scheduled', 'Power Isolation', 'Work in Progress', 'Testing & Inspection', 'Power Restored', 'Completed', 'Closed'],
+    customFields: [
+      { name: 'electrical_system', label: 'Electrical System', type: 'select', options: ['Residential', 'Commercial', 'Industrial', 'High Voltage'] },
+      { name: 'work_type', label: 'Work Type', type: 'select', options: ['Installation', 'Repair', 'Maintenance', 'Upgrade', 'Inspection', 'Emergency'] },
+      { name: 'voltage_level', label: 'Voltage Level', type: 'select', options: ['Low Voltage (<1kV)', 'Medium Voltage (1-35kV)', 'High Voltage (>35kV)'] },
+      { name: 'permit_required', label: 'Permit Required', type: 'boolean' },
+      { name: 'safety_lockout', label: 'Lockout/Tagout Required', type: 'boolean' },
+      { name: 'certified_electrician', label: 'Certified Electrician', type: 'user_select' },
+      { name: 'materials_list', label: 'Materials Required', type: 'textarea' },
+      { name: 'circuit_details', label: 'Circuit Details', type: 'textarea' },
+      { name: 'test_results', label: 'Test Results', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'work_type', condition: 'Emergency', action: 'immediate_response' },
+      { type: 'voltage_level', condition: 'High Voltage', action: 'require_specialist' },
+      { type: 'permit_required', condition: 'true', action: 'obtain_permits' }
+    ],
+    automations: [
+      { trigger: 'safety_assessment_complete', action: 'schedule_work' },
+      { trigger: 'work_completed', action: 'mandatory_testing' },
+      { trigger: 'testing_passed', action: 'restore_power' }
+    ]
+  },
+
+  // Plumbing Services
+  {
+    id: 'plumbing_services',
+    name: 'Plumbing Services',
+    industry: 'Plumbing Contracting',
+    description: 'Plumbing service workflow with emergency response and water damage prevention',
+    icon: '🚿',
+    stages: ['Call Received', 'Initial Assessment', 'Quote Provided', 'Work Scheduled', 'On Site', 'Diagnosis', 'Repair in Progress', 'Testing', 'Cleanup', 'Completed', 'Follow-up', 'Closed'],
+    customFields: [
+      { name: 'issue_type', label: 'Issue Type', type: 'select', options: ['Leak', 'Blockage', 'Installation', 'Repair', 'Maintenance', 'Emergency'] },
+      { name: 'location_type', label: 'Location', type: 'select', options: ['Kitchen', 'Bathroom', 'Basement', 'Exterior', 'Commercial Space'] },
+      { name: 'urgency_level', label: 'Urgency', type: 'select', options: ['Emergency', 'Urgent', 'Standard', 'Scheduled'] },
+      { name: 'water_shutoff', label: 'Water Shutoff Required', type: 'boolean' },
+      { name: 'plumber_assigned', label: 'Plumber', type: 'user_select' },
+      { name: 'materials_needed', label: 'Materials Needed', type: 'textarea' },
+      { name: 'estimated_cost', label: 'Estimated Cost', type: 'currency' },
+      { name: 'water_damage_risk', label: 'Water Damage Risk', type: 'select', options: ['None', 'Low', 'Medium', 'High'] }
+    ],
+    triggers: [
+      { type: 'urgency_level', condition: 'Emergency', action: 'immediate_dispatch' },
+      { type: 'water_damage_risk', condition: 'High', action: 'priority_response' },
+      { type: 'issue_type', condition: 'Leak', action: 'water_shutoff_guidance' }
+    ],
+    automations: [
+      { trigger: 'emergency_call', action: 'send_immediate_response_team' },
+      { trigger: 'work_completed', action: 'test_water_pressure' },
+      { trigger: 'job_closed', action: 'schedule_follow_up_call' }
+    ]
+  },
+
+  // Stock Management
+  {
+    id: 'inventory_management',
+    name: 'Inventory Management',
+    industry: 'Retail & Warehousing',
+    description: 'Comprehensive stock management with automated reordering and cycle counting',
+    icon: '📦',
+    stages: ['Stock Request', 'Availability Check', 'Reservation', 'Pick & Pack', 'Quality Check', 'Dispatch', 'Delivered', 'Stock Updated', 'Closed'],
+    customFields: [
+      { name: 'product_sku', label: 'Product SKU', type: 'text' },
+      { name: 'quantity_requested', label: 'Quantity Requested', type: 'number' },
+      { name: 'warehouse_location', label: 'Warehouse Location', type: 'select', options: ['Main Warehouse', 'Overflow Storage', 'Cold Storage', 'Hazmat Storage'] },
+      { name: 'stock_level', label: 'Current Stock Level', type: 'number' },
+      { name: 'reorder_point', label: 'Reorder Point', type: 'number' },
+      { name: 'supplier_info', label: 'Supplier', type: 'text' },
+      { name: 'expiry_date', label: 'Expiry Date', type: 'date' },
+      { name: 'batch_number', label: 'Batch Number', type: 'text' },
+      { name: 'storage_requirements', label: 'Storage Requirements', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'stock_level', condition: 'below_reorder_point', action: 'create_purchase_order' },
+      { type: 'expiry_date', condition: 'within_30_days', action: 'priority_dispatch' },
+      { type: 'quantity_requested', condition: 'exceeds_available', action: 'partial_fulfillment' }
+    ],
+    automations: [
+      { trigger: 'stock_received', action: 'update_inventory_levels' },
+      { trigger: 'item_dispatched', action: 'reduce_stock_count' },
+      { trigger: 'low_stock_alert', action: 'notify_procurement_team' }
+    ]
+  },
+
+  // Office Administration
+  {
+    id: 'office_administration',
+    name: 'Office Administration',
+    industry: 'Corporate Services',
+    description: 'General office workflow for administrative tasks and document processing',
+    icon: '📋',
+    stages: ['Request Submitted', 'Initial Review', 'Approval Required', 'Processing', 'Documentation', 'Quality Check', 'Completed', 'Filed', 'Closed'],
+    customFields: [
+      { name: 'request_type', label: 'Request Type', type: 'select', options: ['Document Processing', 'Meeting Setup', 'Travel Arrangement', 'Equipment Request', 'Vendor Management', 'HR Request'] },
+      { name: 'department', label: 'Department', type: 'select', options: ['HR', 'Finance', 'IT', 'Operations', 'Marketing', 'Legal'] },
+      { name: 'priority_level', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High', 'Urgent'] },
+      { name: 'approval_required', label: 'Approval Required', type: 'boolean' },
+      { name: 'approver', label: 'Approver', type: 'user_select' },
+      { name: 'budget_impact', label: 'Budget Impact', type: 'currency' },
+      { name: 'deadline', label: 'Deadline', type: 'date' },
+      { name: 'documents_attached', label: 'Documents Attached', type: 'file_upload' }
+    ],
+    triggers: [
+      { type: 'priority_level', condition: 'Urgent', action: 'immediate_processing' },
+      { type: 'approval_required', condition: 'true', action: 'route_to_approver' },
+      { type: 'budget_impact', condition: 'over_threshold', action: 'finance_approval' }
+    ],
+    automations: [
+      { trigger: 'approval_received', action: 'proceed_to_processing' },
+      { trigger: 'deadline_approaching', action: 'send_reminder' },
+      { trigger: 'task_completed', action: 'update_records' }
+    ]
+  },
+
+  // Healthcare Services
+  {
+    id: 'healthcare_services',
+    name: 'Healthcare Services',
+    industry: 'Healthcare',
+    description: 'Patient care workflow with appointment scheduling and medical record management',
+    icon: '🏥',
+    stages: ['Appointment Request', 'Scheduling', 'Patient Check-in', 'Consultation', 'Treatment', 'Follow-up Required', 'Billing', 'Records Updated', 'Closed'],
+    customFields: [
+      { name: 'patient_id', label: 'Patient ID', type: 'text' },
+      { name: 'appointment_type', label: 'Appointment Type', type: 'select', options: ['Consultation', 'Follow-up', 'Emergency', 'Procedure', 'Screening'] },
+      { name: 'healthcare_provider', label: 'Healthcare Provider', type: 'user_select' },
+      { name: 'medical_specialty', label: 'Medical Specialty', type: 'select', options: ['General Practice', 'Cardiology', 'Orthopedics', 'Dermatology', 'Pediatrics'] },
+      { name: 'insurance_info', label: 'Insurance Information', type: 'text' },
+      { name: 'symptoms', label: 'Symptoms/Reason', type: 'textarea' },
+      { name: 'medical_history', label: 'Relevant Medical History', type: 'textarea' },
+      { name: 'treatment_plan', label: 'Treatment Plan', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'appointment_type', condition: 'Emergency', action: 'immediate_scheduling' },
+      { type: 'follow_up_required', condition: 'true', action: 'schedule_follow_up' },
+      { type: 'treatment_completed', condition: 'true', action: 'update_medical_records' }
+    ],
+    automations: [
+      { trigger: 'appointment_scheduled', action: 'send_confirmation' },
+      { trigger: 'appointment_reminder', action: 'notify_patient_24h_before' },
+      { trigger: 'consultation_complete', action: 'generate_treatment_summary' }
+    ]
+  },
+
+  // IT Support
+  {
+    id: 'it_support_services',
+    name: 'IT Support Services',
+    industry: 'Information Technology',
+    description: 'Technical support workflow with escalation tiers and knowledge base integration',
+    icon: '💻',
+    stages: ['Ticket Created', 'Initial Triage', 'Level 1 Support', 'Level 2 Escalation', 'Level 3 Escalation', 'Resolution', 'Testing', 'User Confirmation', 'Knowledge Base Updated', 'Closed'],
+    customFields: [
+      { name: 'issue_category', label: 'Issue Category', type: 'select', options: ['Hardware', 'Software', 'Network', 'Security', 'Email', 'Printer', 'Mobile Device'] },
+      { name: 'severity_level', label: 'Severity', type: 'select', options: ['Critical', 'High', 'Medium', 'Low'] },
+      { name: 'affected_users', label: 'Number of Affected Users', type: 'number' },
+      { name: 'device_info', label: 'Device Information', type: 'textarea' },
+      { name: 'error_message', label: 'Error Message', type: 'textarea' },
+      { name: 'steps_to_reproduce', label: 'Steps to Reproduce', type: 'textarea' },
+      { name: 'assigned_technician', label: 'Assigned Technician', type: 'user_select' },
+      { name: 'resolution_notes', label: 'Resolution Notes', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'severity_level', condition: 'Critical', action: 'immediate_escalation' },
+      { type: 'affected_users', condition: 'more_than_10', action: 'priority_handling' },
+      { type: 'issue_category', condition: 'Security', action: 'security_team_notification' }
+    ],
+    automations: [
+      { trigger: 'ticket_created', action: 'auto_assign_based_on_category' },
+      { trigger: 'resolution_provided', action: 'request_user_confirmation' },
+      { trigger: 'ticket_closed', action: 'update_knowledge_base' }
+    ]
+  },
+
+  // Food Service
+  {
+    id: 'food_service_management',
+    name: 'Food Service Management',
+    industry: 'Food & Beverage',
+    description: 'Restaurant and food service operations with order management and quality control',
+    icon: '🍽️',
+    stages: ['Order Received', 'Kitchen Queue', 'Preparation', 'Quality Check', 'Ready for Service', 'Served', 'Payment', 'Table Cleared', 'Feedback', 'Closed'],
+    customFields: [
+      { name: 'order_type', label: 'Order Type', type: 'select', options: ['Dine-in', 'Takeaway', 'Delivery', 'Catering'] },
+      { name: 'table_number', label: 'Table Number', type: 'text' },
+      { name: 'menu_items', label: 'Menu Items', type: 'textarea' },
+      { name: 'special_requests', label: 'Special Requests', type: 'textarea' },
+      { name: 'allergies', label: 'Allergies/Dietary Requirements', type: 'textarea' },
+      { name: 'preparation_time', label: 'Estimated Prep Time (minutes)', type: 'number' },
+      { name: 'chef_assigned', label: 'Chef Assigned', type: 'user_select' },
+      { name: 'order_total', label: 'Order Total', type: 'currency' }
+    ],
+    triggers: [
+      { type: 'order_type', condition: 'Delivery', action: 'assign_delivery_driver' },
+      { type: 'allergies', condition: 'present', action: 'kitchen_alert' },
+      { type: 'preparation_time', condition: 'over_30_minutes', action: 'customer_notification' }
+    ],
+    automations: [
+      { trigger: 'order_ready', action: 'notify_service_staff' },
+      { trigger: 'payment_complete', action: 'generate_receipt' },
+      { trigger: 'order_delivered', action: 'request_feedback' }
+    ]
+  },
+
+  // Construction Management
+  {
+    id: 'construction_management',
+    name: 'Construction Management',
+    industry: 'Construction',
+    description: 'Construction project workflow with safety compliance and progress tracking',
+    icon: '🏗️',
+    stages: ['Project Request', 'Site Survey', 'Permits & Approvals', 'Material Procurement', 'Work Commenced', 'Progress Inspection', 'Quality Control', 'Final Inspection', 'Handover', 'Closed'],
+    customFields: [
+      { name: 'project_type', label: 'Project Type', type: 'select', options: ['New Construction', 'Renovation', 'Repair', 'Demolition', 'Infrastructure'] },
+      { name: 'site_location', label: 'Site Location', type: 'text' },
+      { name: 'contractor_assigned', label: 'Contractor', type: 'user_select' },
+      { name: 'safety_requirements', label: 'Safety Requirements', type: 'textarea' },
+      { name: 'materials_list', label: 'Materials Required', type: 'textarea' },
+      { name: 'estimated_duration', label: 'Estimated Duration (days)', type: 'number' },
+      { name: 'budget_allocated', label: 'Budget Allocated', type: 'currency' },
+      { name: 'permits_required', label: 'Permits Required', type: 'textarea' }
+    ],
+    triggers: [
+      { type: 'project_type', condition: 'Demolition', action: 'safety_briefing_required' },
+      { type: 'budget_allocated', condition: 'over_threshold', action: 'management_approval' },
+      { type: 'permits_required', condition: 'true', action: 'obtain_permits' }
+    ],
+    automations: [
+      { trigger: 'permits_approved', action: 'schedule_work_commencement' },
+      { trigger: 'work_commenced', action: 'daily_progress_reports' },
+      { trigger: 'project_completed', action: 'schedule_final_inspection' }
+    ]
+  },
+
+  // Legal Services
+  {
+    id: 'legal_services',
+    name: 'Legal Services',
+    industry: 'Legal',
+    description: 'Legal case management with document tracking and deadline monitoring',
+    icon: '⚖️',
+    stages: ['Case Intake', 'Initial Review', 'Research', 'Document Preparation', 'Client Review', 'Filing', 'Court Proceedings', 'Resolution', 'Case Closed'],
+    customFields: [
+      { name: 'case_type', label: 'Case Type', type: 'select', options: ['Corporate Law', 'Family Law', 'Criminal Law', 'Real Estate', 'Intellectual Property', 'Employment Law'] },
+      { name: 'client_name', label: 'Client Name', type: 'text' },
+      { name: 'opposing_party', label: 'Opposing Party', type: 'text' },
+      { name: 'court_jurisdiction', label: 'Court Jurisdiction', type: 'text' },
+      { name: 'case_priority', label: 'Case Priority', type: 'select', options: ['Low', 'Medium', 'High', 'Urgent'] },
+      { name: 'assigned_lawyer', label: 'Assigned Lawyer', type: 'user_select' },
+      { name: 'key_deadlines', label: 'Key Deadlines', type: 'textarea' },
+      { name: 'case_value', label: 'Case Value', type: 'currency' }
+    ],
+    triggers: [
+      { type: 'case_priority', condition: 'Urgent', action: 'immediate_assignment' },
+      { type: 'key_deadlines', condition: 'approaching', action: 'deadline_alert' },
+      { type: 'case_value', condition: 'high_value', action: 'senior_lawyer_assignment' }
+    ],
+    automations: [
+      { trigger: 'case_intake_complete', action: 'assign_case_number' },
+      { trigger: 'document_filed', action: 'update_case_status' },
+      { trigger: 'case_resolved', action: 'generate_final_report' }
+    ]
+  },
+
+  // Real Estate Management
+  {
+    id: 'real_estate_management',
+    name: 'Real Estate Management',
+    industry: 'Real Estate',
+    description: 'Property management workflow with tenant services and maintenance coordination',
+    icon: '🏠',
+    stages: ['Request Received', 'Property Assessment', 'Tenant Notification', 'Vendor Assignment', 'Work Scheduled', 'Access Arranged', 'Work Completed', 'Quality Check', 'Tenant Confirmation', 'Closed'],
+    customFields: [
+      { name: 'property_address', label: 'Property Address', type: 'text' },
+      { name: 'tenant_name', label: 'Tenant Name', type: 'text' },
+      { name: 'issue_category', label: 'Issue Category', type: 'select', options: ['Maintenance', 'Repair', 'Inspection', 'Tenant Request', 'Emergency'] },
+      { name: 'property_type', label: 'Property Type', type: 'select', options: ['Residential', 'Commercial', 'Industrial', 'Mixed Use'] },
+      { name: 'access_required', label: 'Property Access Required', type: 'boolean' },
+      { name: 'tenant_availability', label: 'Tenant Availability', type: 'textarea' },
+      { name: 'vendor_assigned', label: 'Vendor Assigned', type: 'user_select' },
+      { name: 'estimated_cost', label: 'Estimated Cost', type: 'currency' }
+    ],
+    triggers: [
+      { type: 'issue_category', condition: 'Emergency', action: 'immediate_response' },
+      { type: 'access_required', condition: 'true', action: 'schedule_with_tenant' },
+      { type: 'estimated_cost', condition: 'over_threshold', action: 'owner_approval' }
+    ],
+    automations: [
+      { trigger: 'work_scheduled', action: 'notify_tenant_24h_advance' },
+      { trigger: 'work_completed', action: 'request_tenant_confirmation' },
+      { trigger: 'issue_resolved', action: 'update_property_records' }
+    ]
+  }
+];
+

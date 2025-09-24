@@ -1,0 +1,861 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Clock, 
+  CheckCircle, 
+  AlertCircle, 
+  Archive, 
+  Pause, 
+  Play, 
+  Download, 
+  Copy, 
+  FileText, 
+  Eye, 
+  Edit, 
+  Trash2,
+  Filter,
+  Search,
+  MoreHorizontal,
+  DollarSign,
+  Calendar,
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  ExternalLink
+} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Button } from '@/components/ui/button.jsx';
+import { Badge } from '@/components/ui/badge.jsx';
+import { Input } from '@/components/ui/input.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
+
+const BillingQueueManager = ({ onManualProcess }) => {
+  const [queueItems, setQueueItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [showDetails, setShowDetails] = useState(null);
+
+  // Initialize empty billing queue
+  useEffect(() => {
+    const sampleData = [
+      {
+        queueItemId: 'BQ-001',
+        ticketId: 'TKT-001',
+        status: 'pending_review',
+        addedToQueueAt: '2024-09-20T10:30:00Z',
+        processedAt: null,
+        processingNotes: '',
+        ticketData: {
+          customer: {
+            name: 'Sarah Johnson',
+            email: 'sarah.johnson@email.com',
+            phone: '+44 20 7123 4567',
+            address: {
+              line1: '123 High Street',
+              city: 'London',
+              postcode: 'SW1A 1AA',
+              country: 'UK'
+            }
+          },
+          service: {
+            description: 'Electrical Safety Inspection',
+            category: 'Inspection',
+            dateCompleted: '2024-09-20',
+            timeSpent: '2.5 hours',
+            hourlyRate: 60.00
+          },
+          billing: {
+            laborCost: 150.00,
+            materialCosts: [
+              { item: 'Safety Certificate', cost: 15.00 },
+              { item: 'Testing Equipment Usage', cost: 25.00 }
+            ],
+            travelCost: 0.00,
+            totalBeforeTax: 190.00,
+            taxRate: 20,
+            taxAmount: 38.00,
+            totalAmount: 228.00
+          },
+          customFields: {
+            projectReference: 'PROJ-2024-001',
+            purchaseOrderNumber: 'PO-12345'
+          }
+        }
+      },
+      {
+        queueItemId: 'BQ-002',
+        ticketId: 'TKT-002',
+        status: 'ready_for_processing',
+        addedToQueueAt: '2024-09-19T14:15:00Z',
+        processedAt: null,
+        processingNotes: 'Customer details verified',
+        ticketData: {
+          customer: {
+            name: 'Mike Thompson',
+            email: 'mike.thompson@email.com',
+            phone: '+44 161 234 5678',
+            address: {
+              line1: '456 Oak Avenue',
+              city: 'Manchester',
+              postcode: 'M1 2AB',
+              country: 'UK'
+            }
+          },
+          service: {
+            description: 'Socket Installation - Kitchen',
+            category: 'Installation',
+            dateCompleted: '2024-09-19',
+            timeSpent: '3.0 hours',
+            hourlyRate: 65.00
+          },
+          billing: {
+            laborCost: 195.00,
+            materialCosts: [
+              { item: 'Double Socket x3', cost: 45.00 },
+              { item: 'Cable and Conduit', cost: 30.00 }
+            ],
+            travelCost: 15.00,
+            totalBeforeTax: 285.00,
+            taxRate: 20,
+            taxAmount: 57.00,
+            totalAmount: 342.00
+          },
+          customFields: {
+            projectReference: 'PROJ-2024-002',
+            purchaseOrderNumber: ''
+          }
+        }
+      },
+      {
+        queueItemId: 'BQ-003',
+        ticketId: 'TKT-003',
+        status: 'processing',
+        addedToQueueAt: '2024-09-18T09:45:00Z',
+        processedAt: '2024-09-20T11:00:00Z',
+        processingNotes: 'Invoice sent via Xero integration',
+        ticketData: {
+          customer: {
+            name: 'Emma Wilson',
+            email: 'emma.wilson@email.com',
+            phone: '+44 113 345 6789',
+            address: {
+              line1: '789 Pine Road',
+              city: 'Leeds',
+              postcode: 'LS1 3CD',
+              country: 'UK'
+            }
+          },
+          service: {
+            description: 'Emergency Call Out - Power Outage',
+            category: 'Emergency',
+            dateCompleted: '2024-09-18',
+            timeSpent: '4.0 hours',
+            hourlyRate: 75.00
+          },
+          billing: {
+            laborCost: 300.00,
+            materialCosts: [
+              { item: 'Emergency Call Out Fee', cost: 50.00 }
+            ],
+            travelCost: 25.00,
+            totalBeforeTax: 375.00,
+            taxRate: 20,
+            taxAmount: 75.00,
+            totalAmount: 450.00
+          },
+          customFields: {
+            projectReference: 'EMRG-2024-001',
+            purchaseOrderNumber: ''
+          }
+        }
+      },
+      {
+        queueItemId: 'BQ-004',
+        ticketId: 'TKT-004',
+        status: 'on_hold',
+        addedToQueueAt: '2024-09-17T16:20:00Z',
+        processedAt: null,
+        processingNotes: 'Waiting for customer to provide purchase order number',
+        ticketData: {
+          customer: {
+            name: 'David Brown',
+            email: 'david.brown@email.com',
+            phone: '+44 121 456 7890',
+            address: {
+              line1: '321 Elm Street',
+              city: 'Birmingham',
+              postcode: 'B1 4EF',
+              country: 'UK'
+            }
+          },
+          service: {
+            description: 'Lighting Installation - Office',
+            category: 'Installation',
+            dateCompleted: '2024-09-17',
+            timeSpent: '6.0 hours',
+            hourlyRate: 60.00
+          },
+          billing: {
+            laborCost: 360.00,
+            materialCosts: [
+              { item: 'LED Downlights x12', cost: 120.00 },
+              { item: 'Dimmer Switches x4', cost: 80.00 },
+              { item: 'Wiring and Accessories', cost: 60.00 }
+            ],
+            travelCost: 20.00,
+            totalBeforeTax: 640.00,
+            taxRate: 20,
+            taxAmount: 128.00,
+            totalAmount: 768.00
+          },
+          customFields: {
+            projectReference: 'PROJ-2024-004',
+            purchaseOrderNumber: ''
+          }
+        }
+      },
+      {
+        queueItemId: 'BQ-005',
+        ticketId: 'TKT-005',
+        status: 'completed',
+        addedToQueueAt: '2024-09-16T11:30:00Z',
+        processedAt: '2024-09-17T10:15:00Z',
+        processingNotes: 'Invoice created and sent manually',
+        ticketData: {
+          customer: {
+            name: 'Lisa Garcia',
+            email: 'lisa.garcia@email.com',
+            phone: '+44 117 567 8901',
+            address: {
+              line1: '654 Maple Drive',
+              city: 'Bristol',
+              postcode: 'BS1 5GH',
+              country: 'UK'
+            }
+          },
+          service: {
+            description: 'Fuse Box Upgrade',
+            category: 'Upgrade',
+            dateCompleted: '2024-09-16',
+            timeSpent: '5.0 hours',
+            hourlyRate: 70.00
+          },
+          billing: {
+            laborCost: 350.00,
+            materialCosts: [
+              { item: 'Consumer Unit', cost: 150.00 },
+              { item: 'MCBs and RCDs', cost: 100.00 },
+              { item: 'Certification', cost: 25.00 }
+            ],
+            travelCost: 10.00,
+            totalBeforeTax: 635.00,
+            taxRate: 20,
+            taxAmount: 127.00,
+            totalAmount: 762.00
+          },
+          customFields: {
+            projectReference: 'PROJ-2024-005',
+            purchaseOrderNumber: 'PO-67890'
+          }
+        }
+      }
+    ];
+    setQueueItems([]);
+    setFilteredItems([]);
+  }, []);
+
+  // Filter items based on search and status
+  useEffect(() => {
+    let filtered = queueItems;
+
+    if (searchTerm) {
+      filtered = filtered.filter(item => 
+        item.ticketData.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.ticketData.service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(item => item.status === statusFilter);
+    }
+
+    setFilteredItems(filtered);
+  }, [queueItems, searchTerm, statusFilter]);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending_review': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'ready_for_processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'on_hold': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'archived': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending_review': return <Clock className="w-4 h-4" />;
+      case 'ready_for_processing': return <Play className="w-4 h-4" />;
+      case 'processing': return <AlertCircle className="w-4 h-4" />;
+      case 'completed': return <CheckCircle className="w-4 h-4" />;
+      case 'on_hold': return <Pause className="w-4 h-4" />;
+      case 'archived': return <Archive className="w-4 h-4" />;
+      default: return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'pending_review': return 'Pending Review';
+      case 'ready_for_processing': return 'Ready to Process';
+      case 'processing': return 'Processing';
+      case 'completed': return 'Completed';
+      case 'on_hold': return 'On Hold';
+      case 'archived': return 'Archived';
+      default: return status;
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleStatusChange = (queueItemId, newStatus) => {
+    setQueueItems(items => 
+      items.map(item => 
+        item.queueItemId === queueItemId 
+          ? { ...item, status: newStatus, processedAt: newStatus === 'completed' ? new Date().toISOString() : item.processedAt }
+          : item
+      )
+    );
+  };
+
+  const handleSelectItem = (queueItemId) => {
+    setSelectedItems(prev => 
+      prev.includes(queueItemId) 
+        ? prev.filter(id => id !== queueItemId)
+        : [...prev, queueItemId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.length === filteredItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(filteredItems.map(item => item.queueItemId));
+    }
+  };
+
+  const getQueueStats = () => {
+    const stats = {
+      total: queueItems.length,
+      pending: queueItems.filter(item => item.status === 'pending_review').length,
+      ready: queueItems.filter(item => item.status === 'ready_for_processing').length,
+      processing: queueItems.filter(item => item.status === 'processing').length,
+      completed: queueItems.filter(item => item.status === 'completed').length,
+      onHold: queueItems.filter(item => item.status === 'on_hold').length,
+      totalValue: queueItems.reduce((sum, item) => sum + item.ticketData.billing.totalAmount, 0)
+    };
+    return stats;
+  };
+
+  const stats = getQueueStats();
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl text-gray-900 flex items-center">
+                <DollarSign className="w-8 h-8 mr-3 text-blue-600" />
+                Billing Queue Manager
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Manage completed tickets awaiting billing and invoice generation
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200 px-3 py-1">
+                {stats.total} Total Items
+              </Badge>
+              <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1">
+                {formatCurrency(stats.totalValue)} Total Value
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Queue Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-yellow-800">Pending Review</p>
+                <p className="text-2xl font-bold text-yellow-900">{stats.pending}</p>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-800">Ready to Process</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.ready}</p>
+              </div>
+              <Play className="w-8 h-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-200 bg-purple-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-purple-800">Processing</p>
+                <p className="text-2xl font-bold text-purple-900">{stats.processing}</p>
+              </div>
+              <AlertCircle className="w-8 h-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-800">Completed</p>
+                <p className="text-2xl font-bold text-green-900">{stats.completed}</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-orange-800">On Hold</p>
+                <p className="text-2xl font-bold text-orange-900">{stats.onHold}</p>
+              </div>
+              <Pause className="w-8 h-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-gray-200 bg-gray-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Total Value</p>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.totalValue)}</p>
+              </div>
+              <DollarSign className="w-8 h-8 text-gray-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and Search */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search tickets, customers, or services..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full md:w-80"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending_review">Pending Review</SelectItem>
+                  <SelectItem value="ready_for_processing">Ready to Process</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleSelectAll}>
+                {selectedItems.length === filteredItems.length ? 'Deselect All' : 'Select All'}
+              </Button>
+              {selectedItems.length > 0 && (
+                <>
+                  <Button variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export Selected
+                  </Button>
+                  <Button>
+                    Process Selected ({selectedItems.length})
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Queue Items */}
+      <div className="space-y-4">
+        {filteredItems.map((item) => (
+          <Card key={item.queueItemId} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(item.queueItemId)}
+                    onChange={() => handleSelectItem(item.queueItemId)}
+                    className="mt-1 rounded border-gray-300"
+                  />
+                  
+                  <div className="flex-1 space-y-3">
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {item.ticketId}
+                        </h3>
+                        <Badge className={`${getStatusColor(item.status)} flex items-center space-x-1`}>
+                          {getStatusIcon(item.status)}
+                          <span>{getStatusLabel(item.status)}</span>
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">
+                          {formatCurrency(item.ticketData.billing.totalAmount)}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Added {formatDate(item.addedToQueueAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Customer and Service Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <User className="w-4 h-4 text-gray-500" />
+                          <span className="font-medium">{item.ticketData.customer.name}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Mail className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{item.ticketData.customer.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <MapPin className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            {item.ticketData.customer.address.city}, {item.ticketData.customer.address.postcode}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          <span className="font-medium">{item.ticketData.service.description}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            Completed: {new Date(item.ticketData.service.dateCompleted).toLocaleDateString('en-GB')}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            Time: {item.ticketData.service.timeSpent} @ {formatCurrency(item.ticketData.service.hourlyRate)}/hr
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Processing Notes */}
+                    {item.processingNotes && (
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          <strong>Notes:</strong> {item.processingNotes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setShowDetails(item)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onManualProcess && onManualProcess(item.ticketData)}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Manual Process
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Download className="w-4 h-4 mr-2" />
+                          Export
+                        </Button>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        {item.status === 'pending_review' && (
+                          <>
+                            <Button 
+                              size="sm"
+                              onClick={() => handleStatusChange(item.queueItemId, 'ready_for_processing')}
+                            >
+                              Mark Ready
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange(item.queueItemId, 'on_hold')}
+                            >
+                              Put on Hold
+                            </Button>
+                          </>
+                        )}
+                        {item.status === 'ready_for_processing' && (
+                          <>
+                            <Button 
+                              size="sm"
+                              onClick={() => handleStatusChange(item.queueItemId, 'processing')}
+                            >
+                              Process Now
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleStatusChange(item.queueItemId, 'on_hold')}
+                            >
+                              Put on Hold
+                            </Button>
+                          </>
+                        )}
+                        {item.status === 'processing' && (
+                          <Button 
+                            size="sm"
+                            onClick={() => handleStatusChange(item.queueItemId, 'completed')}
+                          >
+                            Mark Complete
+                          </Button>
+                        )}
+                        {item.status === 'on_hold' && (
+                          <Button 
+                            size="sm"
+                            onClick={() => handleStatusChange(item.queueItemId, 'ready_for_processing')}
+                          >
+                            Resume
+                          </Button>
+                        )}
+                        {item.status === 'completed' && (
+                          <Button variant="outline" size="sm">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            View Invoice
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredItems.length === 0 && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+            <p className="text-gray-600">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search or filter criteria.'
+                : 'No completed tickets are currently in the billing queue.'
+              }
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Details Modal */}
+      {showDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Billing Details - {showDetails.ticketId}</CardTitle>
+                  <CardDescription>Complete ticket information for billing</CardDescription>
+                </div>
+                <Button variant="outline" onClick={() => setShowDetails(null)}>
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Tabs defaultValue="customer" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="customer">Customer</TabsTrigger>
+                  <TabsTrigger value="service">Service</TabsTrigger>
+                  <TabsTrigger value="billing">Billing</TabsTrigger>
+                  <TabsTrigger value="export">Export</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="customer" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Contact Information</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Name:</strong> {showDetails.ticketData.customer.name}</p>
+                        <p><strong>Email:</strong> {showDetails.ticketData.customer.email}</p>
+                        <p><strong>Phone:</strong> {showDetails.ticketData.customer.phone}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Address</h4>
+                      <div className="space-y-1 text-sm">
+                        <p>{showDetails.ticketData.customer.address.line1}</p>
+                        <p>{showDetails.ticketData.customer.address.city}</p>
+                        <p>{showDetails.ticketData.customer.address.postcode}</p>
+                        <p>{showDetails.ticketData.customer.address.country}</p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="service" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Service Details</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Description:</strong> {showDetails.ticketData.service.description}</p>
+                        <p><strong>Category:</strong> {showDetails.ticketData.service.category}</p>
+                        <p><strong>Date Completed:</strong> {new Date(showDetails.ticketData.service.dateCompleted).toLocaleDateString('en-GB')}</p>
+                        <p><strong>Time Spent:</strong> {showDetails.ticketData.service.timeSpent}</p>
+                        <p><strong>Hourly Rate:</strong> {formatCurrency(showDetails.ticketData.service.hourlyRate)}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Custom Fields</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><strong>Project Reference:</strong> {showDetails.ticketData.customFields.projectReference}</p>
+                        <p><strong>Purchase Order:</strong> {showDetails.ticketData.customFields.purchaseOrderNumber || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="billing" className="space-y-4">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Cost Breakdown</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Labor Cost:</span>
+                          <span>{formatCurrency(showDetails.ticketData.billing.laborCost)}</span>
+                        </div>
+                        {showDetails.ticketData.billing.materialCosts.map((material, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span>{material.item}:</span>
+                            <span>{formatCurrency(material.cost)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between">
+                          <span>Travel Cost:</span>
+                          <span>{formatCurrency(showDetails.ticketData.billing.travelCost)}</span>
+                        </div>
+                        <hr />
+                        <div className="flex justify-between font-medium">
+                          <span>Subtotal:</span>
+                          <span>{formatCurrency(showDetails.ticketData.billing.totalBeforeTax)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tax ({showDetails.ticketData.billing.taxRate}%):</span>
+                          <span>{formatCurrency(showDetails.ticketData.billing.taxAmount)}</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total:</span>
+                          <span>{formatCurrency(showDetails.ticketData.billing.totalAmount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="export" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button variant="outline" className="h-20 flex flex-col">
+                      <FileText className="w-6 h-6 mb-2" />
+                      Export as CSV
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col">
+                      <Download className="w-6 h-6 mb-2" />
+                      Export as PDF
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col">
+                      <Copy className="w-6 h-6 mb-2" />
+                      Copy Invoice Data
+                    </Button>
+                    <Button variant="outline" className="h-20 flex flex-col">
+                      <ExternalLink className="w-6 h-6 mb-2" />
+                      Send to Xero
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BillingQueueManager;
