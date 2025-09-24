@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// IMPORTANT: use @app/* (your app alias) so we don't collide with Manus '@/'
+// IMPORTANT: use @app/* so we don't collide with Manus "@/..."
 import { Button } from '@app/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx';
 import { Input } from '@app/components/ui/input.jsx';
@@ -32,29 +32,18 @@ export default function SignUp() {
   function validateForm() {
     const newErrors = {};
 
-    // Name validation
-    if (!form.name.trim()) {
-      newErrors.name = 'Name is required.';
-    }
-
-    // Email validation
+    if (!form.name.trim()) newErrors.name = 'Name is required.';
     if (!form.email.trim()) {
       newErrors.email = 'Email is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Email is invalid.';
     }
-
-    // Password validation
     if (!form.password) {
       newErrors.password = 'Password is required.';
     } else if (form.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters.';
     }
-
-    // Organization ID validation
-    if (!form.orgId.trim()) {
-      newErrors.orgId = 'Organization ID is required.';
-    }
+    if (!form.orgId.trim()) newErrors.orgId = 'Organization ID is required.';
 
     return newErrors;
   }
@@ -64,7 +53,6 @@ export default function SignUp() {
     setGeneralError(null);
     setErrors({});
 
-    // Client-side validation
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -85,7 +73,6 @@ export default function SignUp() {
         }),
       });
 
-      // Be tolerant to non-JSON errors
       const contentType = resp.headers.get('content-type') || '';
       const data = contentType.includes('application/json')
         ? await resp.json().catch(() => ({}))
@@ -109,7 +96,7 @@ export default function SignUp() {
         localStorage.setItem('orgId', data.user.orgId);
       }
 
-      // Logged in via HttpOnly cookie — go to pricing (or change to /app/dashboard if you prefer)
+      // Server should have set auth cookie; continue to pricing (or swap to /app/dashboard)
       nav('/pricing');
     } catch (e2) {
       setGeneralError(e2.message || 'Network error occurred');
@@ -140,20 +127,18 @@ export default function SignUp() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="py-12 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl font-bold mb-4">
             Start Your <span className="worktrackr-yellow">Free Trial</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-2">
-            Join thousands of teams already using WorkTrackr Cloud
-          </p>
+          <p className="text-xl text-gray-600 mb-2">Join thousands of teams already using WorkTrackr Cloud</p>
           <p className="text-gray-500">No credit card required • 7-day free trial • Cancel anytime</p>
         </div>
       </section>
 
-      {/* Main Content */}
+      {/* Form */}
       <section className="py-12 px-4">
         <div className="max-w-md mx-auto">
           <Card className="shadow-lg">
@@ -251,7 +236,7 @@ export default function SignUp() {
             </CardContent>
           </Card>
 
-          {/* Trust Indicators */}
+          {/* Trust indicators */}
           <div className="mt-8 grid grid-cols-3 gap-4 text-center">
             <div className="flex flex-col items-center">
               <Shield className="w-8 h-8 worktrackr-yellow mb-2" />
@@ -267,7 +252,7 @@ export default function SignUp() {
             </div>
           </div>
 
-          {/* Features Preview */}
+          {/* Feature list */}
           <Card className="mt-8 bg-gray-50">
             <CardHeader>
               <CardTitle className="text-lg text-center">What you'll get:</CardTitle>
