@@ -10,7 +10,9 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 
 const { getOrgContext } = require('@worktrackr/shared/db');
-const authRoutes = require('./routes/auth');
+
+// Routes
+const authRoutes = require('./routes/auth');                // <-- includes /api/auth/stripe/webhook
 const ticketsRoutes = require('./routes/tickets');
 const organizationsRoutes = require('./routes/organizations');
 const billingRoutes = require('./routes/billing');
@@ -33,47 +35,78 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Security headers (CSP allows Stripe)
-app.use(helmet({
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
-      frameSrc: ["https://js.stripe.com"],
-      connectSrc: ["'self'", "https://api.stripe.com", "https://*.stripe.com"]
+/* ---------------- Security headers (CSP allows Stripe) ---------------- */
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://js.stripe.com'],
+        frameSrc: ['https://js.stripe.com'],
+        connectSrc: ["'self'", 'https://api.stripe.com', 'https://*.stripe.com'],
+      },
     },
-  },
-}));
+  })
+);
 
-// Rate limiting
+/* ---------------- Rate limiting ---------------- */
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use('/webhooks', rateLimit({ windowMs: 60 * 1000, max: 60 }));
 
-// Stripe raw body BEFORE JSON (signature verification)
+/* ---------------- CORS ---------------- */
+const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      const ok = allowedOrigins.length === 0 || allowedOrigins.some((h) => origin.includes(h));
+      cb(ok ? null : new Error('Not allowed by CORS'), ok);
+    },
+    credentials: true,
+  })
+);
+
+/* -----------------------------------------------------------------------
+   Stripe webhooks need RAW body for signature verification.
+   We must ensure express.json() DOES NOT run on this path.
+   ----------------------------------------------------------------------- */
+
+// 1) Provide raw body for /api/auth/stripe/webhook
+app.use('/api/auth/stripe/webhook', express.raw({ type: 'application/json' }));
+
+// (You also had a legacy “/webhooks/stripe” path — keep it raw too if used)
 app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
-// CORS
-const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000')
-  .split(',').map(s => s.trim()).filter(Boolean);
-app.use(cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    const ok = allowedOrigins.length === 0 || allowedOrigins.some(h => origin.includes(h));
-    cb(ok ? null : new Error('Not allowed by CORS'), ok);
-  },
-  credentials: true,
-}));
-
-// Parsers (after Stripe raw)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+/* ---------------- Cookie parser comes early (safe for webhooks) ---------------- */
 app.use(cookieParser());
 
-// Auth middleware (for protected APIs)
+/* -----------------------------------------------------------------------
+   Global JSON/urlencoded parsers — but SKIP them for the webhook path.
+   (If express.json() runs on the webhook route, it will break signature verify.)
+   ----------------------------------------------------------------------- */
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/auth/stripe/webhook' || req.originalUrl === '/webhooks/stripe') {
+    return next(); // leave req.body as raw Buffer
+  }
+  return express.json({ limit: '10mb' })(req, res, next);
+});
+
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/auth/stripe/webhook' || req.originalUrl === '/webhooks/stripe') {
+    return next();
+  }
+  return express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+});
+
+/* ---------------- Auth middleware (for protected APIs) ---------------- */
 async function authenticateToken(req, res, next) {
   const token = req.cookies.auth_token || req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Access token required' });
@@ -91,35 +124,44 @@ async function authenticateToken(req, res, next) {
   }
 }
 
-/* ===== API FIRST ===== */
+/* =========================== API FIRST =========================== */
 app.use('/api/public-auth', publicAuthRoutes);
+
+// IMPORTANT: mount /api/auth after raw-body guard above.
+// The router itself defines the webhook route using express.raw internally,
+// and all other auth endpoints will receive JSON body via the guarded global parsers.
 app.use('/api/auth', authRoutes);
+
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
+
 // TEMP: open billing while testing; add auth later if you want
 app.use('/api/billing', billingRoutes);
 
-/* ===== Health & Version ===== */
+/* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));
 app.get('/api/version', (_req, res) => {
   res.json({
     name: 'WorkTrackr Cloud',
     version: process.env.APP_VERSION || '1.0.0',
-    env: process.env.NODE_ENV || 'development'
+    env: process.env.NODE_ENV || 'development',
   });
 });
 
-/* ===== Webhooks ===== */
+/* =========================== Webhooks ============================ */
 app.use('/webhooks', webhooksRoutes);
 
-/* ===== STATIC + SPA LAST ===== */
+/* ======================== STATIC + SPA LAST ====================== */
 const clientDistPath = path.join(__dirname, 'client', 'dist');
 
 // 1) Cache hashed assets long-term
-app.use('/assets', express.static(path.join(clientDistPath, 'assets'), {
-  maxAge: '1y',
-  immutable: true
-}));
+app.use(
+  '/assets',
+  express.static(path.join(clientDistPath, 'assets'), {
+    maxAge: '1y',
+    immutable: true,
+  })
+);
 
 // 2) Other static — no cache
 app.use(express.static(clientDistPath, { maxAge: '0' }));
@@ -130,15 +172,16 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-// Errors
+/* ============================== Errors =========================== */
 app.use((error, _req, res, _next) => {
   console.error('Server error:', error);
   res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
   });
 });
 
+/* ============================= Start ============================= */
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 WorkTrackr Cloud server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
