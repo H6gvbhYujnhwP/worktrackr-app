@@ -1,10 +1,14 @@
+// web/client/src/SignUp.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Alert, AlertDescription } from '@/components/ui/alert.jsx';
+
+// IMPORTANT: use @app/* (your app alias) so we don't collide with Manus '@/'
+import { Button } from '@app/components/ui/button.jsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx';
+import { Input } from '@app/components/ui/input.jsx';
+import { Label } from '@app/components/ui/label.jsx';
+import { Alert, AlertDescription } from '@app/components/ui/alert.jsx';
+
 import { CheckCircle, ArrowLeft, Loader2, Shield, Users, Zap } from 'lucide-react';
 import worktrackrLogo from './assets/worktrackr_icon_only.png';
 
@@ -18,7 +22,7 @@ export default function SignUp() {
   function onChange(e) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    
+
     // Clear field-specific error when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: null });
@@ -27,31 +31,31 @@ export default function SignUp() {
 
   function validateForm() {
     const newErrors = {};
-    
+
     // Name validation
     if (!form.name.trim()) {
       newErrors.name = 'Name is required.';
     }
-    
+
     // Email validation
     if (!form.email.trim()) {
       newErrors.email = 'Email is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Email is invalid.';
     }
-    
+
     // Password validation
     if (!form.password) {
       newErrors.password = 'Password is required.';
     } else if (form.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters.';
     }
-    
+
     // Organization ID validation
     if (!form.orgId.trim()) {
       newErrors.orgId = 'Organization ID is required.';
     }
-    
+
     return newErrors;
   }
 
@@ -59,14 +63,14 @@ export default function SignUp() {
     e.preventDefault();
     setGeneralError(null);
     setErrors({});
-    
+
     // Client-side validation
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-    
+
     setBusy(true);
     try {
       const resp = await fetch('/api/public-auth/register', {
@@ -77,17 +81,20 @@ export default function SignUp() {
           name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          orgId: form.orgId.trim()
+          orgId: form.orgId.trim(),
         }),
       });
-      
-      const data = await resp.json().catch(() => ({}));
-      
+
+      // Be tolerant to non-JSON errors
+      const contentType = resp.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await resp.json().catch(() => ({}))
+        : { error: await resp.text().catch(() => 'Registration failed') };
+
       if (!resp.ok) {
-        // Handle validation errors from backend
         if (data.errors && Array.isArray(data.errors)) {
           const backendErrors = {};
-          data.errors.forEach(error => {
+          data.errors.forEach((error) => {
             backendErrors[error.field] = error.message;
           });
           setErrors(backendErrors);
@@ -101,8 +108,8 @@ export default function SignUp() {
       if (data?.user?.orgId) {
         localStorage.setItem('orgId', data.user.orgId);
       }
-      
-      // Logged in via HttpOnly cookie — go to pricing
+
+      // Logged in via HttpOnly cookie — go to pricing (or change to /app/dashboard if you prefer)
       nav('/pricing');
     } catch (e2) {
       setGeneralError(e2.message || 'Network error occurred');
@@ -142,9 +149,7 @@ export default function SignUp() {
           <p className="text-xl text-gray-600 mb-2">
             Join thousands of teams already using WorkTrackr Cloud
           </p>
-          <p className="text-gray-500">
-            No credit card required • 7-day free trial • Cancel anytime
-          </p>
+          <p className="text-gray-500">No credit card required • 7-day free trial • Cancel anytime</p>
         </div>
       </section>
 
@@ -154,16 +159,12 @@ export default function SignUp() {
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create your account</CardTitle>
-              <CardDescription>
-                Get started with your workflow management platform
-              </CardDescription>
+              <CardDescription>Get started with your workflow management platform</CardDescription>
             </CardHeader>
             <CardContent>
               {generalError && (
                 <Alert className="mb-6 border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">
-                    {generalError}
-                  </AlertDescription>
+                  <AlertDescription className="text-red-800">{generalError}</AlertDescription>
                 </Alert>
               )}
 
@@ -179,9 +180,7 @@ export default function SignUp() {
                     className={errors.name ? 'border-red-500 focus:border-red-500' : ''}
                     required
                   />
-                  {errors.name && (
-                    <p className="text-sm text-red-600">{errors.name}</p>
-                  )}
+                  {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -196,9 +195,7 @@ export default function SignUp() {
                     className={errors.email ? 'border-red-500 focus:border-red-500' : ''}
                     required
                   />
-                  {errors.email && (
-                    <p className="text-sm text-red-600">{errors.email}</p>
-                  )}
+                  {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -214,9 +211,7 @@ export default function SignUp() {
                     minLength={8}
                     required
                   />
-                  {errors.password && (
-                    <p className="text-sm text-red-600">{errors.password}</p>
-                  )}
+                  {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -230,9 +225,7 @@ export default function SignUp() {
                     className={errors.orgId ? 'border-red-500 focus:border-red-500' : ''}
                     required
                   />
-                  {errors.orgId && (
-                    <p className="text-sm text-red-600">{errors.orgId}</p>
-                  )}
+                  {errors.orgId && <p className="text-sm text-red-600">{errors.orgId}</p>}
                 </div>
 
                 <Button
