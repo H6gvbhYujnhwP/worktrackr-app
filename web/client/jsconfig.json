@@ -1,8 +1,9 @@
+// web/client/jsconfig.json
 {
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*", "src/app/src/*"]
     }
   }
 }
