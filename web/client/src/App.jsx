@@ -1,14 +1,25 @@
 // web/client/src/App.jsx
 import React, { useState } from 'react'
 import { useNavigate, Routes, Route } from 'react-router-dom'
+
+// UI Components (keep your originals)
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Ticket, Users, Workflow, CreditCard, CheckCircle, Star } from 'lucide-react'
-import AppEntrypoint from './app/AppEntrypoint'
+
+// Manus entrypoint (mounts the Manus app at /app/*)
+import AppEntrypoint from './app/AppEntrypoint.jsx'
+
+// Other pages you already had routes for
+import Pricing from './Pricing.jsx'
+import SignUp from './SignUp.jsx'
+
+// Assets & styles (keep your originals)
 import worktrackrLogo from './assets/worktrackr_icon_only.png'
 import './App.css'
 
+// ---- Your original landing page UI, preserved as HomePage ----
 function HomePage() {
   const [apiResult, setApiResult] = useState('')
   const [busy, setBusy] = useState(null) // 'starter' | 'pro' | 'enterprise' | null
@@ -71,7 +82,7 @@ function HomePage() {
               </div>
             </div>
             <div className="flex space-x-4">
-              <Button variant="outline">Login</Button>
+              <Button variant="outline" onClick={() => navigate('/login')}>Login</Button>
               <Button
                 className="worktrackr-bg-black hover:bg-gray-800"
                 onClick={() => navigate('/signup')}
@@ -110,7 +121,7 @@ function HomePage() {
           <h2 className="text-3xl font-bold text-center mb-12">
             Everything you need to manage workflows
           </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card>
               <CardHeader>
                 <Ticket className="w-8 h-8 worktrackr-yellow mb-2" />
@@ -258,7 +269,7 @@ function HomePage() {
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-8">🧪 API Testing</h2>
-          <p className="text-center text-gray-600 mb-8">Test the WorkTrackr Cloud API endpoints</p>
+        <p className="text-center text-gray-600 mb-8">Test the WorkTrackr Cloud API endpoints</p>
           
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             <Button onClick={() => testAPI('/health', 'GET')} variant="outline">Health Check</Button>
@@ -327,18 +338,22 @@ function HomePage() {
   )
 }
 
+// ---- Centralized routing (keeps ALL original pages + adds Manus at /app/*) ----
 export default function RootApp() {
   return (
     <Routes>
-      {/* Your existing landing page */}
+      {/* Landing page (your original App UI) */}
       <Route path="/" element={<HomePage />} />
+
+      {/* Keep your existing pages here */}
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/pricing" element={<Pricing />} />
 
       {/* Mount Manus UI at /app/* */}
       <Route path="/app/*" element={<AppEntrypoint />} />
 
-      {/* You can add other existing routes here as needed */}
+      {/* You can add other routes here (e.g., /login) */}
       {/* <Route path="/login" element={<Login />} /> */}
-      {/* <Route path="/signup" element={<Signup />} /> */}
     </Routes>
   )
 }
