@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.j
 import { Input } from '@/components/ui/input.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Loader2, RefreshCw, Search, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { TicketsAPI } from '../app/api'
+
+// ✅ fix: correct relative path to the API adapter
+import { TicketsAPI } from '../../app/api'
 
 const PRIORITY_COLOR = {
   low: 'bg-green-100 text-green-800',
@@ -33,7 +35,7 @@ export default function TicketsList({ onSelectTicket }) {
       const { tickets: rows } = await TicketsAPI.list()
       setTickets(Array.isArray(rows) ? rows : [])
     } catch (e) {
-      console.error('[TicketsList] failed to load', e)
+      console.error('[TicketsList] load failed', e)
       setError(e?.message || 'Failed to load tickets')
     } finally {
       setLoading(false)
@@ -44,90 +46,66 @@ export default function TicketsList({ onSelectTicket }) {
     const q = query.trim().toLowerCase()
     if (!q) return tickets
     return tickets.filter(t =>
-      [t.title, t.description, t.sector, t.priority]
+      [t.title, t.description, t.priority, t.sector]
         .filter(Boolean)
-        .some(val => String(val).toLowerCase().includes(q))
+        .some(v => String(v).toLowerCase().includes(q))
     )
   }, [tickets, query])
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <CardHeader className="flex items-center justify-between">
         <CardTitle>Tickets</CardTitle>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:flex-none md:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input
-              className="pl-9"
-              placeholder="Search title, description, sector…"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" onClick={refresh} disabled={loading} title="Refresh">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={refresh} disabled={loading} aria-label="Refresh tickets">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </Button>
         </div>
       </CardHeader>
-
       <CardContent>
+        <div className="mb-4 flex items-center gap-2">
+          <Search className="w-4 h-4 text-gray-500" />
+          <Input placeholder="Search tickets..." value={query} onChange={e => setQuery(e.target.value)} />
+        </div>
+
         {error && (
-          <div className="flex items-center gap-2 p-3 mb-4 rounded bg-red-50 text-red-700 text-sm">
+          <div className="flex items-center gap-2 text-red-600 text-sm mb-4">
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-gray-500">
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Loading tickets…
-          </div>
+          <div className="py-8 text-center text-gray-500">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            No tickets found{query ? ' for your search.' : '.'}
-          </div>
+          <div className="py-8 text-center text-gray-500">No tickets found</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500 border-b">
-                  <th className="py-2 pr-3">Title</th>
-                  <th className="py-2 px-3">Priority</th>
-                  <th className="py-2 px-3">Sector</th>
-                  <th className="py-2 px-3">Scheduled</th>
-                  <th className="py-2 px-3">Status</th>
-                  <th className="py-2 pl-3 text-right">Action</th>
+              <thead className="text-left text-gray-500">
+                <tr>
+                  <th className="py-2 pr-4">Title</th>
+                  <th className="py-2 pr-4">Priority</th>
+                  <th className="py-2 pr-4">Sector</th>
+                  <th className="py-2 pr-4">Scheduled</th>
+                  <th className="py-2 pr-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(t => (
-                  <tr key={t.id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 pr-3">
-                      <div className="font-medium">{t.title}</div>
-                      {t.description && (
-                        <div className="text-gray-500 line-clamp-1">{t.description}</div>
-                      )}
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full ${PRIORITY_COLOR[t.priority] || 'bg-gray-100 text-gray-800'}`}>
-                        {String(t.priority || '').toUpperCase() || '—'}
+                  <tr key={t.id} className="border-t">
+                    <td className="py-2 pr-4">{t.title}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`px-2 py-1 rounded ${PRIORITY_COLOR[t.priority || 'medium']}`}>
+                        {t.priority || 'medium'}
                       </span>
                     </td>
-                    <td className="py-2 px-3">{t.sector || '—'}</td>
-                    <td className="py-2 px-3">
-                      {t.scheduled_date ? new Date(t.scheduled_date).toLocaleDateString() : '—'}
-                      {t.scheduled_duration_mins ? ` · ${t.scheduled_duration_mins}m` : ''}
+                    <td className="py-2 pr-4">{t.sector || '—'}</td>
+                    <td className="py-2 pr-4">
+                      {t.scheduled_date ? new Date(t.scheduled_date).toLocaleString() : '—'}
                     </td>
-                    <td className="py-2 px-3">
-                      {t.status ? (
-                        <Badge variant="secondary">{t.status}</Badge>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-2 pl-3 text-right">
-                      <Button size="sm" onClick={() => onSelectTicket?.(t)}>
+                    <td className="py-2 pr-4">
+                      <Button size="sm" variant="outline" onClick={() => onSelectTicket?.(t.id)}>
                         View
                       </Button>
                     </td>
