@@ -14,6 +14,8 @@ export default defineConfig({
 
       // Your existing app alias (keep as-is)
       { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: '@app', replacement: path.resolve(__dirname, 'src') },
+
     ],
   },
 })
