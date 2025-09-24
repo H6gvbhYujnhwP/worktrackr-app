@@ -12,7 +12,7 @@ const jwt = require('jsonwebtoken');
 const { getOrgContext } = require('@worktrackr/shared/db');
 
 // Routes
-const authRoutes = require('./routes/auth');                // <-- includes /api/auth/stripe/webhook
+const authRoutes = require('./routes/auth');                // includes /api/auth/stripe/webhook
 const ticketsRoutes = require('./routes/tickets');
 const organizationsRoutes = require('./routes/organizations');
 const billingRoutes = require('./routes/billing');
@@ -76,25 +76,19 @@ app.use(
 
 /* -----------------------------------------------------------------------
    Stripe webhooks need RAW body for signature verification.
-   We must ensure express.json() DOES NOT run on this path.
    ----------------------------------------------------------------------- */
-
-// 1) Provide raw body for /api/auth/stripe/webhook
 app.use('/api/auth/stripe/webhook', express.raw({ type: 'application/json' }));
-
-// (You also had a legacy “/webhooks/stripe” path — keep it raw too if used)
 app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));
 
-/* ---------------- Cookie parser comes early (safe for webhooks) ---------------- */
+/* ---------------- Cookie parser comes early ---------------- */
 app.use(cookieParser());
 
 /* -----------------------------------------------------------------------
-   Global JSON/urlencoded parsers — but SKIP them for the webhook path.
-   (If express.json() runs on the webhook route, it will break signature verify.)
+   Global JSON/urlencoded parsers — skip for webhook paths
    ----------------------------------------------------------------------- */
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/auth/stripe/webhook' || req.originalUrl === '/webhooks/stripe') {
-    return next(); // leave req.body as raw Buffer
+    return next();
   }
   return express.json({ limit: '10mb' })(req, res, next);
 });
@@ -108,7 +102,7 @@ app.use((req, res, next) => {
 
 /* ---------------- Auth middleware (for protected APIs) ---------------- */
 async function authenticateToken(req, res, next) {
-  const token = req.cookies.auth_token || req.headers.authorization?.replace('Bearer ', '');
+  const token = req.cookies.auth_token || req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Access token required' });
 
   try {
@@ -126,16 +120,10 @@ async function authenticateToken(req, res, next) {
 
 /* =========================== API FIRST =========================== */
 app.use('/api/public-auth', publicAuthRoutes);
-
-// IMPORTANT: mount /api/auth after raw-body guard above.
-// The router itself defines the webhook route using express.raw internally,
-// and all other auth endpoints will receive JSON body via the guarded global parsers.
 app.use('/api/auth', authRoutes);
-
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
-
-// TEMP: open billing while testing; add auth later if you want
+// TEMP: open billing while testing; add auth here later if desired
 app.use('/api/billing', billingRoutes);
 
 /* ======================= Health & Version ======================== */
@@ -151,7 +139,7 @@ app.get('/api/version', (_req, res) => {
 /* =========================== Webhooks ============================ */
 app.use('/webhooks', webhooksRoutes);
 
-/* ======================== STATIC + SPA LAST ====================== */
+/* ======================== STATIC + SPA =========================== */
 const clientDistPath = path.join(__dirname, 'client', 'dist');
 
 // 1) Cache hashed assets long-term
@@ -166,8 +154,27 @@ app.use(
 // 2) Other static — no cache
 app.use(express.static(clientDistPath, { maxAge: '0' }));
 
-// 3) SPA entry — no-store
-app.get('*', (_req, res) => {
+/* -------------------- HARD GATE FOR /app/* ---------------------- */
+function readUserFromRequest(req) {
+  const token = req.cookies.auth_token || req.cookies.jwt;
+  if (!token) return null;
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+app.use('/app', (req, res, next) => {
+  const user = readUserFromRequest(req);
+  if (user) return next();
+  const dest = encodeURIComponent(req.originalUrl);
+  return res.redirect(`/login?next=${dest}`);
+});
+
+/* 3) SPA entry — always serve index.html for non-API, non-/app (after gate) */
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).end();
   res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
