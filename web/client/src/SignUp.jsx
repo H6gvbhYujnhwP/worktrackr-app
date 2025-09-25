@@ -6,14 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/
 import { Input } from '@app/components/ui/input.jsx'
 import { Label } from '@app/components/ui/label.jsx'
 import { Alert, AlertDescription } from '@app/components/ui/alert.jsx'
-import { Loader2 } from 'lucide-react'
+import { CheckCircle2, Loader2, Star } from 'lucide-react'
 import worktrackrLogo from './assets/worktrackr_icon_only.png'
 
-/**
- * Price ID resolution:
- * 1) Prefer Vite env vars if present (production-friendly)
- * 2) Else, use any localStorage overrides set by Pricing.jsx (e.g. "price_id_starter")
- * 3) Else, leave blank (and the UI will prevent submission)
+/** Resolve Stripe price IDs:
+ *  - Prefer Vite env vars (VITE_PRICE_STARTER/PRO/ENTERPRISE)
+ *  - Else use any price ids saved in localStorage (price_id_starter/pro/enterprise)
  */
 function resolvePriceIds() {
   const ls = typeof window !== 'undefined' ? window.localStorage : null
@@ -34,6 +32,101 @@ function resolvePriceIds() {
   }
 }
 
+const plans = [
+  {
+    key: 'starter',
+    name: 'Starter',
+    priceLabel: '£49',
+    period: '/month',
+    badge: null,
+    features: [
+      'Up to 5 users',
+      'Smart ticketing',
+      'Email notifications',
+    ],
+  },
+  {
+    key: 'pro',
+    name: 'Pro',
+    priceLabel: '£99',
+    period: '/month',
+    badge: { text: 'Most Popular', icon: Star },
+    features: [
+      'Up to 25 users',
+      'Workflow builder',
+      'Reports & inspections',
+      'Approvals',
+    ],
+  },
+  {
+    key: 'enterprise',
+    name: 'Enterprise',
+    priceLabel: '£299',
+    period: '/month',
+    badge: null,
+    features: [
+      'Unlimited users',
+      'Advanced workflows',
+      'API access',
+      'White-labeling',
+    ],
+  },
+]
+
+function PlanCard({ plan, active, disabled, onSelect }) {
+  const BadgeIcon = plan.badge?.icon
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => !disabled && onSelect(plan.key)}
+      className={[
+        'w-full text-left rounded-2xl border p-5 transition focus:outline-none',
+        disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md',
+        active
+          ? 'border-black ring-2 ring-black/10 shadow-lg bg-white'
+          : 'border-gray-200 bg-white',
+      ].join(' ')}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-lg font-semibold">{plan.name}</div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <div className="text-3xl font-bold">{plan.priceLabel}</div>
+            <div className="text-gray-500">{plan.period}</div>
+          </div>
+        </div>
+        {plan.badge && (
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium worktrackr-bg-yellow text-black">
+            {BadgeIcon ? <BadgeIcon className="w-3 h-3" /> : null}
+            {plan.badge.text}
+          </span>
+        )}
+      </div>
+
+      <ul className="mt-4 space-y-2">
+        {plan.features.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+            <CheckCircle2 className="w-4 h-4 worktrackr-yellow flex-shrink-0 mt-0.5" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-5">
+        <span
+          className={[
+            'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
+            active ? 'bg-black text-white' : 'bg-gray-100 text-gray-800',
+          ].join(' ')}
+        >
+          {active ? 'Selected' : disabled ? 'Unavailable' : 'Select'}
+        </span>
+      </div>
+    </button>
+  )
+}
+
 export default function SignUp() {
   const nav = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', orgId: '' })
@@ -41,17 +134,14 @@ export default function SignUp() {
   const [generalError, setGeneralError] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  // plan picking
-  const [selectedPlan, setSelectedPlan] = useState('') // 'starter' | 'pro' | 'enterprise' | ''
   const priceIds = useMemo(resolvePriceIds, [])
+  const [selectedPlan, setSelectedPlan] = useState('') // 'starter' | 'pro' | 'enterprise' | ''
   const selectedPriceId = selectedPlan ? priceIds[selectedPlan] : ''
 
-  // If Pricing page set a plan in storage, auto-load it
+  // Load preselected plan from Pricing page (if any)
   useEffect(() => {
-    const preselected = localStorage.getItem('selectedPlan')
-    if (preselected && ['starter', 'pro', 'enterprise'].includes(preselected)) {
-      setSelectedPlan(preselected)
-    }
+    const pre = localStorage.getItem('selectedPlan')
+    if (pre && ['starter', 'pro', 'enterprise'].includes(pre)) setSelectedPlan(pre)
   }, [])
 
   function onChange(e) {
@@ -62,9 +152,7 @@ export default function SignUp() {
 
   function validate() {
     const next = {}
-    if (!selectedPlan || !selectedPriceId) {
-      next.plan = 'Please choose a plan above.'
-    }
+    if (!selectedPlan || !selectedPriceId) next.plan = 'Please choose a plan.'
     if (!form.name.trim()) next.name = 'Name is required.'
     if (!form.email.trim()) next.email = 'Email is required.'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = 'Email is invalid.'
@@ -84,8 +172,6 @@ export default function SignUp() {
 
     setBusy(true)
     try {
-      // Kick off Stripe checkout (Option B)
-      // Server expects: full_name, email, password, org_slug, price_id
       const resp = await fetch('/api/auth/signup/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,7 +186,6 @@ export default function SignUp() {
       })
       const data = await resp.json().catch(() => ({}))
       if (!resp.ok || !data?.url) {
-        // show server-side field errors if provided
         if (data?.details && Array.isArray(data.details)) {
           const backend = {}
           data.details.forEach(d => {
@@ -115,11 +200,9 @@ export default function SignUp() {
         return
       }
 
-      // Persist selection for later pages (optional)
       localStorage.setItem('selectedPlan', selectedPlan)
       localStorage.setItem('orgId', form.orgId.trim())
 
-      // Off you go to Stripe Checkout
       window.location.href = data.url
     } catch (err) {
       setGeneralError(err.message || 'Network error')
@@ -128,29 +211,9 @@ export default function SignUp() {
     }
   }
 
-  const PlanButton = ({ planKey, children }) => {
-    const active = selectedPlan === planKey
-    const hasId = priceIds[planKey]
-    const common = 'px-4 py-2 rounded border transition text-sm'
-    const inactive = 'border-gray-300 text-gray-700 hover:bg-gray-50'
-    const activeCls = 'bg-black text-white border-black'
-    const disabledCls = 'opacity-60 cursor-not-allowed'
-    return (
-      <button
-        type="button"
-        aria-pressed={active}
-        onClick={() => hasId && setSelectedPlan(planKey)}
-        className={`${common} ${active ? activeCls : inactive} ${!hasId ? disabledCls : ''}`}
-        title={!hasId ? 'Price ID not configured' : ''}
-      >
-        {children}
-      </button>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      {/* Top nav (logo + back) */}
+      {/* Top nav */}
       <nav className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -179,8 +242,33 @@ export default function SignUp() {
         <p className="text-gray-500">7-day free trial • Cancel anytime</p>
       </section>
 
-      {/* Main card */}
-      <section className="px-4 pb-16">
+      {/* Plan cards */}
+      <section className="px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid gap-4 md:grid-cols-3">
+            {plans.map(p => {
+              const disabled = !priceIds[p.key]
+              return (
+                <PlanCard
+                  key={p.key}
+                  plan={p}
+                  active={selectedPlan === p.key}
+                  disabled={disabled}
+                  onSelect={(k) => setSelectedPlan(k)}
+                />
+              )
+            })}
+          </div>
+          {(!selectedPlan || !selectedPriceId) && (
+            <p className="mt-3 text-center text-sm text-gray-500">
+              Select a plan above to continue. You can change plan later.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Sign up form */}
+      <section className="py-10 px-4">
         <div className="max-w-md mx-auto">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
@@ -188,7 +276,6 @@ export default function SignUp() {
               <CardDescription>Then you’ll be taken to secure checkout</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Error banners */}
               {generalError && (
                 <Alert className="mb-4 border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800">
@@ -199,27 +286,11 @@ export default function SignUp() {
               {errors.plan && (
                 <Alert className="mb-4 border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800">
-                    {errors.plan} <Link to="/pricing" className="underline">pricing page</Link>.
+                    {errors.plan} (no price configured for the selected plan).
                   </AlertDescription>
                 </Alert>
               )}
 
-              {/* Inline plan picker */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-700 mb-2">Pick a plan now:</p>
-                <div className="flex gap-2">
-                  <PlanButton planKey="starter">Starter</PlanButton>
-                  <PlanButton planKey="pro">Pro</PlanButton>
-                  <PlanButton planKey="enterprise">Enterprise</PlanButton>
-                </div>
-                {!selectedPlan && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    Or choose on the <Link to="/pricing" className="underline">pricing page</Link>.
-                  </p>
-                )}
-              </div>
-
-              {/* Sign up form */}
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name *</Label>
@@ -295,6 +366,10 @@ export default function SignUp() {
                     'Continue to Checkout'
                   )}
                 </Button>
+
+                <p className="text-center text-xs text-gray-500">
+                  By creating an account, you agree to our Terms of Service and Privacy Policy.
+                </p>
               </form>
             </CardContent>
           </Card>
