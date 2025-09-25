@@ -21,6 +21,17 @@ const PRICE_META = {
   // 'price_123ENT':     { name: 'Enterprise', amount: '£299', suffix: '/month' },
 }
 
+/** Convert a human-friendly org name to a safe slug the API accepts. */
+function toSlug(s) {
+  return (s || '')
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')   // non-alphanum -> hyphen
+    .replace(/^-+|-+$/g, '')       // trim hyphens
+    .slice(0, 60)                  // keep slugs reasonable
+}
+
 export default function SignUp() {
   const nav = useNavigate()
   const [qs] = useSearchParams()
@@ -87,7 +98,8 @@ export default function SignUp() {
           full_name: form.full_name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          org_slug: form.org_slug.trim(),
+          // Accept spaces & punctuation from the user, but send a safe slug to the API
+          org_slug: toSlug(form.org_slug),
           price_id: selectedPriceId,
         }),
       })
@@ -252,11 +264,16 @@ export default function SignUp() {
                     name="org_slug"
                     value={form.org_slug}
                     onChange={onChange}
-                    placeholder="e.g. acme-ltd"
+                    placeholder="e.g. The Green Agents Ltd"
                     className={fieldErrors.org_slug ? 'border-red-500' : ''}
                   />
-                  {fieldErrors.org_slug && (
+                  {fieldErrors.org_slug ? (
                     <p className="text-sm text-red-600">{fieldErrors.org_slug}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">
+                      You can type your full company name with spaces; we’ll convert it to a safe ID like
+                      <span className="font-mono"> the-green-agents-ltd</span>.
+                    </p>
                   )}
                 </div>
 
