@@ -5,7 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { mockUsers, mockTickets, mockWorkflows, mockOrganization } from './data/mockData.js';
 import Dashboard from './components/Dashboard.jsx';
 import WorkflowBuilder from './components/WorkflowBuilder.jsx';
-import Login from './components/Login.jsx';
+import Login from '../../Login.jsx';
 import './App.css';
 
 // ✅ Corrected imports: api.ts and map.ts live one level up from /src/
@@ -302,24 +302,136 @@ const SimulationProvider = ({ children }) => {
   return <SimulationContext.Provider value={simulationValue}>{children}</SimulationContext.Provider>;
 };
 
-// ---------------- Auth provider (mock) ----------------
+// ---------------- Auth provider (real API) ----------------
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [organization, setOrganization] = useState(null);
 
-  const login = (email, password) => {
-    const foundUser = mockUsers.find((u) => u.email === email) || mockUsers[0];
-    setUser(foundUser);
-    return foundUser;
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/session', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        
+        // If user has membership, get organization details
+        if (data.membership) {
+          await fetchOrganization();
+        }
+      } else {
+        setUser(null);
+        setOrganization(null);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setUser(null);
+      setOrganization(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => setUser(null);
+  const fetchOrganization = async () => {
+    try {
+      const response = await fetch('/api/organizations/current', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
+      if (response.ok) {
+        const data = await response.json();
+        setOrganization(data.organization);
+      }
+    } catch (error) {
+      console.error('Failed to fetch organization:', error);
+    }
+  };
+
+  const login = async (email, password) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        
+        if (data.membership) {
+          await fetchOrganization(data.membership.organisation_id);
+        }
+        
+        return { success: true, user: data.user };
+      } else {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error || 'Login failed' };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setOrganization(null);
+    }
+  };
+
+  const value = {
+    user,
+    organization,
+    loading,
+    login,
+    logout,
+    checkAuthStatus,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // ---------------- Protected route ----------------
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
   if (!user) return <Navigate to="/login" replace />;
   return children;
 };
