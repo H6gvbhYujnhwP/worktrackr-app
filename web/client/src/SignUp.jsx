@@ -22,16 +22,11 @@ export default function SignUp() {
   function onChange(e) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-
-    // Clear field-specific error when user starts typing
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: null });
-    }
+    if (errors[name]) setErrors({ ...errors, [name]: null });
   }
 
   function validateForm() {
     const newErrors = {};
-
     if (!form.name.trim()) newErrors.name = 'Name is required.';
     if (!form.email.trim()) {
       newErrors.email = 'Email is required.';
@@ -44,8 +39,15 @@ export default function SignUp() {
       newErrors.password = 'Password must be at least 8 characters.';
     }
     if (!form.orgId.trim()) newErrors.orgId = 'Organization ID is required.';
-
     return newErrors;
+  }
+
+  function getSelectedPriceId() {
+    // Preferred: set by Pricing page when user clicks a plan button
+    const stored = localStorage.getItem('selectedPriceId');
+    // Fallback: environment default (Vite exposes as import.meta.env.*)
+    const fallback = import.meta.env?.VITE_STRIPE_PRICE_STARTER || import.meta.env?.VITE_DEFAULT_PRICE_ID;
+    return stored || fallback || null;
   }
 
   async function onSubmit(e) {
@@ -59,26 +61,40 @@ export default function SignUp() {
       return;
     }
 
+    const price_id = getSelectedPriceId();
+    if (!price_id) {
+      setGeneralError('No plan selected. Please choose a plan on the pricing page first.');
+      return;
+    }
+
     setBusy(true);
     try {
-      const resp = await fetch('/api/public-auth/register', {
+      // Start the Stripe signup flow (creates Checkout Session)
+      const resp = await fetch('/api/auth/signup/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          name: form.name.trim(),
+          full_name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          orgId: form.orgId.trim(),
+          org_slug: form.orgId.trim(),
+          price_id
         }),
       });
 
       const contentType = resp.headers.get('content-type') || '';
       const data = contentType.includes('application/json')
         ? await resp.json().catch(() => ({}))
-        : { error: await resp.text().catch(() => 'Registration failed') };
+        : { error: await resp.text().catch(() => 'Failed to start signup') };
 
       if (!resp.ok) {
+        // Gracefully handle “email already in use” by sending to login, then back to pricing
+        if (data?.error && /already in use|already exists/i.test(data.error)) {
+          nav('/login?next=/pricing', { replace: true });
+          return;
+        }
+        // Field-level validation echo from backend (if any)
         if (data.errors && Array.isArray(data.errors)) {
           const backendErrors = {};
           data.errors.forEach((error) => {
@@ -86,18 +102,19 @@ export default function SignUp() {
           });
           setErrors(backendErrors);
         } else {
-          setGeneralError(data.error || 'Registration failed');
+          setGeneralError(data.error || 'Failed to start signup');
         }
         return;
       }
 
-      // persist orgId for checkout metadata
-      if (data?.user?.orgId) {
-        localStorage.setItem('orgId', data.user.orgId);
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+        return;
       }
 
-      // Server should have set auth cookie; continue to pricing (or swap to /app/dashboard)
-      nav('/pricing');
+      // If backend didn’t return a URL, surface error
+      setGeneralError('Unexpected response from server. Please try again.');
     } catch (e2) {
       setGeneralError(e2.message || 'Network error occurred');
     } finally {
@@ -134,7 +151,7 @@ export default function SignUp() {
             Start Your <span className="worktrackr-yellow">Free Trial</span>
           </h1>
           <p className="text-xl text-gray-600 mb-2">Join thousands of teams already using WorkTrackr Cloud</p>
-          <p className="text-gray-500">No credit card required • 7-day free trial • Cancel anytime</p>
+          <p className="text-gray-500">7-day free trial • Cancel anytime</p>
         </div>
       </section>
 
@@ -144,7 +161,7 @@ export default function SignUp() {
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create your account</CardTitle>
-              <CardDescription>Get started with your workflow management platform</CardDescription>
+              <CardDescription>Then you’ll be taken to secure checkout</CardDescription>
             </CardHeader>
             <CardContent>
               {generalError && (
@@ -206,7 +223,7 @@ export default function SignUp() {
                     name="orgId"
                     value={form.orgId}
                     onChange={onChange}
-                    placeholder="Enter your organization identifier"
+                    placeholder="e.g. acme-co"
                     className={errors.orgId ? 'border-red-500 focus:border-red-500' : ''}
                     required
                   />
@@ -222,17 +239,20 @@ export default function SignUp() {
                   {busy ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating account...
+                      Preparing checkout…
                     </>
                   ) : (
-                    'Create Account'
+                    'Continue to Checkout'
                   )}
                 </Button>
-              </form>
 
-              <p className="text-center text-sm text-gray-500 mt-4">
-                By creating an account, you agree to our Terms of Service and Privacy Policy
-              </p>
+                <p className="text-center text-sm text-gray-500 mt-3">
+                  Already have an account?{' '}
+                  <button type="button" className="underline" onClick={() => nav('/login?next=/pricing')}>
+                    Sign in
+                  </button>
+                </p>
+              </form>
             </CardContent>
           </Card>
 
