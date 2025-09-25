@@ -1,364 +1,375 @@
 // web/routes/auth.js
-// Authentication & signup flow for WorkTrackr Cloud
-
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // pure-JS, Render-friendly
 const { z } = require('zod');
+const Stripe = require('stripe');
+const { query, transaction } = require('@worktrackr/shared/db');
+
 const router = express.Router();
 
-// Stripe (only initialized if a key is present)
-const stripeSecret = process.env.STRIPE_SECRET_KEY || '';
-const stripe = stripeSecret ? require('stripe')(stripeSecret) : null;
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+const APP_BASE_URL = process.env.APP_BASE_URL || 'http://localhost:3000';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
-/* -------------------------------------------------------------------------- */
-/* Utilities                                                                  */
-/* -------------------------------------------------------------------------- */
+// -------------------- helpers --------------------
+function signJwt(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
 
+async function findUserByEmail(email) {
+  const r = await query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [email]);
+  return r.rows[0] || null;
+}
+
+// NEW: accept friendly org text, send a safe slug to DB
 function toSlug(s) {
   return (s || '')
     .toLowerCase()
     .trim()
     .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-') // non-alphanum → hyphen
-    .replace(/^-+|-+$/g, '')     // trim leading/trailing hyphens
-    .slice(0, 60);               // keep slugs short/reasonable
+    .replace(/[^a-z0-9]+/g, '-')  // non-alphanum → hyphen
+    .replace(/^-+|-+$/g, '')      // trim hyphens
+    .slice(0, 60);
 }
 
-function signToken(user) {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET not configured');
-  }
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-}
-
-function setAuthCookie(res, token) {
-  // Cookie name defined by the handover
-  res.cookie('auth_token', token, {
-    httpOnly: true,
-    secure: true,       // assumes HTTPS (Render prod)
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/',
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/* Validation Schemas                                                         */
-/* -------------------------------------------------------------------------- */
-
+// -------------------- schemas --------------------
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
+  password: z.string().min(1)
 });
 
-// Internal/backoffice register (not used by public flow)
 const registerSchema = z.object({
   email: z.string().email(),
-  full_name: z.string().min(2),
+  name: z.string().min(1),
   password: z.string().min(8),
-  org_slug: z.string().min(2),
-  org_name: z.string().min(2).optional(),
-  role: z.enum(['owner', 'admin', 'member']).default('owner'),
+  organizationName: z.string().min(1).optional()
 });
 
+// Option B: start Stripe signup (new customer)
 const startSignupSchema = z.object({
   full_name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  // Accept friendly input; we’ll slugify before DB write
+  // RELAXED: let users type normal names; we'll slugify
   org_slug: z.string().min(2).max(80),
-  price_id: z.string().optional(),
+  price_id: z.string().optional() // defaults to STRIPE/PRICE_STARTER
 });
 
-const completeSchema = z.object({
-  session_id: z.string().min(10),
-});
-
-/* -------------------------------------------------------------------------- */
-/* Helpers: DB                                                                */
-/* -------------------------------------------------------------------------- */
-
-// These helpers assume `req.db` is a Knex instance injected by server.js.
-
-async function findUserByEmail(db, email) {
-  return db('users').where({ email }).first();
-}
-
-async function createOrgWithOwner(db, { orgSlug, orgName, email, fullName, passwordHash }) {
-  // Create org
-  const [org] = await db('orgs')
-    .insert({ slug: orgSlug, name: orgName || fullName })
-    .returning('*');
-
-  // Create user
-  const [user] = await db('users')
-    .insert({
-      email,
-      full_name: fullName,
-      password_hash: passwordHash,
-    })
-    .returning('*');
-
-  // Create membership (owner by default)
-  await db('memberships').insert({
-    user_id: user.id,
-    org_id: org.id,
-    role: 'owner',
-  });
-
-  return { org, user };
-}
-
-async function defaultMembershipForUser(db, userId) {
-  // Return the first membership (or you can order by created_at desc)
-  return db('memberships').where({ user_id: userId }).first();
-}
-
-/* -------------------------------------------------------------------------- */
-/* Routes                                                                     */
-/* -------------------------------------------------------------------------- */
-
-/**
- * POST /api/auth/login
- * Existing customers sign in.
- */
+// -------------------- Option A: existing customers (login/register) --------------------
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
-    const user = await findUserByEmail(req.db, email);
+    const user = await findUserByEmail(email);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = signToken(user);
-    setAuthCookie(res, token);
-
-    const membership = await defaultMembershipForUser(req.db, user.id);
-    return res.json({ user, membership });
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Bad request' });
-  }
-});
-
-/**
- * POST /api/auth/register
- * Internal/backoffice registration (not used by public flow).
- */
-router.post('/register', async (req, res) => {
-  try {
-    const { email, full_name, password, org_slug, org_name, role } = registerSchema.parse(req.body);
-    const existing = await findUserByEmail(req.db, email);
-    if (existing) return res.status(409).json({ error: 'User already exists' });
-
-    const password_hash = await bcrypt.hash(password, 10);
-    const orgSlug = toSlug(org_slug);
-    const orgName = org_name || full_name;
-
-    const { user } = await createOrgWithOwner(req.db, {
-      orgSlug,
-      orgName,
-      email,
-      fullName: full_name,
-      passwordHash: password_hash,
+    const token = signJwt({ userId: user.id, email: user.email });
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // If role !== owner, adjust membership
-    if (role !== 'owner') {
-      const org = await req.db('orgs').where({ slug: orgSlug }).first();
-      await req.db('memberships')
-        .where({ user_id: user.id, org_id: org.id })
-        .update({ role });
-    }
+    // simple membership context
+    const m = await query(
+      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [user.id]
+    );
 
-    const token = signToken(user);
-    setAuthCookie(res, token);
-
-    const membership = await defaultMembershipForUser(req.db, user.id);
-    return res.json({ user, membership });
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Bad request' });
+    return res.json({ user: { id: user.id, email: user.email, name: user.name }, membership: m.rows[0] || null });
+  } catch (error) {
+    console.error('login error:', error);
+    res.status(400).json({ error: 'Login failed' });
   }
 });
 
-/**
- * POST /api/auth/signup/start
- * Public flow: creates a Stripe Checkout session and stores context.
- */
+router.post('/register', async (req, res) => {
+  try {
+    const { email, name, password, organizationName } = registerSchema.parse(req.body);
+    const existing = await findUserByEmail(email);
+    if (existing) return res.status(409).json({ error: 'User already exists' });
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const result = await transaction(async (client) => {
+      const userResult = await client.query(
+        'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id, email, name',
+        [email.toLowerCase(), name, passwordHash]
+      );
+      const user = userResult.rows[0];
+
+      let organization = null;
+      if (organizationName) {
+        const orgResult = await client.query(
+          'INSERT INTO organisations (name) VALUES ($1) RETURNING id, name',
+          [organizationName]
+        );
+        organization = orgResult.rows[0];
+        await client.query(
+          'INSERT INTO memberships (user_id, organisation_id, role) VALUES ($1, $2, $3)',
+          [user.id, organization.id, 'owner']
+        );
+      }
+
+      return { user, organization };
+    });
+
+    const token = signJwt({ userId: result.user.id, email: result.user.email });
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      user: result.user,
+      organization: result.organization,
+    });
+  } catch (error) {
+    console.error('register error:', error);
+    res.status(400).json({ error: 'Registration failed' });
+  }
+});
+
+// -------------------- Option B: Stripe trial flow (new customers) --------------------
+
+// 1) start signup → create Stripe checkout, store payload
 router.post('/signup/start', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
-
     const { full_name, email, password, org_slug, price_id } = startSignupSchema.parse(req.body);
-    const orgSlug = toSlug(org_slug);
+
+    // accept explicit price from client, else fallback
+    const priceId = price_id || process.env.PRICE_STARTER || process.env.STRIPE_PRICE_STARTER;
+    if (!priceId) return res.status(400).json({ error: 'Price ID not configured' });
+
+    const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
-
-    // Determine the price to use (client-provided > PRICE_STARTER > STRIPE_PRICE_STARTER)
-    const chosenPriceId =
-      price_id ||
-      process.env.PRICE_STARTER ||
-      process.env.STRIPE_PRICE_STARTER;
-
-    if (!chosenPriceId) {
-      return res.status(400).json({ error: 'Price ID not configured' });
-    }
-
-    // Persist a pending checkout session record
-    const [row] = await req.db('checkout_sessions')
-      .insert({
-        email,
-        full_name,
-        org_slug: orgSlug,
-        password_hash,
-        price_id: chosenPriceId,
-      })
-      .returning('*');
-
-    const appBase = process.env.APP_BASE_URL || '';
-    if (!appBase) {
-      return res.status(500).json({ error: 'APP_BASE_URL not configured' });
-    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      customer_email: email,
-      line_items: [{ price: chosenPriceId, quantity: 1 }],
-      success_url: `${appBase}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appBase}/signup?canceled=1`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
+      success_url: `${APP_BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_BASE_URL}/signup?canceled=1`,
+      customer_creation: 'if_required',
+      metadata: { email, full_name, org_slug: toSlug(org_slug), existing_user: existing ? '1' : '0' }
     });
 
-    // Link Stripe session id to our record
-    await req.db('checkout_sessions')
-      .where({ id: row.id })
-      .update({ stripe_session_id: session.id });
+    await query(`
+      INSERT INTO checkout_sessions (stripe_session_id, email, full_name, org_slug, password_hash, price_id)
+      VALUES ($1,$2,$3,$4,$5,$6)
+      ON CONFLICT (stripe_session_id) DO NOTHING
+    `, [session.id, email, full_name, toSlug(org_slug), password_hash, priceId]);
 
-    return res.json({ url: session.url });
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Failed to start checkout' });
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('signup/start error:', error);
+    if (error instanceof z.ZodError) return res.status(400).json({ error: 'Invalid input', details: error.errors });
+    res.status(500).json({ error: 'Failed to start signup' });
   }
 });
 
-/**
- * POST /api/auth/signup/complete?session_id=...
- * Called from /welcome page after Stripe redirects back (optional — webhook is the fallback).
- */
+// 2) complete signup after redirect
 router.post('/signup/complete', async (req, res) => {
   try {
     if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    const sessionId = z.string().min(10).parse(req.query.session_id || req.body.session_id);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] });
 
-    const { session_id } = completeSchema.parse({ session_id: req.query.session_id });
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-
-    const record = await req.db('checkout_sessions')
-      .where({ stripe_session_id: session.id })
-      .first();
-
-    if (!record) return res.status(400).json({ error: 'Session not found' });
-
-    // Provision only if not yet provisioned
-    let user = await findUserByEmail(req.db, record.email);
-    if (!user) {
-      const { user: created } = await createOrgWithOwner(req.db, {
-        orgSlug: record.org_slug,
-        orgName: record.full_name, // You can replace with a separate org name field if available
-        email: record.email,
-        fullName: record.full_name,
-        passwordHash: record.password_hash,
-      });
-      user = created;
+    if (session.status !== 'complete') {
+      return res.status(400).json({ error: 'Checkout not complete' });
     }
 
-    const token = signToken(user);
-    setAuthCookie(res, token);
+    const row = await query('SELECT * FROM checkout_sessions WHERE stripe_session_id = $1 LIMIT 1', [sessionId]);
+    if (row.rows.length === 0) return res.status(400).json({ error: 'Signup context not found' });
+    const s = row.rows[0];
 
-    const membership = await defaultMembershipForUser(req.db, user.id);
-    return res.json({ ok: true, user, membership });
-  } catch (err) {
-    return res.status(400).json({ error: err.message || 'Failed to complete signup' });
+    // idempotency: if org exists, just log in the user
+    const existingOrg = await query('SELECT id FROM organisations WHERE LOWER(name) = LOWER($1) LIMIT 1', [s.org_slug]);
+    let orgId;
+    if (existingOrg.rows.length > 0) {
+      orgId = existingOrg.rows[0].id;
+    } else {
+      const org = await query(`
+        INSERT INTO organisations (name, stripe_customer_id, stripe_subscription_id, plan_price_id)
+        VALUES ($1,$2,$3,$4) RETURNING id
+      `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id]);
+      orgId = org.rows[0].id;
+
+      // create default queue
+      await query(
+        'INSERT INTO queues (organisation_id, name, is_default) VALUES ($1,$2,true) ON CONFLICT DO NOTHING',
+        [orgId, 'General']
+      );
+    }
+
+    // create user if needed
+    const existingUser = await findUserByEmail(s.email);
+    let userId;
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
+      const u = await query(
+        'INSERT INTO users (email, name, password_hash) VALUES ($1,$2,$3) RETURNING id',
+        [s.email.toLowerCase(), s.full_name, s.password_hash]
+      );
+      userId = u.rows[0].id;
+    }
+
+    // ensure membership
+    await query(
+      `INSERT INTO memberships (user_id, organisation_id, role)
+       VALUES ($1,$2,'owner')
+       ON CONFLICT (user_id, organisation_id) DO NOTHING`,
+      [userId, orgId]
+    );
+
+    const token = signJwt({ userId, email: s.email });
+
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({ ok: true, token, organisationId: orgId });
+  } catch (error) {
+    console.error('signup/complete error:', error);
+    res.status(500).json({ error: 'Failed to complete signup' });
   }
 });
 
-/**
- * POST /api/auth/stripe/webhook
- * Must be mounted BEFORE express.json() in server.js to preserve raw body.
- * server.js should assign `req.rawBody` for this route.
- */
-router.post('/stripe/webhook', async (req, res) => {
+// 3) webhook fallback (mounted with raw body in server.js as well)
+router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+  const sig = req.headers['stripe-signature'];
+  let event;
   try {
-    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('webhook signature error', err);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
-    const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
-    if (!webhookSecret) return res.status(500).json({ error: 'STRIPE_WEBHOOK_SECRET not configured' });
-
-    let event;
-    try {
-      // IMPORTANT: req.rawBody is set in server.js via a raw body parser for this path
-      event = stripe.webhooks.constructEvent(req.rawBody, sig, webhookSecret);
-    } catch (err) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
+  try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
+      const sessionId = session.id;
 
-      // Look up our stored context for this checkout
-      const record = await req.db('checkout_sessions')
-        .where({ stripe_session_id: session.id })
-        .first();
+      const row = await query('SELECT * FROM checkout_sessions WHERE stripe_session_id = $1 LIMIT 1', [sessionId]);
+      if (row.rows.length === 0) return res.json({ received: true });
 
-      if (record) {
-        const existingUser = await findUserByEmail(req.db, record.email);
-        if (!existingUser) {
-          await createOrgWithOwner(req.db, {
-            orgSlug: record.org_slug,
-            orgName: record.full_name,
-            email: record.email,
-            fullName: record.full_name,
-            passwordHash: record.password_hash,
-          });
-        }
+      const s = row.rows[0];
+
+      // Ensure org
+      const existingOrg = await query('SELECT id FROM organisations WHERE LOWER(name) = LOWER($1) LIMIT 1', [s.org_slug]);
+      let orgId;
+      if (existingOrg.rows.length > 0) {
+        orgId = existingOrg.rows[0].id;
+      } else {
+        const org = await query(`
+          INSERT INTO organisations (name, stripe_customer_id, stripe_subscription_id, plan_price_id)
+          VALUES ($1,$2,$3,$4) RETURNING id
+        `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id]);
+        orgId = org.rows[0].id;
+
+        await query(
+          'INSERT INTO queues (organisation_id, name, is_default) VALUES ($1,$2,true) ON CONFLICT DO NOTHING',
+          [orgId, 'General']
+        );
       }
+
+      // Ensure user + membership
+      const existingUser = await findUserByEmail(s.email);
+      let userId;
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        const u = await query(
+          'INSERT INTO users (email, name, password_hash) VALUES ($1,$2,$3) RETURNING id',
+          [s.email.toLowerCase(), s.full_name, s.password_hash]
+        );
+        userId = u.rows[0].id;
+      }
+
+      await query(
+        `INSERT INTO memberships (user_id, organisation_id, role)
+         VALUES ($1,$2,'owner')
+         ON CONFLICT (user_id, organisation_id) DO NOTHING`,
+        [userId, orgId]
+      );
     }
 
-    return res.json({ received: true });
-  } catch (err) {
-    return res.status(500).json({ error: err.message || 'Webhook handler failed' });
+    res.json({ received: true });
+  } catch (e) {
+    console.error('webhook handler error', e);
+    res.status(500).send('Webhook handler failed');
   }
 });
 
-/**
- * GET /api/auth/session
- * Quick “am I logged in?” for the SPA.
- */
+// -------------------- logout + me -----------
+router.post('/logout', (req, res) => {
+  res.clearCookie('auth_token');
+  res.json({ message: 'Logged out successfully' });
+});
+
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const userResult = await query(`
+      SELECT u.id, u.email, u.name,
+             m.organisation_id, m.role, o.name as org_name,
+             o.plan_price_id
+      FROM users u
+      LEFT JOIN memberships m ON m.user_id = u.id
+      LEFT JOIN organisations o ON o.id = m.organisation_id
+      WHERE u.id = $1
+      ORDER BY m.created_at ASC
+      LIMIT 1
+    `, [decoded.userId]);
+
+    if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json(userResult.rows[0]);
+  } catch (error) {
+    console.error('me error:', error);
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
+/* -------------------- lightweight session check -------------------- */
 router.get('/session', async (req, res) => {
   try {
-    const token = req.cookies?.auth_token;
-    if (!token) return res.json({ user: null, membership: null });
+    const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await req.db('users').where({ id: decoded.id }).first();
-    if (!user) return res.json({ user: null, membership: null });
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-    const membership = await defaultMembershipForUser(req.db, user.id);
-    return res.json({ user, membership });
-  } catch {
-    return res.json({ user: null, membership: null });
+    const rUser = await query('SELECT id, email, name FROM users WHERE id = $1 LIMIT 1', [decoded.userId]);
+    if (rUser.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const rMem = await query(
+      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [decoded.userId]
+    );
+
+    return res.json({
+      user: rUser.rows[0],
+      membership: rMem.rows[0] || null
+    });
+  } catch (err) {
+    console.error('Session check failed:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
-});
-
-/**
- * POST /api/auth/logout
- * Clears auth cookie.
- */
-router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token', { path: '/' });
-  return res.json({ ok: true });
 });
 
 module.exports = router;
