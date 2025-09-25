@@ -1,208 +1,106 @@
 // web/client/src/SignUp.jsx
 import React, { useEffect, useMemo, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Button } from '@app/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx'
-import { Input } from '@app/components/ui/input.jsx'
-import { Label } from '@app/components/ui/label.jsx'
-import { Alert, AlertDescription } from '@app/components/ui/alert.jsx'
-import { CheckCircle2, Loader2, Star } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Button } from '@/components/ui/button.jsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Input } from '@/components/ui/input.jsx'
+import { Label } from '@/components/ui/label.jsx'
+import { Alert, AlertDescription } from '@/components/ui/alert.jsx'
+import { Loader2, CheckCircle, ArrowLeft, BadgeCheck } from 'lucide-react'
 import worktrackrLogo from './assets/worktrackr_icon_only.png'
 
-/** Resolve Stripe price IDs:
- *  - Prefer Vite env vars (VITE_PRICE_STARTER/PRO/ENTERPRISE)
- *  - Else use any price ids saved in localStorage (price_id_starter/pro/enterprise)
+/**
+ * Map your Stripe Price IDs to a friendly label shown on the form.
+ * Replace the placeholder values with your live price IDs (or keep as-is if you’re
+ * already writing them from Pricing.jsx via localStorage).
  */
-function resolvePriceIds() {
-  const ls = typeof window !== 'undefined' ? window.localStorage : null
-  const fromEnv = {
-    starter: import.meta.env.VITE_PRICE_STARTER || '',
-    pro: import.meta.env.VITE_PRICE_PRO || '',
-    enterprise: import.meta.env.VITE_PRICE_ENTERPRISE || '',
-  }
-  const fromLocal = {
-    starter: ls?.getItem('price_id_starter') || '',
-    pro: ls?.getItem('price_id_pro') || '',
-    enterprise: ls?.getItem('price_id_enterprise') || '',
-  }
-  return {
-    starter: fromEnv.starter || fromLocal.starter || '',
-    pro: fromEnv.pro || fromLocal.pro || '',
-    enterprise: fromEnv.enterprise || fromLocal.enterprise || '',
-  }
-}
-
-const plans = [
-  {
-    key: 'starter',
-    name: 'Starter',
-    priceLabel: '£49',
-    period: '/month',
-    badge: null,
-    features: [
-      'Up to 5 users',
-      'Smart ticketing',
-      'Email notifications',
-    ],
-  },
-  {
-    key: 'pro',
-    name: 'Pro',
-    priceLabel: '£99',
-    period: '/month',
-    badge: { text: 'Most Popular', icon: Star },
-    features: [
-      'Up to 25 users',
-      'Workflow builder',
-      'Reports & inspections',
-      'Approvals',
-    ],
-  },
-  {
-    key: 'enterprise',
-    name: 'Enterprise',
-    priceLabel: '£299',
-    period: '/month',
-    badge: null,
-    features: [
-      'Unlimited users',
-      'Advanced workflows',
-      'API access',
-      'White-labeling',
-    ],
-  },
-]
-
-function PlanCard({ plan, active, disabled, onSelect }) {
-  const BadgeIcon = plan.badge?.icon
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={() => !disabled && onSelect(plan.key)}
-      className={[
-        'w-full text-left rounded-2xl border p-5 transition focus:outline-none',
-        disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md',
-        active
-          ? 'border-black ring-2 ring-black/10 shadow-lg bg-white'
-          : 'border-gray-200 bg-white',
-      ].join(' ')}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-lg font-semibold">{plan.name}</div>
-          <div className="mt-1 flex items-baseline gap-1">
-            <div className="text-3xl font-bold">{plan.priceLabel}</div>
-            <div className="text-gray-500">{plan.period}</div>
-          </div>
-        </div>
-        {plan.badge && (
-          <span className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium worktrackr-bg-yellow text-black">
-            {BadgeIcon ? <BadgeIcon className="w-3 h-3" /> : null}
-            {plan.badge.text}
-          </span>
-        )}
-      </div>
-
-      <ul className="mt-4 space-y-2">
-        {plan.features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-            <CheckCircle2 className="w-4 h-4 worktrackr-yellow flex-shrink-0 mt-0.5" />
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-5">
-        <span
-          className={[
-            'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium',
-            active ? 'bg-black text-white' : 'bg-gray-100 text-gray-800',
-          ].join(' ')}
-        >
-          {active ? 'Selected' : disabled ? 'Unavailable' : 'Select'}
-        </span>
-      </div>
-    </button>
-  )
+const PRICE_META = {
+  // Example:
+  // 'price_123STARTER': { name: 'Starter', amount: '£49', suffix: '/month' },
+  // 'price_123PRO':     { name: 'Pro',     amount: '£99', suffix: '/month' },
+  // 'price_123ENT':     { name: 'Enterprise', amount: '£299', suffix: '/month' },
 }
 
 export default function SignUp() {
   const nav = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', orgId: '' })
-  const [errors, setErrors] = useState({})
-  const [generalError, setGeneralError] = useState(null)
+  const [qs] = useSearchParams()
+
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', org_slug: '' })
   const [busy, setBusy] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [generalError, setGeneralError] = useState(null)
+  const [selectedPriceId, setSelectedPriceId] = useState('')
 
-  const priceIds = useMemo(resolvePriceIds, [])
-  const [selectedPlan, setSelectedPlan] = useState('') // 'starter' | 'pro' | 'enterprise' | ''
-  const selectedPriceId = selectedPlan ? priceIds[selectedPlan] : ''
-
-  // Load preselected plan from Pricing page (if any)
+  // Resolve the selected plan (URL param takes precedence, otherwise localStorage)
   useEffect(() => {
-    const pre = localStorage.getItem('selectedPlan')
-    if (pre && ['starter', 'pro', 'enterprise'].includes(pre)) setSelectedPlan(pre)
-  }, [])
+    const urlPrice = qs.get('price')
+    const stored = localStorage.getItem('selectedPriceId') || ''
+    const chosen = urlPrice || stored || ''
+    setSelectedPriceId(chosen)
+  }, [qs])
 
-  function onChange(e) {
+  const selectedPlanMeta = useMemo(() => {
+    if (!selectedPriceId) return null
+    return PRICE_META[selectedPriceId] || { name: 'Selected plan', amount: '', suffix: '' }
+  }, [selectedPriceId])
+
+  const onChange = (e) => {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }))
+    setForm((s) => ({ ...s, [name]: value }))
+    if (fieldErrors[name]) {
+      setFieldErrors((s) => ({ ...s, [name]: null }))
+    }
+    setGeneralError(null)
   }
 
-  function validate() {
-    const next = {}
-    if (!selectedPlan || !selectedPriceId) next.plan = 'Please choose a plan.'
-    if (!form.name.trim()) next.name = 'Name is required.'
-    if (!form.email.trim()) next.email = 'Email is required.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = 'Email is invalid.'
-    if (!form.password || form.password.length < 8) next.password = 'Password must be at least 8 characters.'
-    if (!form.orgId.trim()) next.orgId = 'Organization ID is required.'
-    return next
+  const validate = () => {
+    const errs = {}
+    if (!selectedPriceId) errs.price = 'Please choose a plan on the pricing page first.'
+    if (!form.full_name.trim()) errs.full_name = 'Full name is required.'
+    if (!form.email.trim()) errs.email = 'Email is required.'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email.'
+    if (!form.password || form.password.length < 8) errs.password = 'Password must be at least 8 characters.'
+    if (!form.org_slug.trim()) errs.org_slug = 'Organization ID is required.'
+    return errs
   }
 
-  async function onSubmit(e) {
+  const submit = async (e) => {
     e.preventDefault()
     setGeneralError(null)
-    const v = validate()
-    if (Object.keys(v).length) {
-      setErrors(v)
+    setFieldErrors({})
+    const errs = validate()
+    if (Object.keys(errs).length) {
+      setFieldErrors(errs)
       return
     }
 
-    setBusy(true)
     try {
+      setBusy(true)
+      // keep what Pricing wrote so /welcome/flows can still read it if needed
+      localStorage.setItem('selectedPriceId', selectedPriceId)
+
       const resp = await fetch('/api/auth/signup/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          full_name: form.name.trim(),
+          full_name: form.full_name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          org_slug: form.orgId.trim(),
+          org_slug: form.org_slug.trim(),
           price_id: selectedPriceId,
         }),
       })
+
       const data = await resp.json().catch(() => ({}))
       if (!resp.ok || !data?.url) {
-        if (data?.details && Array.isArray(data.details)) {
-          const backend = {}
-          data.details.forEach(d => {
-            if (d?.path?.[0]) backend[d.path[0]] = d.message
-          })
-          setErrors(backend)
-        } else if (data?.error) {
-          setGeneralError(data.error)
-        } else {
-          setGeneralError('Failed to start checkout')
-        }
+        // surface validation-style messages if present
+        if (data?.error) setGeneralError(data.error)
+        else setGeneralError('Failed to start checkout. Please try again.')
         return
       }
 
-      localStorage.setItem('selectedPlan', selectedPlan)
-      localStorage.setItem('orgId', form.orgId.trim())
-
+      // Off to Stripe 🎟️
       window.location.href = data.url
     } catch (err) {
       setGeneralError(err.message || 'Network error')
@@ -213,7 +111,7 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top nav */}
+      {/* Top bar */}
       <nav className="border-b bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -223,87 +121,96 @@ export default function SignUp() {
                 Work<span className="trackr">Trackr</span> CLOUD
               </div>
             </div>
-            <div className="text-sm text-gray-600">
+
+            <div className="text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="underline">Sign in</Link>
+              <button className="underline hover:opacity-80" onClick={() => nav('/login')}>
+                Sign in
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Heading */}
-      <section className="py-10 text-center">
+      {/* Title */}
+      <section className="py-10 px-4 text-center">
         <h1 className="text-4xl font-bold">
           Start Your <span className="worktrackr-yellow">Free Trial</span>
         </h1>
-        <p className="mt-3 text-gray-600">
-          Join thousands of teams already using WorkTrackr Cloud
-        </p>
-        <p className="text-gray-500">7-day free trial • Cancel anytime</p>
+        <p className="text-gray-600 mt-2">7-day free trial • Cancel anytime</p>
       </section>
 
-      {/* Plan cards */}
-      <section className="px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid gap-4 md:grid-cols-3">
-            {plans.map(p => {
-              const disabled = !priceIds[p.key]
-              return (
-                <PlanCard
-                  key={p.key}
-                  plan={p}
-                  active={selectedPlan === p.key}
-                  disabled={disabled}
-                  onSelect={(k) => setSelectedPlan(k)}
-                />
-              )
-            })}
-          </div>
-          {(!selectedPlan || !selectedPriceId) && (
-            <p className="mt-3 text-center text-sm text-gray-500">
-              Select a plan above to continue. You can change plan later.
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* Sign up form */}
-      <section className="py-10 px-4">
+      <section className="px-4 pb-16">
         <div className="max-w-md mx-auto">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create your account</CardTitle>
-              <CardDescription>Then you’ll be taken to secure checkout</CardDescription>
+              <CardDescription>You’ll be taken to secure checkout next</CardDescription>
             </CardHeader>
             <CardContent>
-              {generalError && (
-                <Alert className="mb-4 border-red-200 bg-red-50">
+              {/* Plan status */}
+              {!selectedPriceId ? (
+                <Alert className="mb-6 border-red-200 bg-red-50">
                   <AlertDescription className="text-red-800">
-                    {generalError}
+                    No plan selected. Please choose a plan on the{' '}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => nav('/pricing')}
+                    >
+                      pricing page
+                    </button>
+                    .
                   </AlertDescription>
                 </Alert>
+              ) : (
+                <div className="mb-6 flex items-center justify-between rounded-md border p-3">
+                  <div className="flex items-center gap-3">
+                    <BadgeCheck className="w-5 h-5 worktrackr-yellow" />
+                    <div>
+                      <div className="font-medium">
+                        {selectedPlanMeta?.name || 'Selected plan'}
+                      </div>
+                      {(selectedPlanMeta?.amount || selectedPlanMeta?.suffix) && (
+                        <div className="text-sm text-gray-600">
+                          {selectedPlanMeta?.amount}
+                          {selectedPlanMeta?.suffix ? (
+                            <span className="text-gray-500">{selectedPlanMeta.suffix}</span>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-sm underline"
+                    onClick={() => nav('/pricing')}
+                  >
+                    Change plan
+                  </button>
+                </div>
               )}
-              {errors.plan && (
-                <Alert className="mb-4 border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">
-                    {errors.plan} (no price configured for the selected plan).
-                  </AlertDescription>
+
+              {generalError && (
+                <Alert className="mb-6 border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800">{generalError}</AlertDescription>
                 </Alert>
               )}
 
-              <form onSubmit={onSubmit} className="space-y-4">
+              <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
+                  <Label htmlFor="full_name">Full Name *</Label>
                   <Input
-                    id="name"
-                    name="name"
-                    value={form.name}
+                    id="full_name"
+                    name="full_name"
+                    value={form.full_name}
                     onChange={onChange}
                     placeholder="Enter your full name"
-                    className={errors.name ? 'border-red-500' : ''}
-                    required
+                    className={fieldErrors.full_name ? 'border-red-500' : ''}
                   />
-                  {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+                  {fieldErrors.full_name && (
+                    <p className="text-sm text-red-600">{fieldErrors.full_name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -314,11 +221,12 @@ export default function SignUp() {
                     type="email"
                     value={form.email}
                     onChange={onChange}
-                    placeholder="Enter your email address"
-                    className={errors.email ? 'border-red-500' : ''}
-                    required
+                    placeholder="you@company.com"
+                    className={fieldErrors.email ? 'border-red-500' : ''}
                   />
-                  {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+                  {fieldErrors.email && (
+                    <p className="text-sm text-red-600">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -329,32 +237,33 @@ export default function SignUp() {
                     type="password"
                     value={form.password}
                     onChange={onChange}
-                    placeholder="Create a secure password (min. 8 characters)"
-                    className={errors.password ? 'border-red-500' : ''}
-                    minLength={8}
-                    required
+                    placeholder="Minimum 8 characters"
+                    className={fieldErrors.password ? 'border-red-500' : ''}
                   />
-                  {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
+                  {fieldErrors.password && (
+                    <p className="text-sm text-red-600">{fieldErrors.password}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="orgId">Organization ID *</Label>
+                  <Label htmlFor="org_slug">Organization ID *</Label>
                   <Input
-                    id="orgId"
-                    name="orgId"
-                    value={form.orgId}
+                    id="org_slug"
+                    name="org_slug"
+                    value={form.org_slug}
                     onChange={onChange}
-                    placeholder="Enter your organization identifier"
-                    className={errors.orgId ? 'border-red-500' : ''}
-                    required
+                    placeholder="e.g. acme-ltd"
+                    className={fieldErrors.org_slug ? 'border-red-500' : ''}
                   />
-                  {errors.orgId && <p className="text-sm text-red-600">{errors.orgId}</p>}
+                  {fieldErrors.org_slug && (
+                    <p className="text-sm text-red-600">{fieldErrors.org_slug}</p>
+                  )}
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full worktrackr-bg-black hover:bg-gray-800 text-white"
-                  disabled={busy || !selectedPlan || !selectedPriceId}
+                  disabled={busy || !selectedPriceId}
                   size="lg"
                 >
                   {busy ? (
@@ -367,12 +276,35 @@ export default function SignUp() {
                   )}
                 </Button>
 
-                <p className="text-center text-xs text-gray-500">
-                  By creating an account, you agree to our Terms of Service and Privacy Policy.
-                </p>
+                <div className="text-center text-xs text-gray-500">
+                  By creating an account you agree to our Terms & Privacy Policy
+                </div>
               </form>
             </CardContent>
           </Card>
+
+          <div className="mt-8 flex justify-center">
+            <Button variant="ghost" onClick={() => nav('/')} className="flex items-center">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+
+          {/* trust bullets */}
+          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <CheckCircle className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Secure & Private</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <CheckCircle className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Trusted by Teams</p>
+            </div>
+            <div className="flex flex-col items-center">
+              <CheckCircle className="w-8 h-8 worktrackr-yellow mb-2" />
+              <p className="text-sm text-gray-600">Quick Setup</p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
