@@ -1,4 +1,5 @@
-import { useState } from 'react'
+// web/client/src/App.jsx
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@app/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx'
@@ -69,11 +70,10 @@ function App() {
               </div>
             </div>
             <div className="flex space-x-4">
-              {/* ✅ wire up Login */}
               <Button variant="outline" onClick={() => navigate('/login')}>Login</Button>
               <Button
                 className="worktrackr-bg-black hover:bg-gray-800"
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/pricing')}   // ⬅ go pick a plan first
                 aria-label="Start free trial"
               >
                 Get Started
@@ -93,7 +93,11 @@ function App() {
             The complete workflow and ticketing system designed for IT support providers, maintenance teams, and service organizations.
           </p>
           <div className="flex justify-center space-x-4">
-            <Button size="lg" className="worktrackr-bg-black hover:bg-gray-800" onClick={() => navigate('/signup')}>
+            <Button
+              size="lg"
+              className="worktrackr-bg-black hover:bg-gray-800"
+              onClick={() => navigate('/pricing')}    // ⬅ go pick a plan first
+            >
               Start Free Trial
             </Button>
             <Button size="lg" variant="outline">
@@ -161,7 +165,7 @@ function App() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section (kept — lets users choose here too) */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-4">Simple, transparent pricing</h2>
