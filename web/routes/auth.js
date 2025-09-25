@@ -163,10 +163,7 @@ router.post('/signup/start', async (req, res) => {
     const { full_name, email, password, org_slug, price_id } = startSignupSchema.parse(req.body);
     const priceId = price_id || process.env.STRIPE_PRICE_STARTER;
 
-    if (await findUserByEmail(email)) {
-      return res.status(400).json({ error: 'Email already in use' });
-    }
-
+    const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
 
     const session = await stripe.checkout.sessions.create({
@@ -176,7 +173,7 @@ router.post('/signup/start', async (req, res) => {
       success_url: `${APP_BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_BASE_URL}/signup?canceled=1`,
       customer_creation: 'if_required',
-      metadata: { email, full_name, org_slug }
+      metadata: { email, full_name, org_slug, existing_user: existing ? '1' : '0' }
     });
 
     await query(`
