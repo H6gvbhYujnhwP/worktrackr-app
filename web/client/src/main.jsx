@@ -6,7 +6,7 @@ import './index.css';
 
 import App from './App.jsx';       // Dashboard + protected routes
 import SignUp from './SignUp.jsx'; // Signup page
-import Login from './components/Login.jsx'; // Login page
+import Login from './Login.jsx';   // Login page (correct path)
 import Pricing from './Pricing.jsx'; // Pricing page
 import Welcome from './Welcome.jsx'; // New welcome page
 
