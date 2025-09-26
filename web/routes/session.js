@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { query } = require('../shared/db');
+const { query } = require('../../shared/db');
 
 const router = express.Router();
 
