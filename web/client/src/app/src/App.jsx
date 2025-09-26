@@ -305,6 +305,7 @@ const SimulationProvider = ({ children }) => {
 // ---------------- Auth provider (real API) ----------------
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [membership, setMembership] = useState(null);
   const [loading, setLoading] = useState(true);
   const [organization, setOrganization] = useState(null);
 
@@ -325,6 +326,7 @@ const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setMembership(data.membership);
         
         // If user has membership, get organization details
         if (data.membership) {
@@ -332,11 +334,13 @@ const AuthProvider = ({ children }) => {
         }
       } else {
         setUser(null);
+        setMembership(null);
         setOrganization(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       setUser(null);
+      setMembership(null);
       setOrganization(null);
     } finally {
       setLoading(false);
@@ -375,9 +379,10 @@ const AuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        setMembership(data.membership);
         
         if (data.membership) {
-          await fetchOrganization(data.membership.organisation_id);
+          await fetchOrganization(data.membership.orgId);
         }
         
         return { success: true, user: data.user };
@@ -401,12 +406,14 @@ const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
+      setMembership(null);
       setOrganization(null);
     }
   };
 
   const value = {
     user,
+    membership,
     organization,
     loading,
     login,

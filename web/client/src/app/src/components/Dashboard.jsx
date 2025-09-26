@@ -43,7 +43,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,7 +166,7 @@ export default function Dashboard() {
     my_tickets: tickets.filter(t => t.assignedTo === user.id).length
   };
 
-  const isAdmin = user.role === 'admin' || user.isOrgOwner;
+  const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
 
   return (
     <div className="min-h-screen bg-gray-50">
