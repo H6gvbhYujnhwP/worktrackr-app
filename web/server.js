@@ -58,16 +58,20 @@ app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use('/webhooks', rateLimit({ windowMs: 60 * 1000, max: 60 }));
 
 /* ---------------- CORS ---------------- */
-const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000')
+const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000,worktrackr.cloud')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
+console.log('🌐 CORS allowed origins:', allowedOrigins);
+
 app.use(
   cors({
     origin(origin, cb) {
+      console.log('🔍 CORS check for origin:', origin);
       if (!origin) return cb(null, true);
       const ok = allowedOrigins.length === 0 || allowedOrigins.some((h) => origin.includes(h));
+      console.log('✅ CORS result:', ok ? 'ALLOWED' : 'BLOCKED');
       cb(ok ? null : new Error('Not allowed by CORS'), ok);
     },
     credentials: true,
@@ -134,6 +138,21 @@ app.get('/api/version', (_req, res) => {
     version: process.env.APP_VERSION || '1.0.0',
     env: process.env.NODE_ENV || 'development',
   });
+});
+
+/* ======================= Cookie Test Endpoint =================== */
+app.get('/api/test-cookie', (_req, res) => {
+  console.log('🧪 Testing cookie setting...');
+  res.cookie('test_cookie', 'test_value', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60000,
+    path: '/'
+  });
+  console.log('🍪 Test cookie set');
+  console.log('📋 Response headers:', res.getHeaders());
+  res.json({ message: 'Test cookie set', headers: res.getHeaders() });
 });
 
 /* =========================== Webhooks ============================ */
