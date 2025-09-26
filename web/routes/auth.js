@@ -75,19 +75,19 @@ router.post('/login', async (req, res) => {
     }
     console.log('✅ Password verified for:', email);
 
+    // Get membership data FIRST
+    console.log('👥 Fetching membership for user:', user.id);
+    const m = await query(
+      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [user.id]
+    );
+    console.log('✅ Membership found:', m.rows[0]);
+
     console.log('🔑 Generating JWT token...');
     const token = signJwt({ userId: user.id, email: user.email });
     console.log('✅ JWT token generated, length:', token.length);
     
     console.log('🍪 Setting auth cookie...');
-    console.log('🔧 Cookie settings:', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      NODE_ENV: process.env.NODE_ENV
-    });
-    
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -96,27 +96,18 @@ router.post('/login', async (req, res) => {
       path: '/'
     };
     
-    // In production, don't set domain to allow cookie to work on worktrackr.cloud
-    if (process.env.NODE_ENV !== 'production') {
-      cookieOptions.domain = 'localhost';
-    }
+    console.log('🔧 Cookie settings:', cookieOptions);
     
+    // Set cookie immediately after token generation
     res.cookie('auth_token', token, cookieOptions);
-    
-    // Get membership data BEFORE setting cookie and sending response
-    console.log('👥 Fetching membership for user:', user.id);
-    const m = await query(
-      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
-      [user.id]
-    );
-    console.log('✅ Membership found:', m.rows[0]);
-
     console.log('✅ Auth cookie set successfully');
-    console.log('📋 Response headers before send:', res.getHeaders());
 
-    // Send response AFTER cookie is set
+    // Send response immediately after cookie is set
     console.log('🎉 Login successful for:', email);
-    return res.json({ user: { id: user.id, email: user.email, name: user.name }, membership: m.rows[0] || null });
+    return res.json({ 
+      user: { id: user.id, email: user.email, name: user.name }, 
+      membership: m.rows[0] || null 
+    });
   } catch (error) {
     console.error('💥 Login error:', error);
     res.status(400).json({ error: 'Login failed' });
@@ -162,11 +153,6 @@ router.post('/register', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/'
     };
-    
-    // In production, don't set domain to allow cookie to work on worktrackr.cloud
-    if (process.env.NODE_ENV !== 'production') {
-      cookieOptions.domain = 'localhost';
-    }
     
     res.cookie('auth_token', token, cookieOptions);
 
@@ -283,11 +269,6 @@ router.post('/signup/complete', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/'
     };
-    
-    // In production, don't set domain to allow cookie to work on worktrackr.cloud
-    if (process.env.NODE_ENV !== 'production') {
-      cookieOptions.domain = 'localhost';
-    }
     
     res.cookie('auth_token', token, cookieOptions);
 
