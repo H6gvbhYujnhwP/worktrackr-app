@@ -59,29 +59,47 @@ const startSignupSchema = z.object({
 // -------------------- Option A: existing customers (login/register) --------------------
 router.post('/login', async (req, res) => {
   try {
+    console.log('🔐 Login attempt started for:', req.body.email);
     const { email, password } = loginSchema.parse(req.body);
     const user = await findUserByEmail(email);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) {
+      console.log('❌ User not found:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    console.log('✅ User found:', user.email);
+    
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!ok) {
+      console.log('❌ Password mismatch for:', email);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    console.log('✅ Password verified for:', email);
 
+    console.log('🔑 Generating JWT token...');
     const token = signJwt({ userId: user.id, email: user.email });
+    console.log('✅ JWT token generated, length:', token.length);
+    
+    console.log('🍪 Setting auth cookie...');
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+    console.log('✅ Auth cookie set successfully');
 
     // simple membership context
+    console.log('👥 Fetching membership for user:', user.id);
     const m = await query(
       'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
       [user.id]
     );
+    console.log('✅ Membership found:', m.rows[0]);
 
+    console.log('🎉 Login successful for:', email);
     return res.json({ user: { id: user.id, email: user.email, name: user.name }, membership: m.rows[0] || null });
   } catch (error) {
-    console.error('login error:', error);
+    console.error('💥 Login error:', error);
     res.status(400).json({ error: 'Login failed' });
   }
 });
