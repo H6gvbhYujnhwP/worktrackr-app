@@ -80,13 +80,23 @@ router.post('/login', async (req, res) => {
     console.log('✅ JWT token generated, length:', token.length);
     
     console.log('🍪 Setting auth cookie...');
+    console.log('🔧 Cookie settings:', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+    
     console.log('✅ Auth cookie set successfully');
+    console.log('📋 Response headers before send:', res.getHeaders());
 
     // simple membership context
     console.log('👥 Fetching membership for user:', user.id);
