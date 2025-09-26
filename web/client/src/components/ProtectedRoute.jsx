@@ -1,36 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../app/src/App.jsx';
 
 export default function ProtectedRoute({ children }) {
-  const nav = useNavigate();
-  const [ok, setOk] = useState(null); // null = loading
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const resp = await fetch('/api/auth/session', { credentials: 'include' });
-        if (!resp.ok) throw new Error('session failed');
-        const data = await resp.json();
-        if (!cancelled) {
-          if (data?.user) {
-            setOk(true);
-          } else {
-            setOk(false);
-            nav('/login?next=' + encodeURIComponent(window.location.pathname), { replace: true });
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          setOk(false);
-          nav('/login?next=' + encodeURIComponent(window.location.pathname), { replace: true });
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [nav]);
-
-  if (ok === null) {
+  // Show loading spinner while authentication data is being fetched
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -41,5 +18,10 @@ export default function ProtectedRoute({ children }) {
     );
   }
   
-  return ok ? children : null;
+  // If not authenticated, redirect to login
+  if (!user) {
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+  
+  return children;
 }

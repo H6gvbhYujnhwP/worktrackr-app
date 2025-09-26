@@ -43,7 +43,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 
 export default function Dashboard() {
-  const { user, membership, logout } = useAuth();
+  const { user, membership, loading, logout } = useAuth();
   const { tickets, users, emailLogs } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +65,18 @@ export default function Dashboard() {
   });
   const [currentView, setCurrentView] = useState('tickets'); // tickets, calendar, billing
   const [lastUpdate, setLastUpdate] = useState(new Date());
+
+  // Show loading spinner while authentication data is being fetched
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function Dashboard() {
     if (activeTab === 'parked' && ticket.status !== 'parked') {
       return false;
     }
-    if (activeTab === 'my_tickets' && ticket.assignedTo !== user.id) {
+    if (activeTab === 'my_tickets' && ticket.assignedTo !== user?.id) {
       return false;
     }
 
@@ -132,7 +144,7 @@ export default function Dashboard() {
     }
 
     // Status filter
-    if (statusFilter === 'my_tickets' && ticket.assignedTo !== user.id) {
+    if (statusFilter === 'my_tickets' && ticket.assignedTo !== user?.id) {
       return false;
     } else if (statusFilter === 'open' && !['new', 'assigned', 'in_progress', 'waiting_approval'].includes(ticket.status)) {
       return false;
@@ -163,7 +175,7 @@ export default function Dashboard() {
     open: tickets.filter(t => ['new', 'assigned', 'in_progress', 'waiting_approval'].includes(t.status)).length,
     completed: tickets.filter(t => t.status === 'completed').length,
     parked: tickets.filter(t => t.status === 'parked').length,
-    my_tickets: tickets.filter(t => t.assignedTo === user.id).length
+    my_tickets: tickets.filter(t => t.assignedTo === user?.id).length
   };
 
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
@@ -198,7 +210,7 @@ export default function Dashboard() {
                 <Bell className="w-4 h-4" />
               </Button>
               <div className="text-sm font-medium text-gray-700 hidden sm:block max-w-[100px] truncate">
-                {user.name}
+                {user?.name || 'User'}
               </div>
               <Button variant="ghost" size="sm" onClick={logout}>
                 <LogOut className="w-4 h-4" />
@@ -212,7 +224,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user.name}
+            Welcome back, {user?.name || 'User'}
           </h1>
           <p className="text-gray-600 mt-2">
             {isAdmin ? 'Manage your organization and workflows' : 'View and manage your assigned tickets'}
