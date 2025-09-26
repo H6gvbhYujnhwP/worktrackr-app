@@ -88,17 +88,22 @@ router.post('/login', async (req, res) => {
       NODE_ENV: process.env.NODE_ENV
     });
     
-    res.cookie('auth_token', token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    };
     
-    console.log('✅ Auth cookie set successfully');
-    console.log('📋 Response headers before send:', res.getHeaders());
-
-    // simple membership context
+    // In production, don't set domain to allow cookie to work on worktrackr.cloud
+    if (process.env.NODE_ENV !== 'production') {
+      cookieOptions.domain = 'localhost';
+    }
+    
+    res.cookie('auth_token', token, cookieOptions);
+    
+    // Get membership data BEFORE setting cookie and sending response
     console.log('👥 Fetching membership for user:', user.id);
     const m = await query(
       'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
@@ -106,6 +111,10 @@ router.post('/login', async (req, res) => {
     );
     console.log('✅ Membership found:', m.rows[0]);
 
+    console.log('✅ Auth cookie set successfully');
+    console.log('📋 Response headers before send:', res.getHeaders());
+
+    // Send response AFTER cookie is set
     console.log('🎉 Login successful for:', email);
     return res.json({ user: { id: user.id, email: user.email, name: user.name }, membership: m.rows[0] || null });
   } catch (error) {
@@ -146,12 +155,20 @@ router.post('/register', async (req, res) => {
     });
 
     const token = signJwt({ userId: result.user.id, email: result.user.email });
-    res.cookie('auth_token', token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    };
+    
+    // In production, don't set domain to allow cookie to work on worktrackr.cloud
+    if (process.env.NODE_ENV !== 'production') {
+      cookieOptions.domain = 'localhost';
+    }
+    
+    res.cookie('auth_token', token, cookieOptions);
 
     res.json({
       user: result.user,
@@ -259,12 +276,20 @@ router.post('/signup/complete', async (req, res) => {
 
     const token = signJwt({ userId, email: s.email });
 
-    res.cookie('auth_token', token, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    };
+    
+    // In production, don't set domain to allow cookie to work on worktrackr.cloud
+    if (process.env.NODE_ENV !== 'production') {
+      cookieOptions.domain = 'localhost';
+    }
+    
+    res.cookie('auth_token', token, cookieOptions);
 
     res.json({ ok: true, token, organisationId: orgId });
   } catch (error) {
