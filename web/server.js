@@ -175,18 +175,35 @@ app.use(express.static(clientDistPath, { maxAge: '0' }));
 
 /* -------------------- HARD GATE FOR /app/* ---------------------- */
 function readUserFromRequest(req) {
+  console.log('🔍 Checking user authentication for:', req.originalUrl);
+  console.log('🍪 Available cookies:', req.cookies);
+  
   const token = req.cookies.auth_token || req.cookies.jwt;
-  if (!token) return null;
+  console.log('🔑 Found token:', token ? `${token.substring(0, 20)}...` : 'NONE');
+  
+  if (!token) {
+    console.log('❌ No token found in cookies');
+    return null;
+  }
+  
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ Token verified for user:', decoded.userId);
+    return decoded;
+  } catch (error) {
+    console.log('❌ Token verification failed:', error.message);
     return null;
   }
 }
 
 app.use('/app', (req, res, next) => {
+  console.log('🚪 /app route accessed:', req.originalUrl);
   const user = readUserFromRequest(req);
-  if (user) return next();
+  if (user) {
+    console.log('✅ User authenticated, allowing access');
+    return next();
+  }
+  console.log('❌ User not authenticated, redirecting to login');
   const dest = encodeURIComponent(req.originalUrl);
   return res.redirect(`/login?next=${dest}`);
 });
