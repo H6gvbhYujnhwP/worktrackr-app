@@ -445,7 +445,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
-              path="/dashboard"
+              path="/app/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -453,14 +453,15 @@ export default function App() {
               }
             />
             <Route
-              path="/workflow-builder"
+              path="/app/workflow-builder"
               element={
                 <ProtectedRoute>
                   <WorkflowBuilder />
                 </ProtectedRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
           </Routes>
         </div>
       </SimulationProvider>
