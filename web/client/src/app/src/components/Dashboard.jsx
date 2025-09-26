@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, useSimulation } from '../App.jsx';
+import { useAuth } from '../../../context/AuthProvider.jsx';
+import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -43,7 +44,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 
 export default function Dashboard() {
-  const { user, membership, loading, logout } = useAuth();
+  const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,7 +68,7 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   // Show loading spinner while authentication data is being fetched
-  if (loading || !user) {
+  if (user === undefined || membership === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../app/src/App.jsx';
+import { useAuth } from '../context/AuthProvider.jsx';
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while authentication data is being fetched
-  if (loading) {
+  if (user === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
