@@ -443,25 +443,16 @@ export default function App() {
       <SimulationProvider>
         <div className="min-h-screen bg-gray-50">
           <Routes>
-            <Route path="/login" element={<Login />} />
             <Route
-              path="/app/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
+              path="/dashboard"
+              element={<Dashboard />}
             />
             <Route
-              path="/app/workflow-builder"
-              element={
-                <ProtectedRoute>
-                  <WorkflowBuilder />
-                </ProtectedRoute>
-              }
+              path="/workflow-builder"
+              element={<WorkflowBuilder />}
             />
-            <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </SimulationProvider>

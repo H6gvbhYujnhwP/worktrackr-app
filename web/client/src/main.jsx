@@ -1,7 +1,7 @@
 // web/client/src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 
 import App from './App.jsx';         // Landing page + existing content
@@ -9,6 +9,8 @@ import Pricing from './Pricing.jsx'; // Plan selection page
 import SignUp from './SignUp.jsx';   // Account creation -> Stripe checkout
 import Login from './Login.jsx';     // Sign in page (your existing file)
 import Welcome from './Welcome.jsx'; // Post-checkout landing
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AppEntrypoint from './app/AppEntrypoint.jsx'; // Manus sandbox entry
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -21,8 +23,21 @@ createRoot(document.getElementById('root')).render(
         <Route path="/login" element={<Login />} />
         <Route path="/welcome" element={<Welcome />} />
 
-        {/* You can add /dashboard or other protected routes inside App or here */}
-        <Route path="*" element={<App />} />
+        {/* Protected app area */}
+        <Route
+          path="/app/*"
+          element={
+            <ProtectedRoute>
+              <AppEntrypoint />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Helpful redirect */}
+        <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

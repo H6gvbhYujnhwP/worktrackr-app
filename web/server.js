@@ -122,9 +122,9 @@ async function authenticateToken(req, res, next) {
   }
 }
 
-/* =========================== API FIRST =========================== */
-app.use('/api/public-auth', publicAuthRoutes);
+/* ======================= API Routes ========================= */
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', require('./routes/session')); // Session check endpoint
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 // TEMP: open billing while testing; add auth here later if desired
