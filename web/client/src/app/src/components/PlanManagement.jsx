@@ -82,19 +82,33 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
   const handlePlanChange = async (newPlan) => {
     setLoading(true);
     try {
-      // Here you would integrate with Stripe to change the subscription
       console.log(`Changing plan from ${currentPlan} to ${newPlan}`);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create Stripe checkout session for plan change
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          plan: newPlan,
+          additionalSeats: additionalSeats
+        })
+      });
       
-      // Update plan in backend
-      // await updateSubscription({ plan: newPlan, additionalSeats });
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
       
-      setShowPlanDialog(false);
-      // Refresh page or update state
+      const { url } = await response.json();
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url;
+      
     } catch (error) {
       console.error('Failed to change plan:', error);
+      alert('Failed to change plan. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -107,15 +121,65 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
     try {
       console.log(`Changing seats from ${additionalSeats} to ${newSeatCount}`);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Update seats via API
+      const response = await fetch('/api/billing/update-seats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          additionalSeats: newSeatCount
+        })
+      });
       
-      // Update seats in Stripe
-      // await updateAdditionalSeats(newSeatCount);
+      if (!response.ok) {
+        throw new Error('Failed to update seats');
+      }
       
-      setShowSeatDialog(false);
+      // Success - refresh the page to show updated data
+      window.location.reload();
+      
     } catch (error) {
       console.error('Failed to update seats:', error);
+      alert('Failed to update seats. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCombinedChange = async (newPlan, seatChange) => {
+    setLoading(true);
+    try {
+      const newSeatCount = Math.max(0, additionalSeats + seatChange);
+      
+      console.log(`Changing plan to ${newPlan} and seats to ${newSeatCount}`);
+      
+      // Create checkout session with both plan and seats
+      const response = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          plan: newPlan,
+          additionalSeats: newSeatCount
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+      
+      const { url } = await response.json();
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url;
+      
+    } catch (error) {
+      console.error('Failed to update plan and seats:', error);
+      alert('Failed to update plan and seats. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -228,35 +292,35 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
             {Object.entries(PLAN_CONFIGS).map(([planKey, plan]) => (
               <Card 
                 key={planKey}
-                className={`cursor-pointer transition-all ${
+                className={`cursor-pointer transition-all h-full ${
                   selectedPlan === planKey 
                     ? 'border-blue-500 bg-blue-50' 
                     : 'hover:border-gray-300'
                 } ${currentPlan === planKey ? 'ring-2 ring-green-500' : ''}`}
                 onClick={() => setSelectedPlan(planKey)}
               >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center space-x-2">
-                      {planKey === 'enterprise' && <Crown className="w-4 h-4 text-yellow-500" />}
-                      {planKey === 'pro' && <Zap className="w-4 h-4 text-blue-500" />}
-                      <span>{plan.name}</span>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle className="flex items-center space-x-2 text-lg">
+                      {planKey === 'enterprise' && <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />}
+                      {planKey === 'pro' && <Zap className="w-4 h-4 text-blue-500 flex-shrink-0" />}
+                      <span className="truncate">{plan.name}</span>
                     </CardTitle>
                     {currentPlan === planKey && (
-                      <Badge variant="default">Current</Badge>
+                      <Badge variant="default" className="flex-shrink-0">Current</Badge>
                     )}
                   </div>
-                  <div className="text-2xl font-bold">£{plan.price}/month</div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-2xl font-bold text-center">£{plan.price}/month</div>
+                  <div className="text-sm text-gray-600 text-center">
                     {plan.maxUsers === Infinity ? 'Unlimited users' : `Up to ${plan.maxUsers} users`}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
+                <CardContent className="pt-0">
+                  <ul className="space-y-1.5">
                     {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center space-x-2 text-sm">
-                        <Check className="w-3 h-3 text-green-500" />
-                        <span>{feature}</span>
+                      <li key={index} className="flex items-start space-x-2 text-sm">
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="leading-tight">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -265,16 +329,101 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
             ))}
           </div>
 
+          {/* Additional Seats Section */}
+          <div className="border-t pt-4">
+            <h4 className="text-lg font-medium mb-3">Additional Seats</h4>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="font-medium">Extra user seats</p>
+                  <p className="text-sm text-gray-600">£{ADDITIONAL_SEAT_PRICE}/user/month</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSeatChange(Math.max(-additionalSeats, seatChange - 1))}
+                    disabled={additionalSeats + seatChange <= 0}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  
+                  <div className="text-center min-w-[80px]">
+                    <p className="text-lg font-medium">
+                      {additionalSeats + seatChange}
+                    </p>
+                    <p className="text-xs text-gray-500">seats</p>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSeatChange(seatChange + 1)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {seatChange !== 0 && (
+                <Alert className="mb-3">
+                  <AlertDescription>
+                    {seatChange > 0 
+                      ? `Adding ${seatChange} seats will increase your monthly bill by £${seatChange * ADDITIONAL_SEAT_PRICE}`
+                      : `Removing ${Math.abs(seatChange)} seats will decrease your monthly bill by £${Math.abs(seatChange) * ADDITIONAL_SEAT_PRICE}`
+                    }
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="flex justify-between items-center text-sm">
+                <span>Current additional seats: {additionalSeats}</span>
+                <span className="font-medium">
+                  Monthly cost: £{(additionalSeats + seatChange) * ADDITIONAL_SEAT_PRICE}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPlanDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowPlanDialog(false);
+              setSeatChange(0);
+            }}>
               Cancel
             </Button>
+            
+            {/* Plan Change Button */}
             {selectedPlan !== currentPlan && (
               <Button 
                 onClick={() => handlePlanChange(selectedPlan)}
                 disabled={loading}
               >
                 {loading ? 'Processing...' : `Switch to ${PLAN_CONFIGS[selectedPlan].name}`}
+              </Button>
+            )}
+            
+            {/* Seat Change Button */}
+            {seatChange !== 0 && selectedPlan === currentPlan && (
+              <Button 
+                onClick={() => handleSeatChange(seatChange)}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 
+                  seatChange > 0 
+                    ? `Add ${seatChange} Seats` 
+                    : `Remove ${Math.abs(seatChange)} Seats`
+                }
+              </Button>
+            )}
+            
+            {/* Combined Change Button */}
+            {selectedPlan !== currentPlan && seatChange !== 0 && (
+              <Button 
+                onClick={() => handleCombinedChange(selectedPlan, seatChange)}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : 'Update Plan & Seats'}
               </Button>
             )}
           </DialogFooter>
@@ -340,6 +489,62 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
                 </AlertDescription>
               </Alert>
             )}
+          </div>
+
+          {/* Additional Seats Section */}
+          <div className="border-t pt-4">
+            <h4 className="text-lg font-medium mb-3">Additional Seats</h4>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="font-medium">Extra user seats</p>
+                  <p className="text-sm text-gray-600">£{ADDITIONAL_SEAT_PRICE}/user/month</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSeatChange(Math.max(-additionalSeats, seatChange - 1))}
+                    disabled={additionalSeats + seatChange <= 0}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  
+                  <div className="text-center min-w-[80px]">
+                    <p className="text-lg font-medium">
+                      {additionalSeats + seatChange}
+                    </p>
+                    <p className="text-xs text-gray-500">seats</p>
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSeatChange(seatChange + 1)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {seatChange !== 0 && (
+                <Alert className="mb-3">
+                  <AlertDescription>
+                    {seatChange > 0 
+                      ? `Adding ${seatChange} seats will increase your monthly bill by £${seatChange * ADDITIONAL_SEAT_PRICE}`
+                      : `Removing ${Math.abs(seatChange)} seats will decrease your monthly bill by £${Math.abs(seatChange) * ADDITIONAL_SEAT_PRICE}`
+                    }
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="flex justify-between items-center text-sm">
+                <span>Current additional seats: {additionalSeats}</span>
+                <span className="font-medium">
+                  Monthly cost: £{(additionalSeats + seatChange) * ADDITIONAL_SEAT_PRICE}
+                </span>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
