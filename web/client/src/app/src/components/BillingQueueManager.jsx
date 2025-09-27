@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSimulation } from '../App.jsx';
 import { 
   Search, 
   Filter, 
