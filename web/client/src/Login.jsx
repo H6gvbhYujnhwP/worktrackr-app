@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from './context/AuthProvider.jsx';
 import { Button } from '@app/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx';
 import { Input } from '@app/components/ui/input.jsx';
@@ -12,6 +13,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') || '/app/dashboard';
+  const { login } = useAuth();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [busy, setBusy] = useState(false);
@@ -28,22 +30,13 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      const resp = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-        }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        setError(data?.error || 'Login failed');
-        return;
-        }
-      // HttpOnly cookie set on success; send the user where they were going
-      navigate(next, { replace: true });
+      const result = await login(form.email.trim().toLowerCase(), form.password);
+      if (result.success) {
+        // Login successful, navigate to the intended destination
+        navigate(next, { replace: true });
+      } else {
+        setError(result.error || 'Login failed');
+      }
     } catch (err) {
       setError(err.message || 'Network error');
     } finally {

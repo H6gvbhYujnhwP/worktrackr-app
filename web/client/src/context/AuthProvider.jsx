@@ -50,6 +50,19 @@ export function AuthProvider({ children }) {
         const data = await response.json();
         setUser(data.user);
         setMembership(data.membership);
+        
+        // Refetch session to ensure consistency
+        try {
+          const sessionResponse = await fetch('/api/auth/session', { credentials: 'include' });
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            setUser(sessionData?.user ?? null);
+            setMembership(sessionData?.membership ?? null);
+          }
+        } catch (sessionError) {
+          console.warn('Session refetch failed:', sessionError);
+        }
+        
         return { success: true, user: data.user };
       } else {
         const errorData = await response.json();
