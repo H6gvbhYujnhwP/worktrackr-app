@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth, useSimulation } from '../App.jsx';
 
 const PLAN_LIMITS = {
@@ -10,10 +10,46 @@ const PLAN_LIMITS = {
 export const useUserLimits = () => {
   const { membership } = useAuth();
   const { users } = useSimulation();
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Get current plan and additional seats from membership or default values
-  const currentPlan = membership?.plan || 'pro';
-  const additionalSeats = membership?.additionalSeats || 0;
+  // Fetch subscription data from API
+  useEffect(() => {
+    const fetchSubscriptionData = async () => {
+      try {
+        const response = await fetch('/api/billing/subscription', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSubscriptionData(data);
+        } else {
+          console.warn('Failed to fetch subscription data, using defaults');
+          setSubscriptionData({
+            plan: 'pro',
+            additionalSeats: 0,
+            status: 'active'
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching subscription data:', error);
+        setSubscriptionData({
+          plan: 'pro',
+          additionalSeats: 0,
+          status: 'active'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscriptionData();
+  }, []);
+  
+  // Get current plan and additional seats from API data or fallback to membership/defaults
+  const currentPlan = subscriptionData?.plan || membership?.plan || 'pro';
+  const additionalSeats = subscriptionData?.additionalSeats || membership?.additionalSeats || 0;
   
   const limits = useMemo(() => {
     const basePlanLimit = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.pro;
@@ -45,7 +81,7 @@ export const useUserLimits = () => {
         ? 0 
         : Math.round((currentUserCount / totalAllowedUsers) * 100)
     };
-  }, [currentPlan, additionalSeats, users]);
+  }, [currentPlan, additionalSeats, users, subscriptionData]);
   
   const validateUserAddition = (numberOfUsers = 1) => {
     if (limits.totalAllowedUsers === Infinity) {
@@ -84,11 +120,32 @@ export const useUserLimits = () => {
     return null;
   };
   
+  const refreshSubscription = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/billing/subscription', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionData(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing subscription data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     ...limits,
     validateUserAddition,
-    getUpgradeRecommendation
+    getUpgradeRecommendation,
+    loading,
+    subscriptionData,
+    refreshSubscription
   };
 };
 
 export default useUserLimits;
+

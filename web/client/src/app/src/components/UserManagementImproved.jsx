@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth, useSimulation } from '../App.jsx';
 import PlanManagement from './PlanManagement.jsx';
 import useUserLimits from '../hooks/useUserLimits.js';
@@ -21,12 +21,27 @@ import {
   Phone,
   Settings,
   Edit,
-  Save
+  Save,
+  AlertTriangle
 } from 'lucide-react';
+import {
+  Alert,
+  AlertDescription,
+} from '@/components/ui/alert.jsx';
 
 export default function UserManagementImproved({ users, currentUser }) {
   const { setUsers, organization, updateOrganization, emailService } = useSimulation();
-  const { validateUserAddition, canAddUsers } = useUserLimits();
+  const { 
+    validateUserAddition, 
+    canAddUsers, 
+    getUpgradeRecommendation, 
+    refreshSubscription,
+    loading: limitsLoading,
+    isAtLimit,
+    isNearLimit,
+    seatsRemaining,
+    totalAllowedUsers
+  } = useUserLimits();
   const [activeTab, setActiveTab] = useState('users');
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -44,7 +59,17 @@ export default function UserManagementImproved({ users, currentUser }) {
     // Validate user limit
     const validation = validateUserAddition(1);
     if (!validation.allowed) {
-      alert(validation.message);
+      // Show more detailed error with upgrade options
+      const upgradeRecommendation = getUpgradeRecommendation();
+      let message = validation.message;
+      
+      if (upgradeRecommendation) {
+        message += `\n\nRecommendation: ${upgradeRecommendation.reason}`;
+      } else {
+        message += '\n\nYou can add more seats or upgrade your plan in the Plan Management section.';
+      }
+      
+      alert(message);
       return;
     }
     
@@ -70,6 +95,11 @@ export default function UserManagementImproved({ users, currentUser }) {
       'Welcome to WorkTrackr',
       `Welcome ${userToAdd.name}! You've been added to the WorkTrackr system.`
     );
+    
+    // Refresh subscription data to get updated limits
+    if (refreshSubscription) {
+      refreshSubscription();
+    }
   };
 
   const handleDeleteUser = (userId) => {
@@ -150,15 +180,74 @@ export default function UserManagementImproved({ users, currentUser }) {
         {/* Team Members Tab */}
         {activeTab === 'users' && (
           <div className="space-y-4">
+            {/* User Limit Status */}
+            {!limitsLoading && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-blue-900">
+                        {users.length} of {totalAllowedUsers === Infinity ? '∞' : totalAllowedUsers} users
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        {seatsRemaining === Infinity 
+                          ? 'Unlimited seats available' 
+                          : `${seatsRemaining} seats remaining`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  {(isAtLimit || isNearLimit) && (
+                    <div className="text-right">
+                      {isAtLimit && (
+                        <Badge variant="destructive" className="mb-1">
+                          Limit Reached
+                        </Badge>
+                      )}
+                      {isNearLimit && !isAtLimit && (
+                        <Badge variant="secondary" className="mb-1">
+                          Near Limit
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* User Limit Warning */}
+            {isAtLimit && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  You've reached your user limit. To add more users, upgrade your plan or add additional seats in the Plan Management section above.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {isNearLimit && !isAtLimit && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  You're approaching your user limit ({seatsRemaining} seats remaining). Consider upgrading your plan or adding more seats.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Team Members</h3>
               <Button 
                 onClick={() => setShowAddUser(true)}
-                disabled={!canAddUsers}
+                disabled={!canAddUsers || limitsLoading}
                 title={!canAddUsers ? "User limit reached. Upgrade plan or add more seats." : ""}
+                className={!canAddUsers ? "opacity-50 cursor-not-allowed" : ""}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add User
+                {!canAddUsers && (
+                  <span className="ml-2 text-xs">(Limit Reached)</span>
+                )}
               </Button>
             </div>
 
@@ -385,7 +474,7 @@ export default function UserManagementImproved({ users, currentUser }) {
                     <option value="admin">Admin</option>
                   </select>
                 </div>
-
+                
                 <div className="flex items-center space-x-2">
                   <Switch
                     checked={newUser.emailNotifications}
@@ -398,8 +487,8 @@ export default function UserManagementImproved({ users, currentUser }) {
                   <Button onClick={handleAddUser} className="flex-1">
                     Add User
                   </Button>
-                  <Button
-                    variant="outline"
+                  <Button 
+                    variant="outline" 
                     onClick={() => setShowAddUser(false)}
                     className="flex-1"
                   >
@@ -414,4 +503,3 @@ export default function UserManagementImproved({ users, currentUser }) {
     </Card>
   );
 }
-
