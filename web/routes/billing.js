@@ -189,16 +189,10 @@ async function determineCustomerStatus(orgId, userId) {
   }
 }
 
-// Middleware to ensure user is authenticated
-const requireAuth = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  next();
-};
+
 
 // Get current subscription details
-router.get('/subscription', requireAuth, async (req, res) => {
+router.get('/subscription', async (req, res) => {
   try {
     const { user, membership } = req;
     const orgId = req.orgContext?.organisationId;
@@ -298,7 +292,7 @@ router.get('/subscription', requireAuth, async (req, res) => {
 });
 
 // Update additional seats for existing subscription
-router.post('/update-seats', requireAuth, async (req, res) => {
+router.post('/update-seats', async (req, res) => {
   try {
     const { additionalSeats } = req.body;
     const { user } = req;
@@ -379,7 +373,7 @@ router.post('/update-seats', requireAuth, async (req, res) => {
 });
 
 // Immediate subscription update for existing customers
-router.post('/update-subscription', requireAuth, async (req, res) => {
+router.post('/update-subscription', async (req, res) => {
   try {
     const { plan, additionalSeats = 0 } = req.body;
     const { user } = req;
