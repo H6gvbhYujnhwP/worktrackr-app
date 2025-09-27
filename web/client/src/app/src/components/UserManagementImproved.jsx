@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, useSimulation } from '../App.jsx';
+import PlanManagement from './PlanManagement.jsx';
+import useUserLimits from '../hooks/useUserLimits.js';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -24,6 +26,7 @@ import {
 
 export default function UserManagementImproved({ users, currentUser }) {
   const { setUsers, organization, updateOrganization, emailService } = useSimulation();
+  const { validateUserAddition, canAddUsers } = useUserLimits();
   const [activeTab, setActiveTab] = useState('users');
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -37,6 +40,13 @@ export default function UserManagementImproved({ users, currentUser }) {
 
   const handleAddUser = () => {
     if (!newUser.name || !newUser.email) return;
+    
+    // Validate user limit
+    const validation = validateUserAddition(1);
+    if (!validation.allowed) {
+      alert(validation.message);
+      return;
+    }
     
     const userToAdd = {
       id: Date.now(),
@@ -110,17 +120,12 @@ export default function UserManagementImproved({ users, currentUser }) {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Subscription Info */}
-        <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <CreditCard className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium">Pro Plan</p>
-              <p className="text-sm text-gray-600">{users.length} of 25 users</p>
-            </div>
-          </div>
-          <Badge variant="secondary">£99/month</Badge>
-        </div>
+        {/* Plan Management */}
+        <PlanManagement 
+          currentPlan="pro"
+          additionalSeats={0}
+          totalUsers={users.length}
+        />
 
         {/* Tab Navigation */}
         <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
@@ -147,7 +152,11 @@ export default function UserManagementImproved({ users, currentUser }) {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Team Members</h3>
-              <Button onClick={() => setShowAddUser(true)}>
+              <Button 
+                onClick={() => setShowAddUser(true)}
+                disabled={!canAddUsers}
+                title={!canAddUsers ? "User limit reached. Upgrade plan or add more seats." : ""}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add User
               </Button>
