@@ -119,7 +119,7 @@ export default function UserManagementImproved({ users, currentUser }) {
               <p className="text-sm text-gray-600">{users.length} of 25 users</p>
             </div>
           </div>
-          <Badge variant="secondary">£49/month</Badge>
+          <Badge variant="secondary">£99/month</Badge>
         </div>
 
         {/* Tab Navigation */}

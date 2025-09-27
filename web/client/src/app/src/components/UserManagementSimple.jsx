@@ -104,7 +104,7 @@ export default function UserManagementSimple({ isOpen, onClose }) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge variant="default" className="text-xs">
-                    £49/month
+                    £99/month
                   </Badge>
                   <Settings className="w-4 h-4 text-gray-400" />
                 </div>
@@ -299,7 +299,7 @@ export default function UserManagementSimple({ isOpen, onClose }) {
                           <h4 className="font-medium">Pro Plan</h4>
                           <p className="text-sm text-gray-600">Up to 25 users</p>
                         </div>
-                        <Badge variant="default">£49/month</Badge>
+                        <Badge variant="default">£99/month</Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -328,7 +328,7 @@ export default function UserManagementSimple({ isOpen, onClose }) {
                             <h4 className="font-medium">Pro Plan (Current)</h4>
                             <p className="text-sm text-gray-600">Up to 25 users</p>
                           </div>
-                          <Badge variant="default">£49/month</Badge>
+                          <Badge variant="default">£99/month</Badge>
                         </div>
                       </CardContent>
                     </Card>
