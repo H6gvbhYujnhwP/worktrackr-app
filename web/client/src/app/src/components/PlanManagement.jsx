@@ -101,10 +101,16 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
         throw new Error('Failed to create checkout session');
       }
       
-      const { url } = await response.json();
+      const data = await response.json();
       
-      // Redirect to Stripe Checkout
-      window.location.href = url;
+      if (data.immediate) {
+        // Existing customer - plan updated immediately
+        alert('Plan updated successfully!');
+        window.location.reload();
+      } else {
+        // New customer - redirect to Stripe Checkout
+        window.location.href = data.url;
+      }
       
     } catch (error) {
       console.error('Failed to change plan:', error);
@@ -172,10 +178,16 @@ export default function PlanManagement({ currentPlan = 'pro', additionalSeats = 
         throw new Error('Failed to create checkout session');
       }
       
-      const { url } = await response.json();
+      const data = await response.json();
       
-      // Redirect to Stripe Checkout
-      window.location.href = url;
+      if (data.immediate) {
+        // Existing customer - plan updated immediately
+        alert('Plan updated successfully!');
+        window.location.reload();
+      } else {
+        // New customer - redirect to Stripe Checkout
+        window.location.href = data.url;
+      }
       
     } catch (error) {
       console.error('Failed to update plan and seats:', error);
