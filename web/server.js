@@ -58,7 +58,7 @@ app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use('/webhooks', rateLimit({ windowMs: 60 * 1000, max: 60 }));
 
 /* ---------------- CORS ---------------- */
-const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000,worktrackr.cloud')
+const allowedOrigins = (process.env.ALLOWED_HOSTS || 'localhost:3000,worktrackr.cloud,localhost:10000')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);

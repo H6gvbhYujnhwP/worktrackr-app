@@ -24,6 +24,12 @@ CREATE TABLE organisations (
     trial_start TIMESTAMPTZ,
     trial_end TIMESTAMPTZ,
     partner_id UUID REFERENCES partners(id),
+    -- Phase 2: Seat management fields
+    plan VARCHAR(20) DEFAULT 'starter' CHECK (plan IN ('individual', 'starter', 'pro', 'enterprise')),
+    included_seats INTEGER DEFAULT 5,
+    stripe_seat_item_id TEXT, -- Stripe subscription item ID for seat add-ons
+    active_user_count INTEGER DEFAULT 0, -- Cached count of active users
+    seat_overage_cached INTEGER DEFAULT 0, -- Cached overage for quick UI rendering
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -35,6 +41,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     password_hash TEXT NOT NULL,
     locale VARCHAR(10) DEFAULT 'en-GB',
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'disabled')),
     mfa_enabled BOOLEAN DEFAULT FALSE,
     mfa_method VARCHAR(20) DEFAULT 'email' CHECK (mfa_method IN ('email', 'totp')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -47,6 +54,7 @@ CREATE TABLE memberships (
     organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'manager', 'staff')),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'pending', 'disabled')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(organisation_id, user_id)
 );

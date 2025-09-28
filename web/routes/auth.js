@@ -213,21 +213,52 @@ router.post('/signup/start', async (req, res) => {
     if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
     const { full_name, email, password, org_slug, price_id } = startSignupSchema.parse(req.body);
 
-    // accept explicit price from client, else fallback
-    const priceId = price_id || process.env.PRICE_STARTER || process.env.STRIPE_PRICE_STARTER;
+    // Phase 2: Support all plan types including Individual
+    const priceId = price_id || process.env.PRICE_STARTER_BASE || process.env.PRICE_STARTER;
     if (!priceId) return res.status(400).json({ error: 'Price ID not configured' });
+
+    // Validate that this is a valid base plan price
+    const validBasePrices = [
+      process.env.PRICE_INDIVIDUAL_BASE,
+      process.env.PRICE_STARTER_BASE,
+      process.env.PRICE_PRO_BASE,
+      process.env.PRICE_ENTERPRISE_BASE
+    ].filter(Boolean);
+    
+    if (!validBasePrices.includes(priceId)) {
+      return res.status(400).json({ error: 'Invalid plan selected' });
+    }
 
     const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
 
+    // Phase 2: Create line items for base plan + initial seat add-on (quantity 0)
+    const lineItems = [
+      { price: priceId, quantity: 1 } // Base plan
+    ];
+    
+    // Add seat add-on with quantity 0 (will be adjusted after provisioning)
+    if (process.env.PRICE_SEAT_ADDON) {
+      lineItems.push({ 
+        price: process.env.PRICE_SEAT_ADDON, 
+        quantity: 0 
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: lineItems,
       allow_promotion_codes: true,
       success_url: `${APP_BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_BASE_URL}/signup?canceled=1`,
       customer_creation: 'if_required',
-      metadata: { email, full_name, org_slug: toSlug(org_slug), existing_user: existing ? '1' : '0' }
+      metadata: { 
+        email, 
+        full_name, 
+        org_slug: toSlug(org_slug), 
+        existing_user: existing ? '1' : '0',
+        plan_price_id: priceId // Phase 2: Store selected plan
+      }
     });
 
     await query(`
@@ -236,6 +267,7 @@ router.post('/signup/start', async (req, res) => {
       ON CONFLICT (stripe_session_id) DO NOTHING
     `, [session.id, email, full_name, toSlug(org_slug), password_hash, priceId]);
 
+    console.log(`🚀 Created checkout session for ${email} with plan ${priceId}`);
     res.json({ url: session.url });
   } catch (error) {
     console.error('signup/start error:', error);
@@ -259,16 +291,39 @@ router.post('/signup/complete', async (req, res) => {
     if (row.rows.length === 0) return res.status(400).json({ error: 'Signup context not found' });
     const s = row.rows[0];
 
+    // Phase 2: Import plan utilities
+    const { planFromPriceId, PLAN_INCLUDED } = require('../shared/plans.js');
+    const { initializeSeatTracking } = require('../shared/stripeSeats.js');
+
+    // Determine plan from price ID (Phase 2)
+    const selectedPlan = planFromPriceId(s.price_id, process.env) || 'starter';
+    const includedSeats = PLAN_INCLUDED[selectedPlan] || 5;
+
     // idempotency: if org exists, just log in the user
     const existingOrg = await query('SELECT id FROM organisations WHERE LOWER(name) = LOWER($1) LIMIT 1', [s.org_slug]);
     let orgId;
     if (existingOrg.rows.length > 0) {
       orgId = existingOrg.rows[0].id;
+      
+      // Update existing org with new subscription data (Phase 2)
+      await query(`
+        UPDATE organisations 
+        SET stripe_customer_id = $1, 
+            stripe_subscription_id = $2, 
+            plan_price_id = $3,
+            plan = $4,
+            included_seats = $5
+        WHERE id = $6
+      `, [session.customer, session.subscription?.id || null, s.price_id, selectedPlan, includedSeats, orgId]);
     } else {
+      // Create new organization with Phase 2 fields
       const org = await query(`
-        INSERT INTO organisations (name, stripe_customer_id, stripe_subscription_id, plan_price_id)
-        VALUES ($1,$2,$3,$4) RETURNING id
-      `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id]);
+        INSERT INTO organisations (
+          name, stripe_customer_id, stripe_subscription_id, plan_price_id,
+          plan, included_seats, active_user_count
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id
+      `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id, selectedPlan, includedSeats, 0]);
       orgId = org.rows[0].id;
 
       // create default queue
@@ -293,11 +348,29 @@ router.post('/signup/complete', async (req, res) => {
 
     // ensure membership
     await query(
-      `INSERT INTO memberships (user_id, organisation_id, role)
-       VALUES ($1,$2,'owner')
-       ON CONFLICT (user_id, organisation_id) DO NOTHING`,
+      `INSERT INTO memberships (user_id, organisation_id, role, status)
+       VALUES ($1,$2,'owner','active')
+       ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
       [userId, orgId]
     );
+
+    // Phase 2: Initialize seat tracking after user/org creation
+    if (session.subscription?.id) {
+      try {
+        const orgData = await query(`
+          SELECT id, plan, included_seats, stripe_subscription_id, stripe_seat_item_id
+          FROM organisations WHERE id = $1
+        `, [orgId]);
+        
+        if (orgData.rows.length > 0) {
+          await initializeSeatTracking(stripe, orgData.rows[0], session.subscription.id);
+          console.log(`✅ Initialized seat tracking for org ${orgId}`);
+        }
+      } catch (seatError) {
+        console.error('❌ Error initializing seat tracking:', seatError);
+        // Don't fail the signup for seat tracking errors
+      }
+    }
 
     const token = signJwt({ userId, email: s.email });
 
@@ -311,6 +384,7 @@ router.post('/signup/complete', async (req, res) => {
     
     res.cookie('auth_token', token, cookieOptions);
 
+    console.log(`✅ Signup completed for ${s.email} with plan ${selectedPlan}`);
     res.json({ ok: true, token, organisationId: orgId });
   } catch (error) {
     console.error('signup/complete error:', error);
@@ -331,6 +405,10 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
   }
 
   try {
+    // Phase 2: Import plan utilities for webhooks
+    const { planFromPriceId, PLAN_INCLUDED } = require('../shared/plans.js');
+    const { initializeSeatTracking, syncSeatsForOrg } = require('../shared/stripeSeats.js');
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const sessionId = session.id;
@@ -340,16 +418,34 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
 
       const s = row.rows[0];
 
-      // Ensure org
+      // Phase 2: Determine plan from price ID
+      const selectedPlan = planFromPriceId(s.price_id, process.env) || 'starter';
+      const includedSeats = PLAN_INCLUDED[selectedPlan] || 5;
+
+      // Ensure org with Phase 2 fields
       const existingOrg = await query('SELECT id FROM organisations WHERE LOWER(name) = LOWER($1) LIMIT 1', [s.org_slug]);
       let orgId;
       if (existingOrg.rows.length > 0) {
         orgId = existingOrg.rows[0].id;
+        
+        // Update existing org with subscription data
+        await query(`
+          UPDATE organisations 
+          SET stripe_customer_id = $1, 
+              stripe_subscription_id = $2, 
+              plan_price_id = $3,
+              plan = $4,
+              included_seats = $5
+          WHERE id = $6
+        `, [session.customer, session.subscription?.id || null, s.price_id, selectedPlan, includedSeats, orgId]);
       } else {
         const org = await query(`
-          INSERT INTO organisations (name, stripe_customer_id, stripe_subscription_id, plan_price_id)
-          VALUES ($1,$2,$3,$4) RETURNING id
-        `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id]);
+          INSERT INTO organisations (
+            name, stripe_customer_id, stripe_subscription_id, plan_price_id,
+            plan, included_seats, active_user_count
+          )
+          VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id
+        `, [s.org_slug, session.customer, session.subscription?.id || null, s.price_id, selectedPlan, includedSeats, 0]);
         orgId = org.rows[0].id;
 
         await query(
@@ -372,11 +468,45 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
       }
 
       await query(
-        `INSERT INTO memberships (user_id, organisation_id, role)
-         VALUES ($1,$2,'owner')
-         ON CONFLICT (user_id, organisation_id) DO NOTHING`,
+        `INSERT INTO memberships (user_id, organisation_id, role, status)
+         VALUES ($1,$2,'owner','active')
+         ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
         [userId, orgId]
       );
+
+      // Phase 2: Initialize seat tracking after webhook provisioning
+      if (session.subscription?.id) {
+        try {
+          const orgData = await query(`
+            SELECT id, plan, included_seats, stripe_subscription_id, stripe_seat_item_id
+            FROM organisations WHERE id = $1
+          `, [orgId]);
+          
+          if (orgData.rows.length > 0) {
+            await initializeSeatTracking(stripe, orgData.rows[0], session.subscription.id);
+            console.log(`✅ Webhook: Initialized seat tracking for org ${orgId}`);
+          }
+        } catch (seatError) {
+          console.error('❌ Webhook: Error initializing seat tracking:', seatError);
+        }
+      }
+    }
+
+    // Phase 2: Handle subscription update events
+    if (event.type === 'customer.subscription.updated') {
+      const subscription = event.data.object;
+      
+      // Find organization by subscription ID
+      const orgResult = await query(
+        'SELECT id FROM organisations WHERE stripe_subscription_id = $1',
+        [subscription.id]
+      );
+      
+      if (orgResult.rows.length > 0) {
+        const orgId = orgResult.rows[0].id;
+        await syncSeatsForOrg(stripe, orgId);
+        console.log(`✅ Webhook: Synced seats for org ${orgId} after subscription update`);
+      }
     }
 
     res.json({ received: true });

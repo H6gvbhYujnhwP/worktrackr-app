@@ -3,34 +3,64 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { getOrgContext, query } = require('@worktrackr/shared/db');
 
-// Map plan → Stripe Price ID from env
+// Import Phase 2 plan configuration
+const { 
+  PLAN_INCLUDED, 
+  PLAN_PRICES, 
+  planFromPriceId, 
+  priceIdFromPlan, 
+  getPlanDetails,
+  calculateMonthlyCost 
+} = require('../shared/plans.js');
+
+const { 
+  syncSeatsForOrg, 
+  onMembershipStateChanged,
+  initializeSeatTracking 
+} = require('../shared/stripeSeats.js');
+
+// Map plan → Stripe Price ID from env (Phase 2: includes Individual)
 const PLAN_TO_PRICE = {
-  starter: process.env.PRICE_STARTER,
-  pro: process.env.PRICE_PRO,
-  enterprise: process.env.PRICE_ENTERPRISE,
+  individual: process.env.PRICE_INDIVIDUAL_BASE,
+  starter: process.env.PRICE_STARTER_BASE,
+  pro: process.env.PRICE_PRO_BASE,
+  enterprise: process.env.PRICE_ENTERPRISE_BASE,
 };
 
-// Additional seats price ID
-const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS;
+// Seat add-on price ID
+const SEAT_ADDON_PRICE_ID = process.env.PRICE_SEAT_ADDON;
 
-// Plan configurations
+// Legacy support for old environment variable
+const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS || SEAT_ADDON_PRICE_ID;
+
+// Plan configurations (Phase 2: updated with Individual plan)
 const PLAN_CONFIGS = {
+  individual: {
+    priceId: process.env.PRICE_INDIVIDUAL_BASE,
+    name: 'Individual',
+    maxUsers: 1,
+    includedSeats: 1,
+    price: 15
+  },
   starter: {
-    priceId: process.env.PRICE_STARTER,
+    priceId: process.env.PRICE_STARTER_BASE,
     name: 'Starter',
-    maxUsers: 5,
+    maxUsers: Infinity, // No hard limit, just included seats + add-ons
+    includedSeats: 5,
     price: 49
   },
   pro: {
-    priceId: process.env.PRICE_PRO,
+    priceId: process.env.PRICE_PRO_BASE,
     name: 'Pro',
-    maxUsers: 25,
+    maxUsers: Infinity,
+    includedSeats: 20,
     price: 99
   },
   enterprise: {
-    priceId: process.env.PRICE_ENTERPRISE,
+    priceId: process.env.PRICE_ENTERPRISE_BASE,
     name: 'Enterprise',
     maxUsers: Infinity,
+    includedSeats: 100,
     price: 299
   }
 };
@@ -245,33 +275,41 @@ router.get('/subscription', async (req, res) => {
 
     console.log(`📋 Found subscription ${activeSubscription.id} with status ${activeSubscription.status}`);
     
-    // Parse subscription items to determine plan and additional seats
+    // Parse subscription items to determine plan and additional seats (Phase 2)
     let plan = 'starter';
     let additionalSeats = 0;
+    let baseItem = null;
+    let seatItem = null;
 
     activeSubscription.items.data.forEach(item => {
       const priceId = item.price.id;
       
-      // Check which plan this price ID belongs to
-      for (const [planKey, config] of Object.entries(PLAN_CONFIGS)) {
-        if (config.priceId === priceId) {
-          plan = planKey;
-          break;
-        }
+      // Check which plan this price ID belongs to (Phase 2: includes Individual)
+      const detectedPlan = planFromPriceId(priceId, process.env);
+      if (detectedPlan) {
+        plan = detectedPlan;
+        baseItem = item;
       }
       
-      // Check if this is additional seats
-      if (priceId === ADDITIONAL_SEATS_PRICE_ID) {
+      // Check if this is seat add-on (Phase 2: unified seat pricing)
+      if (priceId === SEAT_ADDON_PRICE_ID || priceId === ADDITIONAL_SEATS_PRICE_ID) {
         additionalSeats = item.quantity;
+        seatItem = item;
       }
     });
 
     // Determine customer status for trial eligibility
     const customerStatus = await determineCustomerStatus(orgId, user.id);
 
+    // Get plan details (Phase 2)
+    const planDetails = getPlanDetails(plan);
+    
     const subscriptionData = {
       plan,
+      planDetails,
       additionalSeats,
+      includedSeats: planDetails.includedSeats,
+      totalSeats: planDetails.includedSeats + additionalSeats,
       status: activeSubscription.status,
       currentPeriodEnd: new Date(activeSubscription.current_period_end * 1000).toISOString(),
       subscriptionId: activeSubscription.id,
@@ -279,7 +317,11 @@ router.get('/subscription', async (req, res) => {
       isNewCustomer: customerStatus.isNewCustomer,
       trialEligible: customerStatus.isNewCustomer && activeSubscription.status !== 'active',
       trialEnd: activeSubscription.trial_end ? new Date(activeSubscription.trial_end * 1000).toISOString() : null,
-      cancelAtPeriodEnd: activeSubscription.cancel_at_period_end
+      cancelAtPeriodEnd: activeSubscription.cancel_at_period_end,
+      // Phase 2: Enhanced billing info
+      basePrice: planDetails.basePrice,
+      seatAddonPrice: planDetails.seatAddonPrice,
+      estimatedMonthly: calculateMonthlyCost(plan, planDetails.includedSeats + additionalSeats)
     };
 
     console.log(`✅ Subscription data:`, subscriptionData);
