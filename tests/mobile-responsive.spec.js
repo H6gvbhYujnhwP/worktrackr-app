@@ -1,4 +1,6 @@
 // @ts-check
+
+const CI = process.env.CI === 'true';
 const { test, expect, devices } = require('@playwright/test');
 
 // Helper function to login

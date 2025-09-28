@@ -1,4 +1,6 @@
 // @ts-check
+
+const CI = process.env.CI === 'true';
 const { test, expect } = require('@playwright/test');
 
 test.describe('Signup and Stripe Integration', () => {
