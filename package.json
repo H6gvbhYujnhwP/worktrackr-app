@@ -32,5 +32,8 @@
     "white-label"
   ],
   "author": "WorkTrackr Cloud",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1"
+  }
 }
