@@ -46,27 +46,38 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setMembership(data.membership);
-        
-        // Refetch session to ensure consistency
-        try {
-          const sessionResponse = await fetch('/api/auth/session', { credentials: 'include' });
-          if (sessionResponse.ok) {
-            const sessionData = await sessionResponse.json();
-            setUser(sessionData?.user ?? null);
-            setMembership(sessionData?.membership ?? null);
+        if (data.requires_mfa) {
+          // MFA required, return challenge info
+          return { 
+            success: false, 
+            requires_mfa: true, 
+            challenge_id: data.challenge_id,
+            message: data.message 
+          };
+        } else {
+          // Regular login successful
+          setUser(data.user);
+          setMembership(data.membership);
+          
+          // Refetch session to ensure consistency
+          try {
+            const sessionResponse = await fetch('/api/auth/session', { credentials: 'include' });
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json();
+              setUser(sessionData?.user ?? null);
+              setMembership(sessionData?.membership ?? null);
+            }
+          } catch (sessionError) {
+            console.warn('Session refetch failed:', sessionError);
           }
-        } catch (sessionError) {
-          console.warn('Session refetch failed:', sessionError);
+          
+          return { success: true, user: data.user };
         }
-        
-        return { success: true, user: data.user };
       } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.error || 'Login failed' };
+        return { success: false, error: data.error || 'Login failed' };
       }
     } catch (error) {
       console.error('Login error:', error);

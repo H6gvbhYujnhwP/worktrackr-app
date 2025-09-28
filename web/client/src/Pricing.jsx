@@ -30,11 +30,11 @@ export default function Pricing() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-3">Choose your plan</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-3">Choose your plan</h1>
             <p className="text-gray-600">All plans include a 7-day free trial. Cancel anytime.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
             {/* STARTER */}
             <Card>
               <CardHeader>

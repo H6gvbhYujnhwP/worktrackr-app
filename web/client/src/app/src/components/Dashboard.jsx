@@ -42,6 +42,7 @@ import XeroIntegration from './XeroIntegration.jsx';
 import CRMDashboard from './CRMDashboard.jsx';
 import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
+import SecuritySettings from './SecuritySettings.jsx';
 
 export default function Dashboard() {
   const { user, membership, logout } = useAuth();
@@ -265,6 +266,15 @@ export default function Dashboard() {
                       >
                         <Settings className="w-4 h-4" />
                         <span>Billing</span>
+                      </Button>
+                      
+                      <Button 
+                        variant={currentView === 'security' ? 'default' : 'outline'} 
+                        onClick={() => setCurrentView('security')}
+                        className="flex items-center space-x-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>Security</span>
                       </Button>
                     </div>
                     
@@ -526,6 +536,10 @@ export default function Dashboard() {
 
           {currentView === 'crm-calendar' && (
             <CRMCalendar timezone={selectedTimezone} />
+          )}
+
+          {currentView === 'security' && (
+            <SecuritySettings />
           )}
         </div>
       </div>

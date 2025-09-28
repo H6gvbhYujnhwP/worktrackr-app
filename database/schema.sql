@@ -35,6 +35,8 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     password_hash TEXT NOT NULL,
     locale VARCHAR(10) DEFAULT 'en-GB',
+    mfa_enabled BOOLEAN DEFAULT FALSE,
+    mfa_method VARCHAR(20) DEFAULT 'email' CHECK (mfa_method IN ('email', 'totp')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -206,3 +208,33 @@ CREATE TRIGGER update_org_branding_updated_at BEFORE UPDATE ON org_branding FOR 
 CREATE TRIGGER update_tickets_updated_at BEFORE UPDATE ON tickets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_workflows_updated_at BEFORE UPDATE ON workflows FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+
+-- Password reset tokens
+CREATE TABLE password_resets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for cleanup and lookups
+CREATE INDEX idx_password_resets_token_hash ON password_resets(token_hash);
+CREATE INDEX idx_password_resets_expires_at ON password_resets(expires_at);
+
+-- MFA challenges (email codes)
+CREATE TABLE mfa_challenges (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    max_attempts INTEGER DEFAULT 5,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Index for cleanup and lookups
+CREATE INDEX idx_mfa_challenges_user_id ON mfa_challenges(user_id);
+CREATE INDEX idx_mfa_challenges_expires_at ON mfa_challenges(expires_at);

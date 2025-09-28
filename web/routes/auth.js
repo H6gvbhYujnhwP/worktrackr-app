@@ -75,7 +75,46 @@ router.post('/login', async (req, res) => {
     }
     console.log('✅ Password verified for:', email);
 
-    // Get membership data FIRST
+    // Check if user has MFA enabled
+    if (user.mfa_enabled) {
+      console.log('🔐 MFA required for user:', email);
+      
+      // Generate MFA challenge
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const crypto = require('crypto');
+      const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+      
+      // Store challenge with 10 minute expiry
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
+      const challengeResult = await query(`
+        INSERT INTO mfa_challenges (user_id, code_hash, expires_at)
+        VALUES ($1, $2, $3)
+        RETURNING id
+      `, [user.id, codeHash, expiresAt]);
+      
+      const challengeId = challengeResult.rows[0].id;
+      
+      // Send email or log for testing
+      if (process.env.SMTP_HOST) {
+        // TODO: Send actual email when SMTP is configured
+        console.log(`📧 MFA code email would be sent to ${email}`);
+        console.log(`🔢 MFA Code: [REDACTED]`);
+      } else {
+        // Log for testing
+        console.log(`🔢 MFA code created for ${email}`);
+        console.log(`🔑 MFA Code (DEV ONLY): ${code}`);
+      }
+      
+      // Return MFA challenge (do not set cookie yet)
+      return res.json({
+        requires_mfa: true,
+        challenge_id: challengeId,
+        message: 'MFA code sent to your email address'
+      });
+    }
+
+    // Regular login flow (no MFA)
     console.log('👥 Fetching membership for user:', user.id);
     const m = await query(
       'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
@@ -403,6 +442,268 @@ router.get('/session', async (req, res) => {
   } catch (err) {
     console.error('Session check failed:', err);
     return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
+/* -------------------- Password Reset -------------------- */
+
+// POST /api/auth/password/forgot
+router.post('/password/forgot', async (req, res) => {
+  try {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    
+    // Always return 200 for security (don't reveal if email exists)
+    const user = await findUserByEmail(email);
+    
+    if (user) {
+      // Generate secure token
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      
+      // Store token hash with 1 hour expiry
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      
+      await query(`
+        INSERT INTO password_resets (user_id, token_hash, expires_at)
+        VALUES ($1, $2, $3)
+      `, [user.id, tokenHash, expiresAt]);
+      
+      // Send email or log for testing
+      const resetUrl = `${APP_BASE_URL}/reset-password?token=${token}`;
+      
+      if (process.env.SMTP_HOST) {
+        // TODO: Send actual email when SMTP is configured
+        console.log(`📧 Password reset email would be sent to ${email}`);
+        console.log(`🔗 Reset URL: ${resetUrl}`);
+      } else {
+        // Log for testing (with redacted token for security)
+        console.log(`🔗 Password reset token created for ${email}`);
+        console.log(`🔗 Reset URL: ${APP_BASE_URL}/reset-password?token=[REDACTED]`);
+        console.log(`🔑 Full reset URL (DEV ONLY): ${resetUrl}`);
+      }
+    }
+    
+    // Always return success message
+    res.json({ 
+      message: "If that email exists in our system, we've sent a password reset link." 
+    });
+    
+  } catch (error) {
+    console.error('Password forgot error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+});
+
+// POST /api/auth/password/reset
+router.post('/password/reset', async (req, res) => {
+  try {
+    const { token, new_password } = z.object({
+      token: z.string().min(1),
+      new_password: z.string().min(8)
+    }).parse(req.body);
+    
+    // Hash the token to compare with stored hash
+    const crypto = require('crypto');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    // Find valid, unused token
+    const resetResult = await query(`
+      SELECT pr.id, pr.user_id, pr.used_at, pr.expires_at, u.email
+      FROM password_resets pr
+      JOIN users u ON u.id = pr.user_id
+      WHERE pr.token_hash = $1
+        AND pr.expires_at > NOW()
+        AND pr.used_at IS NULL
+      ORDER BY pr.created_at DESC
+      LIMIT 1
+    `, [tokenHash]);
+    
+    if (resetResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+    
+    const resetRecord = resetResult.rows[0];
+    
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(new_password, 10);
+    
+    // Update user password and mark token as used
+    await transaction(async (client) => {
+      // Update password
+      await client.query(
+        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+        [newPasswordHash, resetRecord.user_id]
+      );
+      
+      // Mark token as used
+      await client.query(
+        'UPDATE password_resets SET used_at = NOW() WHERE id = $1',
+        [resetRecord.id]
+      );
+      
+      // Optional: Revoke other active reset tokens for this user
+      await client.query(
+        'UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL AND id != $2',
+        [resetRecord.user_id, resetRecord.id]
+      );
+    });
+    
+    console.log(`✅ Password reset successful for user: ${resetRecord.email}`);
+    
+    res.json({ message: 'Password reset successful. You can now log in with your new password.' });
+    
+  } catch (error) {
+    console.error('Password reset error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        error: 'Invalid input', 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+/* -------------------- Basic 2FA (Email Codes) -------------------- */
+
+// POST /api/auth/mfa/start
+router.post('/mfa/start', async (req, res) => {
+  try {
+    const { user_id } = z.object({ user_id: z.string().uuid() }).parse(req.body);
+    
+    // Generate 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const crypto = require('crypto');
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+    
+    // Store challenge with 10 minute expiry
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    const result = await query(`
+      INSERT INTO mfa_challenges (user_id, code_hash, expires_at)
+      VALUES ($1, $2, $3)
+      RETURNING id
+    `, [user_id, codeHash, expiresAt]);
+    
+    const challengeId = result.rows[0].id;
+    
+    // Get user email for logging/sending
+    const userResult = await query('SELECT email FROM users WHERE id = $1', [user_id]);
+    const userEmail = userResult.rows[0]?.email;
+    
+    // Send email or log for testing
+    if (process.env.SMTP_HOST) {
+      // TODO: Send actual email when SMTP is configured
+      console.log(`📧 MFA code email would be sent to ${userEmail}`);
+      console.log(`🔢 MFA Code: [REDACTED]`);
+    } else {
+      // Log for testing
+      console.log(`🔢 MFA code created for ${userEmail}`);
+      console.log(`🔑 MFA Code (DEV ONLY): ${code}`);
+    }
+    
+    res.json({ 
+      challenge_id: challengeId,
+      message: 'MFA code sent to your email address'
+    });
+    
+  } catch (error) {
+    console.error('MFA start error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    res.status(500).json({ error: 'Failed to start MFA challenge' });
+  }
+});
+
+// POST /api/auth/mfa/verify
+router.post('/mfa/verify', async (req, res) => {
+  try {
+    const { challenge_id, code } = z.object({
+      challenge_id: z.string().uuid(),
+      code: z.string().length(6)
+    }).parse(req.body);
+    
+    // Hash the provided code
+    const crypto = require('crypto');
+    const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+    
+    // Find valid challenge
+    const challengeResult = await query(`
+      SELECT mc.id, mc.user_id, mc.attempts, mc.max_attempts, mc.used_at, mc.expires_at,
+             u.email, u.name
+      FROM mfa_challenges mc
+      JOIN users u ON u.id = mc.user_id
+      WHERE mc.id = $1
+        AND mc.code_hash = $2
+        AND mc.expires_at > NOW()
+        AND mc.used_at IS NULL
+    `, [challenge_id, codeHash]);
+    
+    if (challengeResult.rows.length === 0) {
+      // Increment attempts for failed verification
+      await query(`
+        UPDATE mfa_challenges 
+        SET attempts = attempts + 1 
+        WHERE id = $1 AND attempts < max_attempts
+      `, [challenge_id]);
+      
+      return res.status(400).json({ error: 'Invalid or expired MFA code' });
+    }
+    
+    const challenge = challengeResult.rows[0];
+    
+    // Check if too many attempts
+    if (challenge.attempts >= challenge.max_attempts) {
+      return res.status(429).json({ error: 'Too many failed attempts. Please request a new code.' });
+    }
+    
+    // Mark challenge as used
+    await query(`
+      UPDATE mfa_challenges 
+      SET used_at = NOW() 
+      WHERE id = $1
+    `, [challenge.id]);
+    
+    // Get membership data
+    const membershipResult = await query(
+      'SELECT organisation_id AS "orgId", role FROM memberships WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1',
+      [challenge.user_id]
+    );
+    
+    // Generate JWT and set cookie
+    const token = signJwt({ userId: challenge.user_id, email: challenge.email });
+    
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    };
+    
+    res.cookie('auth_token', token, cookieOptions);
+    
+    console.log(`✅ MFA verification successful for user: ${challenge.email}`);
+    
+    res.json({
+      user: { id: challenge.user_id, email: challenge.email, name: challenge.name },
+      membership: membershipResult.rows[0] || null
+    });
+    
+  } catch (error) {
+    console.error('MFA verify error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        error: 'Invalid input', 
+        details: error.errors 
+      });
+    }
+    res.status(500).json({ error: 'Failed to verify MFA code' });
   }
 });
 

@@ -129,6 +129,7 @@ app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
 app.use('/api/billing', authenticateToken, billingRoutes);
+app.use('/api/auth/user', require('./routes/user.js'));
 
 /* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));

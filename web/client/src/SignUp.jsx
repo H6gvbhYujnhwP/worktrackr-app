@@ -146,7 +146,7 @@ export default function SignUp() {
 
       {/* Title */}
       <section className="py-10 px-4 text-center">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-3xl md:text-4xl font-bold">
           Start Your <span className="worktrackr-yellow">Free Trial</span>
         </h1>
         <p className="text-gray-600 mt-2">7-day free trial • Cancel anytime</p>

@@ -69,10 +69,11 @@ function App() {
                 Work<span className="trackr">Trackr</span> CLOUD
               </div>
             </div>
-            <div className="flex space-x-4">
-              <Button variant="outline" onClick={() => navigate('/login')}>Login</Button>
+            <div className="flex space-x-2 sm:space-x-4">
+              <Button variant="outline" size="sm" className="sm:size-default" onClick={() => navigate('/login')}>Login</Button>
               <Button
-                className="worktrackr-bg-black hover:bg-gray-800"
+                size="sm"
+                className="sm:size-default worktrackr-bg-black hover:bg-gray-800"
                 onClick={() => navigate('/pricing')}   // ⬅ go pick a plan first
                 aria-label="Start free trial"
               >
@@ -86,13 +87,13 @@ function App() {
       {/* Hero Section */}
       <section className="py-20 px-4 text-center">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl font-bold mb-6">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
             Custom Workflows. <span className="worktrackr-yellow">Zero Hassle.</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             The complete workflow and ticketing system designed for IT support providers, maintenance teams, and service organizations.
           </p>
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 sm:space-x-4">
             <Button
               size="lg"
               className="worktrackr-bg-black hover:bg-gray-800"
@@ -168,10 +169,10 @@ function App() {
       {/* Pricing Section (kept — lets users choose here too) */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">Simple, transparent pricing</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">Simple, transparent pricing</h2>
           <p className="text-center text-gray-600 mb-12">7-day free trial on all plans</p>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
             {/* Starter */}
             <Card>
               <CardHeader>
