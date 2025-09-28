@@ -2,12 +2,11 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { query } = require('../../shared/db.js');
-const { authenticateToken } = require('./auth.js');
 
 const router = express.Router();
 
 // Get user profile
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile', async (req, res) => {
   try {
     const userId = req.user.id;
     
@@ -35,7 +34,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // Update MFA settings
-router.post('/mfa', authenticateToken, async (req, res) => {
+router.post('/mfa', async (req, res) => {
   try {
     const userId = req.user.id;
     const { mfa_enabled, mfa_method } = req.body;
@@ -71,7 +70,7 @@ router.post('/mfa', authenticateToken, async (req, res) => {
 });
 
 // Change password
-router.post('/change-password', authenticateToken, async (req, res) => {
+router.post('/change-password', async (req, res) => {
   try {
     const userId = req.user.id;
     const { current_password, new_password } = req.body;
