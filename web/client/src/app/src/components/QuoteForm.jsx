@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,10 +8,15 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 
-export default function QuoteForm() {
+export default function QuoteForm({ mode = 'create' }) {
   const navigate = useNavigate();
+  const { id: quoteId } = useParams();
+  const isEditMode = mode === 'edit' || quoteId;
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState([]);
+  const [quoteNumber, setQuoteNumber] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [formData, setFormData] = useState({
     customer_id: '',
     quote_date: new Date().toISOString().split('T')[0],
@@ -47,6 +52,58 @@ export default function QuoteForm() {
     };
     fetchCustomers();
   }, []);
+
+  // Fetch existing quote data in edit mode
+  useEffect(() => {
+    if (isEditMode && quoteId) {
+      const fetchQuote = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch(`/api/quotes/${quoteId}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const quote = data.quote;
+            
+            // Set quote data
+            setQuoteNumber(quote.quote_number);
+            setCustomerName(quote.customer_name);
+            setFormData({
+              customer_id: quote.customer_id,
+              quote_date: quote.quote_date.split('T')[0],
+              valid_until: quote.valid_until.split('T')[0],
+              status: quote.status,
+              tax_rate: quote.tax_rate,
+              terms: quote.terms || '',
+              notes: quote.notes || ''
+            });
+            
+            // Set line items
+            if (data.line_items && data.line_items.length > 0) {
+              setLineItems(data.line_items.map(item => ({
+                id: item.id,
+                item_name: item.item_name,
+                description: item.description || '',
+                quantity: item.quantity,
+                unit_price: item.unit_price
+              })));
+            }
+          } else {
+            alert('Failed to load quote');
+            navigate('/app/crm');
+          }
+        } catch (error) {
+          console.error('Error fetching quote:', error);
+          alert('Failed to load quote');
+          navigate('/app/crm');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchQuote();
+    }
+  }, [isEditMode, quoteId, navigate]);
 
   // Add new line item
   const addLineItem = () => {
@@ -116,11 +173,14 @@ export default function QuoteForm() {
       return;
     }
 
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
+      const url = isEditMode ? `/api/quotes/${quoteId}` : '/api/quotes';
+      const method = isEditMode ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -128,23 +188,24 @@ export default function QuoteForm() {
         body: JSON.stringify({
           ...formData,
           line_items: lineItems,
-          status: sendToCustomer ? 'sent' : 'draft'
+          status: isEditMode ? formData.status : (sendToCustomer ? 'sent' : 'draft')
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Navigate to the newly created quote details page
-        navigate(`/app/crm/quotes/${data.quote.id}`);
+        // Navigate to the quote details page
+        const targetId = isEditMode ? quoteId : data.quote.id;
+        navigate(`/app/crm/quotes/${targetId}`);
       } else {
         const error = await response.json();
-        alert(`Error creating quote: ${error.message || 'Unknown error'}`);
+        alert(`Error ${isEditMode ? 'updating' : 'creating'} quote: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error creating quote:', error);
-      alert('Failed to create quote. Please try again.');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} quote:`, error);
+      alert(`Failed to ${isEditMode ? 'update' : 'create'} quote. Please try again.`);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -160,9 +221,20 @@ export default function QuoteForm() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to CRM
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">Create New Quote</h1>
-          <p className="text-muted-foreground">Fill in the details below to create a quote for your customer</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">
+              {isEditMode ? `Edit Quote ${quoteNumber}` : 'Create New Quote'}
+            </h1>
+            {isEditMode && quoteNumber && (
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                {quoteNumber}
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground">
+            {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your customer'}
+          </p>
         </div>
       </div>
 
@@ -177,21 +249,31 @@ export default function QuoteForm() {
             {/* Customer Selection */}
             <div className="space-y-2">
               <Label htmlFor="customer">Customer *</Label>
-              <Select
-                value={formData.customer_id}
-                onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
-              >
-                <SelectTrigger id="customer">
-                  <SelectValue placeholder="Select a customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
+              {isEditMode ? (
+                <Input
+                  id="customer"
+                  value={customerName}
+                  disabled
+                  className="bg-gray-50"
+                  title="Cannot change customer after quote creation"
+                />
+              ) : (
+                <Select
+                  value={formData.customer_id}
+                  onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
+                >
+                  <SelectTrigger id="customer">
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              )}
             </div>
 
             {/* Quote Date */}
@@ -229,6 +311,27 @@ export default function QuoteForm() {
                 onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
               />
             </div>
+
+            {/* Status (Edit Mode Only) */}
+            {isEditMode && (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="sent">Sent</SelectItem>
+                    <SelectItem value="accepted">Accepted</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -381,21 +484,33 @@ export default function QuoteForm() {
         >
           Cancel
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() => handleSubmit(true)}
-          disabled={loading}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Save & Send
-        </Button>
-        <Button
-          onClick={() => handleSubmit(false)}
-          disabled={loading}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Save as Draft
-        </Button>
+        {isEditMode ? (
+          <Button
+            onClick={() => handleSubmit(false)}
+            disabled={saving || loading}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? 'Updating...' : 'Update Quote'}
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => handleSubmit(true)}
+              disabled={saving || loading}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save & Send'}
+            </Button>
+            <Button
+              onClick={() => handleSubmit(false)}
+              disabled={saving || loading}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save as Draft'}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

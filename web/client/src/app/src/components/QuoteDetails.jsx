@@ -121,7 +121,11 @@ export default function QuoteDetails() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate(`/app/crm/quotes/${id}/edit`)}
+          >
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>

@@ -468,6 +468,10 @@ export default function App() {
               path="/crm/quotes/:id"
               element={<QuoteDetails />}
             />
+            <Route
+              path="/crm/quotes/:id/edit"
+              element={<QuoteForm mode="edit" />}
+            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
