@@ -6,6 +6,7 @@ import { mockUsers, mockTickets, mockWorkflows, mockOrganization } from './data/
 import Dashboard from './components/Dashboard.jsx';
 import WorkflowBuilder from './components/WorkflowBuilder.jsx';
 import QuoteDetails from './components/QuoteDetails.jsx';
+import QuoteForm from './components/QuoteForm.jsx';
 import Login from '../../Login.jsx';
 import './App.css';
 
@@ -458,6 +459,10 @@ export default function App() {
             <Route
               path="/workflow-builder"
               element={<WorkflowBuilder />}
+            />
+            <Route
+              path="/crm/quotes/new"
+              element={<QuoteForm />}
             />
             <Route
               path="/crm/quotes/:id"

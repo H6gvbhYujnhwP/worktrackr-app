@@ -1122,7 +1122,7 @@ export default function CRMDashboard() {
                 </div>
               )}
               <div className="mt-6 flex justify-end">
-                <Button>
+                <Button onClick={() => navigate('/app/crm/quotes/new')}>
                   <Plus className="w-4 h-4 mr-2" />
                   Create Quote
                 </Button>
