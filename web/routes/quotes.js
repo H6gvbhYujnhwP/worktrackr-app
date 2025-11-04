@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
       SELECT 
         q.*,
         c.company_name as customer_name,
-        c.primary_contact_name as contact_name,
+        c.contact_name,
         (SELECT COUNT(*) FROM quote_lines WHERE quote_id = q.id) as line_item_count,
         u.name as created_by_name
       FROM quotes q
@@ -204,7 +204,7 @@ router.get('/:id', async (req, res) => {
       SELECT 
         q.*,
         c.company_name as customer_name,
-        c.primary_contact_name as contact_name,
+        c.contact_name,
         c.email as customer_email,
         c.phone as customer_phone,
         c.address as customer_address,
