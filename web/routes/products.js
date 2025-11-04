@@ -4,33 +4,29 @@ const { query } = require('@worktrackr/shared/db');
 
 const router = express.Router();
 
-// Validation schemas
+// Validation schemas - matching production column names
 const createProductSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional().nullable(),
   sku: z.string().max(100).optional().nullable(),
-  category: z.string().max(100).optional().nullable(),
-  unit_type: z.string().max(50).default('service'),
-  cost_price: z.number().min(0).optional().nullable(),
-  sell_price: z.number().min(0),
+  type: z.string().max(50).optional().nullable(), // Production uses 'type' not 'category'
+  unit: z.string().max(50).default('service'), // Production uses 'unit' not 'unit_type'
+  our_cost: z.number().min(0).optional().nullable(), // Production uses 'our_cost' not 'cost_price'
+  client_price: z.number().min(0), // Production uses 'client_price' not 'sell_price'
   tax_rate: z.number().min(0).max(100).default(20), // UK VAT default
-  is_taxable: z.boolean().default(true),
-  tags: z.array(z.string()).optional().nullable(),
-  custom_fields: z.record(z.any()).optional().nullable()
+  default_quantity: z.number().min(0).default(1)
 });
 
 const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional().nullable(),
   sku: z.string().max(100).optional().nullable(),
-  category: z.string().max(100).optional().nullable(),
-  unit_type: z.string().max(50).optional(),
-  cost_price: z.number().min(0).optional().nullable(),
-  sell_price: z.number().min(0).optional(),
+  type: z.string().max(50).optional().nullable(),
+  unit: z.string().max(50).optional(),
+  our_cost: z.number().min(0).optional().nullable(),
+  client_price: z.number().min(0).optional(),
   tax_rate: z.number().min(0).max(100).optional(),
-  is_taxable: z.boolean().optional(),
-  tags: z.array(z.string()).optional().nullable(),
-  custom_fields: z.record(z.any()).optional().nullable(),
+  default_quantity: z.number().min(0).optional(),
   is_active: z.boolean().optional()
 });
 
@@ -40,7 +36,7 @@ const updateProductSchema = z.object({
 router.get('/', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
-    const { search, category, is_active, page = 1, limit = 50 } = req.query;
+    const { search, type, is_active, page = 1, limit = 50 } = req.query;
     
     let whereClause = 'WHERE organisation_id = $1';
     const params = [organizationId];
@@ -51,9 +47,9 @@ router.get('/', async (req, res) => {
       params.push(`%${search}%`);
     }
 
-    if (category) {
-      whereClause += ` AND category = $${++paramCount}`;
-      params.push(category);
+    if (type) {
+      whereClause += ` AND type = $${++paramCount}`;
+      params.push(type);
     }
 
     if (is_active !== undefined) {
@@ -65,9 +61,9 @@ router.get('/', async (req, res) => {
     
     const productsResult = await query(`
       SELECT p.*,
-             (p.sell_price - COALESCE(p.cost_price, 0)) as margin,
+             (p.client_price - COALESCE(p.our_cost, 0)) as margin,
              CASE 
-               WHEN p.cost_price > 0 THEN ((p.sell_price - p.cost_price) / p.cost_price * 100)
+               WHEN p.our_cost > 0 THEN ((p.client_price - p.our_cost) / p.our_cost * 100)
                ELSE 0
              END as margin_percentage,
              (SELECT COUNT(*) FROM quote_lines WHERE product_id = p.id) as times_quoted,
@@ -108,9 +104,9 @@ router.get('/:id', async (req, res) => {
 
     const productResult = await query(`
       SELECT p.*,
-             (p.sell_price - COALESCE(p.cost_price, 0)) as margin,
+             (p.client_price - COALESCE(p.our_cost, 0)) as margin,
              CASE 
-               WHEN p.cost_price > 0 THEN ((p.sell_price - p.cost_price) / p.cost_price * 100)
+               WHEN p.our_cost > 0 THEN ((p.client_price - p.our_cost) / p.our_cost * 100)
                ELSE 0
              END as margin_percentage,
              (SELECT COUNT(*) FROM quote_lines WHERE product_id = p.id) as times_quoted,
@@ -128,7 +124,7 @@ router.get('/:id', async (req, res) => {
     // Get recent quotes using this product
     const recentQuotesResult = await query(`
       SELECT q.id, q.quote_number, q.total_amount, q.status, q.created_at,
-             c.name as customer_name
+             c.company_name as customer_name
       FROM quote_lines ql
       JOIN quotes q ON ql.quote_id = q.id
       LEFT JOIN customers c ON q.customer_id = c.id
@@ -140,7 +136,7 @@ router.get('/:id', async (req, res) => {
     // Get recent invoices using this product
     const recentInvoicesResult = await query(`
       SELECT i.id, i.invoice_number, i.total_amount, i.status, i.created_at,
-             c.name as customer_name
+             c.company_name as customer_name
       FROM invoice_lines il
       JOIN invoices i ON il.invoice_id = i.id
       LEFT JOIN customers c ON i.customer_id = c.id
@@ -165,29 +161,29 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
+    const { userId } = req.user;
     const validatedData = createProductSchema.parse(req.body);
 
     const result = await query(`
       INSERT INTO products (
-        organisation_id, name, description, sku, category,
-        unit_type, cost_price, sell_price, tax_rate, is_taxable,
-        tags, custom_fields
+        organisation_id, name, description, sku, type,
+        unit, our_cost, client_price, tax_rate, default_quantity,
+        created_by
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
       organizationId,
       validatedData.name,
       validatedData.description,
       validatedData.sku,
-      validatedData.category,
-      validatedData.unit_type,
-      validatedData.cost_price,
-      validatedData.sell_price,
+      validatedData.type,
+      validatedData.unit,
+      validatedData.our_cost,
+      validatedData.client_price,
       validatedData.tax_rate,
-      validatedData.is_taxable,
-      validatedData.tags ? JSON.stringify(validatedData.tags) : null,
-      validatedData.custom_fields ? JSON.stringify(validatedData.custom_fields) : null
+      validatedData.default_quantity,
+      userId
     ]);
 
     res.status(201).json(result.rows[0]);
@@ -225,37 +221,29 @@ router.put('/:id', async (req, res) => {
       updates.push(`sku = $${++paramCount}`);
       values.push(validatedData.sku);
     }
-    if (validatedData.category !== undefined) {
-      updates.push(`category = $${++paramCount}`);
-      values.push(validatedData.category);
+    if (validatedData.type !== undefined) {
+      updates.push(`type = $${++paramCount}`);
+      values.push(validatedData.type);
     }
-    if (validatedData.unit_type !== undefined) {
-      updates.push(`unit_type = $${++paramCount}`);
-      values.push(validatedData.unit_type);
+    if (validatedData.unit !== undefined) {
+      updates.push(`unit = $${++paramCount}`);
+      values.push(validatedData.unit);
     }
-    if (validatedData.cost_price !== undefined) {
-      updates.push(`cost_price = $${++paramCount}`);
-      values.push(validatedData.cost_price);
+    if (validatedData.our_cost !== undefined) {
+      updates.push(`our_cost = $${++paramCount}`);
+      values.push(validatedData.our_cost);
     }
-    if (validatedData.sell_price !== undefined) {
-      updates.push(`sell_price = $${++paramCount}`);
-      values.push(validatedData.sell_price);
+    if (validatedData.client_price !== undefined) {
+      updates.push(`client_price = $${++paramCount}`);
+      values.push(validatedData.client_price);
     }
     if (validatedData.tax_rate !== undefined) {
       updates.push(`tax_rate = $${++paramCount}`);
       values.push(validatedData.tax_rate);
     }
-    if (validatedData.is_taxable !== undefined) {
-      updates.push(`is_taxable = $${++paramCount}`);
-      values.push(validatedData.is_taxable);
-    }
-    if (validatedData.tags !== undefined) {
-      updates.push(`tags = $${++paramCount}`);
-      values.push(validatedData.tags ? JSON.stringify(validatedData.tags) : null);
-    }
-    if (validatedData.custom_fields !== undefined) {
-      updates.push(`custom_fields = $${++paramCount}`);
-      values.push(validatedData.custom_fields ? JSON.stringify(validatedData.custom_fields) : null);
+    if (validatedData.default_quantity !== undefined) {
+      updates.push(`default_quantity = $${++paramCount}`);
+      values.push(validatedData.default_quantity);
     }
     if (validatedData.is_active !== undefined) {
       updates.push(`is_active = $${++paramCount}`);
@@ -333,26 +321,26 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get product categories
-router.get('/meta/categories', async (req, res) => {
+// Get product types (categories)
+router.get('/meta/types', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
 
-    const categoriesResult = await query(`
-      SELECT DISTINCT category, COUNT(*) as product_count
+    const typesResult = await query(`
+      SELECT DISTINCT type, COUNT(*) as product_count
       FROM products
-      WHERE organisation_id = $1 AND category IS NOT NULL AND is_active = true
-      GROUP BY category
-      ORDER BY category ASC
+      WHERE organisation_id = $1 AND type IS NOT NULL AND is_active = true
+      GROUP BY type
+      ORDER BY type ASC
     `, [organizationId]);
 
     res.json({
-      categories: categoriesResult.rows
+      types: typesResult.rows
     });
 
   } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({ error: 'Failed to fetch categories' });
+    console.error('Get types error:', error);
+    res.status(500).json({ error: 'Failed to fetch product types' });
   }
 });
 
@@ -394,6 +382,7 @@ router.get('/:id/stats', async (req, res) => {
 router.post('/bulk-import', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
+    const { userId } = req.user;
     const { products } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
@@ -412,24 +401,23 @@ router.post('/bulk-import', async (req, res) => {
         
         await query(`
           INSERT INTO products (
-            organisation_id, name, description, sku, category,
-            unit_type, cost_price, sell_price, tax_rate, is_taxable,
-            tags, custom_fields
+            organisation_id, name, description, sku, type,
+            unit, our_cost, client_price, tax_rate, default_quantity,
+            created_by
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         `, [
           organizationId,
           validatedData.name,
           validatedData.description,
           validatedData.sku,
-          validatedData.category,
-          validatedData.unit_type,
-          validatedData.cost_price,
-          validatedData.sell_price,
+          validatedData.type,
+          validatedData.unit,
+          validatedData.our_cost,
+          validatedData.client_price,
           validatedData.tax_rate,
-          validatedData.is_taxable,
-          validatedData.tags ? JSON.stringify(validatedData.tags) : null,
-          validatedData.custom_fields ? JSON.stringify(validatedData.custom_fields) : null
+          validatedData.default_quantity,
+          userId
         ]);
 
         results.success++;
