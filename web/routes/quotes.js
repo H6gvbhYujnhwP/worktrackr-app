@@ -97,7 +97,7 @@ function calculateQuoteTotals(lineItems, quoteDiscountAmount = 0, quoteDiscountP
 // GET /api/quotes - List all quotes
 router.get('/', async (req, res) => {
   try {
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
@@ -168,7 +168,7 @@ router.get('/', async (req, res) => {
 // GET /api/quotes/stats - Get quote statistics
 router.get('/stats', async (req, res) => {
   try {
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     const statsQuery = `
       SELECT 
@@ -197,7 +197,7 @@ router.get('/stats', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     // Get quote details
     const quoteQuery = `
@@ -249,8 +249,8 @@ router.get('/:id', async (req, res) => {
 // POST /api/quotes - Create new quote
 router.post('/', async (req, res) => {
   try {
-    const organisationId = req.user.organisationId;
-    const userId = req.user.userId;
+    const { organizationId } = req.orgContext;
+    const { userId } = req.user;
 
     // Validate input
     const validatedData = createQuoteSchema.parse(req.body);
@@ -387,7 +387,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     // Validate input
     const validatedData = updateQuoteSchema.parse(req.body);
@@ -439,7 +439,7 @@ router.put('/:id', async (req, res) => {
 router.put('/:id/line-items', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     // Validate input
     const validatedData = updateLineItemsSchema.parse(req.body);
@@ -590,7 +590,7 @@ router.put('/:id/line-items', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     const client = await db.getClient();
     try {
@@ -632,7 +632,7 @@ module.exports = router;
 router.post('/:id/send', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     const result = await db.query(
       `UPDATE quotes 
@@ -657,8 +657,8 @@ router.post('/:id/send', async (req, res) => {
 router.post('/:id/accept', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
-    const userId = req.user.userId;
+    const { organizationId } = req.orgContext;
+    const { userId } = req.user;
 
     const { accepted_by_name, accepted_by_email, signature, ip_address } = req.body;
 
@@ -714,7 +714,7 @@ router.post('/:id/accept', async (req, res) => {
 router.post('/:id/decline', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     const { reason } = req.body;
 
@@ -741,8 +741,8 @@ router.post('/:id/decline', async (req, res) => {
 router.post('/:id/convert-to-job', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
-    const userId = req.user.userId;
+    const { organizationId } = req.orgContext;
+    const { userId } = req.user;
 
     const { scheduled_start, scheduled_end, assigned_to, notes } = req.body;
 
@@ -820,8 +820,8 @@ router.post('/:id/convert-to-job', async (req, res) => {
 router.post('/:id/duplicate', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
-    const userId = req.user.userId;
+    const { organizationId } = req.orgContext;
+    const { userId } = req.user;
 
     const client = await db.getClient();
     try {
@@ -920,7 +920,7 @@ router.post('/:id/duplicate', async (req, res) => {
 router.get('/:id/pdf', async (req, res) => {
   try {
     const { id } = req.params;
-    const organisationId = req.user.organisationId;
+    const { organizationId } = req.orgContext;
 
     // Get quote with line items
     const quoteQuery = `
