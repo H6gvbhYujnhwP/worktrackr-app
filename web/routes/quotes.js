@@ -376,10 +376,12 @@ router.post('/', async (req, res) => {
     }
   } catch (error) {
     console.error('Error creating quote:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Validation error', details: error.errors });
     }
-    res.status(500).json({ error: 'Failed to create quote' });
+    res.status(500).json({ error: 'Failed to create quote', message: error.message });
   }
 });
 

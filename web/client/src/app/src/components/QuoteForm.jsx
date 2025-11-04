@@ -202,11 +202,11 @@ export default function QuoteForm({ mode = 'create' }) {
         } : {
           customer_id: formData.customer_id,
           title: formData.title,
-          description: formData.description,
-          valid_until: formData.valid_until,
-          terms_conditions: formData.terms_conditions,
-          notes: formData.notes,
-          internal_notes: formData.internal_notes,
+          description: formData.description || undefined,
+          valid_until: formData.valid_until || undefined,
+          terms_conditions: formData.terms_conditions || undefined,
+          notes: formData.notes || undefined,
+          internal_notes: formData.internal_notes || undefined,
           line_items: lineItems
         })
       });
