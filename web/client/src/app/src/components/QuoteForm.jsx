@@ -195,10 +195,19 @@ export default function QuoteForm({ mode = 'create' }) {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({
+        body: JSON.stringify(isEditMode ? {
           ...formData,
           line_items: lineItems,
-          status: isEditMode ? formData.status : (sendToCustomer ? 'sent' : 'draft')
+          status: sendToCustomer ? 'sent' : formData.status
+        } : {
+          customer_id: formData.customer_id,
+          title: formData.title,
+          description: formData.description,
+          valid_until: formData.valid_until,
+          terms_conditions: formData.terms_conditions,
+          notes: formData.notes,
+          internal_notes: formData.internal_notes,
+          line_items: lineItems
         })
       });
 
