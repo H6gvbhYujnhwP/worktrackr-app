@@ -1,0 +1,964 @@
+const express = require('express');
+const router = express.Router();
+const { z } = require('zod');
+const db = require('../../shared/db');
+
+// Validation schemas
+const createQuoteSchema = z.object({
+  customer_id: z.string().uuid(),
+  title: z.string().min(1).max(255),
+  description: z.string().optional(),
+  valid_until: z.string().optional(), // ISO date string
+  discount_amount: z.number().min(0).optional(),
+  discount_percent: z.number().min(0).max(100).optional(),
+  terms_conditions: z.string().optional(),
+  notes: z.string().optional(),
+  internal_notes: z.string().optional(),
+  line_items: z.array(z.object({
+    product_id: z.string().uuid().optional(),
+    description: z.string().min(1),
+    quantity: z.number().min(0.01),
+    unit_price: z.number().min(0),
+    discount_percent: z.number().min(0).max(100).optional(),
+    tax_rate: z.number().min(0).max(100).optional(),
+    sort_order: z.number().int().optional()
+  })).min(1)
+});
+
+const updateQuoteSchema = z.object({
+  customer_id: z.string().uuid().optional(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  status: z.enum(['draft', 'sent', 'accepted', 'declined', 'expired']).optional(),
+  valid_until: z.string().optional(),
+  discount_amount: z.number().min(0).optional(),
+  discount_percent: z.number().min(0).max(100).optional(),
+  terms_conditions: z.string().optional(),
+  notes: z.string().optional(),
+  internal_notes: z.string().optional()
+});
+
+const updateLineItemsSchema = z.object({
+  line_items: z.array(z.object({
+    id: z.string().uuid().optional(), // If provided, update existing; if not, create new
+    product_id: z.string().uuid().optional(),
+    description: z.string().min(1),
+    quantity: z.number().min(0.01),
+    unit_price: z.number().min(0),
+    discount_percent: z.number().min(0).max(100).optional(),
+    tax_rate: z.number().min(0).max(100).optional(),
+    sort_order: z.number().int().optional(),
+    _delete: z.boolean().optional() // Flag to delete this line item
+  })).min(1)
+});
+
+// Helper function to calculate line total
+function calculateLineTotal(quantity, unitPrice, discountPercent = 0, taxRate = 20) {
+  const subtotal = quantity * unitPrice;
+  const discountAmount = subtotal * (discountPercent / 100);
+  const afterDiscount = subtotal - discountAmount;
+  const taxAmount = afterDiscount * (taxRate / 100);
+  return afterDiscount + taxAmount;
+}
+
+// Helper function to calculate quote totals
+function calculateQuoteTotals(lineItems, quoteDiscountAmount = 0, quoteDiscountPercent = 0) {
+  const subtotal = lineItems.reduce((sum, item) => {
+    const lineSubtotal = item.quantity * item.unit_price;
+    const lineDiscount = lineSubtotal * ((item.discount_percent || 0) / 100);
+    return sum + (lineSubtotal - lineDiscount);
+  }, 0);
+
+  let discountAmount = quoteDiscountAmount;
+  if (quoteDiscountPercent > 0) {
+    discountAmount = subtotal * (quoteDiscountPercent / 100);
+  }
+
+  const afterDiscount = subtotal - discountAmount;
+
+  const taxAmount = lineItems.reduce((sum, item) => {
+    const lineSubtotal = item.quantity * item.unit_price;
+    const lineDiscount = lineSubtotal * ((item.discount_percent || 0) / 100);
+    const lineAfterDiscount = lineSubtotal - lineDiscount;
+    const lineTax = lineAfterDiscount * ((item.tax_rate || 20) / 100);
+    return sum + lineTax;
+  }, 0);
+
+  const totalAmount = afterDiscount + taxAmount;
+
+  return {
+    subtotal: subtotal.toFixed(2),
+    discount_amount: discountAmount.toFixed(2),
+    tax_amount: taxAmount.toFixed(2),
+    total_amount: totalAmount.toFixed(2)
+  };
+}
+
+// GET /api/quotes - List all quotes
+router.get('/', async (req, res) => {
+  try {
+    const organisationId = req.user.organisationId;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    const status = req.query.status; // Filter by status
+    const customerId = req.query.customer_id; // Filter by customer
+
+    let query = `
+      SELECT 
+        q.*,
+        c.company_name as customer_name,
+        c.primary_contact_name as contact_name,
+        (SELECT COUNT(*) FROM quote_lines WHERE quote_id = q.id) as line_item_count,
+        u.name as created_by_name
+      FROM quotes q
+      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN users u ON q.created_by = u.id
+      WHERE q.organisation_id = $1
+    `;
+
+    const params = [organisationId];
+    let paramCount = 1;
+
+    if (status) {
+      paramCount++;
+      query += ` AND q.status = $${paramCount}`;
+      params.push(status);
+    }
+
+    if (customerId) {
+      paramCount++;
+      query += ` AND q.customer_id = $${paramCount}`;
+      params.push(customerId);
+    }
+
+    query += ` ORDER BY q.created_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+    params.push(limit, offset);
+
+    const result = await db.query(query, params);
+
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) FROM quotes WHERE organisation_id = $1';
+    const countParams = [organisationId];
+    if (status) {
+      countQuery += ' AND status = $2';
+      countParams.push(status);
+    }
+    if (customerId) {
+      countQuery += ` AND customer_id = $${countParams.length + 1}`;
+      countParams.push(customerId);
+    }
+
+    const countResult = await db.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+
+    res.json({
+      quotes: result.rows,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+    res.status(500).json({ error: 'Failed to fetch quotes' });
+  }
+});
+
+// GET /api/quotes/stats - Get quote statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const organisationId = req.user.organisationId;
+
+    const statsQuery = `
+      SELECT 
+        COUNT(*) as total_quotes,
+        COUNT(*) FILTER (WHERE status = 'draft') as draft_count,
+        COUNT(*) FILTER (WHERE status = 'sent') as sent_count,
+        COUNT(*) FILTER (WHERE status = 'accepted') as accepted_count,
+        COUNT(*) FILTER (WHERE status = 'declined') as declined_count,
+        COUNT(*) FILTER (WHERE status = 'expired') as expired_count,
+        COALESCE(SUM(total_amount), 0) as total_value,
+        COALESCE(SUM(total_amount) FILTER (WHERE status = 'accepted'), 0) as accepted_value,
+        COALESCE(AVG(total_amount), 0) as average_value
+      FROM quotes
+      WHERE organisation_id = $1
+    `;
+
+    const result = await db.query(statsQuery, [organisationId]);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching quote stats:', error);
+    res.status(500).json({ error: 'Failed to fetch quote statistics' });
+  }
+});
+
+// GET /api/quotes/:id - Get single quote with line items
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    // Get quote details
+    const quoteQuery = `
+      SELECT 
+        q.*,
+        c.company_name as customer_name,
+        c.primary_contact_name as contact_name,
+        c.email as customer_email,
+        c.phone as customer_phone,
+        c.address as customer_address,
+        u.name as created_by_name
+      FROM quotes q
+      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN users u ON q.created_by = u.id
+      WHERE q.id = $1 AND q.organisation_id = $2
+    `;
+
+    const quoteResult = await db.query(quoteQuery, [id, organisationId]);
+
+    if (quoteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+
+    const quote = quoteResult.rows[0];
+
+    // Get line items
+    const lineItemsQuery = `
+      SELECT 
+        ql.*,
+        p.name as product_name,
+        p.type as product_type
+      FROM quote_lines ql
+      LEFT JOIN products p ON ql.product_id = p.id
+      WHERE ql.quote_id = $1
+      ORDER BY ql.sort_order, ql.created_at
+    `;
+
+    const lineItemsResult = await db.query(lineItemsQuery, [id]);
+
+    quote.line_items = lineItemsResult.rows;
+
+    res.json(quote);
+  } catch (error) {
+    console.error('Error fetching quote:', error);
+    res.status(500).json({ error: 'Failed to fetch quote' });
+  }
+});
+
+// POST /api/quotes - Create new quote
+router.post('/', async (req, res) => {
+  try {
+    const organisationId = req.user.organisationId;
+    const userId = req.user.userId;
+
+    // Validate input
+    const validatedData = createQuoteSchema.parse(req.body);
+
+    // Start transaction
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Generate quote number
+      const quoteNumberResult = await client.query(
+        "SELECT generate_quote_number($1) as quote_number",
+        [organisationId]
+      );
+      const quoteNumber = quoteNumberResult.rows[0].quote_number;
+
+      // Calculate totals
+      const totals = calculateQuoteTotals(
+        validatedData.line_items,
+        validatedData.discount_amount || 0,
+        validatedData.discount_percent || 0
+      );
+
+      // Insert quote
+      const quoteQuery = `
+        INSERT INTO quotes (
+          organisation_id, customer_id, quote_number, title, description,
+          subtotal, discount_amount, discount_percent, tax_amount, total_amount,
+          valid_until, terms_conditions, notes, internal_notes, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING *
+      `;
+
+      const quoteValues = [
+        organisationId,
+        validatedData.customer_id,
+        quoteNumber,
+        validatedData.title,
+        validatedData.description || null,
+        totals.subtotal,
+        validatedData.discount_amount || 0,
+        validatedData.discount_percent || 0,
+        totals.tax_amount,
+        totals.total_amount,
+        validatedData.valid_until || null,
+        validatedData.terms_conditions || null,
+        validatedData.notes || null,
+        validatedData.internal_notes || null,
+        userId
+      ];
+
+      const quoteResult = await client.query(quoteQuery, quoteValues);
+      const quote = quoteResult.rows[0];
+
+      // Insert line items
+      for (let i = 0; i < validatedData.line_items.length; i++) {
+        const item = validatedData.line_items[i];
+        const lineTotal = calculateLineTotal(
+          item.quantity,
+          item.unit_price,
+          item.discount_percent || 0,
+          item.tax_rate || 20
+        );
+
+        const lineItemQuery = `
+          INSERT INTO quote_lines (
+            quote_id, product_id, description, quantity, unit_price,
+            discount_percent, tax_rate, line_total, sort_order
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING *
+        `;
+
+        const lineItemValues = [
+          quote.id,
+          item.product_id || null,
+          item.description,
+          item.quantity,
+          item.unit_price,
+          item.discount_percent || 0,
+          item.tax_rate || 20,
+          lineTotal,
+          item.sort_order || i
+        ];
+
+        await client.query(lineItemQuery, lineItemValues);
+      }
+
+      await client.query('COMMIT');
+
+      // Fetch complete quote with line items
+      const completeQuoteQuery = `
+        SELECT 
+          q.*,
+          c.company_name as customer_name,
+          json_agg(
+            json_build_object(
+              'id', ql.id,
+              'product_id', ql.product_id,
+              'description', ql.description,
+              'quantity', ql.quantity,
+              'unit_price', ql.unit_price,
+              'discount_percent', ql.discount_percent,
+              'tax_rate', ql.tax_rate,
+              'line_total', ql.line_total,
+              'sort_order', ql.sort_order
+            ) ORDER BY ql.sort_order
+          ) as line_items
+        FROM quotes q
+        LEFT JOIN customers c ON q.customer_id = c.id
+        LEFT JOIN quote_lines ql ON ql.quote_id = q.id
+        WHERE q.id = $1
+        GROUP BY q.id, c.company_name
+      `;
+
+      const completeResult = await client.query(completeQuoteQuery, [quote.id]);
+
+      res.status(201).json(completeResult.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error creating quote:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to create quote' });
+  }
+});
+
+// PUT /api/quotes/:id - Update quote (without line items)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    // Validate input
+    const validatedData = updateQuoteSchema.parse(req.body);
+
+    // Build dynamic update query
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    Object.keys(validatedData).forEach(key => {
+      if (validatedData[key] !== undefined) {
+        updates.push(`${key} = $${paramCount}`);
+        values.push(validatedData[key]);
+        paramCount++;
+      }
+    });
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id, organisationId);
+
+    const query = `
+      UPDATE quotes
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount} AND organisation_id = $${paramCount + 1}
+      RETURNING *
+    `;
+
+    const result = await db.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating quote:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to update quote' });
+  }
+});
+
+// PUT /api/quotes/:id/line-items - Update quote line items
+router.put('/:id/line-items', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    // Validate input
+    const validatedData = updateLineItemsSchema.parse(req.body);
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Verify quote exists and belongs to organization
+      const quoteCheck = await client.query(
+        'SELECT id, discount_amount, discount_percent FROM quotes WHERE id = $1 AND organisation_id = $2',
+        [id, organisationId]
+      );
+
+      if (quoteCheck.rows.length === 0) {
+        throw new Error('Quote not found');
+      }
+
+      const quote = quoteCheck.rows[0];
+
+      // Process line items
+      for (let i = 0; i < validatedData.line_items.length; i++) {
+        const item = validatedData.line_items[i];
+
+        if (item._delete && item.id) {
+          // Delete line item
+          await client.query('DELETE FROM quote_lines WHERE id = $1 AND quote_id = $2', [item.id, id]);
+        } else if (item.id) {
+          // Update existing line item
+          const lineTotal = calculateLineTotal(
+            item.quantity,
+            item.unit_price,
+            item.discount_percent || 0,
+            item.tax_rate || 20
+          );
+
+          await client.query(
+            `UPDATE quote_lines 
+             SET product_id = $1, description = $2, quantity = $3, unit_price = $4,
+                 discount_percent = $5, tax_rate = $6, line_total = $7, sort_order = $8
+             WHERE id = $9 AND quote_id = $10`,
+            [
+              item.product_id || null,
+              item.description,
+              item.quantity,
+              item.unit_price,
+              item.discount_percent || 0,
+              item.tax_rate || 20,
+              lineTotal,
+              item.sort_order || i,
+              item.id,
+              id
+            ]
+          );
+        } else {
+          // Insert new line item
+          const lineTotal = calculateLineTotal(
+            item.quantity,
+            item.unit_price,
+            item.discount_percent || 0,
+            item.tax_rate || 20
+          );
+
+          await client.query(
+            `INSERT INTO quote_lines (
+              quote_id, product_id, description, quantity, unit_price,
+              discount_percent, tax_rate, line_total, sort_order
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              id,
+              item.product_id || null,
+              item.description,
+              item.quantity,
+              item.unit_price,
+              item.discount_percent || 0,
+              item.tax_rate || 20,
+              lineTotal,
+              item.sort_order || i
+            ]
+          );
+        }
+      }
+
+      // Recalculate quote totals
+      const lineItemsResult = await client.query(
+        'SELECT * FROM quote_lines WHERE quote_id = $1',
+        [id]
+      );
+
+      const totals = calculateQuoteTotals(
+        lineItemsResult.rows,
+        quote.discount_amount,
+        quote.discount_percent
+      );
+
+      // Update quote totals
+      await client.query(
+        `UPDATE quotes 
+         SET subtotal = $1, tax_amount = $2, total_amount = $3, updated_at = NOW()
+         WHERE id = $4`,
+        [totals.subtotal, totals.tax_amount, totals.total_amount, id]
+      );
+
+      await client.query('COMMIT');
+
+      // Fetch updated quote with line items
+      const updatedQuoteQuery = `
+        SELECT 
+          q.*,
+          json_agg(
+            json_build_object(
+              'id', ql.id,
+              'product_id', ql.product_id,
+              'description', ql.description,
+              'quantity', ql.quantity,
+              'unit_price', ql.unit_price,
+              'discount_percent', ql.discount_percent,
+              'tax_rate', ql.tax_rate,
+              'line_total', ql.line_total,
+              'sort_order', ql.sort_order
+            ) ORDER BY ql.sort_order
+          ) as line_items
+        FROM quotes q
+        LEFT JOIN quote_lines ql ON ql.quote_id = q.id
+        WHERE q.id = $1
+        GROUP BY q.id
+      `;
+
+      const result = await client.query(updatedQuoteQuery, [id]);
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error updating quote line items:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation error', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to update quote line items' });
+  }
+});
+
+// DELETE /api/quotes/:id - Delete quote
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Delete line items first (foreign key constraint)
+      await client.query('DELETE FROM quote_lines WHERE quote_id = $1', [id]);
+
+      // Delete quote
+      const result = await client.query(
+        'DELETE FROM quotes WHERE id = $1 AND organisation_id = $2 RETURNING *',
+        [id, organisationId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Quote not found');
+      }
+
+      await client.query('COMMIT');
+
+      res.json({ message: 'Quote deleted successfully', quote: result.rows[0] });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error deleting quote:', error);
+    res.status(500).json({ error: 'Failed to delete quote' });
+  }
+});
+
+module.exports = router;
+
+
+
+// POST /api/quotes/:id/send - Mark quote as sent
+router.post('/:id/send', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    const result = await db.query(
+      `UPDATE quotes 
+       SET status = 'sent', sent_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND organisation_id = $2 AND status = 'draft'
+       RETURNING *`,
+      [id, organisationId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found or already sent' });
+    }
+
+    res.json({ message: 'Quote marked as sent', quote: result.rows[0] });
+  } catch (error) {
+    console.error('Error sending quote:', error);
+    res.status(500).json({ error: 'Failed to send quote' });
+  }
+});
+
+// POST /api/quotes/:id/accept - Accept quote (customer action)
+router.post('/:id/accept', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+    const userId = req.user.userId;
+
+    const { accepted_by_name, accepted_by_email, signature, ip_address } = req.body;
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Update quote status
+      const quoteResult = await client.query(
+        `UPDATE quotes 
+         SET status = 'accepted', accepted_at = NOW(), updated_at = NOW()
+         WHERE id = $1 AND organisation_id = $2 AND status IN ('sent', 'draft')
+         RETURNING *`,
+        [id, organisationId]
+      );
+
+      if (quoteResult.rows.length === 0) {
+        throw new Error('Quote not found or cannot be accepted');
+      }
+
+      // Record acceptance details
+      await client.query(
+        `INSERT INTO quote_acceptance (
+          quote_id, accepted_by_name, accepted_by_email, signature, 
+          ip_address, accepted_by_user_id
+        ) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          id,
+          accepted_by_name || null,
+          accepted_by_email || null,
+          signature || null,
+          ip_address || null,
+          userId || null
+        ]
+      );
+
+      await client.query('COMMIT');
+
+      res.json({ message: 'Quote accepted successfully', quote: quoteResult.rows[0] });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error accepting quote:', error);
+    res.status(500).json({ error: 'Failed to accept quote' });
+  }
+});
+
+// POST /api/quotes/:id/decline - Decline quote (customer action)
+router.post('/:id/decline', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    const { reason } = req.body;
+
+    const result = await db.query(
+      `UPDATE quotes 
+       SET status = 'declined', declined_at = NOW(), decline_reason = $3, updated_at = NOW()
+       WHERE id = $1 AND organisation_id = $2 AND status IN ('sent', 'draft')
+       RETURNING *`,
+      [id, organisationId, reason || null]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found or cannot be declined' });
+    }
+
+    res.json({ message: 'Quote declined', quote: result.rows[0] });
+  } catch (error) {
+    console.error('Error declining quote:', error);
+    res.status(500).json({ error: 'Failed to decline quote' });
+  }
+});
+
+// POST /api/quotes/:id/convert-to-job - Convert accepted quote to job
+router.post('/:id/convert-to-job', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+    const userId = req.user.userId;
+
+    const { scheduled_start, scheduled_end, assigned_to, notes } = req.body;
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Get quote details
+      const quoteResult = await client.query(
+        `SELECT * FROM quotes 
+         WHERE id = $1 AND organisation_id = $2 AND status = 'accepted'`,
+        [id, organisationId]
+      );
+
+      if (quoteResult.rows.length === 0) {
+        throw new Error('Quote not found or not accepted');
+      }
+
+      const quote = quoteResult.rows[0];
+
+      // Generate job number
+      const jobNumberResult = await client.query(
+        "SELECT generate_job_number($1) as job_number",
+        [organisationId]
+      );
+      const jobNumber = jobNumberResult.rows[0].job_number;
+
+      // Create job
+      const jobResult = await client.query(
+        `INSERT INTO jobs (
+          organisation_id, customer_id, quote_id, job_number, title, description,
+          status, scheduled_start, scheduled_end, assigned_to, created_by, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING *`,
+        [
+          organisationId,
+          quote.customer_id,
+          id,
+          jobNumber,
+          quote.title,
+          quote.description,
+          'scheduled',
+          scheduled_start || null,
+          scheduled_end || null,
+          assigned_to || null,
+          userId,
+          notes || null
+        ]
+      );
+
+      const job = jobResult.rows[0];
+
+      // Update quote to mark as converted
+      await client.query(
+        'UPDATE quotes SET converted_to_job_id = $1, updated_at = NOW() WHERE id = $2',
+        [job.id, id]
+      );
+
+      await client.query('COMMIT');
+
+      res.json({ message: 'Quote converted to job successfully', job });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error converting quote to job:', error);
+    res.status(500).json({ error: 'Failed to convert quote to job' });
+  }
+});
+
+// POST /api/quotes/:id/duplicate - Duplicate quote
+router.post('/:id/duplicate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+    const userId = req.user.userId;
+
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+
+      // Get original quote
+      const quoteResult = await client.query(
+        'SELECT * FROM quotes WHERE id = $1 AND organisation_id = $2',
+        [id, organisationId]
+      );
+
+      if (quoteResult.rows.length === 0) {
+        throw new Error('Quote not found');
+      }
+
+      const originalQuote = quoteResult.rows[0];
+
+      // Generate new quote number
+      const quoteNumberResult = await client.query(
+        "SELECT generate_quote_number($1) as quote_number",
+        [organisationId]
+      );
+      const quoteNumber = quoteNumberResult.rows[0].quote_number;
+
+      // Create new quote
+      const newQuoteResult = await client.query(
+        `INSERT INTO quotes (
+          organisation_id, customer_id, quote_number, title, description,
+          subtotal, discount_amount, discount_percent, tax_amount, total_amount,
+          valid_until, terms_conditions, notes, internal_notes, created_by, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'draft')
+        RETURNING *`,
+        [
+          organisationId,
+          originalQuote.customer_id,
+          quoteNumber,
+          originalQuote.title + ' (Copy)',
+          originalQuote.description,
+          originalQuote.subtotal,
+          originalQuote.discount_amount,
+          originalQuote.discount_percent,
+          originalQuote.tax_amount,
+          originalQuote.total_amount,
+          originalQuote.valid_until,
+          originalQuote.terms_conditions,
+          originalQuote.notes,
+          originalQuote.internal_notes,
+          userId
+        ]
+      );
+
+      const newQuote = newQuoteResult.rows[0];
+
+      // Copy line items
+      const lineItemsResult = await client.query(
+        'SELECT * FROM quote_lines WHERE quote_id = $1 ORDER BY sort_order',
+        [id]
+      );
+
+      for (const item of lineItemsResult.rows) {
+        await client.query(
+          `INSERT INTO quote_lines (
+            quote_id, product_id, description, quantity, unit_price,
+            discount_percent, tax_rate, line_total, sort_order
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            newQuote.id,
+            item.product_id,
+            item.description,
+            item.quantity,
+            item.unit_price,
+            item.discount_percent,
+            item.tax_rate,
+            item.line_total,
+            item.sort_order
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      res.json({ message: 'Quote duplicated successfully', quote: newQuote });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error duplicating quote:', error);
+    res.status(500).json({ error: 'Failed to duplicate quote' });
+  }
+});
+
+// GET /api/quotes/:id/pdf - Generate PDF for quote (placeholder)
+router.get('/:id/pdf', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const organisationId = req.user.organisationId;
+
+    // Get quote with line items
+    const quoteQuery = `
+      SELECT 
+        q.*,
+        c.company_name, c.primary_contact_name, c.email, c.phone, c.address,
+        o.name as organisation_name
+      FROM quotes q
+      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN organisations o ON q.organisation_id = o.id
+      WHERE q.id = $1 AND q.organisation_id = $2
+    `;
+
+    const quoteResult = await db.query(quoteQuery, [id, organisationId]);
+
+    if (quoteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+
+    const quote = quoteResult.rows[0];
+
+    // Get line items
+    const lineItemsResult = await db.query(
+      'SELECT * FROM quote_lines WHERE quote_id = $1 ORDER BY sort_order',
+      [id]
+    );
+
+    quote.line_items = lineItemsResult.rows;
+
+    // TODO: Implement PDF generation using a library like PDFKit or Puppeteer
+    // For now, return the quote data that can be used to generate PDF on frontend
+    res.json({
+      message: 'PDF generation endpoint - implement with PDFKit or Puppeteer',
+      quote
+    });
+  } catch (error) {
+    console.error('Error generating quote PDF:', error);
+    res.status(500).json({ error: 'Failed to generate quote PDF' });
+  }
+});
+

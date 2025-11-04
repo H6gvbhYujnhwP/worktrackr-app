@@ -134,6 +134,8 @@ app.use('/api/billing', authenticateToken, billingRoutes);
 app.use('/api/auth/user', require('./routes/user.js'));
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);
+const quotesRoutes = require('./routes/quotes');
+app.use('/api/quotes', authenticateToken, quotesRoutes);
 
 /* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));
