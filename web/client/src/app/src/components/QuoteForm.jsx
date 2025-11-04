@@ -19,19 +19,21 @@ export default function QuoteForm({ mode = 'create' }) {
   const [customerName, setCustomerName] = useState('');
   const [formData, setFormData] = useState({
     customer_id: '',
-    quote_date: new Date().toISOString().split('T')[0],
+    title: '',
+    description: '',
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     status: 'draft',
-    tax_rate: 20,
-    terms: 'Payment due within 30 days of invoice date.\nAll prices are in GBP (£).\nGoods remain the property of the company until paid in full.',
-    notes: ''
+    terms_conditions: 'Payment due within 30 days of invoice date.\nAll prices are in GBP (£).\nGoods remain the property of the company until paid in full.',
+    notes: '',
+    internal_notes: ''
   });
   const [lineItems, setLineItems] = useState([
     {
-      item_name: '',
       description: '',
       quantity: 1,
-      unit_price: 0
+      unit_price: 0,
+      discount_percent: 0,
+      tax_rate: 20
     }
   ]);
 
@@ -71,22 +73,24 @@ export default function QuoteForm({ mode = 'create' }) {
             setCustomerName(quote.customer_name);
             setFormData({
               customer_id: quote.customer_id,
-              quote_date: quote.quote_date.split('T')[0],
-              valid_until: quote.valid_until.split('T')[0],
+              title: quote.title || '',
+              description: quote.description || '',
+              valid_until: quote.valid_until ? quote.valid_until.split('T')[0] : '',
               status: quote.status,
-              tax_rate: quote.tax_rate,
-              terms: quote.terms || '',
-              notes: quote.notes || ''
+              terms_conditions: quote.terms_conditions || '',
+              notes: quote.notes || '',
+              internal_notes: quote.internal_notes || ''
             });
             
             // Set line items
             if (data.line_items && data.line_items.length > 0) {
               setLineItems(data.line_items.map(item => ({
                 id: item.id,
-                item_name: item.item_name,
                 description: item.description || '',
                 quantity: item.quantity,
-                unit_price: item.unit_price
+                unit_price: item.unit_price,
+                discount_percent: item.discount_percent || 0,
+                tax_rate: item.tax_rate || 20
               })));
             }
           } else {
@@ -110,10 +114,11 @@ export default function QuoteForm({ mode = 'create' }) {
     setLineItems([
       ...lineItems,
       {
-        item_name: '',
         description: '',
         quantity: 1,
-        unit_price: 0
+        unit_price: 0,
+        discount_percent: 0,
+        tax_rate: 20
       }
     ]);
   };
@@ -128,9 +133,10 @@ export default function QuoteForm({ mode = 'create' }) {
   // Update line item
   const updateLineItem = (index, field, value) => {
     const updated = [...lineItems];
+    const numericFields = ['quantity', 'unit_price', 'discount_percent', 'tax_rate'];
     updated[index] = {
       ...updated[index],
-      [field]: field === 'quantity' || field === 'unit_price' ? parseFloat(value) || 0 : value
+      [field]: numericFields.includes(field) ? parseFloat(value) || 0 : value
     };
     setLineItems(updated);
   };
@@ -147,7 +153,11 @@ export default function QuoteForm({ mode = 'create' }) {
 
   // Calculate tax
   const calculateTax = () => {
-    return calculateSubtotal() * (formData.tax_rate / 100);
+    return lineItems.reduce((sum, item) => {
+      const lineSubtotal = (item.quantity || 0) * (item.unit_price || 0);
+      const lineTax = lineSubtotal * ((item.tax_rate || 20) / 100);
+      return sum + lineTax;
+    }, 0);
   };
 
   // Calculate total
@@ -163,13 +173,13 @@ export default function QuoteForm({ mode = 'create' }) {
       return;
     }
 
-    if (lineItems.length === 0 || !lineItems[0].item_name) {
-      alert('Please add at least one line item');
+    if (!formData.title) {
+      alert('Please enter a quote title');
       return;
     }
 
-    if (new Date(formData.valid_until) <= new Date(formData.quote_date)) {
-      alert('Valid until date must be after quote date');
+    if (lineItems.length === 0 || !lineItems[0].description) {
+      alert('Please add at least one line item with a description');
       return;
     }
 
@@ -268,22 +278,33 @@ export default function QuoteForm({ mode = 'create' }) {
                   <SelectContent>
                     {customers.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
+                        {customer.company_name || customer.contact_name || customer.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               )}
             </div>
 
-            {/* Quote Date */}
-            <div className="space-y-2">
-              <Label htmlFor="quote_date">Quote Date *</Label>
+            {/* Quote Title */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="title">Quote Title *</Label>
               <Input
-                id="quote_date"
-                type="date"
-                value={formData.quote_date}
-                onChange={(e) => setFormData({ ...formData, quote_date: e.target.value })}
+                id="title"
+                placeholder="e.g., Website Maintenance - January 2025"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
+            </div>
+
+            {/* Quote Description */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                placeholder="Brief description of the quote"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
 
@@ -295,20 +316,6 @@ export default function QuoteForm({ mode = 'create' }) {
                 type="date"
                 value={formData.valid_until}
                 onChange={(e) => setFormData({ ...formData, valid_until: e.target.value })}
-              />
-            </div>
-
-            {/* Tax Rate */}
-            <div className="space-y-2">
-              <Label htmlFor="tax_rate">Tax Rate (%)</Label>
-              <Input
-                id="tax_rate"
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={formData.tax_rate}
-                onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
@@ -355,23 +362,12 @@ export default function QuoteForm({ mode = 'create' }) {
             {lineItems.map((item, index) => (
               <Card key={index} className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  {/* Item Name */}
-                  <div className="md:col-span-3 space-y-2">
-                    <Label htmlFor={`item_name_${index}`}>Item/Product *</Label>
-                    <Input
-                      id={`item_name_${index}`}
-                      placeholder="Product name"
-                      value={item.item_name}
-                      onChange={(e) => updateLineItem(index, 'item_name', e.target.value)}
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div className="md:col-span-4 space-y-2">
-                    <Label htmlFor={`description_${index}`}>Description</Label>
+                  {/* Description (Item Name) */}
+                  <div className="md:col-span-5 space-y-2">
+                    <Label htmlFor={`description_${index}`}>Item Description *</Label>
                     <Input
                       id={`description_${index}`}
-                      placeholder="Brief description"
+                      placeholder="e.g., Website Hosting - Annual Plan"
                       value={item.description}
                       onChange={(e) => updateLineItem(index, 'description', e.target.value)}
                     />
@@ -431,7 +427,7 @@ export default function QuoteForm({ mode = 'create' }) {
                 <span>£{calculateSubtotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Tax ({formData.tax_rate}%):</span>
+                <span>Tax (VAT):</span>
                 <span>£{calculateTax().toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold border-t pt-2">
@@ -452,8 +448,8 @@ export default function QuoteForm({ mode = 'create' }) {
         <CardContent>
           <Textarea
             rows={4}
-            value={formData.terms}
-            onChange={(e) => setFormData({ ...formData, terms: e.target.value })}
+            value={formData.terms_conditions}
+            onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
             placeholder="Enter terms and conditions..."
           />
         </CardContent>
@@ -468,8 +464,8 @@ export default function QuoteForm({ mode = 'create' }) {
         <CardContent>
           <Textarea
             rows={3}
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            value={formData.internal_notes}
+            onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
             placeholder="Add any internal notes..."
           />
         </CardContent>
