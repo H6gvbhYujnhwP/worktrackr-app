@@ -18,6 +18,8 @@ const organizationsRoutes = require('./routes/organizations');
 const billingRoutes = require('./routes/billing');
 const webhooksRoutes = require('./routes/webhooks');
 const publicAuthRoutes = require('./routes/public-auth');
+const customersRoutes = require('./routes/customers');
+const productsRoutes = require('./routes/products');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -130,6 +132,8 @@ app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
 app.use('/api/billing', authenticateToken, billingRoutes);
 app.use('/api/auth/user', require('./routes/user.js'));
+app.use('/api/customers', authenticateToken, customersRoutes);
+app.use('/api/products', authenticateToken, productsRoutes);
 
 /* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));
