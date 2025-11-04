@@ -225,25 +225,28 @@ export default function CRMDashboard() {
 
   // Fetch quotes from API
   useEffect(() => {
-    const fetchQuotes = async () => {
-      setQuotesLoading(true);
-      try {
-        const response = await fetch('/api/quotes', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setQuotes(data);
-        } else {
-          console.error('Failed to fetch quotes:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error fetching quotes:', error);
-      } finally {
-        setQuotesLoading(false);
-      }
-    };
-    fetchQuotes();
+    // Temporarily disabled for debugging
+    console.log('CRMDashboard: Quotes fetch disabled for testing');
+    setQuotesLoading(false);
+    // const fetchQuotes = async () => {
+    //   setQuotesLoading(true);
+    //   try {
+    //     const response = await fetch('/api/quotes', {
+    //       credentials: 'include'
+    //     });
+    //     if (response.ok) {
+    //       const data = await response.json();
+    //       setQuotes(data);
+    //     } else {
+    //       console.error('Failed to fetch quotes:', response.statusText);
+    //     }
+    //   } catch (error) {
+    //     console.error('Error fetching quotes:', error);
+    //   } finally {
+    //     setQuotesLoading(false);
+    //   }
+    // };
+    // fetchQuotes();
   }, []);
 
   const filteredCompanies = contacts.filter(contact => {
