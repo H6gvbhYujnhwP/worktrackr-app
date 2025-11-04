@@ -117,7 +117,7 @@ router.get('/', async (req, res) => {
       WHERE q.organisation_id = $1
     `;
 
-    const params = [organisationId];
+    const params = [organizationId];
     let paramCount = 1;
 
     if (status) {
@@ -139,7 +139,7 @@ router.get('/', async (req, res) => {
 
     // Get total count
     let countQuery = 'SELECT COUNT(*) FROM quotes WHERE organisation_id = $1';
-    const countParams = [organisationId];
+    const countParams = [organizationId];
     if (status) {
       countQuery += ' AND status = $2';
       countParams.push(status);
@@ -185,7 +185,7 @@ router.get('/stats', async (req, res) => {
       WHERE organisation_id = $1
     `;
 
-    const result = await db.query(statsQuery, [organisationId]);
+    const result = await db.query(statsQuery, [organizationId]);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error fetching quote stats:', error);
@@ -215,7 +215,7 @@ router.get('/:id', async (req, res) => {
       WHERE q.id = $1 AND q.organisation_id = $2
     `;
 
-    const quoteResult = await db.query(quoteQuery, [id, organisationId]);
+    const quoteResult = await db.query(quoteQuery, [id, organizationId]);
 
     if (quoteResult.rows.length === 0) {
       return res.status(404).json({ error: 'Quote not found' });
@@ -263,7 +263,7 @@ router.post('/', async (req, res) => {
       // Generate quote number
       const quoteNumberResult = await client.query(
         "SELECT generate_quote_number($1) as quote_number",
-        [organisationId]
+        [organizationId]
       );
       const quoteNumber = quoteNumberResult.rows[0].quote_number;
 
@@ -285,7 +285,7 @@ router.post('/', async (req, res) => {
       `;
 
       const quoteValues = [
-        organisationId,
+        organizationId,
         validatedData.customer_id,
         quoteNumber,
         validatedData.title,
@@ -410,7 +410,7 @@ router.put('/:id', async (req, res) => {
     }
 
     updates.push(`updated_at = NOW()`);
-    values.push(id, organisationId);
+    values.push(id, organizationId);
 
     const query = `
       UPDATE quotes
@@ -451,7 +451,7 @@ router.put('/:id/line-items', async (req, res) => {
       // Verify quote exists and belongs to organization
       const quoteCheck = await client.query(
         'SELECT id, discount_amount, discount_percent FROM quotes WHERE id = $1 AND organisation_id = $2',
-        [id, organisationId]
+        [id, organizationId]
       );
 
       if (quoteCheck.rows.length === 0) {
@@ -602,7 +602,7 @@ router.delete('/:id', async (req, res) => {
       // Delete quote
       const result = await client.query(
         'DELETE FROM quotes WHERE id = $1 AND organisation_id = $2 RETURNING *',
-        [id, organisationId]
+        [id, organizationId]
       );
 
       if (result.rows.length === 0) {
@@ -639,7 +639,7 @@ router.post('/:id/send', async (req, res) => {
        SET status = 'sent', sent_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND organisation_id = $2 AND status = 'draft'
        RETURNING *`,
-      [id, organisationId]
+      [id, organizationId]
     );
 
     if (result.rows.length === 0) {
@@ -672,7 +672,7 @@ router.post('/:id/accept', async (req, res) => {
          SET status = 'accepted', accepted_at = NOW(), updated_at = NOW()
          WHERE id = $1 AND organisation_id = $2 AND status IN ('sent', 'draft')
          RETURNING *`,
-        [id, organisationId]
+        [id, organizationId]
       );
 
       if (quoteResult.rows.length === 0) {
@@ -723,7 +723,7 @@ router.post('/:id/decline', async (req, res) => {
        SET status = 'declined', declined_at = NOW(), decline_reason = $3, updated_at = NOW()
        WHERE id = $1 AND organisation_id = $2 AND status IN ('sent', 'draft')
        RETURNING *`,
-      [id, organisationId, reason || null]
+      [id, organizationId, reason || null]
     );
 
     if (result.rows.length === 0) {
@@ -754,7 +754,7 @@ router.post('/:id/convert-to-job', async (req, res) => {
       const quoteResult = await client.query(
         `SELECT * FROM quotes 
          WHERE id = $1 AND organisation_id = $2 AND status = 'accepted'`,
-        [id, organisationId]
+        [id, organizationId]
       );
 
       if (quoteResult.rows.length === 0) {
@@ -766,7 +766,7 @@ router.post('/:id/convert-to-job', async (req, res) => {
       // Generate job number
       const jobNumberResult = await client.query(
         "SELECT generate_job_number($1) as job_number",
-        [organisationId]
+        [organizationId]
       );
       const jobNumber = jobNumberResult.rows[0].job_number;
 
@@ -778,7 +778,7 @@ router.post('/:id/convert-to-job', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *`,
         [
-          organisationId,
+          organizationId,
           quote.customer_id,
           id,
           jobNumber,
@@ -830,7 +830,7 @@ router.post('/:id/duplicate', async (req, res) => {
       // Get original quote
       const quoteResult = await client.query(
         'SELECT * FROM quotes WHERE id = $1 AND organisation_id = $2',
-        [id, organisationId]
+        [id, organizationId]
       );
 
       if (quoteResult.rows.length === 0) {
@@ -842,7 +842,7 @@ router.post('/:id/duplicate', async (req, res) => {
       // Generate new quote number
       const quoteNumberResult = await client.query(
         "SELECT generate_quote_number($1) as quote_number",
-        [organisationId]
+        [organizationId]
       );
       const quoteNumber = quoteNumberResult.rows[0].quote_number;
 
@@ -855,7 +855,7 @@ router.post('/:id/duplicate', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'draft')
         RETURNING *`,
         [
-          organisationId,
+          organizationId,
           originalQuote.customer_id,
           quoteNumber,
           originalQuote.title + ' (Copy)',
@@ -934,7 +934,7 @@ router.get('/:id/pdf', async (req, res) => {
       WHERE q.id = $1 AND q.organisation_id = $2
     `;
 
-    const quoteResult = await db.query(quoteQuery, [id, organisationId]);
+    const quoteResult = await db.query(quoteQuery, [id, organizationId]);
 
     if (quoteResult.rows.length === 0) {
       return res.status(404).json({ error: 'Quote not found' });
