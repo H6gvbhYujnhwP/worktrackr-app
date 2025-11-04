@@ -135,8 +135,10 @@ const mockProductCatalog = [
 ];
 
 export default function CRMDashboard() {
+  console.log('[CRMDashboard] Component mounting...');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('customers');
+  console.log('[CRMDashboard] State initialized');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [editingContact, setEditingContact] = useState(false);
@@ -227,6 +229,7 @@ export default function CRMDashboard() {
 
   // Fetch quotes from API
   useEffect(() => {
+    console.log('[CRMDashboard] Fetching quotes from API...');
     const fetchQuotes = async () => {
       setQuotesLoading(true);
       try {
@@ -237,12 +240,13 @@ export default function CRMDashboard() {
           const data = await response.json();
           // API returns {quotes: [...], total, page, limit, totalPages}
           setQuotes(data.quotes || []);
+          console.log('[CRMDashboard] Quotes loaded:', data.quotes?.length || 0);
         } else {
-          console.error('Failed to fetch quotes:', response.statusText);
+          console.error('[CRMDashboard] Failed to fetch quotes:', response.statusText);
           setQuotes([]);
         }
       } catch (error) {
-        console.error('Error fetching quotes:', error);
+        console.error('[CRMDashboard] Error fetching quotes:', error);
         setQuotes([]);
       } finally {
         setQuotesLoading(false);

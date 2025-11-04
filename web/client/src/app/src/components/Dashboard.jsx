@@ -40,6 +40,7 @@ import UserManagementImproved from './UserManagementImproved.jsx';
 import IntegratedCalendar from './IntegratedCalendar.jsx';
 import XeroIntegration from './XeroIntegration.jsx';
 import CRMDashboard from './CRMDashboard.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
@@ -531,7 +532,9 @@ export default function Dashboard() {
           )}
 
           {currentView === 'crm' && (
-            <CRMDashboard timezone={selectedTimezone} />
+            <ErrorBoundary>
+              <CRMDashboard timezone={selectedTimezone} />
+            </ErrorBoundary>
           )}
 
           {currentView === 'crm-calendar' && (
