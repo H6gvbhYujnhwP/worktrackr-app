@@ -160,6 +160,8 @@ export default function CRMDashboard() {
   const [renewalDates, setRenewalDates] = useState({});
   const [showNotesModal, setShowNotesModal] = useState(null);
   const [currentNote, setCurrentNote] = useState('');
+  const [quotes, setQuotes] = useState([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
 
   // Load customer services from localStorage on component mount
   useEffect(() => {
@@ -219,6 +221,29 @@ export default function CRMDashboard() {
       setContacts(allContacts);
     };
     loadContacts();
+  }, []);
+
+  // Fetch quotes from API
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      setQuotesLoading(true);
+      try {
+        const response = await fetch('/api/quotes', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setQuotes(data);
+        } else {
+          console.error('Failed to fetch quotes:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching quotes:', error);
+      } finally {
+        setQuotesLoading(false);
+      }
+    };
+    fetchQuotes();
   }, []);
 
   const filteredCompanies = contacts.filter(contact => {
@@ -687,9 +712,10 @@ export default function CRMDashboard() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 gap-1 text-xs sm:text-sm">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 text-xs sm:text-sm">
           <TabsTrigger value="customers" className="text-xs sm:text-sm">Customers</TabsTrigger>
           <TabsTrigger value="catalog" className="text-xs sm:text-sm">Product Catalog</TabsTrigger>
+          <TabsTrigger value="quotes" className="text-xs sm:text-sm">Quotes</TabsTrigger>
           <TabsTrigger value="settings" className="text-xs sm:text-sm col-span-2 sm:col-span-1">CRM Settings</TabsTrigger>
         </TabsList>
 
@@ -1017,6 +1043,75 @@ export default function CRMDashboard() {
                 <Button onClick={() => setShowNewProductForm(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Product/Service
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="quotes" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quotes</CardTitle>
+              <CardDescription>View and manage customer quotes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {quotesLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-gray-500">Loading quotes...</div>
+                </div>
+              ) : quotes.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No quotes found. Create your first quote to get started.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">Quote #</th>
+                        <th className="text-left py-3 px-4 font-medium">Customer</th>
+                        <th className="text-left py-3 px-4 font-medium">Date</th>
+                        <th className="text-right py-3 px-4 font-medium">Amount</th>
+                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {quotes.map((quote) => (
+                        <tr key={quote.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium">{quote.quote_number}</td>
+                          <td className="py-3 px-4">{quote.customer_name}</td>
+                          <td className="py-3 px-4">
+                            {new Date(quote.quote_date).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium">
+                            £{parseFloat(quote.total_amount).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              quote.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                              quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                              quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                              quote.status === 'declined' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="mt-6 flex justify-end">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Quote
                 </Button>
               </div>
             </CardContent>
