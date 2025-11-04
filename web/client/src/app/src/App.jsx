@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { mockUsers, mockTickets, mockWorkflows, mockOrganization } from './data/mockData.js';
 import Dashboard from './components/Dashboard.jsx';
 import WorkflowBuilder from './components/WorkflowBuilder.jsx';
+import QuoteDetails from './components/QuoteDetails.jsx';
 import Login from '../../Login.jsx';
 import './App.css';
 
@@ -457,6 +458,10 @@ export default function App() {
             <Route
               path="/workflow-builder"
               element={<WorkflowBuilder />}
+            />
+            <Route
+              path="/crm/quotes/:id"
+              element={<QuoteDetails />}
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -134,6 +135,7 @@ const mockProductCatalog = [
 ];
 
 export default function CRMDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('customers');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -1081,7 +1083,11 @@ export default function CRMDashboard() {
                     </thead>
                     <tbody>
                       {quotes.map((quote) => (
-                        <tr key={quote.id} className="border-b hover:bg-gray-50">
+                        <tr 
+                          key={quote.id} 
+                          className="border-b hover:bg-gray-50 cursor-pointer"
+                          onClick={() => navigate(`/app/crm/quotes/${quote.id}`)}
+                        >
                           <td className="py-3 px-4 font-medium">{quote.quote_number}</td>
                           <td className="py-3 px-4">{quote.customer_name}</td>
                           <td className="py-3 px-4">
