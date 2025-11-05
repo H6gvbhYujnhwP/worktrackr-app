@@ -472,8 +472,8 @@ export default function App() {
               path="crm/quotes/:id/edit"
               element={<QuoteForm mode="edit" />}
             />
-            <Route path="/" element={<Navigate to="dashboard" replace />} />
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
+            <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
           </Routes>
         </div>
       </SimulationProvider>
