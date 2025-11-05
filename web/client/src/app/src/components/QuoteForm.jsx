@@ -258,29 +258,46 @@ export default function QuoteForm({ mode = 'create' }) {
     setSaving(true);
 
     try {
+      // Ensure line items have correct data types (convert strings to numbers)
+      const sanitizedLineItems = lineItems.map(item => ({
+        product_id: item.product_id || undefined,
+        description: item.description,
+        quantity: parseFloat(item.quantity) || 0,
+        unit_price: parseFloat(item.unit_price) || 0,
+        discount_percent: parseFloat(item.discount_percent) || 0,
+        tax_rate: parseFloat(item.tax_rate) || 20,
+        sort_order: item.sort_order
+      }));
+
+      console.log('Sanitized line items:', sanitizedLineItems);
+
       const url = isEditMode ? `/api/quotes/${quoteId}` : '/api/quotes';
       const method = isEditMode ? 'PUT' : 'POST';
       
+      const payload = isEditMode ? {
+        ...formData,
+        line_items: sanitizedLineItems,
+        status: sendToCustomer ? 'sent' : formData.status
+      } : {
+        customer_id: formData.customer_id,
+        title: formData.title,
+        description: formData.description || undefined,
+        valid_until: formData.valid_until || undefined,
+        terms_conditions: formData.terms_conditions || undefined,
+        notes: formData.notes || undefined,
+        internal_notes: formData.internal_notes || undefined,
+        line_items: sanitizedLineItems
+      };
+
+      console.log('API payload:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(isEditMode ? {
-          ...formData,
-          line_items: lineItems,
-          status: sendToCustomer ? 'sent' : formData.status
-        } : {
-          customer_id: formData.customer_id,
-          title: formData.title,
-          description: formData.description || undefined,
-          valid_until: formData.valid_until || undefined,
-          terms_conditions: formData.terms_conditions || undefined,
-          notes: formData.notes || undefined,
-          internal_notes: formData.internal_notes || undefined,
-          line_items: lineItems
-        })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -289,12 +306,13 @@ export default function QuoteForm({ mode = 'create' }) {
         const targetId = isEditMode ? quoteId : data.id; // API returns quote directly
         navigate(`/app/crm/quotes/${targetId}`);
       } else {
-        const error = await response.json();
-        alert(`Error ${isEditMode ? 'updating' : 'creating'} quote: ${error.message || 'Unknown error'}`);
+        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('API Error Response:', error);
+        alert(`Error ${isEditMode ? 'updating' : 'creating'} quote: ${error.message || error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'creating'} quote:`, error);
-      alert(`Failed to ${isEditMode ? 'update' : 'create'} quote. Please try again.`);
+      alert(`Failed to ${isEditMode ? 'update' : 'create'} quote. Please try again. Check console for details.`);
     } finally {
       setSaving(false);
     }
