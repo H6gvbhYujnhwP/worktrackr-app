@@ -625,14 +625,14 @@ export default function QuoteForm({ mode = 'create' }) {
             <Button
               variant="secondary"
               onClick={() => handleSubmit(true)}
-              disabled={saving || loading}
+              disabled={saving}
             >
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save & Send'}
             </Button>
             <Button
               onClick={() => handleSubmit(false)}
-              disabled={saving || loading}
+              disabled={saving}
             >
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save as Draft'}
