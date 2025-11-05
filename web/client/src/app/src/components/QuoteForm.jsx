@@ -66,7 +66,7 @@ export default function QuoteForm({ mode = 'create' }) {
           });
           if (response.ok) {
             const data = await response.json();
-            const quote = data.quote;
+            const quote = data; // API returns quote object directly, not wrapped
             
             // Set quote data
             setQuoteNumber(quote.quote_number);
