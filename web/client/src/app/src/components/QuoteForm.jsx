@@ -15,6 +15,7 @@ export default function QuoteForm({ mode = 'create' }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [quoteNumber, setQuoteNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [formData, setFormData] = useState({
@@ -29,6 +30,7 @@ export default function QuoteForm({ mode = 'create' }) {
   });
   const [lineItems, setLineItems] = useState([
     {
+      product_id: null,
       description: '',
       quantity: 1,
       unit_price: 0,
@@ -52,7 +54,22 @@ export default function QuoteForm({ mode = 'create' }) {
         console.error('Error fetching customers:', error);
       }
     };
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products?is_active=true&limit=1000', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+    
     fetchCustomers();
+    fetchProducts();
   }, []);
 
   // Fetch existing quote data in edit mode
@@ -114,6 +131,7 @@ export default function QuoteForm({ mode = 'create' }) {
     setLineItems([
       ...lineItems,
       {
+        product_id: null,
         description: '',
         quantity: 1,
         unit_price: 0,
@@ -139,6 +157,30 @@ export default function QuoteForm({ mode = 'create' }) {
       [field]: numericFields.includes(field) ? parseFloat(value) || 0 : value
     };
     setLineItems(updated);
+  };
+
+  // Handle product selection
+  const handleProductSelect = (index, productId) => {
+    if (productId === 'custom') {
+      // Clear product selection, allow manual entry
+      updateLineItem(index, 'product_id', null);
+      return;
+    }
+    
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      // Auto-fill fields from product
+      const updatedItems = [...lineItems];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        product_id: product.id,
+        description: `${product.name}${product.description ? ' - ' + product.description : ''}`,
+        quantity: product.default_quantity || 1,
+        unit_price: product.client_price,
+        tax_rate: product.tax_rate || 20
+      };
+      setLineItems(updatedItems);
+    }
   };
 
   // Calculate line total
@@ -370,10 +412,37 @@ export default function QuoteForm({ mode = 'create' }) {
           <div className="space-y-4">
             {lineItems.map((item, index) => (
               <Card key={index} className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  {/* Description (Item Name) */}
-                  <div className="md:col-span-5 space-y-2">
-                    <Label htmlFor={`description_${index}`}>Item Description *</Label>
+                <div className="space-y-4">
+                  {/* Product Selector */}
+                  <div className="space-y-2">
+                    <Label htmlFor={`product_${index}`}>Select Product (Optional)</Label>
+                    <Select
+                      value={item.product_id || 'custom'}
+                      onValueChange={(value) => handleProductSelect(index, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a product or enter custom item" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">✏️ Custom Item (Enter Manually)</SelectItem>
+                        {products.map(product => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} - £{product.client_price.toFixed(2)}
+                            {product.unit && ` (${product.unit})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Line Item Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    {/* Description (Item Name) */}
+                    <div className="md:col-span-5 space-y-2">
+                    <Label htmlFor={`description_${index}`}>
+                      Item Description *
+                      {item.product_id && <span className="text-xs text-gray-500 ml-2">(Auto-filled, editable)</span>}
+                    </Label>
                     <Input
                       id={`description_${index}`}
                       placeholder="e.g., Website Hosting - Annual Plan"
@@ -423,6 +492,7 @@ export default function QuoteForm({ mode = 'create' }) {
                       </Button>
                     )}
                   </div>
+                </div>
                 </div>
               </Card>
             ))}
