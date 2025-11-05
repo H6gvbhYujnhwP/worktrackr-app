@@ -427,7 +427,7 @@ export default function QuoteForm({ mode = 'create' }) {
                         <SelectItem value="custom">✏️ Custom Item (Enter Manually)</SelectItem>
                         {products.map(product => (
                           <SelectItem key={product.id} value={product.id}>
-                            {product.name} - £{product.client_price.toFixed(2)}
+                            {product.name} - £{(parseFloat(product.client_price) || 0).toFixed(2)}
                             {product.unit && ` (${product.unit})`}
                           </SelectItem>
                         ))}
