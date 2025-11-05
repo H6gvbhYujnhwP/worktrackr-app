@@ -86,6 +86,8 @@ export default function QuoteForm({ mode = 'create' }) {
 
   // Fetch existing quote data in edit mode
   useEffect(() => {
+    console.log('=== useEffect triggered ===', 'isEditMode:', isEditMode, 'quoteId:', quoteId);
+    
     if (isEditMode && quoteId) {
       const fetchQuote = async () => {
         setLoading(true);
@@ -137,7 +139,11 @@ export default function QuoteForm({ mode = 'create' }) {
       fetchQuote();
     } else {
       // In create mode, ensure loading is false
+      console.log('=== CREATE MODE: Setting loading to false ===');
       setLoading(false);
+      setTimeout(() => {
+        console.log('=== CREATE MODE: Loading state after setLoading ===', loading);
+      }, 100);
     }
   }, [isEditMode, quoteId, navigate]);
 
@@ -598,6 +604,7 @@ export default function QuoteForm({ mode = 'create' }) {
 
       {/* Action Buttons */}
       <div className="flex gap-4 justify-end">
+        {console.log('=== RENDER: Button state ===', 'loading:', loading, 'saving:', saving, 'disabled:', saving || loading)}
         <Button
           variant="outline"
           onClick={() => navigate('/app/dashboard')}
