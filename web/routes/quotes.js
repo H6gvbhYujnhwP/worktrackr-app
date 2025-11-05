@@ -256,7 +256,7 @@ router.post('/', async (req, res) => {
     const validatedData = createQuoteSchema.parse(req.body);
 
     // Start transaction
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
@@ -446,7 +446,7 @@ router.put('/:id/line-items', async (req, res) => {
     // Validate input
     const validatedData = updateLineItemsSchema.parse(req.body);
 
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
@@ -594,7 +594,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const { organizationId } = req.orgContext;
 
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
@@ -664,7 +664,7 @@ router.post('/:id/accept', async (req, res) => {
 
     const { accepted_by_name, accepted_by_email, signature, ip_address } = req.body;
 
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
@@ -748,7 +748,7 @@ router.post('/:id/convert-to-job', async (req, res) => {
 
     const { scheduled_start, scheduled_end, assigned_to, notes } = req.body;
 
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
@@ -825,7 +825,7 @@ router.post('/:id/duplicate', async (req, res) => {
     const { organizationId } = req.orgContext;
     const { userId } = req.user;
 
-    const client = await db.getClient();
+    const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
