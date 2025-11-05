@@ -224,6 +224,13 @@ export default function QuoteForm({ mode = 'create' }) {
 
   // Handle form submission
   const handleSubmit = async (sendToCustomer = false) => {
+    console.log('=== handleSubmit called ===');
+    console.log('sendToCustomer:', sendToCustomer);
+    console.log('formData:', formData);
+    console.log('lineItems:', lineItems);
+    console.log('loading:', loading);
+    console.log('saving:', saving);
+    
     // Validation
     if (!formData.customer_id) {
       alert('Please select a customer');
