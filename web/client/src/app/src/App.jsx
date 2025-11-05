@@ -453,27 +453,27 @@ export default function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route
-              path="/dashboard"
+              path="dashboard"
               element={<Dashboard />}
             />
             <Route
-              path="/workflow-builder"
+              path="workflow-builder"
               element={<WorkflowBuilder />}
             />
             <Route
-              path="/crm/quotes/new"
+              path="crm/quotes/new"
               element={<QuoteForm />}
             />
             <Route
-              path="/crm/quotes/:id"
+              path="crm/quotes/:id"
               element={<QuoteDetails />}
             />
             <Route
-              path="/crm/quotes/:id/edit"
+              path="crm/quotes/:id/edit"
               element={<QuoteForm mode="edit" />}
             />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to="dashboard" replace />} />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>
         </div>
       </SimulationProvider>
