@@ -230,6 +230,7 @@ export default function QuoteForm({ mode = 'create' }) {
 
   // Handle form submission
   const handleSubmit = async (sendToCustomer = false) => {
+    alert('🎯 handleSubmit CALLED! sendToCustomer: ' + sendToCustomer);
     console.log('=== handleSubmit called ===');
     console.log('sendToCustomer:', sendToCustomer);
     console.log('formData:', formData);
