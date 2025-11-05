@@ -135,6 +135,9 @@ export default function QuoteForm({ mode = 'create' }) {
         }
       };
       fetchQuote();
+    } else {
+      // In create mode, ensure loading is false
+      setLoading(false);
     }
   }, [isEditMode, quoteId, navigate]);
 
@@ -268,7 +271,7 @@ export default function QuoteForm({ mode = 'create' }) {
       if (response.ok) {
         const data = await response.json();
         // Navigate to the quote details page
-        const targetId = isEditMode ? quoteId : data.quote.id;
+        const targetId = isEditMode ? quoteId : data.id; // API returns quote directly
         navigate(`/app/crm/quotes/${targetId}`);
       } else {
         const error = await response.json();
