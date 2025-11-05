@@ -16,6 +16,18 @@ export default function QuoteForm({ mode = 'create' }) {
   const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  
+  // Filter products based on search
+  const filteredProducts = products.filter(product => {
+    if (!productSearch) return true;
+    const searchLower = productSearch.toLowerCase();
+    return (
+      product.name?.toLowerCase().includes(searchLower) ||
+      product.description?.toLowerCase().includes(searchLower) ||
+      product.sku?.toLowerCase().includes(searchLower)
+    );
+  });
   const [quoteNumber, setQuoteNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [formData, setFormData] = useState({
@@ -418,19 +430,43 @@ export default function QuoteForm({ mode = 'create' }) {
                     <Label htmlFor={`product_${index}`}>Select Product (Optional)</Label>
                     <Select
                       value={item.product_id || 'custom'}
-                      onValueChange={(value) => handleProductSelect(index, value)}
+                      onValueChange={(value) => {
+                        handleProductSelect(index, value);
+                        setProductSearch(''); // Clear search after selection
+                      }}
+                      onOpenChange={(open) => {
+                        if (!open) setProductSearch(''); // Clear search when closing
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a product or enter custom item" />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* Search Input */}
+                        <div className="p-2 border-b">
+                          <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={productSearch}
+                            onChange={(e) => setProductSearch(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        
                         <SelectItem value="custom">✏️ Custom Item (Enter Manually)</SelectItem>
-                        {products.map(product => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - £{(parseFloat(product.client_price) || 0).toFixed(2)}
-                            {product.unit && ` (${product.unit})`}
-                          </SelectItem>
-                        ))}
+                        {filteredProducts.length > 0 ? (
+                          filteredProducts.map(product => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - £{(parseFloat(product.client_price) || 0).toFixed(2)}
+                              {product.unit && ` (${product.unit})`}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-4 text-sm text-gray-500 text-center">
+                            No products found matching "{productSearch}"
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
