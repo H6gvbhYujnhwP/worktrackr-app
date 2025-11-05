@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -228,15 +228,16 @@ export default function QuoteForm({ mode = 'create' }) {
     return calculateSubtotal() + calculateTax();
   };
 
-  // Handle form submission
-  const handleSubmit = async (sendToCustomer = false) => {
-    alert('🎯 handleSubmit CALLED! sendToCustomer: ' + sendToCustomer);
-    console.log('=== handleSubmit called ===');
-    console.log('sendToCustomer:', sendToCustomer);
-    console.log('formData:', formData);
-    console.log('lineItems:', lineItems);
-    console.log('loading:', loading);
-    console.log('saving:', saving);
+  // Handle form submission with defensive programming
+  const handleSubmit = useCallback(async (sendToCustomer = false) => {
+    console.log('🎯 handleSubmit CALLED!', {
+      sendToCustomer,
+      formData,
+      lineItems,
+      loading,
+      saving,
+      timestamp: new Date().toISOString()
+    });
     
     // Validation
     if (!formData.customer_id) {
@@ -297,7 +298,7 @@ export default function QuoteForm({ mode = 'create' }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [formData, lineItems, loading, saving, isEditMode, quoteId, navigate]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -625,7 +626,13 @@ export default function QuoteForm({ mode = 'create' }) {
           <>
             <button
               type="button"
-              onClick={() => handleSubmit(true)}
+              onClick={(e) => {
+                console.log('🟢 Save & Send button clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(true);
+              }}
+              onMouseDown={() => console.log('🟡 Save & Send mouseDown')}
               disabled={saving}
               className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -634,7 +641,13 @@ export default function QuoteForm({ mode = 'create' }) {
             </button>
             <button
               type="button"
-              onClick={() => handleSubmit(false)}
+              onClick={(e) => {
+                console.log('🟢 Save as Draft button clicked');
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit(false);
+              }}
+              onMouseDown={() => console.log('🟡 Save as Draft mouseDown')}
               disabled={saving}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
