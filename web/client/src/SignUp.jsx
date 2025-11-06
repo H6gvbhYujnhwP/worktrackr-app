@@ -271,7 +271,7 @@ export default function SignUp() {
                     name="company_name"
                     value={form.company_name}
                     onChange={onChange}
-                    placeholder="e.g. SweetByte Ltd"
+                    placeholder="Your Company Ltd"
                     className={fieldErrors.company_name ? 'border-red-500' : ''}
                   />
                   {fieldErrors.company_name ? (
