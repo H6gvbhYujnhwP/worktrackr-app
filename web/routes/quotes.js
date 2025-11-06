@@ -240,7 +240,7 @@ router.get('/:id', async (req, res) => {
       ORDER BY ql.sort_order, ql.created_at
     `;
 
-    const lineItemsResult = await db.query(lineItemsQuery, [id]);
+    const lineItemsResult = await db.query(lineItemsQuery, [quote.id]);
 
     quote.line_items = lineItemsResult.rows;
 
@@ -931,6 +931,9 @@ router.get('/:id/pdf', async (req, res) => {
     const { organizationId } = req.orgContext;
     console.log('📋 Quote ID:', id, 'Org ID:', organizationId);
 
+    // Check if id is a UUID or quote number (format: QT-YYYY-NNNN)
+    const isQuoteNumber = /^QT-\d{4}-\d{4}$/.test(id);
+
     // Fetch quote with all details
     const quoteQuery = `
       SELECT 
@@ -944,7 +947,7 @@ router.get('/:id/pdf', async (req, res) => {
       FROM quotes q
       LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
-      WHERE q.id = $1 AND q.organisation_id = $2
+      WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2
     `;
     
     const quoteResult = await db.query(quoteQuery, [id, organizationId]);
@@ -965,7 +968,7 @@ router.get('/:id/pdf', async (req, res) => {
       ORDER BY sort_order, created_at
     `;
     
-    const lineItemsResult = await db.query(lineItemsQuery, [id]);
+    const lineItemsResult = await db.query(lineItemsQuery, [quote.id]);
     const lineItems = lineItemsResult.rows;
     console.log('📦 Line items retrieved:', lineItems.length);
 
