@@ -13,10 +13,10 @@ const resend = new Resend(process.env.RESEND);
  */
 router.post('/:id/send', authenticateToken, requireOrgContext, async (req, res) => {
   const { id } = req.params;
-  const { to, cc, subject, message } = req.body;
+  const { recipient_email, cc_emails, subject, message } = req.body;
   const { organizationId } = req.orgContext;
 
-  console.log('📧 Sending quote email:', { id, to, cc, subject });
+  console.log('📧 Sending quote email:', { id, recipient_email, cc_emails, subject });
 
   try {
     // Fetch quote details
@@ -55,14 +55,14 @@ router.post('/:id/send', authenticateToken, requireOrgContext, async (req, res) 
     // Prepare email data
     const emailData = {
       from: 'WorkTrackr <noreply@worktrackr.cloud>',
-      to: to || quote.customer_email,
+      to: recipient_email || quote.customer_email,
       subject: subject || `Quote ${quote.quote_number} from WorkTrackr`,
       html: emailHtml,
     };
 
     // Add CC if provided
-    if (cc && cc.trim()) {
-      emailData.cc = cc.split(',').map(email => email.trim());
+    if (cc_emails && cc_emails.trim()) {
+      emailData.cc = cc_emails.split(',').map(email => email.trim());
     }
 
     console.log('📤 Sending email via Resend:', { to: emailData.to, subject: emailData.subject });
