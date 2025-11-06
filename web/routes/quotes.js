@@ -922,8 +922,10 @@ router.post('/:id/duplicate', async (req, res) => {
 // GET /api/quotes/:id/pdf - Generate and download quote PDF
 router.get('/:id/pdf', async (req, res) => {
   try {
+    console.log('🎯 PDF Generation Started');
     const { id } = req.params;
     const { organizationId } = req.orgContext;
+    console.log('📋 Quote ID:', id, 'Org ID:', organizationId);
 
     // Fetch quote with all details
     const quoteQuery = `
@@ -942,12 +944,15 @@ router.get('/:id/pdf', async (req, res) => {
     `;
     
     const quoteResult = await db.query(quoteQuery, [id, organizationId]);
+    console.log('✅ Quote query executed, rows:', quoteResult.rows.length);
     
     if (quoteResult.rows.length === 0) {
+      console.log('❌ Quote not found');
       return res.status(404).json({ error: 'Quote not found' });
     }
     
     const quote = quoteResult.rows[0];
+    console.log('📄 Quote data retrieved:', quote.quote_number);
 
     // Fetch line items
     const lineItemsQuery = `
@@ -958,9 +963,12 @@ router.get('/:id/pdf', async (req, res) => {
     
     const lineItemsResult = await db.query(lineItemsQuery, [id]);
     const lineItems = lineItemsResult.rows;
+    console.log('📦 Line items retrieved:', lineItems.length);
 
     // Create PDF document
+    console.log('🎨 Creating PDF document...');
     const doc = new PDFDocument({ margin: 50 });
+    console.log('✅ PDFDocument created');
 
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
@@ -1116,11 +1124,18 @@ router.get('/:id/pdf', async (req, res) => {
     doc.end();
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('❌❌❌ PDF Generation Error ❌❌❌');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     // If headers not sent yet, send error response
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to generate PDF' });
+      res.status(500).json({ 
+        error: 'Failed to generate PDF',
+        details: error.message,
+        type: error.name
+      });
     }
   }
 });
