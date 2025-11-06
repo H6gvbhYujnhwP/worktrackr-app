@@ -932,7 +932,7 @@ router.get('/:id/pdf', async (req, res) => {
       SELECT 
         q.*,
         c.company_name,
-        c.primary_contact_name as contact_name,
+        c.contact_name,
         c.email as customer_email,
         c.phone as customer_phone,
         c.address as customer_address,
