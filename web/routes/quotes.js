@@ -200,6 +200,9 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const { organizationId } = req.orgContext;
 
+    // Check if id is a UUID or quote number (format: QT-YYYY-NNNN)
+    const isQuoteNumber = /^QT-\d{4}-\d{4}$/.test(id);
+
     // Get quote details
     const quoteQuery = `
       SELECT 
@@ -213,7 +216,7 @@ router.get('/:id', async (req, res) => {
       FROM quotes q
       LEFT JOIN customers c ON q.customer_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
-      WHERE q.id = $1 AND q.organisation_id = $2
+      WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2
     `;
 
     const quoteResult = await db.query(quoteQuery, [id, organizationId]);
