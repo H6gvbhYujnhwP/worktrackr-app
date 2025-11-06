@@ -335,7 +335,7 @@ export default function QuotesList() {
                   {filteredQuotes.map((quote) => (
                     <tr 
                       key={quote.id}
-                      onClick={() => navigate(`/app/crm/quotes/${quote.id}`)}
+                      onClick={() => navigate(`/app/crm/quotes/${quote.quote_number}`)}
                       className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <td className="py-3 px-4 font-medium text-blue-600">
