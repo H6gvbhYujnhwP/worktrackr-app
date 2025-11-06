@@ -44,6 +44,7 @@ import ErrorBoundary from './ErrorBoundary.jsx';
 import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
+import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 
 export default function Dashboard() {
   const { user, membership, logout } = useAuth();
@@ -276,6 +277,15 @@ export default function Dashboard() {
                       >
                         <Settings className="w-4 h-4" />
                         <span>Security</span>
+                      </Button>
+                      
+                      <Button 
+                        variant={currentView === 'email-intake' ? 'default' : 'outline'} 
+                        onClick={() => setCurrentView('email-intake')}
+                        className="flex items-center space-x-2"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Email Intake</span>
                       </Button>
                     </div>
                     
@@ -543,6 +553,10 @@ export default function Dashboard() {
 
           {currentView === 'security' && (
             <SecuritySettings />
+          )}
+
+          {currentView === 'email-intake' && (
+            <EmailIntakeSettings />
           )}
         </div>
       </div>
