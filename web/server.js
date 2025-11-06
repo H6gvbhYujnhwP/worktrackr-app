@@ -135,10 +135,8 @@ app.use('/api/auth/user', require('./routes/user.js'));
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);
 const quotesRoutes = require('./routes/quotes');
-const quotesPdfRoutes = require('./routes/quotes-pdf');
 const quotesEmailRoutes = require('./routes/quotes-email');
 app.use('/api/quotes', authenticateToken, quotesRoutes);
-app.use('/api/quotes', authenticateToken, quotesPdfRoutes);
 app.use('/api/quotes', authenticateToken, quotesEmailRoutes);
 
 /* ======================= Health & Version ======================== */
