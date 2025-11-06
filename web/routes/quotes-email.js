@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { Resend } = require('resend');
-const { authenticateToken, requireOrgContext } = require('../middleware/auth');
 const pool = require('../db');
 
 // Initialize Resend client
@@ -11,10 +10,10 @@ const resend = new Resend(process.env.RESEND);
  * POST /api/quotes/:id/send
  * Send quote via email using Resend
  */
-router.post('/:id/send', authenticateToken, requireOrgContext, async (req, res) => {
+router.post('/:id/send', async (req, res) => {
   const { id } = req.params;
   const { recipient_email, cc_emails, subject, message } = req.body;
-  const { organizationId } = req.orgContext;
+  const { organizationId } = req.user; // organizationId comes from authenticateToken middleware
 
   console.log('📧 Sending quote email:', { id, recipient_email, cc_emails, subject });
 
