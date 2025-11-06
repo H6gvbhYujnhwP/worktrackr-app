@@ -231,13 +231,22 @@ router.get('/settings', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
 
+    // Get organization info
+    const orgResult = await db.query(
+      'SELECT id, name FROM organisations WHERE id = $1',
+      [orgId]
+    );
+
     const result = await db.query(
       'SELECT * FROM email_intake_channels WHERE organisation_id = $1',
       [orgId]
     );
 
     if (result.rows.length === 0) {
-      return res.json({ channel: null });
+      return res.json({ 
+        channel: null,
+        organization: orgResult.rows[0] || null
+      });
     }
 
     const channel = result.rows[0];
@@ -280,12 +289,13 @@ router.get('/settings', requireAuth, async (req, res) => {
         spf_verified: channel.spf_verified,
         dkim_verified: channel.dkim_verified,
         is_active: channel.is_active,
-        auto_create_mode: channel.auto_create_mode,
-        require_human_review: channel.require_human_review,
-        confidence_threshold: parseFloat(channel.confidence_threshold),
+        auto_create_tickets: channel.auto_create_tickets,
+        auto_create_quotes: channel.auto_create_quotes,
+        require_review_threshold: parseFloat(channel.require_review_threshold || 0.7),
         last_email_received_at: channel.last_email_received_at,
         verified_at: channel.verified_at
       },
+      organization: orgResult.rows[0] || null,
       dns_records: dnsRecords
     });
 
@@ -299,7 +309,14 @@ router.get('/settings', requireAuth, async (req, res) => {
 router.post('/settings', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
-    const { email_address, auto_create_mode, require_human_review, confidence_threshold } = req.body;
+    const { 
+      email_address, 
+      domain,
+      is_active,
+      auto_create_tickets, 
+      auto_create_quotes, 
+      require_review_threshold 
+    } = req.body;
 
     if (!email_address) {
       return res.status(400).json({ error: 'email_address is required' });
@@ -323,13 +340,16 @@ router.post('/settings', requireAuth, async (req, res) => {
       // Update existing
       const result = await db.query(
         `UPDATE email_intake_channels 
-         SET email_address = $1, auto_create_mode = $2, require_human_review = $3, 
-             confidence_threshold = $4, updated_at = NOW()
-         WHERE organisation_id = $5
+         SET email_address = $1, domain = $2, is_active = $3,
+             auto_create_tickets = $4, auto_create_quotes = $5,
+             require_review_threshold = $6, updated_at = NOW()
+         WHERE organisation_id = $7
          RETURNING *`,
-        [email_address, auto_create_mode || 'ai_decide', 
-         require_human_review !== undefined ? require_human_review : true,
-         confidence_threshold || 0.70, orgId]
+        [email_address, domain || 'worktrackr.cloud', 
+         is_active !== undefined ? is_active : true,
+         auto_create_tickets !== undefined ? auto_create_tickets : true,
+         auto_create_quotes !== undefined ? auto_create_quotes : true,
+         require_review_threshold || 0.70, orgId]
       );
       channel = result.rows[0];
     } else {
@@ -338,12 +358,15 @@ router.post('/settings', requireAuth, async (req, res) => {
       
       const result = await db.query(
         `INSERT INTO email_intake_channels (
-          organisation_id, email_address, inbound_identifier, auto_create_mode,
-          require_human_review, confidence_threshold, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *`,
-        [orgId, email_address, inboundIdentifier, auto_create_mode || 'ai_decide',
-         require_human_review !== undefined ? require_human_review : true,
-         confidence_threshold || 0.70]
+          organisation_id, email_address, domain, inbound_identifier, 
+          is_active, auto_create_tickets, auto_create_quotes,
+          require_review_threshold, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) RETURNING *`,
+        [orgId, email_address, domain || 'worktrackr.cloud', inboundIdentifier,
+         is_active !== undefined ? is_active : true,
+         auto_create_tickets !== undefined ? auto_create_tickets : true,
+         auto_create_quotes !== undefined ? auto_create_quotes : true,
+         require_review_threshold || 0.70]
       );
       channel = result.rows[0];
     }
@@ -373,10 +396,12 @@ router.post('/settings', requireAuth, async (req, res) => {
       channel: {
         id: channel.id,
         email_address: channel.email_address,
+        domain: channel.domain,
         inbound_identifier: channel.inbound_identifier,
-        auto_create_mode: channel.auto_create_mode,
-        require_human_review: channel.require_human_review,
-        confidence_threshold: parseFloat(channel.confidence_threshold)
+        is_active: channel.is_active,
+        auto_create_tickets: channel.auto_create_tickets,
+        auto_create_quotes: channel.auto_create_quotes,
+        require_review_threshold: parseFloat(channel.require_review_threshold || 0.7)
       },
       dns_records: dnsRecords,
       message: 'Email intake configured. Please add DNS records to activate.'
