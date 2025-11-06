@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
+const formData = require('form-data');
+const Mailgun = require('mailgun.js');
 const db = require('../../shared/db');
+
+// Initialize Mailgun
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: 'api',
+  key: process.env.MAILGUN_API_KEY || 'key-placeholder',
+  url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
+});
 
 // POST /api/quotes/:id/send - Send quote via email
 router.post('/:id/send', async (req, res) => {
@@ -9,6 +18,8 @@ router.post('/:id/send', async (req, res) => {
     const { id } = req.params;
     const { organizationId } = req.orgContext;
     const { recipient_email, cc_emails, message, subject } = req.body;
+
+    console.log('📧 Sending quote email:', { id, recipient_email, cc_emails });
 
     // Validate input
     if (!recipient_email) {
@@ -22,7 +33,7 @@ router.post('/:id/send', async (req, res) => {
         c.company_name,
         c.contact_name,
         c.email as customer_email,
-        u.full_name as created_by_name,
+        u.name as created_by_name,
         u.email as created_by_email
       FROM quotes q
       LEFT JOIN customers c ON q.customer_id = c.id
@@ -37,16 +48,18 @@ router.post('/:id/send', async (req, res) => {
     }
     
     const quote = quoteResult.rows[0];
+    console.log('✅ Quote found:', quote.quote_number);
 
     // Fetch line items
     const lineItemsQuery = `
-      SELECT * FROM quote_line_items
+      SELECT * FROM quote_lines
       WHERE quote_id = $1
       ORDER BY sort_order, created_at
     `;
     
     const lineItemsResult = await db.query(lineItemsQuery, [id]);
     const lineItems = lineItemsResult.rows;
+    console.log('✅ Line items found:', lineItems.length);
 
     // Calculate totals
     const subtotal = lineItems.reduce((sum, item) => {
@@ -61,41 +74,31 @@ router.post('/:id/send', async (req, res) => {
 
     const total = subtotal + taxAmount;
 
-    // Create email transporter
-    // Note: In production, use environment variables for email configuration
-    const transporter = nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-
     // Generate HTML email content
     const emailHtml = generateQuoteEmailHtml(quote, lineItems, subtotal, taxAmount, total, message);
 
-    // Email options
-    const mailOptions = {
-      from: process.env.SMTP_FROM || quote.created_by_email || 'noreply@worktrackr.com',
+    // Prepare email data for Mailgun
+    const emailData = {
+      from: `WorkTrackr <noreply@${process.env.MAILGUN_DOMAIN || 'worktrackr.com'}>`,
       to: recipient_email,
-      cc: cc_emails || undefined,
       subject: subject || `Quote ${quote.quote_number} from WorkTrackr`,
-      html: emailHtml,
-      attachments: [
-        {
-          filename: `quote-${quote.quote_number}.pdf`,
-          path: `/api/quotes/${id}/pdf`, // This would need to be generated as a file first
-          contentType: 'application/pdf'
-        }
-      ]
+      html: emailHtml
     };
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+    // Add CC if provided
+    if (cc_emails && cc_emails.trim()) {
+      emailData.cc = cc_emails;
+    }
 
-    console.log('Email sent:', info.messageId);
+    console.log('📤 Sending email via Mailgun...');
+
+    // Send email via Mailgun
+    const result = await mg.messages.create(
+      process.env.MAILGUN_DOMAIN || 'worktrackr.com',
+      emailData
+    );
+
+    console.log('✅ Email sent successfully:', result.id);
 
     // Update quote status to 'sent' if it was 'draft'
     if (quote.status === 'draft') {
@@ -103,16 +106,17 @@ router.post('/:id/send', async (req, res) => {
         'UPDATE quotes SET status = $1, updated_at = NOW() WHERE id = $2',
         ['sent', id]
       );
+      console.log('✅ Quote status updated to sent');
     }
 
     res.json({ 
       success: true, 
       message: 'Quote sent successfully',
-      messageId: info.messageId 
+      messageId: result.id 
     });
 
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error);
     res.status(500).json({ 
       error: 'Failed to send email',
       details: error.message 
@@ -213,7 +217,7 @@ function generateQuoteEmailHtml(quote, lineItems, subtotal, taxAmount, total, cu
       ${quote.terms_conditions ? `
         <div style="margin-top: 30px; padding: 15px; background-color: #f9fafb; border-radius: 5px;">
           <h4 style="color: #1f2937; margin-top: 0;">Terms & Conditions</h4>
-          <p style="font-size: 14px; color: #6b7280;">${quote.terms_conditions}</p>
+          <p style="font-size: 14px; color: #6b7280; white-space: pre-line;">${quote.terms_conditions}</p>
         </div>
       ` : ''}
 

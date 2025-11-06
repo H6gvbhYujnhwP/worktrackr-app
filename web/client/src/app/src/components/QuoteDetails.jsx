@@ -13,6 +13,7 @@ export default function QuoteDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -96,9 +97,88 @@ export default function QuoteDetails() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/quotes/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete quote');
+      }
+
+      // Navigate back to quotes list
+      navigate('/app/crm/quotes');
+    } catch (err) {
+      console.error('Error deleting quote:', err);
+      alert('Failed to delete quote. Please try again.');
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const handleDownloadPDF = () => {
     // Open PDF in new tab for download
     window.open(`/api/quotes/${id}/pdf`, '_blank');
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const response = await fetch(`/api/quotes/${id}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote');
+      }
+
+      const originalQuote = await response.json();
+
+      // Create new quote with same data but as draft
+      const newQuoteData = {
+        customer_id: originalQuote.customer_id,
+        title: `${originalQuote.title} (Copy)`,
+        description: originalQuote.description,
+        valid_until: originalQuote.valid_until,
+        terms_conditions: originalQuote.terms_conditions,
+        internal_notes: originalQuote.internal_notes,
+        status: 'draft',
+        line_items: originalQuote.line_items.map(item => ({
+          product_id: item.product_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          discount_percent: item.discount_percent,
+          tax_rate: item.tax_rate
+        }))
+      };
+
+      const createResponse = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(newQuoteData)
+      });
+
+      if (!createResponse.ok) {
+        throw new Error('Failed to create duplicate quote');
+      }
+
+      const newQuote = await createResponse.json();
+      
+      // Navigate to the new quote's edit page
+      navigate(`/app/crm/quotes/${newQuote.id}/edit`);
+    } catch (err) {
+      console.error('Error duplicating quote:', err);
+      alert('Failed to duplicate quote. Please try again.');
+    }
   };
 
   const handleSendEmail = (result) => {
@@ -176,9 +256,14 @@ export default function QuoteDetails() {
             <Download className="w-4 h-4 mr-2" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={showDeleteConfirm ? "bg-red-600 text-white hover:bg-red-700" : "text-red-600 hover:text-red-700"}
+            onClick={handleDelete}
+          >
             <Trash2 className="w-4 h-4 mr-2" />
-            Delete
+            {showDeleteConfirm ? 'Click Again to Confirm' : 'Delete'}
           </Button>
         </div>
       </div>
@@ -362,7 +447,12 @@ export default function QuoteDetails() {
               >
                 Mark as Declined
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="sm"
+                onClick={handleDuplicate}
+              >
                 Duplicate Quote
               </Button>
             </CardContent>
