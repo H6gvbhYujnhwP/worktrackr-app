@@ -141,8 +141,7 @@ app.use('/api/quotes', authenticateToken, quotesEmailRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
-app.use('/api/email-intake/webhook', emailIntakeRoutes); // Public webhook (no auth)
-app.use('/api/email-intake', authenticateToken, emailIntakeRoutes); // Authenticated endpoints
+app.use('/api/email-intake', emailIntakeRoutes); // Includes both public webhook and authenticated endpoints
 
 /* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));

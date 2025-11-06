@@ -218,8 +218,16 @@ router.post('/webhook', async (req, res) => {
 // AUTHENTICATED ENDPOINTS (Settings & Management)
 // ============================================================================
 
+// Middleware to check authentication for protected routes
+function requireAuth(req, res, next) {
+  if (!req.orgContext || !req.orgContext.organisationId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+}
+
 // Get email intake settings
-router.get('/settings', async (req, res) => {
+router.get('/settings', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
 
@@ -288,7 +296,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // Create or update email intake settings
-router.post('/settings', async (req, res) => {
+router.post('/settings', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
     const { email_address, auto_create_mode, require_human_review, confidence_threshold } = req.body;
@@ -381,7 +389,7 @@ router.post('/settings', async (req, res) => {
 });
 
 // Activate email intake (mark as active)
-router.post('/activate', async (req, res) => {
+router.post('/activate', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
 
@@ -401,7 +409,7 @@ router.post('/activate', async (req, res) => {
 });
 
 // Get activity log
-router.get('/activity', async (req, res) => {
+router.get('/activity', requireAuth, async (req, res) => {
   try {
     const orgId = req.orgContext.organisationId;
     const page = parseInt(req.query.page) || 1;
