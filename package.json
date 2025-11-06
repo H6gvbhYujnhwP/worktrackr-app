@@ -35,5 +35,9 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@playwright/test": "^1.55.1"
+  },
+  "dependencies": {
+    "nodemailer": "^7.0.10",
+    "pdfkit": "^0.17.2"
   }
 }

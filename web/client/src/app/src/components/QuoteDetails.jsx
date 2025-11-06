@@ -4,6 +4,7 @@ import { ArrowLeft, Edit, Send, Download, Trash2, MoreVertical } from 'lucide-re
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import SendQuoteModal from './SendQuoteModal';
 
 export default function QuoteDetails() {
   const { id } = useParams();
@@ -11,6 +12,7 @@ export default function QuoteDetails() {
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -66,6 +68,43 @@ export default function QuoteDetails() {
 
   const formatCurrency = (amount) => {
     return `£${parseFloat(amount || 0).toFixed(2)}`;
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const response = await fetch(`/api/quotes/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update quote status');
+      }
+
+      const updatedQuote = await response.json();
+      setQuote(updatedQuote);
+      
+      // Show success message (you can add a toast notification here)
+      console.log(`Quote status updated to: ${newStatus}`);
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update quote status. Please try again.');
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    // Open PDF in new tab for download
+    window.open(`/api/quotes/${id}/pdf`, '_blank');
+  };
+
+  const handleSendEmail = (result) => {
+    console.log('Quote sent successfully:', result);
+    // Refresh quote data to get updated status
+    window.location.reload();
   };
 
   if (loading) {
@@ -129,11 +168,11 @@ export default function QuoteDetails() {
             <Edit className="w-4 h-4 mr-2" />
             Edit
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowSendModal(true)}>
             <Send className="w-4 h-4 mr-2" />
             Send
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
             <Download className="w-4 h-4 mr-2" />
             PDF
           </Button>
@@ -296,13 +335,31 @@ export default function QuoteDetails() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="sm"
+                onClick={() => handleStatusChange('sent')}
+                disabled={quote.status === 'sent'}
+              >
                 Mark as Sent
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="sm"
+                onClick={() => handleStatusChange('accepted')}
+                disabled={quote.status === 'accepted'}
+              >
                 Mark as Accepted
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                size="sm"
+                onClick={() => handleStatusChange('declined')}
+                disabled={quote.status === 'declined'}
+              >
                 Mark as Declined
               </Button>
               <Button variant="outline" className="w-full justify-start" size="sm">
@@ -312,6 +369,15 @@ export default function QuoteDetails() {
           </Card>
         </div>
       </div>
+
+      {/* Send Quote Modal */}
+      {showSendModal && (
+        <SendQuoteModal
+          quote={quote}
+          onClose={() => setShowSendModal(false)}
+          onSend={handleSendEmail}
+        />
+      )}
     </div>
   );
 }
