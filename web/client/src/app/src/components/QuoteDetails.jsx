@@ -16,7 +16,9 @@ export default function QuoteDetails() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    console.log('🔍 QuoteDetails mounted, ID from params:', id);
     const fetchQuote = async () => {
+      console.log('🔍 Fetching quote with ID:', id);
       setLoading(true);
       setError(null);
       try {
