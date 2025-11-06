@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Resend } = require('resend');
-const pool = require('../db');
+const db = require('../../shared/db');
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND);
@@ -19,7 +19,7 @@ router.post('/:id/send', async (req, res) => {
 
   try {
     // Fetch quote details
-    const quoteResult = await pool.query(
+    const quoteResult = await db.query(
       `SELECT q.*, 
               c.name as customer_name,
               c.email as customer_email,
@@ -39,7 +39,7 @@ router.post('/:id/send', async (req, res) => {
     const quote = quoteResult.rows[0];
 
     // Fetch line items
-    const lineItemsResult = await pool.query(
+    const lineItemsResult = await db.query(
       `SELECT * FROM quote_lines
        WHERE quote_id = $1
        ORDER BY created_at`,
@@ -73,7 +73,7 @@ router.post('/:id/send', async (req, res) => {
 
     // Update quote status to 'sent' if it was 'draft'
     if (quote.status === 'draft') {
-      await pool.query(
+      await db.query(
         `UPDATE quotes SET status = 'sent', updated_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
         [id]
