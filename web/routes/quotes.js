@@ -635,31 +635,6 @@ module.exports = router;
 
 
 
-// POST /api/quotes/:id/send - Mark quote as sent
-router.post('/:id/send', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { organizationId } = req.orgContext;
-
-    const result = await db.query(
-      `UPDATE quotes 
-       SET status = 'sent', sent_at = NOW(), updated_at = NOW()
-       WHERE id = $1 AND organisation_id = $2 AND status = 'draft'
-       RETURNING *`,
-      [id, organizationId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Quote not found or already sent' });
-    }
-
-    res.json({ message: 'Quote marked as sent', quote: result.rows[0] });
-  } catch (error) {
-    console.error('Error sending quote:', error);
-    res.status(500).json({ error: 'Failed to send quote' });
-  }
-});
-
 // POST /api/quotes/:id/accept - Accept quote (customer action)
 router.post('/:id/accept', async (req, res) => {
   try {

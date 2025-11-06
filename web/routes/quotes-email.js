@@ -13,22 +13,24 @@ const resend = new Resend(process.env.RESEND);
 router.post('/:id/send', async (req, res) => {
   const { id } = req.params;
   const { recipient_email, cc_emails, subject, message } = req.body;
-  const { organizationId } = req.user; // organizationId comes from authenticateToken middleware
+  const { organizationId } = req.orgContext;
 
-  console.log('📧 Sending quote email:', { id, recipient_email, cc_emails, subject });
+  // Check if id is a UUID or quote number (format: QT-YYYY-NNNN)
+  const isQuoteNumber = /^QT-\d{4}-\d{4}$/.test(id);
+  console.log('📧 Sending quote email:', { id, isQuoteNumber, recipient_email, cc_emails, subject });
 
   try {
     // Fetch quote details
     const quoteResult = await db.query(
       `SELECT q.*, 
-              c.name as customer_name,
+              c.company_name as customer_name,
               c.email as customer_email,
               c.contact_name,
               c.phone,
               c.address
        FROM quotes q
        JOIN customers c ON q.customer_id = c.id
-       WHERE q.id = $1 AND q.organization_id = $2`,
+       WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2`,
       [id, organizationId]
     );
 
@@ -43,7 +45,7 @@ router.post('/:id/send', async (req, res) => {
       `SELECT * FROM quote_lines
        WHERE quote_id = $1
        ORDER BY created_at`,
-      [id]
+      [quote.id]
     );
 
     const lineItems = lineItemsResult.rows;
