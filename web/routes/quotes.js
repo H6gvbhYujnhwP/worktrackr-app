@@ -202,6 +202,7 @@ router.get('/:id', async (req, res) => {
 
     // Check if id is a UUID or quote number (format: QT-YYYY-NNNN)
     const isQuoteNumber = /^QT-\d{4}-\d{4}$/.test(id);
+    console.log('🔍 Quote lookup - ID:', id, 'Is quote number:', isQuoteNumber, 'Column:', isQuoteNumber ? 'quote_number' : 'id');
 
     // Get quote details
     const quoteQuery = `
