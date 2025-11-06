@@ -87,9 +87,9 @@ export default function QuoteDetails() {
               {error || 'Quote not found'}
             </div>
             <div className="mt-4 text-center">
-              <Button onClick={() => navigate('/app/dashboard')} variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to CRM
+            <Button onClick={() => navigate('/app/crm/quotes')} variant="outline">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Quotes
               </Button>
             </div>
           </CardContent>
@@ -106,10 +106,10 @@ export default function QuoteDetails() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => navigate('/app/dashboard')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+          onClick={() => navigate('/app/crm/quotes')}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Quotes
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{quote.quote_number}</h1>

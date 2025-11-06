@@ -325,10 +325,10 @@ export default function QuoteForm({ mode = 'create' }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate('/app/dashboard')}
+          onClick={() => navigate('/app/crm/quotes')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to CRM
+          Back to Quotes
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
