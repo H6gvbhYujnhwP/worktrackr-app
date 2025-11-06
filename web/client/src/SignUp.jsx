@@ -36,7 +36,8 @@ export default function SignUp() {
   const nav = useNavigate()
   const [qs] = useSearchParams()
 
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', org_slug: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', company_name: '' })
+  const [generatedSlug, setGeneratedSlug] = useState('')
   const [busy, setBusy] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const [generalError, setGeneralError] = useState(null)
@@ -58,6 +59,12 @@ export default function SignUp() {
   const onChange = (e) => {
     const { name, value } = e.target
     setForm((s) => ({ ...s, [name]: value }))
+    
+    // Auto-generate slug from company name
+    if (name === 'company_name') {
+      setGeneratedSlug(toSlug(value))
+    }
+    
     if (fieldErrors[name]) {
       setFieldErrors((s) => ({ ...s, [name]: null }))
     }
@@ -71,7 +78,7 @@ export default function SignUp() {
     if (!form.email.trim()) errs.email = 'Email is required.'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email.'
     if (!form.password || form.password.length < 8) errs.password = 'Password must be at least 8 characters.'
-    if (!form.org_slug.trim()) errs.org_slug = 'Organization ID is required.'
+    if (!form.company_name.trim()) errs.company_name = 'Company name is required.'
     return errs
   }
 
@@ -98,8 +105,8 @@ export default function SignUp() {
           full_name: form.full_name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          // Accept spaces & punctuation from the user, but send a safe slug to the API
-          org_slug: toSlug(form.org_slug),
+          // Auto-generate slug from company name
+          org_slug: toSlug(form.company_name),
           price_id: selectedPriceId,
         }),
       })
@@ -258,21 +265,24 @@ export default function SignUp() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="org_slug">Organization ID *</Label>
+                  <Label htmlFor="company_name">Company Name *</Label>
                   <Input
-                    id="org_slug"
-                    name="org_slug"
-                    value={form.org_slug}
+                    id="company_name"
+                    name="company_name"
+                    value={form.company_name}
                     onChange={onChange}
-                    placeholder="e.g. The Green Agents Ltd"
-                    className={fieldErrors.org_slug ? 'border-red-500' : ''}
+                    placeholder="e.g. SweetByte Ltd"
+                    className={fieldErrors.company_name ? 'border-red-500' : ''}
                   />
-                  {fieldErrors.org_slug ? (
-                    <p className="text-sm text-red-600">{fieldErrors.org_slug}</p>
+                  {fieldErrors.company_name ? (
+                    <p className="text-sm text-red-600">{fieldErrors.company_name}</p>
+                  ) : generatedSlug ? (
+                    <p className="text-xs text-gray-500">
+                      Organization ID: <span className="font-mono text-gray-700">{generatedSlug}</span>
+                    </p>
                   ) : (
                     <p className="text-xs text-gray-500">
-                      You can type your full company name with spaces; we’ll convert it to a safe ID like
-                      <span className="font-mono"> the-green-agents-ltd</span>.
+                      Enter your company name (ID will be auto-generated)
                     </p>
                   )}
                 </div>
