@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../../shared/db');
 const crypto = require('crypto');
 
 // Helper: Generate unique inbound identifier from email
