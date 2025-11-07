@@ -185,13 +185,116 @@ async function createTicket(organisationId, aiResult, fromEmail, subject, body) 
 
 // Helper: Create quote from email
 async function createQuote(organisationId, aiResult, fromEmail, subject, body) {
+  const { findMatchingContact, extractContactInfoWithAI } = require('./ai-contact-matcher');
+  
+  // Extract sender info
+  let senderName = '';
+  let senderEmail = fromEmail;
+  
+  if (fromEmail.includes('<')) {
+    const match = fromEmail.match(/^(.+?)\\s*<(.+?)>$/);
+    if (match) {
+      senderName = match[1].trim();
+      senderEmail = match[2].trim();
+    }
+  }
+  
+  // AI Contact Matching (same as tickets)
+  let customerId = null;
+  
+  try {
+    const matchResult = await findMatchingContact(organisationId, senderEmail, senderName);
+    console.log('🤖 AI Contact Match for quote:', matchResult.matchType, 'confidence:', matchResult.confidence);
+    
+    if (matchResult.match && matchResult.confidence >= 0.8) {
+      // Found existing contact - get their customer_id
+      customerId = matchResult.match.customer_id;
+      console.log('✅ Linked quote to existing contact\'s customer:', customerId);
+    } else if (matchResult.suggestion?.type === 'new_contact') {
+      // Extract and create new contact/customer
+      const contactInfo = await extractContactInfoWithAI(body, senderEmail, senderName);
+      console.log('🤖 AI extracted contact info for quote:', contactInfo);
+      
+      try {
+        // Create or find customer (company)
+        if (contactInfo.company) {
+          const existingCustomer = await db.query(
+            `SELECT id FROM customers 
+             WHERE organisation_id = $1 
+             AND LOWER(company_name) = LOWER($2)
+             LIMIT 1`,
+            [organisationId, contactInfo.company]
+          );
+          
+          if (existingCustomer.rows.length > 0) {
+            customerId = existingCustomer.rows[0].id;
+            console.log('✅ Found existing customer for quote:', contactInfo.company);
+          } else {
+            const newCustomer = await db.query(
+              `INSERT INTO customers (
+                organisation_id, company_name, contact_name, email, phone, address
+              ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+              [organisationId, contactInfo.company, contactInfo.name, 
+               contactInfo.email, contactInfo.phone, contactInfo.address]
+            );
+            customerId = newCustomer.rows[0].id;
+            console.log('✅ Created new customer for quote:', contactInfo.company);
+          }
+        } else {
+          // No company name - create customer with contact name
+          const newCustomer = await db.query(
+            `INSERT INTO customers (
+              organisation_id, contact_name, email, phone
+            ) VALUES ($1, $2, $3, $4) RETURNING id`,
+            [organisationId, contactInfo.name || senderName, contactInfo.email, contactInfo.phone]
+          );
+          customerId = newCustomer.rows[0].id;
+          console.log('✅ Created new customer (no company) for quote');
+        }
+        
+        // Create contact linked to customer
+        await db.query(
+          `INSERT INTO contacts (
+            organisation_id, customer_id, name, email, phone, role
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [organisationId, customerId, contactInfo.name, contactInfo.email, 
+           contactInfo.phone, contactInfo.jobTitle]
+        );
+        console.log('✅ Created contact for quote customer');
+        
+      } catch (error) {
+        console.error('⚠️  Failed to create customer/contact for quote:', error.message);
+        // If we can't create customer, create a basic one
+        const fallbackCustomer = await db.query(
+          `INSERT INTO customers (organisation_id, contact_name, email) 
+           VALUES ($1, $2, $3) RETURNING id`,
+          [organisationId, senderName || 'Unknown', senderEmail]
+        );
+        customerId = fallbackCustomer.rows[0].id;
+      }
+    }
+  } catch (error) {
+    console.error('⚠️  Contact matching failed for quote:', error.message);
+  }
+  
+  // If still no customer_id, create a basic customer
+  if (!customerId) {
+    console.log('⚠️  No customer found, creating basic customer');
+    const fallbackCustomer = await db.query(
+      `INSERT INTO customers (organisation_id, contact_name, email) 
+       VALUES ($1, $2, $3) RETURNING id`,
+      [organisationId, senderName || 'Unknown', senderEmail]
+    );
+    customerId = fallbackCustomer.rows[0].id;
+  }
+  
   const quoteNumber = await generateQuoteNumber(organisationId);
   
   const result = await db.query(
     `INSERT INTO quotes (
-      organisation_id, quote_number, title, status, internal_notes, created_at
-    ) VALUES ($1, $2, $3, 'draft', $4, NOW()) RETURNING *`,
-    [organisationId, quoteNumber, subject, `Auto-created from email (${fromEmail}):\n\n${body}`]
+      organisation_id, customer_id, quote_number, title, status, internal_notes, created_at
+    ) VALUES ($1, $2, $3, $4, 'draft', $5, NOW()) RETURNING *`,
+    [organisationId, customerId, quoteNumber, subject, `Auto-created from email (${fromEmail}):\n\n${body}`]
   );
   
   return result.rows[0];
