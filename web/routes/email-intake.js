@@ -399,26 +399,13 @@ router.post('/webhook', async (req, res) => {
     let requiresReview = false;
 
     if (aiResult.confidence >= channel.confidence_threshold && !channel.require_human_review) {
-      // Auto-create based on intent
-      if (aiResult.intent === 'ticket') {
-        const ticket = await createTicket(channel.organisation_id, aiResult, from, subject, body);
-        action = 'created_ticket';
-        workItemId = ticket.id;
-        workItemType = 'ticket';
-        reference = ticket.id;
-        console.log('✅ Created ticket:', reference);
-      } else if (aiResult.intent === 'quote') {
-        const quote = await createQuote(channel.organisation_id, aiResult, from, subject, body);
-        action = 'created_quote';
-        workItemId = quote.id;
-        workItemType = 'quote';
-        reference = quote.quote_number;
-        console.log('✅ Created quote:', reference);
-      } else {
-        action = 'flagged_for_review';
-        requiresReview = true;
-        console.log('⚠️  Flagged for review (intent: inquiry)');
-      }
+      // Always create ticket (user can convert to quote manually)
+      const ticket = await createTicket(channel.organisation_id, aiResult, from, subject, body);
+      action = 'created_ticket';
+      workItemId = ticket.id;
+      workItemType = 'ticket';
+      reference = ticket.id;
+      console.log('✅ Created ticket:', reference, '(AI intent:', aiResult.intent + ')');
     } else {
       // Flag for review
       action = 'flagged_for_review';
