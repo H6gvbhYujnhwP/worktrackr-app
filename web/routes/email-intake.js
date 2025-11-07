@@ -74,23 +74,47 @@ async function classifyEmailWithAI(subject, body) {
 
 // Helper: Create ticket from email
 async function createTicket(organisationId, aiResult, fromEmail, subject, body) {
+  const { findMatchingContact, extractContactInfoWithAI } = require('./ai-contact-matcher');
+  
   // Extract sender name from email (format: "Name <email@domain.com>" or just "email@domain.com")
   let senderName = '';
   let senderEmail = fromEmail;
   
   if (fromEmail.includes('<')) {
-    const match = fromEmail.match(/^(.+?)\s*<(.+?)>$/);
+    const match = fromEmail.match(/^(.+?)\\s*<(.+?)>$/);
     if (match) {
       senderName = match[1].trim();
       senderEmail = match[2].trim();
     }
   }
   
+  // AI Contact Matching
+  let contactId = null;
+  try {
+    const matchResult = await findMatchingContact(organisationId, senderEmail, senderName);
+    console.log('🤖 AI Contact Match:', matchResult.matchType, 'confidence:', matchResult.confidence);
+    
+    if (matchResult.match && matchResult.confidence >= 0.8) {
+      // High confidence match - auto-link
+      contactId = matchResult.match.id;
+      console.log('✅ Auto-linked to contact:', matchResult.match.name);
+    } else if (matchResult.suggestion?.type === 'new_contact') {
+      // Extract detailed contact info with AI
+      const contactInfo = await extractContactInfoWithAI(body, senderEmail, senderName);
+      console.log('🤖 AI extracted contact info:', contactInfo);
+      
+      // Store in metadata for manual review
+      // TODO: Create pending_contacts table or add to ticket metadata
+    }
+  } catch (error) {
+    console.error('⚠️  Contact matching failed:', error.message);
+  }
+  
   const result = await db.query(
     `INSERT INTO tickets (
-      organisation_id, title, description, status, priority, sender_email, sender_name, created_at
-    ) VALUES ($1, $2, $3, 'open', $4, $5, $6, NOW()) RETURNING *`,
-    [organisationId, subject, body, aiResult.urgency, senderEmail, senderName]
+      organisation_id, title, description, status, priority, sender_email, sender_name, contact_id, created_at
+    ) VALUES ($1, $2, $3, 'open', $4, $5, $6, $7, NOW()) RETURNING *`,
+    [organisationId, subject, body, aiResult.urgency, senderEmail, senderName, contactId]
   );
   
   return result.rows[0];
