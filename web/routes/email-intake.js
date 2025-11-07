@@ -180,17 +180,38 @@ router.post('/webhook', async (req, res) => {
     let body = '';
     if (email_id) {
       try {
+        // Check if API key exists
+        if (!process.env.RESEND_API_KEY) {
+          throw new Error('RESEND_API_KEY environment variable not set');
+        }
+        
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
-        const { data: emailData } = await resend.emails.receiving.get(email_id);
-        body = emailData.text || emailData.html || '';
-        console.log('✅ Fetched email body from Resend API');
+        
+        console.log('📨 Fetching email body for ID:', email_id);
+        const response = await resend.emails.receiving.get(email_id);
+        
+        if (response.error) {
+          throw new Error(response.error.message || 'Resend API error');
+        }
+        
+        const emailData = response.data;
+        body = emailData?.text || emailData?.html || '';
+        
+        if (body) {
+          console.log('✅ Fetched email body from Resend API (' + body.length + ' chars)');
+        } else {
+          console.warn('⚠️  Email body is empty');
+          body = '(Email body is empty)';
+        }
       } catch (error) {
-        console.error('⚠️  Failed to fetch email body:', error.message);
-        body = '(Email body could not be retrieved)';
+        console.error('❌ Failed to fetch email body:', error.message);
+        console.error('Error stack:', error.stack);
+        body = `(Email body could not be retrieved: ${error.message})`;
       }
     } else {
       console.warn('⚠️  No email_id in webhook payload, cannot fetch body');
+      body = '(Email body not available - no email_id in webhook)';
     }
 
     // For testing, we'll use a simple mapping: extract domain from 'to' address
