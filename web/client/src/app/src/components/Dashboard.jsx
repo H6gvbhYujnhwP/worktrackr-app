@@ -509,7 +509,11 @@ export default function Dashboard() {
                   <TicketsTableView
                     tickets={filteredTickets}
                     users={users}
-                    onTicketClick={(ticket) => setViewingTicketId(ticket.id)}
+                    onTicketClick={(ticket) => {
+                      console.log('[Dashboard] onTicketClick called with ticket:', ticket.id);
+                      setViewingTicketId(ticket.id);
+                      console.log('[Dashboard] viewingTicketId set to:', ticket.id);
+                    }}
                   />
                 ) : filteredTickets.length === 0 ? (
                   <Card className="p-8 text-center">

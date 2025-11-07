@@ -303,7 +303,11 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <div 
                         className="cursor-pointer"
-                        onClick={() => onTicketClick?.(ticket)}
+                        onClick={() => {
+                          console.log('[TicketsTableView] Ticket clicked:', ticket.id);
+                          console.log('[TicketsTableView] onTicketClick exists?', !!onTicketClick);
+                          onTicketClick?.(ticket);
+                        }}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs text-gray-500 font-mono">
