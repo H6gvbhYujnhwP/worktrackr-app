@@ -110,29 +110,37 @@ router.post('/webhook', async (req, res) => {
 
     // Extract email data from Resend webhook format
     const data = req.body.data || req.body;
-    const { from, to, subject, text, html } = data;
+    let { from, to, subject, text, html } = data;
     
     if (!to) {
       console.error('❌ Missing "to" field in webhook payload');
       return res.status(400).json({ error: 'Missing required field: to' });
     }
     
+    // Resend sends 'to' as an array, get the first recipient
+    const toAddress = Array.isArray(to) ? to[0] : to;
+    
+    if (!toAddress || typeof toAddress !== 'string') {
+      console.error('❌ Invalid "to" field format:', to);
+      return res.status(400).json({ error: 'Invalid to field format' });
+    }
+    
     const body = text || html || '';
 
     // For testing, we'll use a simple mapping: extract domain from 'to' address
     // In production, Resend will include an inbound_identifier
-    const toDomain = to.split('@')[1];
+    const toDomain = toAddress.split('@')[1];
     
     // Find organization by email domain or inbound identifier
     const channelResult = await db.query(
       `SELECT * FROM email_intake_channels 
        WHERE (email_address = $1 OR inbound_identifier LIKE $2) 
        AND is_active = TRUE`,
-      [to, `%${toDomain}%`]
+      [toAddress, `%${toDomain}%`]
     );
 
     if (channelResult.rows.length === 0) {
-      console.log('❌ No active email channel found for:', to);
+      console.log('❌ No active email channel found for:', toAddress);
       return res.status(404).json({ error: 'Email channel not found or not active' });
     }
 
@@ -190,7 +198,7 @@ router.post('/webhook', async (req, res) => {
         action_taken, work_item_id, work_item_type, requires_review, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())`,
       [
-        channel.organisation_id, channel.id, from, to, subject, body,
+        channel.organisation_id, channel.id, from, toAddress, subject, body,
         aiResult.intent, aiResult.confidence, JSON.stringify(aiResult.entities),
         'keyword-based', processingTime, action, workItemId, workItemType, requiresReview
       ]
