@@ -74,13 +74,11 @@ async function classifyEmailWithAI(subject, body) {
 
 // Helper: Create ticket from email
 async function createTicket(organisationId, aiResult, fromEmail, subject, body) {
-  const ticketNumber = await generateTicketNumber(organisationId);
-  
   const result = await db.query(
     `INSERT INTO tickets (
-      organisation_id, ticket_number, title, description, status, priority, source, created_at
-    ) VALUES ($1, $2, $3, $4, 'open', $5, 'email', NOW()) RETURNING *`,
-    [organisationId, ticketNumber, subject, body, aiResult.urgency]
+      organisation_id, title, description, status, priority, created_at
+    ) VALUES ($1, $2, $3, 'open', $4, NOW()) RETURNING *`,
+    [organisationId, subject, body, aiResult.urgency]
   );
   
   return result.rows[0];
@@ -169,7 +167,7 @@ router.post('/webhook', async (req, res) => {
         action = 'created_ticket';
         workItemId = ticket.id;
         workItemType = 'ticket';
-        reference = ticket.ticket_number;
+        reference = ticket.id;
         console.log('✅ Created ticket:', reference);
       } else if (aiResult.intent === 'quote') {
         const quote = await createQuote(channel.organisation_id, aiResult, from, subject, body);
