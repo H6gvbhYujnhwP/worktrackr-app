@@ -1,7 +1,7 @@
 // AI Contact Matching Helper
 // Intelligently matches email senders to existing contacts or suggests new ones
 
-const db = require('../db');
+const db = require('../../shared/db');
 
 /**
  * Find matching contact for an email sender
