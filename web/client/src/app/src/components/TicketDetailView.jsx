@@ -226,11 +226,12 @@ export default function TicketDetailView({ ticketId, onBack }) {
 
               <div>
                 <Label htmlFor="sector">Sector</Label>
-                <Select value={form.sector} onValueChange={onChange('sector')}>
+                <Select value={form.sector || 'none'} onValueChange={(val) => onChange('sector')(val === 'none' ? '' : val)}>
                   <SelectTrigger id="sector">
                     <SelectValue placeholder="Select sector" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {SECTORS.map(s => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
@@ -321,12 +322,12 @@ export default function TicketDetailView({ ticketId, onBack }) {
             <CardContent>
               <div>
                 <Label htmlFor="assignee_id">Assigned To</Label>
-                <Select value={form.assignee_id} onValueChange={onChange('assignee_id')}>
+                <Select value={form.assignee_id || 'unassigned'} onValueChange={(val) => onChange('assignee_id')(val === 'unassigned' ? '' : val)}>
                   <SelectTrigger id="assignee_id">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {users?.map(u => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.name}
