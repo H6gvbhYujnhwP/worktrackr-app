@@ -120,8 +120,54 @@ async function createTicket(organisationId, aiResult, fromEmail, subject, body) 
       const contactInfo = await extractContactInfoWithAI(body, senderEmail, senderName);
       console.log('🤖 AI extracted contact info:', contactInfo);
       
-      // Store in metadata for manual review
-      // TODO: Create pending_contacts table or add to ticket metadata
+      // Auto-create customer and contact
+      try {
+        let customerId = null;
+        
+        // Step 1: Create or find customer (company)
+        if (contactInfo.company) {
+          // Check if customer already exists
+          const existingCustomer = await db.query(
+            `SELECT id FROM customers 
+             WHERE organisation_id = $1 
+             AND LOWER(company_name) = LOWER($2)
+             LIMIT 1`,
+            [organisationId, contactInfo.company]
+          );
+          
+          if (existingCustomer.rows.length > 0) {
+            customerId = existingCustomer.rows[0].id;
+            console.log('✅ Found existing customer:', contactInfo.company);
+          } else {
+            // Create new customer
+            const newCustomer = await db.query(
+              `INSERT INTO customers (
+                organisation_id, company_name, contact_name, email, phone, address
+              ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+              [organisationId, contactInfo.company, contactInfo.name, 
+               contactInfo.email, contactInfo.phone, contactInfo.address]
+            );
+            customerId = newCustomer.rows[0].id;
+            console.log('✅ Created new customer:', contactInfo.company);
+          }
+        }
+        
+        // Step 2: Create contact
+        const newContact = await db.query(
+          `INSERT INTO contacts (
+            organisation_id, customer_id, name, email, phone, role
+          ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+          [organisationId, customerId, contactInfo.name, contactInfo.email, 
+           contactInfo.phone, contactInfo.jobTitle]
+        );
+        
+        contactId = newContact.rows[0].id;
+        console.log('✅ Auto-created contact:', contactInfo.name, 'from', contactInfo.company || 'unknown company');
+        
+      } catch (error) {
+        console.error('⚠️  Failed to auto-create contact:', error.message);
+        // Continue without contact - ticket will still be created
+      }
     }
   } catch (error) {
     console.error('⚠️  Contact matching failed:', error.message);
