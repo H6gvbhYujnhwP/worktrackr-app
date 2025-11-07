@@ -143,6 +143,8 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
+    console.log('🔥 handleUpdateTicketStatus CALLED!', { ticketId, status });
+    alert(`Status change triggered! Ticket: ${ticketId}, New status: ${status}`);
     setLoading(true);
     try {
       await bulkUpdateTickets([ticketId], { status });
@@ -156,6 +158,8 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketPriority = async (ticketId, priority) => {
+    console.log('🔥 handleUpdateTicketPriority CALLED!', { ticketId, priority });
+    alert(`Priority change triggered! Ticket: ${ticketId}, New priority: ${priority}`);
     setLoading(true);
     try {
       await bulkUpdateTickets([ticketId], { priority });
