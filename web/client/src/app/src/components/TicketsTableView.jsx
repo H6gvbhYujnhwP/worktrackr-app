@@ -1,8 +1,10 @@
 // web/client/src/app/src/components/TicketsTableView.jsx
 import React, { useState, useMemo } from 'react';
+import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Checkbox } from '@/components/ui/checkbox.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
+import AssignTicketsModal from './AssignTicketsModal.jsx';
 import { 
   Trash2, 
   UserPlus, 
@@ -34,9 +36,11 @@ const STATUS_COLORS = {
   closed: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
-export default function TicketsTableView({ tickets, users, onTicketClick, onUpdateTickets }) {
+export default function TicketsTableView({ tickets, users, onTicketClick }) {
+  const { bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
   const [selectedTickets, setSelectedTickets] = useState(new Set());
-  const [viewMode, setViewMode] = useState('default'); // default, compact, detailed
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const allSelected = tickets.length > 0 && selectedTickets.size === tickets.length;
   const someSelected = selectedTickets.size > 0 && selectedTickets.size < tickets.length;
@@ -59,27 +63,67 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
     setSelectedTickets(newSelected);
   };
 
-  const handleBulkDelete = () => {
-    if (confirm(`Delete ${selectedTickets.size} ticket(s)?`)) {
-      // Call API to delete tickets
-      console.log('Deleting tickets:', Array.from(selectedTickets));
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedTickets.size} ticket(s)? This action cannot be undone.`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await bulkDeleteTickets(Array.from(selectedTickets));
       setSelectedTickets(new Set());
+      alert('Tickets deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete tickets:', error);
+      alert('Failed to delete tickets. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleBulkAssign = () => {
-    // Show assign modal
-    console.log('Assigning tickets:', Array.from(selectedTickets));
+    setShowAssignModal(true);
   };
 
-  const handleBulkSetStatus = (status) => {
-    console.log('Setting status to', status, 'for tickets:', Array.from(selectedTickets));
-    setSelectedTickets(new Set());
+  const handleAssignConfirm = async (userId) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { assignee_id: userId });
+      setSelectedTickets(new Set());
+      alert('Tickets assigned successfully!');
+    } catch (error) {
+      console.error('Failed to assign tickets:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBulkSetPriority = (priority) => {
-    console.log('Setting priority to', priority, 'for tickets:', Array.from(selectedTickets));
-    setSelectedTickets(new Set());
+  const handleBulkSetStatus = async (status) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { status });
+      setSelectedTickets(new Set());
+      alert('Status updated successfully!');
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkSetPriority = async (priority) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { priority });
+      setSelectedTickets(new Set());
+      alert('Priority updated successfully!');
+    } catch (error) {
+      console.error('Failed to update priority:', error);
+      alert('Failed to update priority. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMergeTickets = () => {
@@ -87,7 +131,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
       alert('Please select at least 2 tickets to merge');
       return;
     }
-    console.log('Merging tickets:', Array.from(selectedTickets));
+    alert('Merge functionality coming soon!');
   };
 
   const formatDate = (dateString) => {
@@ -118,7 +162,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
           variant="outline"
           size="sm"
           onClick={handleBulkDelete}
-          disabled={selectedTickets.size === 0}
+          disabled={selectedTickets.size === 0 || loading}
           className="gap-2"
         >
           <Trash2 className="w-4 h-4" />
@@ -129,7 +173,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
           variant="outline"
           size="sm"
           onClick={handleBulkAssign}
-          disabled={selectedTickets.size === 0}
+          disabled={selectedTickets.size === 0 || loading}
           className="gap-2"
         >
           <UserPlus className="w-4 h-4" />
@@ -141,7 +185,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
             <Button
               variant="outline"
               size="sm"
-              disabled={selectedTickets.size === 0}
+              disabled={selectedTickets.size === 0 || loading}
               className="gap-2"
             >
               <Settings className="w-4 h-4" />
@@ -170,7 +214,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
             <Button
               variant="outline"
               size="sm"
-              disabled={selectedTickets.size === 0}
+              disabled={selectedTickets.size === 0 || loading}
               className="gap-2"
             >
               <Flag className="w-4 h-4" />
@@ -198,7 +242,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
           variant="outline"
           size="sm"
           onClick={handleMergeTickets}
-          disabled={selectedTickets.size < 2}
+          disabled={selectedTickets.size < 2 || loading}
           className="gap-2"
         >
           <Merge className="w-4 h-4" />
@@ -402,6 +446,16 @@ export default function TicketsTableView({ tickets, users, onTicketClick, onUpda
           Displaying {tickets.length} of {tickets.length} tickets
         </div>
       </div>
+
+      {/* Assign Modal */}
+      {showAssignModal && (
+        <AssignTicketsModal
+          users={users}
+          ticketIds={Array.from(selectedTickets)}
+          onAssign={handleAssignConfirm}
+          onClose={() => setShowAssignModal(false)}
+        />
+      )}
     </div>
   );
 }

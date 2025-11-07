@@ -45,4 +45,18 @@ export const TicketsAPI = {
       method: 'PUT',
       body: JSON.stringify(patch),
     }),
+  delete: (id: string) =>
+    http<{ success: boolean }>(`/api/tickets/${id}`, {
+      method: 'DELETE',
+    }),
+  bulkUpdate: (ids: string[], patch: Partial<Ticket>) =>
+    http<{ updated: number }>(`/api/tickets/bulk`, {
+      method: 'PUT',
+      body: JSON.stringify({ ids, updates: patch }),
+    }),
+  bulkDelete: (ids: string[]) =>
+    http<{ deleted: number }>(`/api/tickets/bulk`, {
+      method: 'DELETE',
+      body: JSON.stringify({ ids }),
+    }),
 }

@@ -46,6 +46,7 @@ import ContactManager from './ContactManager.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
+import TicketDetailView from './TicketDetailView.jsx';
 
 export default function Dashboard() {
   const { user, membership, logout } = useAuth();
@@ -56,6 +57,7 @@ export default function Dashboard() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [viewingTicketId, setViewingTicketId] = useState(null);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -498,11 +500,16 @@ export default function Dashboard() {
 
               {/* Tickets Display */}
               <div className="mt-6">
-                {ticketViewMode === 'table' ? (
+                {viewingTicketId ? (
+                  <TicketDetailView
+                    ticketId={viewingTicketId}
+                    onBack={() => setViewingTicketId(null)}
+                  />
+                ) : ticketViewMode === 'table' ? (
                   <TicketsTableView
                     tickets={filteredTickets}
                     users={users}
-                    onTicketClick={(ticket) => setSelectedTicket(ticket)}
+                    onTicketClick={(ticket) => setViewingTicketId(ticket.id)}
                   />
                 ) : filteredTickets.length === 0 ? (
                   <Card className="p-8 text-center">
@@ -523,7 +530,7 @@ export default function Dashboard() {
                         ticket={ticket}
                         users={users}
                         currentUser={user}
-                        onClick={() => setSelectedTicket(ticket)}
+                        onClick={() => setViewingTicketId(ticket.id)}
                       />
                     ))}
                   </div>

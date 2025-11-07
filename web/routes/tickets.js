@@ -350,4 +350,138 @@ router.get('/calendar', async (req, res) => {
   }
 });
 
+// Bulk update tickets
+router.put('/bulk', async (req, res) => {
+  try {
+    const { organizationId } = req.orgContext;
+    const { ids, updates } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      return res.status(400).json({ error: 'updates object is required' });
+    }
+
+    // Validate updates against schema (partial)
+    const validatedUpdates = updateTicketSchema.partial().parse(updates);
+
+    // Build SET clause dynamically
+    const setClauses = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (validatedUpdates.title !== undefined) {
+      setClauses.push(`title = $${paramCount++}`);
+      values.push(validatedUpdates.title);
+    }
+    if (validatedUpdates.description !== undefined) {
+      setClauses.push(`description = $${paramCount++}`);
+      values.push(validatedUpdates.description);
+    }
+    if (validatedUpdates.status !== undefined) {
+      setClauses.push(`status = $${paramCount++}`);
+      values.push(validatedUpdates.status);
+    }
+    if (validatedUpdates.priority !== undefined) {
+      setClauses.push(`priority = $${paramCount++}`);
+      values.push(validatedUpdates.priority);
+    }
+    if (validatedUpdates.assigneeId !== undefined) {
+      setClauses.push(`assignee_id = $${paramCount++}`);
+      values.push(validatedUpdates.assigneeId);
+    }
+    if (validatedUpdates.sector !== undefined) {
+      setClauses.push(`sector = $${paramCount++}`);
+      values.push(validatedUpdates.sector);
+    }
+    if (validatedUpdates.scheduled_date !== undefined) {
+      setClauses.push(`scheduled_date = $${paramCount++}`);
+      values.push(validatedUpdates.scheduled_date);
+    }
+    if (validatedUpdates.scheduled_duration_mins !== undefined) {
+      setClauses.push(`scheduled_duration_mins = $${paramCount++}`);
+      values.push(validatedUpdates.scheduled_duration_mins);
+    }
+
+    setClauses.push('updated_at = NOW()');
+
+    if (setClauses.length === 1) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    // Add organization ID and IDs to values
+    values.push(organizationId);
+    const orgIdParam = paramCount++;
+    values.push(ids);
+    const idsParam = paramCount;
+
+    const updateQuery = `
+      UPDATE tickets
+      SET ${setClauses.join(', ')}
+      WHERE organisation_id = $${orgIdParam}
+        AND id = ANY($${idsParam}::uuid[])
+    `;
+
+    const result = await query(updateQuery, values);
+
+    res.json({ updated: result.rowCount });
+
+  } catch (error) {
+    console.error('Bulk update error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid input', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to bulk update tickets' });
+  }
+});
+
+// Bulk delete tickets
+router.delete('/bulk', async (req, res) => {
+  try {
+    const { organizationId } = req.orgContext;
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+
+    const result = await query(`
+      DELETE FROM tickets
+      WHERE organisation_id = $1
+        AND id = ANY($2::uuid[])
+    `, [organizationId, ids]);
+
+    res.json({ deleted: result.rowCount });
+
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to bulk delete tickets' });
+  }
+});
+
+// Delete single ticket
+router.delete('/:id', async (req, res) => {
+  try {
+    const { organizationId } = req.orgContext;
+    const { id } = req.params;
+
+    const result = await query(`
+      DELETE FROM tickets
+      WHERE id = $1 AND organisation_id = $2
+    `, [id, organizationId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error('Delete ticket error:', error);
+    res.status(500).json({ error: 'Failed to delete ticket' });
+  }
+});
+
 module.exports = router;

@@ -195,6 +195,41 @@ const SimulationProvider = ({ children }) => {
     }
   };
 
+  // Delete ticket (persist to backend)
+  const deleteTicket = async (ticketId) => {
+    try {
+      await TicketsAPI.delete(ticketId);
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+    } catch (e) {
+      console.error('[deleteTicket] API error', e);
+      throw e;
+    }
+  };
+
+  // Bulk update tickets
+  const bulkUpdateTickets = async (ticketIds, updates) => {
+    try {
+      await TicketsAPI.bulkUpdate(ticketIds, updates);
+      // Refresh tickets list
+      const { tickets: serverTickets } = await TicketsAPI.list();
+      setTickets(serverTickets || []);
+    } catch (e) {
+      console.error('[bulkUpdateTickets] API error', e);
+      throw e;
+    }
+  };
+
+  // Bulk delete tickets
+  const bulkDeleteTickets = async (ticketIds) => {
+    try {
+      await TicketsAPI.bulkDelete(ticketIds);
+      setTickets((prev) => prev.filter((t) => !ticketIds.includes(t.id)));
+    } catch (e) {
+      console.error('[bulkDeleteTickets] API error', e);
+      throw e;
+    }
+  };
+
   // Add comment to ticket
   const addComment = (ticketId, authorId, content, type = 'comment') => {
     setTickets((prev) =>
@@ -296,6 +331,9 @@ const SimulationProvider = ({ children }) => {
     billingQueue,
     createTicket,
     updateTicket,
+    deleteTicket,
+    bulkUpdateTickets,
+    bulkDeleteTickets,
     addComment,
     assignTicket,
     requestApproval,
