@@ -381,7 +381,11 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         value={ticket.priority || 'medium'}
-                        onChange={(e) => handleUpdateTicketPriority(ticket.id, e.target.value)}
+                        onBlur={(e) => {
+                          if (e.target.value !== ticket.priority) {
+                            handleUpdateTicketPriority(ticket.id, e.target.value);
+                          }
+                        }}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
                           PRIORITY_COLORS[ticket.priority || 'medium']
                         }`}
@@ -408,7 +412,11 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         value={ticket.status || 'open'}
-                        onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value)}
+                        onBlur={(e) => {
+                          if (e.target.value !== ticket.status) {
+                            handleUpdateTicketStatus(ticket.id, e.target.value);
+                          }
+                        }}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
                           STATUS_COLORS[ticket.status || 'open']
                         }`}
