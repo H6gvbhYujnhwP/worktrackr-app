@@ -86,7 +86,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   const handleAssignConfirm = async (userId) => {
     setLoading(true);
     try {
-      await bulkUpdateTickets(Array.from(selectedTickets), { assignee_id: userId });
+      await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
       setSelectedTickets(new Set());
       alert('Tickets assigned successfully!');
     } catch (error) {
@@ -131,6 +131,32 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
       return;
     }
     alert('Merge functionality coming soon!');
+  };
+
+  const handleUpdateTicketStatus = async (ticketId, status) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets([ticketId], { status });
+      alert('Status updated successfully!');
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateTicketPriority = async (ticketId, priority) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets([ticketId], { priority });
+      alert('Priority updated successfully!');
+    } catch (error) {
+      console.error('Failed to update priority:', error);
+      alert('Failed to update priority. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -355,16 +381,16 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => console.log('Set priority low')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'low')}>
                             Low
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set priority medium')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'medium')}>
                             Medium
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set priority high')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'high')}>
                             High
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set priority urgent')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'urgent')}>
                             Urgent
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -399,16 +425,16 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => console.log('Set status open')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'open')}>
                             Open
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set status pending')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'pending')}>
                             Pending
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set status closed')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'closed')}>
                             Closed
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set status resolved')}>
+                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'resolved')}>
                             Resolved
                           </DropdownMenuItem>
                         </DropdownMenuContent>
