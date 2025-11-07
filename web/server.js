@@ -141,10 +141,8 @@ app.use('/api/quotes', authenticateToken, quotesEmailRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
-// Public webhook endpoint (no auth required)
-app.post('/api/email-intake/webhook', emailIntakeRoutes);
-// Protected settings endpoints (auth required)
-app.use('/api/email-intake', authenticateToken, emailIntakeRoutes);
+// Mount routes directly (webhook route is public, settings routes require auth)
+app.use('/api/email-intake', emailIntakeRoutes);
 
 /* ======================= Health & Version ======================== */
 app.get('/health', (_req, res) => res.status(200).send('ok'));
