@@ -181,12 +181,12 @@ router.post('/webhook', async (req, res) => {
     if (email_id) {
       try {
         // Check if API key exists
-        if (!process.env.RESEND_API_KEY) {
-          throw new Error('RESEND_API_KEY environment variable not set');
+        if (!process.env.RESEND) {
+          throw new Error('RESEND environment variable not set');
         }
         
         const { Resend } = require('resend');
-        const resend = new Resend(process.env.RESEND_API_KEY);
+        const resend = new Resend(process.env.RESEND);
         
         console.log('📨 Fetching email body for ID:', email_id);
         const response = await resend.emails.receiving.get(email_id);

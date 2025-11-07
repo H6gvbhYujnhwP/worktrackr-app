@@ -4,10 +4,10 @@ const { query } = require('@worktrackr/shared/db');
 
 // --- Resend (outbound/inbound) ----------------------------------------------
 let resend = null;
-if (process.env.RESEND_API_KEY) {
+if (process.env.RESEND) {
   try {
     const { Resend } = require('resend');
-    resend = new Resend(process.env.RESEND_API_KEY);
+    resend = new Resend(process.env.RESEND);
     console.log('📧 Resend initialized');
   } catch (error) {
     console.warn('⚠️ Resend initialization failed:', error.message);
