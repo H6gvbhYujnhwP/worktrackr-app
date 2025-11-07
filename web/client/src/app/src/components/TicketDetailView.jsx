@@ -39,6 +39,7 @@ function safeParseJson(str) {
 }
 
 export default function TicketDetailView({ ticketId, onBack }) {
+  console.log('[TicketDetailView] Rendering with ticketId:', ticketId);
   const { tickets, users, updateTicket } = useSimulation();
   const [ticket, setTicket] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -57,7 +58,9 @@ export default function TicketDetailView({ ticketId, onBack }) {
   });
 
   useEffect(() => {
+    console.log('[TicketDetailView] useEffect - ticketId:', ticketId, 'tickets count:', tickets.length);
     const t = tickets.find(t => String(t.id) === String(ticketId));
+    console.log('[TicketDetailView] Found ticket:', t ? 'YES' : 'NO');
     if (t) {
       setTicket(t);
       setForm({
