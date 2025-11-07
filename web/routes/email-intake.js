@@ -108,7 +108,7 @@ router.post('/webhook', async (req, res) => {
 
     // Extract email data from Resend webhook format
     const data = req.body.data || req.body;
-    let { from, to, subject, text, html } = data;
+    let { from, to, subject, email_id } = data;
     
     if (!to) {
       console.error('❌ Missing "to" field in webhook payload');
@@ -123,7 +123,22 @@ router.post('/webhook', async (req, res) => {
       return res.status(400).json({ error: 'Invalid to field format' });
     }
     
-    const body = text || html || '';
+    // Fetch email body from Resend API (webhooks don't include body)
+    let body = '';
+    if (email_id) {
+      try {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const { data: emailData } = await resend.emails.receiving.get(email_id);
+        body = emailData.text || emailData.html || '';
+        console.log('✅ Fetched email body from Resend API');
+      } catch (error) {
+        console.error('⚠️  Failed to fetch email body:', error.message);
+        body = '(Email body could not be retrieved)';
+      }
+    } else {
+      console.warn('⚠️  No email_id in webhook payload, cannot fetch body');
+    }
 
     // For testing, we'll use a simple mapping: extract domain from 'to' address
     // In production, Resend will include an inbound_identifier
