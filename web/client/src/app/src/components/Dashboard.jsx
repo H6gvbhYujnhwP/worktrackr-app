@@ -45,6 +45,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
+import TicketsTableView from './TicketsTableView.jsx';
 
 export default function Dashboard() {
   const { user, membership, logout } = useAuth();
@@ -68,6 +69,9 @@ export default function Dashboard() {
     return localStorage.getItem('worktrackr-timezone') || 'Europe/London';
   });
   const [currentView, setCurrentView] = useState('tickets'); // tickets, calendar, billing
+  const [ticketViewMode, setTicketViewMode] = useState(() => {
+    return localStorage.getItem('worktrackr-ticket-view-mode') || 'table'; // 'cards' or 'table'
+  });
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
   // Show loading spinner while authentication data is being fetched
@@ -494,7 +498,13 @@ export default function Dashboard() {
 
               {/* Tickets Display */}
               <div className="mt-6">
-                {filteredTickets.length === 0 ? (
+                {ticketViewMode === 'table' ? (
+                  <TicketsTableView
+                    tickets={filteredTickets}
+                    users={users}
+                    onTicketClick={(ticket) => setSelectedTicket(ticket)}
+                  />
+                ) : filteredTickets.length === 0 ? (
                   <Card className="p-8 text-center">
                     <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
@@ -572,9 +582,7 @@ export default function Dashboard() {
 
       {selectedTicket && (
         <TicketDetailModal
-          ticket={selectedTicket}
-          users={users}
-          currentUser={user}
+          ticketId={selectedTicket.id}
           onClose={() => setSelectedTicket(null)}
         />
       )}
