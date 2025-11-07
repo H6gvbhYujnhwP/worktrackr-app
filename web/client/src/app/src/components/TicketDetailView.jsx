@@ -311,6 +311,45 @@ export default function TicketDetailView({ ticketId, onBack }) {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Customer Info */}
+          {(ticket?.sender_email || ticket?.contact_id) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Customer Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ticket?.sender_name && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Name</Label>
+                    <p className="text-sm font-medium">{ticket.sender_name}</p>
+                  </div>
+                )}
+                {ticket?.sender_email && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Email</Label>
+                    <p className="text-sm">{ticket.sender_email}</p>
+                  </div>
+                )}
+                {!ticket?.contact_id && ticket?.sender_email && (
+                  <div className="pt-2 border-t">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => console.log('Add/Link Contact clicked')}
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Link to Contact
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Assignment */}
           <Card>
             <CardHeader>

@@ -74,11 +74,23 @@ async function classifyEmailWithAI(subject, body) {
 
 // Helper: Create ticket from email
 async function createTicket(organisationId, aiResult, fromEmail, subject, body) {
+  // Extract sender name from email (format: "Name <email@domain.com>" or just "email@domain.com")
+  let senderName = '';
+  let senderEmail = fromEmail;
+  
+  if (fromEmail.includes('<')) {
+    const match = fromEmail.match(/^(.+?)\s*<(.+?)>$/);
+    if (match) {
+      senderName = match[1].trim();
+      senderEmail = match[2].trim();
+    }
+  }
+  
   const result = await db.query(
     `INSERT INTO tickets (
-      organisation_id, title, description, status, priority, created_at
-    ) VALUES ($1, $2, $3, 'open', $4, NOW()) RETURNING *`,
-    [organisationId, subject, body, aiResult.urgency]
+      organisation_id, title, description, status, priority, sender_email, sender_name, created_at
+    ) VALUES ($1, $2, $3, 'open', $4, $5, $6, NOW()) RETURNING *`,
+    [organisationId, subject, body, aiResult.urgency, senderEmail, senderName]
   );
   
   return result.rows[0];
