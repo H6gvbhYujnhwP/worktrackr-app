@@ -85,12 +85,21 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
 
   const handleAssignConfirm = async (userId) => {
     setLoading(true);
+    console.log('Assignment attempt:', {
+      userId,
+      userIdType: typeof userId,
+      ticketIds: Array.from(selectedTickets),
+      payload: { assigneeId: userId }
+    });
     try {
       await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
       setSelectedTickets(new Set());
       alert('Tickets assigned successfully!');
+      window.location.reload(); // Refresh to show updated assignments
     } catch (error) {
       console.error('Failed to assign tickets:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      alert(`Failed to assign tickets: ${error.response?.data?.error || error.message}`);
       throw error;
     } finally {
       setLoading(false);
