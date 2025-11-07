@@ -30,7 +30,7 @@ export default function EmailIntakeSettings() {
   const idSlug = organizationId.slice(0, 8).replace(/-/g, '');
   const uniqueSlug = idSlug ? `${nameSlug}-${idSlug}` : nameSlug;
   
-  const forwardingEmail = `${uniqueSlug}@worktrackr.cloud`;
+  const forwardingEmail = `${uniqueSlug}@intake.worktrackr.cloud`;
 
   const handleActivate = async () => {
     try {
