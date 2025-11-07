@@ -1,7 +1,7 @@
 import React from 'react';
 
 const AppVersion = () => {
-  const APP_VERSION = '2025-09-23.9'; // Obsolete field removal fix
+  const APP_VERSION = '2025-11-07.DEBUG'; // Testing onBlur fix
   
   return (
     <div className="text-xs text-gray-400 text-center py-2">
