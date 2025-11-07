@@ -17,14 +17,20 @@ import {
 } from '@/components/ui/alert.jsx';
 
 export default function EmailIntakeSettings() {
-  const { user, membership } = useAuth();
+  const { user, organization } = useAuth();
   const [success, setSuccess] = useState('');
   const [activating, setActivating] = useState(false);
   
-  // Generate forwarding email from organization name immediately
-  const organizationName = membership?.organization?.name || 'your-company';
-  const slug = organizationName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const forwardingEmail = `${slug}@worktrackr.cloud`;
+  // Generate unique forwarding email from organization ID and name
+  const organizationName = organization?.name || 'your-company';
+  const organizationId = organization?.id || '';
+  
+  // Create a unique slug using organization name + first 8 chars of ID
+  const nameSlug = organizationName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const idSlug = organizationId.slice(0, 8).replace(/-/g, '');
+  const uniqueSlug = idSlug ? `${nameSlug}-${idSlug}` : nameSlug;
+  
+  const forwardingEmail = `${uniqueSlug}@worktrackr.cloud`;
 
   const handleActivate = async () => {
     try {
