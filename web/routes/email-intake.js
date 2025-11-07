@@ -90,6 +90,8 @@ async function createTicket(organisationId, aiResult, fromEmail, subject, body) 
   
   // AI Contact Matching
   let contactId = null;
+  let autoFilledSector = null;
+  
   try {
     const matchResult = await findMatchingContact(organisationId, senderEmail, senderName);
     console.log('🤖 AI Contact Match:', matchResult.matchType, 'confidence:', matchResult.confidence);
@@ -98,6 +100,21 @@ async function createTicket(organisationId, aiResult, fromEmail, subject, body) 
       // High confidence match - auto-link
       contactId = matchResult.match.id;
       console.log('✅ Auto-linked to contact:', matchResult.match.name);
+      
+      // AI Helper: Auto-fill from contact
+      const { autoFillFromContact } = require('./ai-ticket-helpers');
+      const suggestions = autoFillFromContact({}, matchResult.match);
+      if (suggestions.sector) {
+        autoFilledSector = suggestions.sector;
+        console.log('🤖 Auto-filled sector:', autoFilledSector);
+      }
+      
+      // AI Helper: Check for similar tickets
+      const { findSimilarTickets } = require('./ai-ticket-helpers');
+      const similarTickets = await findSimilarTickets(organisationId, contactId, subject);
+      if (similarTickets.length > 0) {
+        console.log('⚠️  Found', similarTickets.length, 'similar ticket(s) from this contact');
+      }
     } else if (matchResult.suggestion?.type === 'new_contact') {
       // Extract detailed contact info with AI
       const contactInfo = await extractContactInfoWithAI(body, senderEmail, senderName);
