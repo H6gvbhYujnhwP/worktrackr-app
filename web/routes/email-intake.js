@@ -106,14 +106,17 @@ async function createQuote(organisationId, aiResult, fromEmail, subject, body) {
 
 router.post('/webhook', async (req, res) => {
   try {
-    console.log('📧 Email intake webhook received:', {
-      from: req.body.from,
-      to: req.body.to,
-      subject: req.body.subject
-    });
+    console.log('📧 Email intake webhook received - Full payload:', JSON.stringify(req.body, null, 2));
 
-    // Extract email data
-    const { from, to, subject, text, html } = req.body;
+    // Extract email data from Resend webhook format
+    const data = req.body.data || req.body;
+    const { from, to, subject, text, html } = data;
+    
+    if (!to) {
+      console.error('❌ Missing "to" field in webhook payload');
+      return res.status(400).json({ error: 'Missing required field: to' });
+    }
+    
     const body = text || html || '';
 
     // For testing, we'll use a simple mapping: extract domain from 'to' address
