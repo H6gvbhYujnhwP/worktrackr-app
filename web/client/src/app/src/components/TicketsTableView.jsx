@@ -30,10 +30,9 @@ const PRIORITY_COLORS = {
 
 const STATUS_COLORS = {
   open: 'bg-blue-100 text-blue-800 border-blue-200',
-  in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  completed: 'bg-green-100 text-green-800 border-green-200',
   closed: 'bg-gray-100 text-gray-800 border-gray-200',
+  resolved: 'bg-green-100 text-green-800 border-green-200',
 };
 
 export default function TicketsTableView({ tickets, users, onTicketClick }) {
@@ -197,14 +196,14 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
             <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>
               Open
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('in_progress')}>
-              In Progress
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>
               Pending
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('completed')}>
-              Completed
+            <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>
+              Closed
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>
+              Resolved
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -374,10 +373,10 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${
-                          ticket.status === 'completed' ? 'bg-green-500' :
-                          ticket.status === 'in_progress' ? 'bg-purple-500' :
+                          ticket.status === 'resolved' ? 'bg-green-500' :
                           ticket.status === 'pending' ? 'bg-yellow-500' :
-                          'bg-gray-400'
+                          ticket.status === 'closed' ? 'bg-gray-500' :
+                          'bg-blue-400'
                         }`} />
                         <span className="text-sm text-gray-700">
                           {ticket.activity_status || 'Awaiting response'}
@@ -403,14 +402,14 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                           <DropdownMenuItem onClick={() => console.log('Set status open')}>
                             Open
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set status in_progress')}>
-                            In Progress
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => console.log('Set status pending')}>
                             Pending
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Set status completed')}>
-                            Completed
+                          <DropdownMenuItem onClick={() => console.log('Set status closed')}>
+                            Closed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => console.log('Set status resolved')}>
+                            Resolved
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

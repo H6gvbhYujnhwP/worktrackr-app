@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 
 const SECTORS = ['General', 'IT', 'Maintenance', 'Construction', 'Manufacturing', 'Facilities'];
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
-const STATUSES = ['open', 'in_progress', 'pending', 'completed', 'closed'];
+const STATUSES = ['open', 'pending', 'closed', 'resolved'];
 
 const PRIORITY_COLORS = {
   low: 'bg-green-100 text-green-800 border-green-200',
@@ -23,10 +23,9 @@ const PRIORITY_COLORS = {
 
 const STATUS_COLORS = {
   open: 'bg-blue-100 text-blue-800 border-blue-200',
-  in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  completed: 'bg-green-100 text-green-800 border-green-200',
   closed: 'bg-gray-100 text-gray-800 border-gray-200',
+  resolved: 'bg-green-100 text-green-800 border-green-200',
 };
 
 function safeParseJson(str) {
@@ -93,7 +92,7 @@ export default function TicketDetailView({ ticketId, onBack }) {
         priority: form.priority || undefined,
         status: form.status || undefined,
         sector: form.sector || null,
-        assignee_id: form.assignee_id || null,
+        assigneeId: form.assignee_id || null,
         scheduled_date: form.scheduled_date || null,
         scheduled_duration_mins:
           form.scheduled_duration_mins === '' ? null : Number(form.scheduled_duration_mins),
