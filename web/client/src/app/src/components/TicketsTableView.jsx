@@ -366,35 +366,18 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                       </div>
                     </td>
                     <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`w-full justify-start gap-2 ${
-                              PRIORITY_COLORS[ticket.priority || 'medium']
-                            } border`}
-                          >
-                            {(ticket.priority || 'medium').charAt(0).toUpperCase() + 
-                             (ticket.priority || 'medium').slice(1)}
-                            <ChevronDown className="w-3 h-3 ml-auto" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'low')}>
-                            Low
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'medium')}>
-                            Medium
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'high')}>
-                            High
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketPriority(ticket.id, 'urgent')}>
-                            Urgent
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <select
+                        value={ticket.priority || 'medium'}
+                        onChange={(e) => handleUpdateTicketPriority(ticket.id, e.target.value)}
+                        className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
+                          PRIORITY_COLORS[ticket.priority || 'medium']
+                        }`}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
@@ -410,35 +393,18 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                       </div>
                     </td>
                     <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`w-full justify-start gap-2 ${
-                              STATUS_COLORS[ticket.status || 'open']
-                            } border`}
-                          >
-                            {(ticket.status || 'open').replace('_', ' ').charAt(0).toUpperCase() + 
-                             (ticket.status || 'open').replace('_', ' ').slice(1)}
-                            <ChevronDown className="w-3 h-3 ml-auto" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'open')}>
-                            Open
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'pending')}>
-                            Pending
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'closed')}>
-                            Closed
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleUpdateTicketStatus(ticket.id, 'resolved')}>
-                            Resolved
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <select
+                        value={ticket.status || 'open'}
+                        onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value)}
+                        className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
+                          STATUS_COLORS[ticket.status || 'open']
+                        }`}
+                      >
+                        <option value="open">Open</option>
+                        <option value="pending">Pending</option>
+                        <option value="closed">Closed</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
                     </td>
                     <td className="p-3">
                       <DropdownMenu>
