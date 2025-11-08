@@ -389,6 +389,8 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         value={ticket.priority || 'medium'}
+                        onClick={() => console.log('🖱️ SELECT CLICKED!')}
+                        onFocus={() => console.log('🔍 SELECT FOCUSED!')}
                         onChange={(e) => {
                           console.log('🎯 Priority dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
                           handleUpdateTicketPriority(ticket.id, e.target.value);
