@@ -1,5 +1,5 @@
 // web/client/src/app/src/components/TicketsTableView.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Checkbox } from '@/components/ui/checkbox.jsx';
@@ -40,6 +40,10 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   const [selectedTickets, setSelectedTickets] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Refs for direct DOM event listeners (fallback for onChange issues)
+  const prioritySelectRefs = useRef(new Map());
+  const statusSelectRefs = useRef(new Map());
 
   const allSelected = tickets.length > 0 && selectedTickets.size === tickets.length;
   const someSelected = selectedTickets.size > 0 && selectedTickets.size < tickets.length;
@@ -199,6 +203,58 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
     const user = users?.find(u => u.id === userId);
     return user ? user.name : 'Unknown';
   };
+
+  // CRITICAL FIX: Add direct DOM event listeners as fallback
+  // React's synthetic onChange events are not firing, so we attach native listeners
+  useEffect(() => {
+    console.log('🔧 Setting up direct DOM event listeners for', tickets.length, 'tickets');
+    
+    // Attach listeners to priority selects
+    prioritySelectRefs.current.forEach((selectElement, ticketId) => {
+      if (selectElement) {
+        const handleChange = (e) => {
+          console.log('✅ DIRECT DOM EVENT FIRED for priority!', { ticketId, newValue: e.target.value });
+          handleUpdateTicketPriority(ticketId, e.target.value);
+        };
+        
+        // Remove old listener if exists
+        selectElement.removeEventListener('change', handleChange);
+        // Add new listener
+        selectElement.addEventListener('change', handleChange);
+        console.log('🎯 Attached direct listener to priority select for ticket:', ticketId);
+      }
+    });
+    
+    // Attach listeners to status selects
+    statusSelectRefs.current.forEach((selectElement, ticketId) => {
+      if (selectElement) {
+        const handleChange = (e) => {
+          console.log('✅ DIRECT DOM EVENT FIRED for status!', { ticketId, newValue: e.target.value });
+          handleUpdateTicketStatus(ticketId, e.target.value);
+        };
+        
+        // Remove old listener if exists
+        selectElement.removeEventListener('change', handleChange);
+        // Add new listener
+        selectElement.addEventListener('change', handleChange);
+        console.log('🎯 Attached direct listener to status select for ticket:', ticketId);
+      }
+    });
+    
+    // Cleanup function
+    return () => {
+      prioritySelectRefs.current.forEach((selectElement) => {
+        if (selectElement) {
+          selectElement.removeEventListener('change', () => {});
+        }
+      });
+      statusSelectRefs.current.forEach((selectElement) => {
+        if (selectElement) {
+          selectElement.removeEventListener('change', () => {});
+        }
+      });
+    };
+  }, [tickets, loading]); // Re-run when tickets change or loading state changes
 
   return (
     <div className="space-y-4">
@@ -388,11 +444,20 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     </td>
                     <td className="p-3">
                       <select
+                        ref={(el) => {
+                          if (el) {
+                            prioritySelectRefs.current.set(ticket.id, el);
+                          }
+                        }}
                         value={ticket.priority || 'medium'}
                         onClick={() => console.log('🖱️ SELECT CLICKED!')}
                         onFocus={() => console.log('🔍 SELECT FOCUSED!')}
                         onChange={(e) => {
                           console.log('🎯 Priority dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
+                          handleUpdateTicketPriority(ticket.id, e.target.value);
+                        }}
+                        onInput={(e) => {
+                          console.log('⚡ Priority onInput fired!', { ticketId: ticket.id, newValue: e.target.value });
                           handleUpdateTicketPriority(ticket.id, e.target.value);
                         }}
                         disabled={loading}
@@ -421,9 +486,18 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     </td>
                     <td className="p-3">
                       <select
+                        ref={(el) => {
+                          if (el) {
+                            statusSelectRefs.current.set(ticket.id, el);
+                          }
+                        }}
                         value={ticket.status || 'open'}
                         onChange={(e) => {
                           console.log('🎯 Status dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
+                          handleUpdateTicketStatus(ticket.id, e.target.value);
+                        }}
+                        onInput={(e) => {
+                          console.log('⚡ Status onInput fired!', { ticketId: ticket.id, newValue: e.target.value });
                           handleUpdateTicketStatus(ticket.id, e.target.value);
                         }}
                         disabled={loading}
