@@ -24,6 +24,7 @@ const updateTicketSchema = z.object({
   status: z.enum(['open', 'pending', 'closed', 'resolved']).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   assigneeId: z.string().uuid().nullable().optional(),
+  assignee_id: z.string().uuid().nullable().optional(), // Support both camelCase and snake_case
   sector: z.string().max(255).nullable().optional(),
   scheduled_date: z.string().datetime().nullable().optional(),
   scheduled_duration_mins: z.number().int().positive().nullable().optional(),
@@ -417,9 +418,11 @@ router.put('/bulk', async (req, res) => {
       setClauses.push(`priority = $${paramCount++}`);
       values.push(validatedUpdates.priority);
     }
-    if (validatedUpdates.assigneeId !== undefined) {
+    // Support both camelCase and snake_case for assignee_id
+    const assigneeValue = validatedUpdates.assignee_id !== undefined ? validatedUpdates.assignee_id : validatedUpdates.assigneeId;
+    if (assigneeValue !== undefined) {
       setClauses.push(`assignee_id = $${paramCount++}`);
-      values.push(validatedUpdates.assigneeId);
+      values.push(assigneeValue);
     }
     if (validatedUpdates.sector !== undefined) {
       setClauses.push(`sector = $${paramCount++}`);
