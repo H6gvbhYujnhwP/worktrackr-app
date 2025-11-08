@@ -85,7 +85,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
 
   const handleAssignConfirm = async (userId) => {
     setLoading(true);
-    console.log('Assignment attempt:', {
+    console.log('👥 Assignment attempt:', {
       userId,
       userIdType: typeof userId,
       ticketIds: Array.from(selectedTickets),
@@ -94,10 +94,10 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
     try {
       await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
       setSelectedTickets(new Set());
-      alert('Tickets assigned successfully!');
-      window.location.reload(); // Refresh to show updated assignments
+      console.log('✅ Tickets assigned successfully!');
+      // Don't reload, just let the context refresh the tickets
     } catch (error) {
-      console.error('Failed to assign tickets:', error);
+      console.error('❌ Failed to assign tickets:', error);
       console.error('Error details:', error.response?.data || error.message);
       alert(`Failed to assign tickets: ${error.response?.data?.error || error.message}`);
       throw error;
@@ -108,12 +108,13 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
 
   const handleBulkSetStatus = async (status) => {
     setLoading(true);
+    console.log('📦 Bulk status update:', { ticketIds: Array.from(selectedTickets), status });
     try {
       await bulkUpdateTickets(Array.from(selectedTickets), { status });
       setSelectedTickets(new Set());
-      alert('Status updated successfully!');
+      console.log('✅ Bulk status updated successfully!');
     } catch (error) {
-      console.error('Failed to update status:', error);
+      console.error('❌ Failed to update status:', error);
       alert('Failed to update status. Please try again.');
     } finally {
       setLoading(false);
@@ -122,12 +123,13 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
 
   const handleBulkSetPriority = async (priority) => {
     setLoading(true);
+    console.log('📦 Bulk priority update:', { ticketIds: Array.from(selectedTickets), priority });
     try {
       await bulkUpdateTickets(Array.from(selectedTickets), { priority });
       setSelectedTickets(new Set());
-      alert('Priority updated successfully!');
+      console.log('✅ Bulk priority updated successfully!');
     } catch (error) {
-      console.error('Failed to update priority:', error);
+      console.error('❌ Failed to update priority:', error);
       alert('Failed to update priority. Please try again.');
     } finally {
       setLoading(false);
@@ -143,31 +145,36 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
-    console.log('🔥 handleUpdateTicketStatus CALLED!', { ticketId, status });
-    alert(`Status change triggered! Ticket: ${ticketId}, New status: ${status}`);
+    console.log('🔥🔥🔥 handleUpdateTicketStatus CALLED!', { ticketId, status });
+    console.trace('Status update call stack');
     setLoading(true);
     try {
-      await bulkUpdateTickets([ticketId], { status });
-      alert('Status updated successfully!');
+      console.log('📦 About to call bulkUpdateTickets with:', [ticketId], { status });
+      const result = await bulkUpdateTickets([ticketId], { status });
+      console.log('✅ Status updated successfully!', result);
+      // Don't reload, just let the context refresh the tickets
     } catch (error) {
-      console.error('Failed to update status:', error);
-      alert('Failed to update status. Please try again.');
+      console.error('❌ Failed to update status:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      alert(`Failed to update status: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateTicketPriority = async (ticketId, newPriority) => {
-    console.log('🔥 handleUpdateTicketPriority CALLED!', { ticketId, newPriority, priorityType: typeof newPriority });
-    alert(`Priority change triggered! Ticket: ${ticketId}, New priority: ${newPriority}`);
+    console.log('🔥🔥🔥 handleUpdateTicketPriority CALLED!', { ticketId, newPriority, priorityType: typeof newPriority });
+    console.trace('Priority update call stack');
     setLoading(true);
     try {
       console.log('📦 About to call bulkUpdateTickets with:', [ticketId], { priority: newPriority });
-      await bulkUpdateTickets([ticketId], { priority: newPriority });
-      alert('Priority updated successfully!');
+      const result = await bulkUpdateTickets([ticketId], { priority: newPriority });
+      console.log('✅ Priority updated successfully!', result);
+      // Don't reload, just let the context refresh the tickets
     } catch (error) {
-      console.error('Failed to update priority:', error);
-      alert('Failed to update priority. Please try again.');
+      console.error('❌ Failed to update priority:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      alert(`Failed to update priority: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -382,10 +389,14 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         value={ticket.priority || 'medium'}
-                        onChange={(e) => handleUpdateTicketPriority(ticket.id, e.target.value)}
+                        onChange={(e) => {
+                          console.log('🎯 Priority dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
+                          handleUpdateTicketPriority(ticket.id, e.target.value);
+                        }}
+                        disabled={loading}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
                           PRIORITY_COLORS[ticket.priority || 'medium']
-                        }`}
+                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -409,10 +420,14 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         value={ticket.status || 'open'}
-                        onChange={(e) => handleUpdateTicketStatus(ticket.id, e.target.value)}
+                        onChange={(e) => {
+                          console.log('🎯 Status dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
+                          handleUpdateTicketStatus(ticket.id, e.target.value);
+                        }}
+                        disabled={loading}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
                           STATUS_COLORS[ticket.status || 'open']
-                        }`}
+                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="open">Open</option>
                         <option value="pending">Pending</option>

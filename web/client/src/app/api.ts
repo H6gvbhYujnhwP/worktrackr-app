@@ -50,10 +50,19 @@ export const TicketsAPI = {
       method: 'DELETE',
     }),
   bulkUpdate: (ids: string[], patch: Partial<Ticket>) => {
-    console.log('📤 bulkUpdate API call:', { ids, patch, payload: { ids, updates: patch } });
+    console.log('📤📤📤 bulkUpdate API call:', { ids, patch, payload: { ids, updates: patch } });
+    console.log('🔍 Patch object keys:', Object.keys(patch));
+    console.log('🔍 Patch object values:', Object.values(patch));
+    console.log('🔍 Patch object entries:', Object.entries(patch));
+    
+    const payload = { ids, updates: patch };
+    const bodyString = JSON.stringify(payload);
+    console.log('📝 JSON stringified body:', bodyString);
+    console.log('📝 Body length:', bodyString.length);
+    
     return http<{ updated: number }>(`/api/tickets/bulk`, {
       method: 'PUT',
-      body: JSON.stringify({ ids, updates: patch }),
+      body: bodyString,
     });
   },
   bulkDelete: (ids: string[]) =>
