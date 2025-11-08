@@ -365,7 +365,15 @@ router.put('/bulk', async (req, res) => {
     }
 
     // Validate updates against schema (partial)
-    const validatedUpdates = updateTicketSchema.partial().parse(updates);
+    console.log('🔍 Bulk update request:', { ids, updates });
+    let validatedUpdates;
+    try {
+      validatedUpdates = updateTicketSchema.partial().parse(updates);
+      console.log('✅ Validation passed:', validatedUpdates);
+    } catch (validationError) {
+      console.error('❌ Validation failed:', validationError);
+      return res.status(400).json({ error: 'Validation failed', details: validationError.errors });
+    }
 
     // Build SET clause dynamically
     const setClauses = [];
@@ -456,8 +464,9 @@ router.delete('/bulk', async (req, res) => {
     res.json({ deleted: result.rowCount });
 
   } catch (error) {
-    console.error('Bulk delete error:', error);
-    res.status(500).json({ error: 'Failed to bulk delete tickets' });
+    console.error('❌ Bulk update error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to update tickets', details: error.message });
   }
 });
 
