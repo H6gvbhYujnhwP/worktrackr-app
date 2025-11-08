@@ -208,6 +208,7 @@ const SimulationProvider = ({ children }) => {
 
   // Bulk update tickets
   const bulkUpdateTickets = async (ticketIds, updates) => {
+    console.log('🔧 bulkUpdateTickets called:', { ticketIds, updates, updatesType: typeof updates, updatesKeys: Object.keys(updates) });
     try {
       await TicketsAPI.bulkUpdate(ticketIds, updates);
       // Refresh tickets list
