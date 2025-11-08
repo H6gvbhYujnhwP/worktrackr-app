@@ -352,6 +352,7 @@ router.get('/calendar', async (req, res) => {
 
 // Bulk update tickets
 router.put('/bulk', async (req, res) => {
+  console.log('🚨 BULK UPDATE ENDPOINT HIT! Body:', JSON.stringify(req.body));
   try {
     const { organizationId } = req.orgContext;
     const { ids, updates } = req.body;
