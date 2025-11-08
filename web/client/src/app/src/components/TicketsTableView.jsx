@@ -158,11 +158,13 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketPriority = async (ticketId, priority) => {
-    console.log('🔥 handleUpdateTicketPriority CALLED!', { ticketId, priority });
+    console.log('🔥 handleUpdateTicketPriority CALLED!', { ticketId, priority, priorityType: typeof priority });
+    const updatePayload = { priority: priority };
+    console.log('📦 Update payload created:', updatePayload, 'Keys:', Object.keys(updatePayload));
     alert(`Priority change triggered! Ticket: ${ticketId}, New priority: ${priority}`);
     setLoading(true);
     try {
-      await bulkUpdateTickets([ticketId], { priority });
+      await bulkUpdateTickets([ticketId], updatePayload);
       alert('Priority updated successfully!');
     } catch (error) {
       console.error('Failed to update priority:', error);
