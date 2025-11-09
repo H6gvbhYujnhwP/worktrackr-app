@@ -430,14 +430,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                         }}
                         value={ticket.status || 'open'}
                         onChange={(e) => {
-                          console.log('🔥 onChange fired for status!', e.target.value);
                           handleUpdateTicketStatus(ticket.id, e.target.value);
-                        }}
-                        onInput={(e) => {
-                          console.log('🔥 onInput fired for status!', e.target.value);
-                        }}
-                        onClick={(e) => {
-                          console.log('🔥 onClick fired for status!', e.target.value);
                         }}
                         disabled={loading}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
