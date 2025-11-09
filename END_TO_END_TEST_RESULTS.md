@@ -145,3 +145,41 @@ Need to investigate if there's a difference in how the dropdowns are rendered or
 3. Compare priority vs status dropdown HTML/React code
 4. Check if `loading` state is blocking status changes
 5. Test with React DevTools to see component state
+
+
+---
+
+## 🎯 DEFINITIVE PROOF: onChange Handler NOT Firing!
+
+### Test with Debug Logging
+**Time:** 3:21:29 PM  
+**Action:** Changed ticket #e7aee0e7 status from "Open" to "Pending"  
+**UI Result:** ✅ Dropdown visually changed to "Pending"  
+**Console Output:** ❌ **ZERO debug logs!**
+
+### Expected Console Output
+```
+🎯 handleUpdateTicketStatus called! { ticketId: '...', status: 'pending', loading: false }
+📤 Calling bulkUpdateTickets with: ['...'] { status: 'pending' }
+✅ Status update successful
+```
+
+### Actual Console Output
+```
+(nothing - handler never called)
+```
+
+### Conclusion
+The `onChange` event handler is **NOT FIRING AT ALL**. The UI update is happening through some other mechanism (possibly React state management or context), but the actual handler function that calls the API is never being invoked.
+
+---
+
+## 🔍 Possible Causes
+
+1. **Event being prevented** - Something is calling `e.preventDefault()` or `e.stopPropagation()`
+2. **React synthetic event issue** - The event might not be bubbling properly
+3. **Disabled state** - The `loading` state might be stuck as `true`
+4. **Ref interference** - The ref might be interfering with the onChange handler
+5. **Context override** - The simulation context might be intercepting the change
+
+Need to investigate each of these possibilities.
