@@ -108,14 +108,13 @@ app.use((req, res, next) => {
 
 /* ---------------- Auth middleware (for protected APIs) ---------------- */
 async function authenticateToken(req, res, next) {
-  console.log('🔐 authenticateToken called for:', req.method, req.url);
-  const token = req.cookies.auth_token || req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
-  if (!token) {
-    console.log('❌ No token found');
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
   try {
+    console.log('🔐 authenticateToken called for:', req.method, req.url);
+    const token = req.cookies?.auth_token || req.cookies?.jwt || req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      console.log('❌ No token found');
+      return res.status(401).json({ error: 'Access token required' });
+    }
     console.log('🔑 About to verify JWT token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('✅ Token decoded successfully!');
