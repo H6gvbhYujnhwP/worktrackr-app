@@ -108,18 +108,26 @@ app.use((req, res, next) => {
 
 /* ---------------- Auth middleware (for protected APIs) ---------------- */
 async function authenticateToken(req, res, next) {
+  console.log('🔐 authenticateToken called for:', req.method, req.url);
   const token = req.cookies.auth_token || req.cookies.jwt || req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Access token required' });
+  if (!token) {
+    console.log('❌ No token found');
+    return res.status(401).json({ error: 'Access token required' });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ Token decoded, userId:', decoded.userId);
     req.user = decoded;
 
     const activeOrgId = req.headers['x-org-id'] || req.query.orgId;
+    console.log('🏢 Getting org context for userId:', decoded.userId, 'activeOrgId:', activeOrgId);
     req.orgContext = await getOrgContext(decoded.userId, activeOrgId);
+    console.log('✅ Got org context:', JSON.stringify(req.orgContext, null, 2));
+    console.log('✅ Calling next() to proceed to route handler');
     next();
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('❌ Auth error:', error);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 }
