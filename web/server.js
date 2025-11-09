@@ -127,6 +127,31 @@ async function authenticateToken(req, res, next) {
 /* ======================= API Routes ========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/session')); // Session check endpoint
+// DEBUG: Log all bulk update requests
+app.use('/api/tickets/bulk', (req, res, next) => {
+  console.log('\n=== 🔍 BULK UPDATE REQUEST INTERCEPTED ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body (raw):', JSON.stringify(req.body, null, 2));
+  console.log('Body type:', typeof req.body);
+  console.log('Body is null?', req.body === null);
+  console.log('Body is undefined?', req.body === undefined);
+  console.log('Body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
+  if (req.body) {
+    console.log('Body.ids:', req.body.ids);
+    console.log('Body.updates:', req.body.updates);
+    console.log('Body.updates type:', typeof req.body.updates);
+    console.log('Body.updates keys:', req.body.updates ? Object.keys(req.body.updates) : 'NO UPDATES');
+    if (req.body.updates) {
+      console.log('Body.updates.priority:', req.body.updates.priority);
+      console.log('Body.updates.status:', req.body.updates.status);
+    }
+  }
+  console.log('=== END BULK UPDATE INTERCEPTION ===\n');
+  next();
+});
+
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 

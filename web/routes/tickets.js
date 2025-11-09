@@ -352,104 +352,69 @@ router.get('/calendar', async (req, res) => {
 });
 
 // Bulk update tickets
+// BAREBONES BULK UPDATE - NO VALIDATION, JUST RAW UPDATE
 router.put('/bulk', async (req, res) => {
-  console.log('🚨🚨🚨 BULK UPDATE ENDPOINT HIT!');
-  console.log('📦 Full request body:', JSON.stringify(req.body, null, 2));
-  console.log('📦 Body keys:', Object.keys(req.body));
-  console.log('📦 Body.ids:', req.body.ids);
-  console.log('📦 Body.updates:', req.body.updates);
-  console.log('📦 Body.updates type:', typeof req.body.updates);
-  console.log('📦 Body.updates keys:', req.body.updates ? Object.keys(req.body.updates) : 'UNDEFINED');
-  console.log('📦 Body.updates.priority:', req.body.updates?.priority);
-  console.log('📦 Body.updates.status:', req.body.updates?.status);
+  console.log('\n🚀🚀🚀 BAREBONES BULK UPDATE ENDPOINT HIT!');
+  console.log('📦 req.body:', JSON.stringify(req.body, null, 2));
   
   try {
     const { organizationId } = req.orgContext;
     const { ids, updates } = req.body;
     
-    console.log('📦 After destructuring - ids:', ids);
-    console.log('📦 After destructuring - updates:', updates);
-    console.log('📦 After destructuring - updates type:', typeof updates);
-    console.log('📦 After destructuring - updates keys:', updates ? Object.keys(updates) : 'UNDEFINED');
+    console.log('Step 1: Extracted ids:', ids);
+    console.log('Step 2: Extracted updates:', updates);
+    console.log('Step 3: organizationId:', organizationId);
 
+    // Basic validation only
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      console.log('❌ ERROR: No ids provided');
       return res.status(400).json({ error: 'ids array is required' });
     }
 
     if (!updates || typeof updates !== 'object') {
+      console.log('❌ ERROR: No updates provided');
       return res.status(400).json({ error: 'updates object is required' });
     }
 
-    // Validate updates against schema (partial)
-    console.log('🔍 Bulk update request:', { ids, updates });
-    console.log('🔍 Raw updates object:', updates);
-    console.log('🔍 Raw updates.priority:', updates.priority);
-    console.log('🔍 Raw updates.status:', updates.status);
-    let validatedUpdates;
-    try {
-      validatedUpdates = updateTicketSchema.partial().parse(updates);
-      console.log('✅ Validation passed:', validatedUpdates);
-      console.log('✅ Validated updates keys:', Object.keys(validatedUpdates));
-      console.log('✅ Validated updates.priority:', validatedUpdates.priority);
-      console.log('✅ Validated updates.status:', validatedUpdates.status);
-    } catch (validationError) {
-      console.error('❌ Validation failed:', validationError);
-      return res.status(400).json({ error: 'Validation failed', details: validationError.errors });
-    }
-
-    // Build SET clause dynamically
+    // BAREBONES: Direct update without Zod validation
+    // Just handle priority and status for now
     const setClauses = [];
     const values = [];
     let paramCount = 1;
 
-    if (validatedUpdates.title !== undefined) {
-      setClauses.push(`title = $${paramCount++}`);
-      values.push(validatedUpdates.title);
-    }
-    if (validatedUpdates.description !== undefined) {
-      setClauses.push(`description = $${paramCount++}`);
-      values.push(validatedUpdates.description);
-    }
-    if (validatedUpdates.status !== undefined) {
-      setClauses.push(`status = $${paramCount++}`);
-      values.push(validatedUpdates.status);
-    }
-    if (validatedUpdates.priority !== undefined) {
+    console.log('Step 4: Checking updates.priority:', updates.priority);
+    console.log('Step 5: Checking updates.status:', updates.status);
+
+    if (updates.priority) {
+      console.log('✅ Adding priority to SET clause:', updates.priority);
       setClauses.push(`priority = $${paramCount++}`);
-      values.push(validatedUpdates.priority);
+      values.push(updates.priority);
     }
-    // Support both camelCase and snake_case for assignee_id
-    const assigneeValue = validatedUpdates.assignee_id !== undefined ? validatedUpdates.assignee_id : validatedUpdates.assigneeId;
-    if (assigneeValue !== undefined) {
-      setClauses.push(`assignee_id = $${paramCount++}`);
-      values.push(assigneeValue);
-    }
-    if (validatedUpdates.sector !== undefined) {
-      setClauses.push(`sector = $${paramCount++}`);
-      values.push(validatedUpdates.sector);
-    }
-    if (validatedUpdates.scheduled_date !== undefined) {
-      setClauses.push(`scheduled_date = $${paramCount++}`);
-      values.push(validatedUpdates.scheduled_date);
-    }
-    if (validatedUpdates.scheduled_duration_mins !== undefined) {
-      setClauses.push(`scheduled_duration_mins = $${paramCount++}`);
-      values.push(validatedUpdates.scheduled_duration_mins);
+
+    if (updates.status) {
+      console.log('✅ Adding status to SET clause:', updates.status);
+      setClauses.push(`status = $${paramCount++}`);
+      values.push(updates.status);
     }
 
     setClauses.push('updated_at = NOW()');
     
-    console.log('📦 SET clauses built:', setClauses);
-    console.log('📦 SET clauses length:', setClauses.length);
-    console.log('📦 Values array:', values);
+    console.log('Step 6: SET clauses:', setClauses);
+    console.log('Step 7: Values:', values);
 
     if (setClauses.length === 1) {
-      console.log('❌ NO VALID FIELDS TO UPDATE! Only updated_at was set.');
-      console.log('❌ validatedUpdates was:', validatedUpdates);
-      return res.status(400).json({ error: 'No valid fields to update' });
+      console.log('❌ ERROR: No fields to update (only updated_at)');
+      return res.status(400).json({ 
+        error: 'No valid fields to update',
+        debug: {
+          receivedUpdates: updates,
+          priority: updates.priority,
+          status: updates.status
+        }
+      });
     }
 
-    // Add organization ID and IDs to values
+    // Add organization ID and ticket IDs
     values.push(organizationId);
     const orgIdParam = paramCount++;
     values.push(ids);
@@ -462,16 +427,22 @@ router.put('/bulk', async (req, res) => {
         AND id = ANY($${idsParam}::uuid[])
     `;
 
+    console.log('Step 8: SQL Query:', updateQuery);
+    console.log('Step 9: SQL Values:', values);
+
     const result = await query(updateQuery, values);
 
-    res.json({ updated: result.rowCount });
+    console.log('✅ SUCCESS! Updated', result.rowCount, 'tickets');
+    res.json({ updated: result.rowCount, success: true });
 
   } catch (error) {
-    console.error('Bulk update error:', error);
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: 'Invalid input', details: error.errors });
-    }
-    res.status(500).json({ error: 'Failed to bulk update tickets' });
+    console.error('❌ BAREBONES BULK UPDATE ERROR:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to bulk update tickets',
+      message: error.message,
+      stack: error.stack
+    });
   }
 });
 
