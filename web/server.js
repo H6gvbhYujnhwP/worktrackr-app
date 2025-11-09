@@ -191,14 +191,14 @@ app.put('/api/tickets-public/bulk', async (req, res) => {
       return res.status(400).json({ error: 'No fields to update' });
     }
     
-    const query = `UPDATE tickets SET ${setClauses.join(', ')} WHERE id = ANY($${idx}) RETURNING *`;
+    const queryStr = `UPDATE tickets SET ${setClauses.join(', ')} WHERE id = ANY($${idx}) RETURNING *`;
     values.push(ids);
     
-    console.log('✅ Query:', query);
+    console.log('✅ Query:', queryStr);
     console.log('✅ Values:', values);
     
     const db = require('./shared/db');
-    const result = await db.query(query, values);
+    const result = await db.query(queryStr, values);
     
     console.log('✅ SUCCESS! Updated:', result.rowCount);
     res.json({ success: true, updated: result.rows });
