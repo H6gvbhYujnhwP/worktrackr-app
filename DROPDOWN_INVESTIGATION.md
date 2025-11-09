@@ -183,3 +183,55 @@ The user reported that "changing dropdown status still does not work" but the da
 2. Add visual feedback (toast notification) when changes save
 3. Test on multiple tickets to ensure consistency
 4. Check if there are any error cases that fail silently
+
+
+---
+
+## 🔍 ASSIGNMENT FLOW INVESTIGATION
+
+### Database Schema
+
+**Tickets Table:**
+- `assignee_id UUID` - References users(id)
+- `queue_id UUID` - References queues(id)
+
+**Queues Table:**
+- `id UUID` - Primary key
+- `organisation_id UUID` - Multi-tenant isolation
+- `name VARCHAR(255)` - Queue name
+- `is_default BOOLEAN` - Default queue flag
+
+### Current Assignment Implementation
+
+1. **Bulk Assignment Modal** (`AssignTicketsModal.jsx`):
+   - ✅ Allows selecting a user from a list
+   - ✅ Calls `onAssign(selectedUserId)` 
+   - ✅ Updates `assignee_id` field
+
+2. **Missing Features**:
+   - ❌ No individual ticket assignment in ticket detail view
+   - ❌ No automatic queue assignment when user is assigned
+   - ❌ No "My Tickets" filtering based on assignee
+   - ❌ No queue management UI
+
+### Expected Behavior (Based on User Request)
+
+> "when a user is assigned a ticket it should move to their queue"
+
+This suggests:
+1. Each user should have their own queue (or be associated with queues)
+2. When a ticket is assigned to a user, the `queue_id` should be updated
+3. The "My Tickets" view should filter by `assignee_id = current_user.id`
+
+### Current Issues
+
+1. **No Queue Assignment Logic**: The backend bulk update only updates `assignee_id`, not `queue_id`
+2. **No User-Queue Relationship**: There's no table linking users to their queues
+3. **No Ticket Detail Assignment**: Can't assign from the ticket detail view
+
+### Proposed Fixes
+
+1. **Add user_queues table** to link users to queues
+2. **Update assignment logic** to also set `queue_id` based on assignee's default queue
+3. **Add assignment dropdown** in ticket detail view
+4. **Fix "My Tickets" filter** to show tickets where `assignee_id = current_user.id`

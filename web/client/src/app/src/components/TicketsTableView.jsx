@@ -149,12 +149,15 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
+    console.log('🎯 handleUpdateTicketStatus called!', { ticketId, status, loading });
     setLoading(true);
     try {
+      console.log('📤 Calling bulkUpdateTickets with:', [ticketId], { status });
       await bulkUpdateTickets([ticketId], { status });
+      console.log('✅ Status update successful');
       // Success - the UI will update automatically via context
     } catch (error) {
-      console.error('Failed to update status:', error);
+      console.error('❌ Failed to update status:', error);
       alert(`Failed to update status: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
