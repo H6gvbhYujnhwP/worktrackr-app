@@ -149,18 +149,40 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
-    console.log('🎯 handleUpdateTicketStatus called!', { ticketId, status, loading });
+    console.log('='.repeat(80));
+    console.log('🎯 handleUpdateTicketStatus ENTRY');
+    console.log('  ticketId:', ticketId);
+    console.log('  status:', status);
+    console.log('  loading:', loading);
+    console.log('  bulkUpdateTickets type:', typeof bulkUpdateTickets);
+    console.log('  bulkUpdateTickets:', bulkUpdateTickets);
+    
+    if (!bulkUpdateTickets) {
+      console.error('❌ bulkUpdateTickets is undefined!');
+      return;
+    }
+    
+    console.log('🟢 Setting loading to true...');
     setLoading(true);
+    
     try {
-      console.log('📤 Calling bulkUpdateTickets with:', [ticketId], { status });
-      await bulkUpdateTickets([ticketId], { status });
-      console.log('✅ Status update successful');
-      // Success - the UI will update automatically via context
+      console.log('📤 About to call bulkUpdateTickets...');
+      console.log('  Arguments:', [ticketId], { status });
+      
+      const result = await bulkUpdateTickets([ticketId], { status });
+      
+      console.log('✅ bulkUpdateTickets returned successfully');
+      console.log('  Result:', result);
     } catch (error) {
-      console.error('❌ Failed to update status:', error);
+      console.error('❌ Exception caught in handleUpdateTicketStatus:', error);
+      console.error('  Error name:', error.name);
+      console.error('  Error message:', error.message);
+      console.error('  Error stack:', error.stack);
       alert(`Failed to update status: ${error.response?.data?.error || error.message}`);
     } finally {
+      console.log('🟡 Setting loading to false...');
       setLoading(false);
+      console.log('='.repeat(80));
     }
   };
 
