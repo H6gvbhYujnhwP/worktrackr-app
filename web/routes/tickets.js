@@ -197,6 +197,108 @@ router.post('/', async (req, res) => {
 });
 
 // Update ticket
+router.put('/bulk', async (req, res) => {
+  console.log('\n🚀🚀🚀 BAREBONES BULK UPDATE ENDPOINT HIT!');
+  console.log('📦 req.body:', JSON.stringify(req.body, null, 2));
+  console.log('📦 req.orgContext:', JSON.stringify(req.orgContext, null, 2));
+  console.log('📦 req.user:', JSON.stringify(req.user, null, 2));
+  
+  try {
+    if (!req.orgContext) {
+      console.log('❌ req.orgContext is undefined!');
+      return res.status(400).json({ error: 'Organization context missing' });
+    }
+    
+    const { organizationId } = req.orgContext;
+    const { ids, updates } = req.body;
+    
+    console.log('Step 1: Extracted ids:', ids);
+    console.log('Step 2: Extracted updates:', updates);
+    console.log('Step 3: organizationId:', organizationId);
+
+    // Basic validation only
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      console.log('❌ ERROR: No ids provided');
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      console.log('❌ ERROR: No updates provided');
+      return res.status(400).json({ error: 'updates object is required' });
+    }
+
+    // BAREBONES: Direct update without Zod validation
+    // Just handle priority and status for now
+    const setClauses = [];
+    const values = [];
+    let paramCount = 1;
+
+    console.log('Step 4: Checking updates.priority:', updates.priority);
+    console.log('Step 5: Checking updates.status:', updates.status);
+
+    if (updates.priority) {
+      console.log('✅ Adding priority to SET clause:', updates.priority);
+      setClauses.push(`priority = $${paramCount++}`);
+      values.push(updates.priority);
+    }
+
+    if (updates.status) {
+      console.log('✅ Adding status to SET clause:', updates.status);
+      setClauses.push(`status = $${paramCount++}`);
+      values.push(updates.status);
+    }
+
+    setClauses.push('updated_at = NOW()');
+    
+    console.log('Step 6: SET clauses:', setClauses);
+    console.log('Step 7: Values:', values);
+
+    if (setClauses.length === 1) {
+      console.log('❌ ERROR: No fields to update (only updated_at)');
+      return res.status(400).json({ 
+        error: 'No valid fields to update',
+        debug: {
+          receivedUpdates: updates,
+          priority: updates.priority,
+          status: updates.status
+        }
+      });
+    }
+
+    // Add organization ID and ticket IDs
+    values.push(organizationId);
+    const orgIdParam = paramCount++;
+    values.push(ids);
+    const idsParam = paramCount;
+
+    const updateQuery = `
+      UPDATE tickets
+      SET ${setClauses.join(', ')}
+      WHERE organisation_id = $${orgIdParam}
+        AND id = ANY($${idsParam}::uuid[])
+    `;
+
+    console.log('Step 8: SQL Query:', updateQuery);
+    console.log('Step 9: SQL Values:', values);
+
+    const result = await query(updateQuery, values);
+
+    console.log('✅ SUCCESS! Updated', result.rowCount, 'tickets');
+    res.json({ updated: result.rowCount, success: true });
+
+  } catch (error) {
+    console.error('❌ BAREBONES BULK UPDATE ERROR:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to bulk update tickets',
+      message: error.message,
+      stack: error.stack
+    });
+  }
+});
+
+// IMPORTANT: /bulk route must come BEFORE /:id to avoid wildcard matching
+
 router.put('/:id', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
@@ -353,106 +455,6 @@ router.get('/calendar', async (req, res) => {
 
 // Bulk update tickets
 // BAREBONES BULK UPDATE - NO VALIDATION, JUST RAW UPDATE
-router.put('/bulk', async (req, res) => {
-  console.log('\n🚀🚀🚀 BAREBONES BULK UPDATE ENDPOINT HIT!');
-  console.log('📦 req.body:', JSON.stringify(req.body, null, 2));
-  console.log('📦 req.orgContext:', JSON.stringify(req.orgContext, null, 2));
-  console.log('📦 req.user:', JSON.stringify(req.user, null, 2));
-  
-  try {
-    if (!req.orgContext) {
-      console.log('❌ req.orgContext is undefined!');
-      return res.status(400).json({ error: 'Organization context missing' });
-    }
-    
-    const { organizationId } = req.orgContext;
-    const { ids, updates } = req.body;
-    
-    console.log('Step 1: Extracted ids:', ids);
-    console.log('Step 2: Extracted updates:', updates);
-    console.log('Step 3: organizationId:', organizationId);
-
-    // Basic validation only
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      console.log('❌ ERROR: No ids provided');
-      return res.status(400).json({ error: 'ids array is required' });
-    }
-
-    if (!updates || typeof updates !== 'object') {
-      console.log('❌ ERROR: No updates provided');
-      return res.status(400).json({ error: 'updates object is required' });
-    }
-
-    // BAREBONES: Direct update without Zod validation
-    // Just handle priority and status for now
-    const setClauses = [];
-    const values = [];
-    let paramCount = 1;
-
-    console.log('Step 4: Checking updates.priority:', updates.priority);
-    console.log('Step 5: Checking updates.status:', updates.status);
-
-    if (updates.priority) {
-      console.log('✅ Adding priority to SET clause:', updates.priority);
-      setClauses.push(`priority = $${paramCount++}`);
-      values.push(updates.priority);
-    }
-
-    if (updates.status) {
-      console.log('✅ Adding status to SET clause:', updates.status);
-      setClauses.push(`status = $${paramCount++}`);
-      values.push(updates.status);
-    }
-
-    setClauses.push('updated_at = NOW()');
-    
-    console.log('Step 6: SET clauses:', setClauses);
-    console.log('Step 7: Values:', values);
-
-    if (setClauses.length === 1) {
-      console.log('❌ ERROR: No fields to update (only updated_at)');
-      return res.status(400).json({ 
-        error: 'No valid fields to update',
-        debug: {
-          receivedUpdates: updates,
-          priority: updates.priority,
-          status: updates.status
-        }
-      });
-    }
-
-    // Add organization ID and ticket IDs
-    values.push(organizationId);
-    const orgIdParam = paramCount++;
-    values.push(ids);
-    const idsParam = paramCount;
-
-    const updateQuery = `
-      UPDATE tickets
-      SET ${setClauses.join(', ')}
-      WHERE organisation_id = $${orgIdParam}
-        AND id = ANY($${idsParam}::uuid[])
-    `;
-
-    console.log('Step 8: SQL Query:', updateQuery);
-    console.log('Step 9: SQL Values:', values);
-
-    const result = await query(updateQuery, values);
-
-    console.log('✅ SUCCESS! Updated', result.rowCount, 'tickets');
-    res.json({ updated: result.rowCount, success: true });
-
-  } catch (error) {
-    console.error('❌ BAREBONES BULK UPDATE ERROR:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
-      error: 'Failed to bulk update tickets',
-      message: error.message,
-      stack: error.stack
-    });
-  }
-});
-
 // Bulk delete tickets
 router.delete('/bulk', async (req, res) => {
   try {
