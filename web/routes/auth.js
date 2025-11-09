@@ -177,7 +177,7 @@ router.post('/register', async (req, res) => {
         organization = orgResult.rows[0];
         await client.query(
           'INSERT INTO memberships (user_id, organisation_id, role) VALUES ($1, $2, $3)',
-          [user.id, organization.id, 'owner']
+          [user.id, organization.id, 'admin']
         );
       }
 
@@ -349,7 +349,7 @@ router.post('/signup/complete', async (req, res) => {
     // ensure membership
     await query(
       `INSERT INTO memberships (user_id, organisation_id, role, status)
-       VALUES ($1,$2,'owner','active')
+       VALUES ($1,$2,'admin','active')
        ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
       [userId, orgId]
     );
@@ -469,7 +469,7 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
 
       await query(
         `INSERT INTO memberships (user_id, organisation_id, role, status)
-         VALUES ($1,$2,'owner','active')
+         VALUES ($1,$2,'admin','active')
          ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
         [userId, orgId]
       );
