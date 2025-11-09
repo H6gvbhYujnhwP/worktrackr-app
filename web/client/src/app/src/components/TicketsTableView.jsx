@@ -148,11 +148,11 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
     alert('Merge functionality coming soon!');
   };
 
-  const handleUpdateTicketStatus = async (ticketId, status) => {
+  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
     console.log('='.repeat(80));
     console.log('🎯 handleUpdateTicketStatus ENTRY');
     console.log('  ticketId:', ticketId);
-    console.log('  status:', status);
+    console.log('  newStatus:', newStatus);
     console.log('  loading:', loading);
     console.log('  bulkUpdateTickets type:', typeof bulkUpdateTickets);
     console.log('  bulkUpdateTickets:', bulkUpdateTickets);
@@ -167,9 +167,9 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
     
     try {
       console.log('📤 About to call bulkUpdateTickets...');
-      console.log('  Arguments:', [ticketId], { status });
+      console.log('  Arguments:', [ticketId], { status: newStatus });
       
-      const result = await bulkUpdateTickets([ticketId], { status });
+      const result = await bulkUpdateTickets([ticketId], { status: newStatus });
       
       console.log('✅ bulkUpdateTickets returned successfully');
       console.log('  Result:', result);
