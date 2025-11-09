@@ -70,10 +70,8 @@ console.log('🌐 CORS allowed origins:', allowedOrigins);
 app.use(
   cors({
     origin(origin, cb) {
-      console.log('🔍 CORS check for origin:', origin);
       if (!origin) return cb(null, true);
       const ok = allowedOrigins.length === 0 || allowedOrigins.some((h) => origin.includes(h));
-      console.log('✅ CORS result:', ok ? 'ALLOWED' : 'BLOCKED');
       cb(ok ? null : new Error('Not allowed by CORS'), ok);
     },
     credentials: true,
@@ -109,26 +107,18 @@ app.use((req, res, next) => {
 /* ---------------- Auth middleware (for protected APIs) ---------------- */
 async function authenticateToken(req, res, next) {
   try {
-    console.log('🔐 authenticateToken called for:', req.method, req.url);
     const token = req.cookies?.auth_token || req.cookies?.jwt || req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
-      console.log('❌ No token found');
       return res.status(401).json({ error: 'Access token required' });
     }
-    console.log('🔑 About to verify JWT token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ Token decoded successfully!');
-    console.log('✅ Token decoded, userId:', decoded.userId);
     req.user = decoded;
 
     const activeOrgId = req.headers['x-org-id'] || req.query.orgId;
-    console.log('🏢 Getting org context for userId:', decoded.userId, 'activeOrgId:', activeOrgId);
     req.orgContext = await getOrgContext(decoded.userId, activeOrgId);
-    console.log('✅ Got org context:', JSON.stringify(req.orgContext, null, 2));
-    console.log('✅ Calling next() to proceed to route handler');
     next();
   } catch (error) {
-    console.error('❌ Auth error:', error);
+    console.error('Auth error:', error.message);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 }
@@ -136,77 +126,6 @@ async function authenticateToken(req, res, next) {
 /* ======================= API Routes ========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/session')); // Session check endpoint
-// DEBUG: Log all bulk update requests
-app.use('/api/tickets/bulk', (req, res, next) => {
-  console.log('\n=== 🔍 BULK UPDATE REQUEST INTERCEPTED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('Body (raw):', JSON.stringify(req.body, null, 2));
-  console.log('Body type:', typeof req.body);
-  console.log('Body is null?', req.body === null);
-  console.log('Body is undefined?', req.body === undefined);
-  console.log('Body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
-  if (req.body) {
-    console.log('Body.ids:', req.body.ids);
-    console.log('Body.updates:', req.body.updates);
-    console.log('Body.updates type:', typeof req.body.updates);
-    console.log('Body.updates keys:', req.body.updates ? Object.keys(req.body.updates) : 'NO UPDATES');
-    if (req.body.updates) {
-      console.log('Body.updates.priority:', req.body.updates.priority);
-      console.log('Body.updates.status:', req.body.updates.status);
-    }
-  }
-  console.log('=== END BULK UPDATE INTERCEPTION ===\n');
-  next();
-});
-
-// NUCLEAR: Public test endpoint (NO AUTH)
-app.put('/api/tickets-public/bulk', async (req, res) => {
-  console.log('\n🚨 PUBLIC BULK UPDATE (NO AUTH)');
-  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
-  
-  try {
-    const { ids, updates } = req.body;
-    if (!ids || !updates) {
-      return res.status(400).json({ error: 'Missing ids or updates' });
-    }
-    
-    const setClauses = [];
-    const values = [];
-    let idx = 1;
-    
-    if (updates.priority) {
-      setClauses.push(`priority = $${idx++}`);
-      values.push(updates.priority);
-    }
-    if (updates.status) {
-      setClauses.push(`status = $${idx++}`);
-      values.push(updates.status);
-    }
-    setClauses.push('updated_at = NOW()');
-    
-    if (setClauses.length === 1) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-    
-    const queryStr = `UPDATE tickets SET ${setClauses.join(', ')} WHERE id = ANY($${idx}) RETURNING *`;
-    values.push(ids);
-    
-    console.log('✅ Query:', queryStr);
-    console.log('✅ Values:', values);
-    
-    const db = require('../shared/db');
-    const result = await db.query(queryStr, values);
-    
-    console.log('✅ SUCCESS! Updated:', result.rowCount);
-    res.json({ success: true, updated: result.rows });
-  } catch (error) {
-    console.error('❌ ERROR:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
@@ -232,21 +151,6 @@ app.get('/api/version', (_req, res) => {
     version: process.env.APP_VERSION || '1.0.0',
     env: process.env.NODE_ENV || 'development',
   });
-});
-
-/* ======================= Cookie Test Endpoint =================== */
-app.get('/api/test-cookie', (_req, res) => {
-  console.log('🧪 Testing cookie setting...');
-  res.cookie('test_cookie', 'test_value', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60000,
-    path: '/'
-  });
-  console.log('🍪 Test cookie set');
-  console.log('📋 Response headers:', res.getHeaders());
-  res.json({ message: 'Test cookie set', headers: res.getHeaders() });
 });
 
 /* =========================== Webhooks ============================ */
