@@ -149,17 +149,12 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketStatus = async (ticketId, status) => {
-    console.log('🔥🔥🔥 handleUpdateTicketStatus CALLED!', { ticketId, status });
-    console.trace('Status update call stack');
     setLoading(true);
     try {
-      console.log('📦 About to call bulkUpdateTickets with:', [ticketId], { status });
-      const result = await bulkUpdateTickets([ticketId], { status });
-      console.log('✅ Status updated successfully!', result);
-      // Don't reload, just let the context refresh the tickets
+      await bulkUpdateTickets([ticketId], { status });
+      // Success - the UI will update automatically via context
     } catch (error) {
-      console.error('❌ Failed to update status:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Failed to update status:', error);
       alert(`Failed to update status: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
@@ -167,17 +162,12 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   const handleUpdateTicketPriority = async (ticketId, newPriority) => {
-    console.log('🔥🔥🔥 handleUpdateTicketPriority CALLED!', { ticketId, newPriority, priorityType: typeof newPriority });
-    console.trace('Priority update call stack');
     setLoading(true);
     try {
-      console.log('📦 About to call bulkUpdateTickets with:', [ticketId], { priority: newPriority });
-      const result = await bulkUpdateTickets([ticketId], { priority: newPriority });
-      console.log('✅ Priority updated successfully!', result);
-      // Don't reload, just let the context refresh the tickets
+      await bulkUpdateTickets([ticketId], { priority: newPriority });
+      // Success - the UI will update automatically via context
     } catch (error) {
-      console.error('❌ Failed to update priority:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Failed to update priority:', error);
       alert(`Failed to update priority: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
@@ -205,56 +195,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
   };
 
   // CRITICAL FIX: Add direct DOM event listeners as fallback
-  // React's synthetic onChange events are not firing, so we attach native listeners
-  useEffect(() => {
-    console.log('🔧 Setting up direct DOM event listeners for', tickets.length, 'tickets');
-    
-    // Attach listeners to priority selects
-    prioritySelectRefs.current.forEach((selectElement, ticketId) => {
-      if (selectElement) {
-        const handleChange = (e) => {
-          console.log('✅ DIRECT DOM EVENT FIRED for priority!', { ticketId, newValue: e.target.value });
-          handleUpdateTicketPriority(ticketId, e.target.value);
-        };
-        
-        // Remove old listener if exists
-        selectElement.removeEventListener('change', handleChange);
-        // Add new listener
-        selectElement.addEventListener('change', handleChange);
-        console.log('🎯 Attached direct listener to priority select for ticket:', ticketId);
-      }
-    });
-    
-    // Attach listeners to status selects
-    statusSelectRefs.current.forEach((selectElement, ticketId) => {
-      if (selectElement) {
-        const handleChange = (e) => {
-          console.log('✅ DIRECT DOM EVENT FIRED for status!', { ticketId, newValue: e.target.value });
-          handleUpdateTicketStatus(ticketId, e.target.value);
-        };
-        
-        // Remove old listener if exists
-        selectElement.removeEventListener('change', handleChange);
-        // Add new listener
-        selectElement.addEventListener('change', handleChange);
-        console.log('🎯 Attached direct listener to status select for ticket:', ticketId);
-      }
-    });
-    
-    // Cleanup function
-    return () => {
-      prioritySelectRefs.current.forEach((selectElement) => {
-        if (selectElement) {
-          selectElement.removeEventListener('change', () => {});
-        }
-      });
-      statusSelectRefs.current.forEach((selectElement) => {
-        if (selectElement) {
-          selectElement.removeEventListener('change', () => {});
-        }
-      });
-    };
-  }, [tickets, loading]); // Re-run when tickets change or loading state changes
+   // Removed duplicate event listeners - React onChange handlers are sufficient; // Re-run when tickets change or loading state changes
 
   return (
     <div className="space-y-4">
@@ -450,14 +391,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                           }
                         }}
                         value={ticket.priority || 'medium'}
-                        onClick={() => console.log('🖱️ SELECT CLICKED!')}
-                        onFocus={() => console.log('🔍 SELECT FOCUSED!')}
                         onChange={(e) => {
-                          console.log('🎯 Priority dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
-                          handleUpdateTicketPriority(ticket.id, e.target.value);
-                        }}
-                        onInput={(e) => {
-                          console.log('⚡ Priority onInput fired!', { ticketId: ticket.id, newValue: e.target.value });
                           handleUpdateTicketPriority(ticket.id, e.target.value);
                         }}
                         disabled={loading}
@@ -493,11 +427,6 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                         }}
                         value={ticket.status || 'open'}
                         onChange={(e) => {
-                          console.log('🎯 Status dropdown onChange fired!', { ticketId: ticket.id, newValue: e.target.value });
-                          handleUpdateTicketStatus(ticket.id, e.target.value);
-                        }}
-                        onInput={(e) => {
-                          console.log('⚡ Status onInput fired!', { ticketId: ticket.id, newValue: e.target.value });
                           handleUpdateTicketStatus(ticket.id, e.target.value);
                         }}
                         disabled={loading}
