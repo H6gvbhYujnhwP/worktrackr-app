@@ -7,15 +7,16 @@ const router = express.Router();
 // Validation schemas
 const createTicketSchema = z.object({
   title: z.string().min(1).max(500),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
-  queueId: z.string().uuid().optional(),
-  assigneeId: z.string().uuid().optional(),
-  sector: z.string().max(255).optional(),
-  scheduled_date: z.string().datetime().optional(), // ISO string
-  scheduled_duration_mins: z.number().int().positive().optional(),
-  method_statement: z.any().optional(), // JSON object
-  risk_assessment: z.any().optional()   // JSON object
+  queueId: z.string().uuid().nullable().optional(),
+  assigneeId: z.string().uuid().nullable().optional(),
+  contact_id: z.string().uuid().nullable().optional(),
+  sector: z.string().max(255).nullable().optional(),
+  scheduled_date: z.string().datetime().nullable().optional(), // ISO string
+  scheduled_duration_mins: z.number().int().positive().nullable().optional(),
+  method_statement: z.any().nullable().optional(), // JSON object
+  risk_assessment: z.any().nullable().optional()   // JSON object
 });
 
 const updateTicketSchema = z.object({
