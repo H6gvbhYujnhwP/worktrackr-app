@@ -116,7 +116,9 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
+    console.log('🔑 About to verify JWT token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ Token decoded successfully!');
     console.log('✅ Token decoded, userId:', decoded.userId);
     req.user = decoded;
 

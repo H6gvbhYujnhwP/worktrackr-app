@@ -356,8 +356,15 @@ router.get('/calendar', async (req, res) => {
 router.put('/bulk', async (req, res) => {
   console.log('\n🚀🚀🚀 BAREBONES BULK UPDATE ENDPOINT HIT!');
   console.log('📦 req.body:', JSON.stringify(req.body, null, 2));
+  console.log('📦 req.orgContext:', JSON.stringify(req.orgContext, null, 2));
+  console.log('📦 req.user:', JSON.stringify(req.user, null, 2));
   
   try {
+    if (!req.orgContext) {
+      console.log('❌ req.orgContext is undefined!');
+      return res.status(400).json({ error: 'Organization context missing' });
+    }
+    
     const { organizationId } = req.orgContext;
     const { ids, updates } = req.body;
     
