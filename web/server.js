@@ -197,7 +197,7 @@ app.put('/api/tickets-public/bulk', async (req, res) => {
     console.log('✅ Query:', queryStr);
     console.log('✅ Values:', values);
     
-    const db = require('./shared/db');
+    const db = require('../shared/db');
     const result = await db.query(queryStr, values);
     
     console.log('✅ SUCCESS! Updated:', result.rowCount);
