@@ -162,6 +162,52 @@ app.use('/api/tickets/bulk', (req, res, next) => {
   next();
 });
 
+// NUCLEAR: Public test endpoint (NO AUTH)
+app.put('/api/tickets-public/bulk', async (req, res) => {
+  console.log('\n🚨 PUBLIC BULK UPDATE (NO AUTH)');
+  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { ids, updates } = req.body;
+    if (!ids || !updates) {
+      return res.status(400).json({ error: 'Missing ids or updates' });
+    }
+    
+    const setClauses = [];
+    const values = [];
+    let idx = 1;
+    
+    if (updates.priority) {
+      setClauses.push(`priority = $${idx++}`);
+      values.push(updates.priority);
+    }
+    if (updates.status) {
+      setClauses.push(`status = $${idx++}`);
+      values.push(updates.status);
+    }
+    setClauses.push('updated_at = NOW()');
+    
+    if (setClauses.length === 1) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    const query = `UPDATE tickets SET ${setClauses.join(', ')} WHERE id = ANY($${idx}) RETURNING *`;
+    values.push(ids);
+    
+    console.log('✅ Query:', query);
+    console.log('✅ Values:', values);
+    
+    const db = require('./shared/db');
+    const result = await db.query(query, values);
+    
+    console.log('✅ SUCCESS! Updated:', result.rowCount);
+    res.json({ success: true, updated: result.rows });
+  } catch (error) {
+    console.error('❌ ERROR:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
