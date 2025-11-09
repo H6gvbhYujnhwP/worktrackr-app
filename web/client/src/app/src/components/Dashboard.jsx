@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Pause,
   X,
+  XCircle,
   User,
   Mail,
   Settings,
@@ -134,13 +135,16 @@ export default function Dashboard() {
 
   const filteredTickets = tickets.filter(ticket => {
     // Tab filter
-    if (activeTab === 'open' && !['new', 'assigned', 'in_progress', 'waiting_approval'].includes(ticket.status)) {
+    // Active tickets: open, in_progress, pending (visible in main queue)
+    if (activeTab === 'open' && !['open', 'in_progress', 'pending'].includes(ticket.status)) {
       return false;
     }
-    if (activeTab === 'completed' && ticket.status !== 'completed') {
+    // Closed tickets: closed status (moved to closed queue)
+    if (activeTab === 'closed' && ticket.status !== 'closed') {
       return false;
     }
-    if (activeTab === 'parked' && ticket.status !== 'parked') {
+    // Resolved tickets: resolved status (flagged for invoicing)
+    if (activeTab === 'resolved' && ticket.status !== 'resolved') {
       return false;
     }
     if (activeTab === 'my_tickets' && ticket.assignedTo !== user?.id) {
@@ -156,13 +160,13 @@ export default function Dashboard() {
     // Status filter
     if (statusFilter === 'my_tickets' && ticket.assignedTo !== user?.id) {
       return false;
-    } else if (statusFilter === 'open' && !['new', 'assigned', 'in_progress', 'waiting_approval'].includes(ticket.status)) {
+    } else if (statusFilter === 'open' && !['open', 'in_progress', 'pending'].includes(ticket.status)) {
       return false;
-    } else if (statusFilter === 'completed' && ticket.status !== 'completed') {
+    } else if (statusFilter === 'closed' && ticket.status !== 'closed') {
       return false;
-    } else if (statusFilter === 'parked' && ticket.status !== 'parked') {
+    } else if (statusFilter === 'resolved' && ticket.status !== 'resolved') {
       return false;
-    } else if (statusFilter !== 'all' && statusFilter !== 'my_tickets' && statusFilter !== 'open' && statusFilter !== 'completed' && statusFilter !== 'parked' && ticket.status !== statusFilter) {
+    } else if (statusFilter !== 'all' && statusFilter !== 'my_tickets' && statusFilter !== 'open' && statusFilter !== 'closed' && statusFilter !== 'resolved' && ticket.status !== statusFilter) {
       return false;
     }
 
@@ -182,9 +186,9 @@ export default function Dashboard() {
   // Get ticket counts for tabs
   const ticketCounts = {
     all: tickets.length,
-    open: tickets.filter(t => ['new', 'assigned', 'in_progress', 'waiting_approval'].includes(t.status)).length,
-    completed: tickets.filter(t => t.status === 'completed').length,
-    parked: tickets.filter(t => t.status === 'parked').length,
+    open: tickets.filter(t => ['open', 'in_progress', 'pending'].includes(t.status)).length,
+    closed: tickets.filter(t => t.status === 'closed').length,
+    resolved: tickets.filter(t => t.status === 'resolved').length,
     my_tickets: tickets.filter(t => t.assignedTo === user?.id).length
   };
 
@@ -418,8 +422,8 @@ export default function Dashboard() {
                       <SelectContent>
                         <SelectItem value="my_tickets">My Tickets</SelectItem>
                         <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="parked">Parked</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
                         <SelectItem value="all">All</SelectItem>
                       </SelectContent>
                     </Select>
@@ -468,29 +472,29 @@ export default function Dashboard() {
                     </CardContent>
                   </Card>
 
-                  {/* Parked */}
-                  <Card className="mobile-ticket-card">
+                  {/* Closed */}
+                  <Card className="mobile-ticket-card" onClick={() => setActiveTab('closed')} style={{cursor: 'pointer'}}>
                     <CardContent className="p-1 sm:p-4">
                       <div className="flex flex-col text-center">
-                        <Pause className="w-3 h-3 sm:w-6 sm:h-6 text-orange-600 mx-auto mb-1 hidden sm:block" />
+                        <XCircle className="w-3 h-3 sm:w-6 sm:h-6 text-red-600 mx-auto mb-1 hidden sm:block" />
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Parked</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Parked</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.parked}</p>
+                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Closed</p>
+                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Closed</p>
+                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.closed}</p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Completed */}
-                  <Card className="mobile-ticket-card">
+                  {/* Resolved */}
+                  <Card className="mobile-ticket-card" onClick={() => setActiveTab('resolved')} style={{cursor: 'pointer'}}>
                     <CardContent className="p-1 sm:p-4">
                       <div className="flex flex-col text-center">
                         <CheckCircle className="w-3 h-3 sm:w-6 sm:h-6 text-green-600 mx-auto mb-1 hidden sm:block" />
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Completed</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Completed</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.completed}</p>
+                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Resolved</p>
+                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Resolved</p>
+                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.resolved}</p>
                         </div>
                       </div>
                     </CardContent>

@@ -30,6 +30,7 @@ const PRIORITY_COLORS = {
 
 const STATUS_COLORS = {
   open: 'bg-blue-100 text-blue-800 border-blue-200',
+  in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   closed: 'bg-gray-100 text-gray-800 border-gray-200',
   resolved: 'bg-green-100 text-green-800 border-green-200',
@@ -460,6 +461,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                         } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
                         <option value="pending">Pending</option>
                         <option value="closed">Closed</option>
                         <option value="resolved">Resolved</option>
