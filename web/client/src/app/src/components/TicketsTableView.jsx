@@ -447,22 +447,17 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         ref={(el) => {
-                          if (el) {
+                          if (el && !statusSelectRefs.current.has(ticket.id)) {
                             statusSelectRefs.current.set(ticket.id, el);
-                            // Remove any existing listeners to prevent duplicates
-                            const clone = el.cloneNode(true);
-                            el.parentNode.replaceChild(clone, el);
-                            // Add direct DOM event listener as backup
-                            clone.addEventListener('change', (e) => {
-                              console.log('🔥 DIRECT DOM LISTENER FIRED for status!', e.target.value);
-                              handleUpdateTicketStatus(ticket.id, e.target.value);
-                            });
-                            statusSelectRefs.current.set(ticket.id, clone);
                           }
                         }}
                         value={ticket.status || 'open'}
                         onChange={(e) => {
-                          console.log('🎯 REACT onChange FIRED for status!', e.target.value);
+                          console.log('🎯 Status onChange fired!', ticket.id, e.target.value);
+                          handleUpdateTicketStatus(ticket.id, e.target.value);
+                        }}
+                        onInput={(e) => {
+                          console.log('🔥 Status onInput fired!', ticket.id, e.target.value);
                           handleUpdateTicketStatus(ticket.id, e.target.value);
                         }}
                         disabled={loading}
