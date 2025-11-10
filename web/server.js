@@ -126,6 +126,11 @@ async function authenticateToken(req, res, next) {
 /* ======================= API Routes ========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', require('./routes/session')); // Session check endpoint
+
+// Admin routes (no auth required, protected by admin key)
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
