@@ -453,6 +453,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                         }}
                         value={ticket.status || 'open'}
                         onChange={(e) => {
+                          alert(`🎯 STATUS ONCHANGE FIRED! Ticket: ${ticket.id.substring(0,8)} | New Status: ${e.target.value}`);
                           console.log('🎯 Status onChange fired!', ticket.id, e.target.value);
                           handleUpdateTicketStatus(ticket.id, e.target.value);
                         }}
