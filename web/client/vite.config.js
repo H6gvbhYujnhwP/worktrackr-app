@@ -18,4 +18,11 @@ export default defineConfig({
 
     ],
   },
+  // Inject Stripe price IDs from Render environment variables at build time
+  define: {
+    'import.meta.env.VITE_PRICE_STARTER_BASE': JSON.stringify(process.env.VITE_PRICE_STARTER_BASE),
+    'import.meta.env.VITE_PRICE_PRO_BASE': JSON.stringify(process.env.VITE_PRICE_PRO_BASE),
+    'import.meta.env.VITE_PRICE_ENTERPRISE_BASE': JSON.stringify(process.env.VITE_PRICE_ENTERPRISE_BASE),
+    'import.meta.env.VITE_PRICE_INDIVIDUAL_BASE': JSON.stringify(process.env.VITE_PRICE_INDIVIDUAL_BASE),
+  },
 })
