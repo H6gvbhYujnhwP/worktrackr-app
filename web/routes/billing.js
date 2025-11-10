@@ -28,10 +28,10 @@ const PLAN_TO_PRICE = {
 };
 
 // Seat add-on price ID
-const SEAT_ADDON_PRICE_ID = process.env.PRICE_SEAT_ADDON;
+const SEAT_ADDON_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS;
 
 // Legacy support for old environment variable
-const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS || SEAT_ADDON_PRICE_ID;
+const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS;
 
 // Plan configurations (Phase 2: updated with Individual plan)
 const PLAN_CONFIGS = {

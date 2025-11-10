@@ -238,9 +238,9 @@ router.post('/signup/start', async (req, res) => {
     ];
     
     // Add seat add-on with quantity 0 (will be adjusted after provisioning)
-    if (process.env.PRICE_SEAT_ADDON) {
+    if (process.env.PRICE_ADDITIONAL_SEATS) {
       lineItems.push({ 
-        price: process.env.PRICE_SEAT_ADDON, 
+        price: process.env.PRICE_ADDITIONAL_SEATS, 
         quantity: 0 
       });
     }

@@ -149,8 +149,8 @@ async function ensureSeatAddonItem(stripe, subscriptionId, seatAddonPriceId) {
  */
 async function initializeSeatTracking(stripe, org, subscriptionId) {
   try {
-    if (!process.env.PRICE_SEAT_ADDON) {
-      console.warn('PRICE_SEAT_ADDON not configured, skipping seat tracking initialization');
+    if (!process.env.PRICE_ADDITIONAL_SEATS) {
+      console.warn('PRICE_ADDITIONAL_SEATS not configured, skipping seat tracking initialization');
       return;
     }
     
@@ -158,7 +158,7 @@ async function initializeSeatTracking(stripe, org, subscriptionId) {
     const seatItemId = await ensureSeatAddonItem(
       stripe, 
       subscriptionId, 
-      process.env.PRICE_SEAT_ADDON
+      process.env.PRICE_ADDITIONAL_SEATS
     );
     
     // Update organization with seat item ID
