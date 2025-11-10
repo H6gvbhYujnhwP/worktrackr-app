@@ -36,19 +36,19 @@ const PLAN_CONFIGS = {
   starter: {
     name: 'Starter',
     price: 49,
-    maxUsers: 5,
-    features: ['Basic ticketing', 'Email notifications', 'Up to 5 users']
+    maxUsers: 1,
+    features: ['Basic ticketing', 'Email notifications', 'Up to 1 user']
   },
   pro: {
     name: 'Pro',
     price: 99,
-    maxUsers: 25,
-    features: ['Workflow builder', 'Reports & inspections', 'Approvals', 'Up to 25 users']
+    maxUsers: 10,
+    features: ['Workflow builder', 'Reports & inspections', 'Approvals', 'Up to 10 users']
   },
   enterprise: {
     name: 'Enterprise',
     price: 299,
-    maxUsers: Infinity,
+    maxUsers: 50,
     features: ['Unlimited users', 'Custom branding', 'Partner admin access', 'Dedicated support']
   }
 };
