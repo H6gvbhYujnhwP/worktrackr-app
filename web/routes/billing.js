@@ -269,8 +269,20 @@ router.get('/subscription', async (req, res) => {
       // Determine if this is a new or existing customer
       const customerStatus = await determineCustomerStatus(orgId, user.id);
       
+      // FIX: Read plan and included_seats from database instead of hardcoding to 'starter'
+      const orgResult = await query(
+        'SELECT plan, included_seats FROM organisations WHERE id = $1',
+        [orgId]
+      );
+      
+      const dbPlan = orgResult.rows[0]?.plan || 'starter';
+      const dbIncludedSeats = orgResult.rows[0]?.included_seats || 1;
+      
+      console.log(`📋 No Stripe subscription, using database plan: ${dbPlan} with ${dbIncludedSeats} seats`);
+      
       return res.json({
-        plan: 'starter',
+        plan: dbPlan,
+        includedSeats: dbIncludedSeats,
         additionalSeats: 0,
         status: 'no_subscription',
         currentPeriodEnd: null,
