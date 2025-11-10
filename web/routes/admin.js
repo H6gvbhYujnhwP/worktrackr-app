@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('@worktrackr/shared/db');
+const { query } = require('../../shared/db');
 
 // Plan configurations
 const PLAN_CONFIGS = {
