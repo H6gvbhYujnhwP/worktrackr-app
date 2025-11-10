@@ -237,7 +237,7 @@ router.post('/:id/users/invite', async (req, res) => {
 
     // Check user limit based on subscription plan
     const orgResult = await query(
-      'SELECT subscription_plan FROM organisations WHERE id = $1',
+      'SELECT plan, included_seats FROM organisations WHERE id = $1',
       [id]
     );
     
@@ -245,16 +245,8 @@ router.post('/:id/users/invite', async (req, res) => {
       return res.status(404).json({ error: 'Organization not found' });
     }
     
-    const subscriptionPlan = orgResult.rows[0].subscription_plan || 'pro';
-    
-    // Define plan limits
-    const planLimits = {
-      starter: 1,
-      pro: 10,
-      enterprise: 50
-    };
-    
-    const maxUsers = planLimits[subscriptionPlan] || 10;
+    const subscriptionPlan = orgResult.rows[0].plan || 'starter';
+    const maxUsers = orgResult.rows[0].included_seats || 1;
     
     // Count current users in organization
     const userCountResult = await query(
