@@ -700,7 +700,13 @@ router.post('/portal', async (req, res) => {
 // Admin endpoint to update organization plan (bypass Stripe for testing)
 router.post('/admin/update-plan', async (req, res) => {
   try {
-    const { email, plan } = req.body;
+    const { email, plan, adminKey } = req.body;
+    
+    // Check admin key (for testing/development)
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
     
     // Validate input
     if (!email || !plan) {
