@@ -447,19 +447,22 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
                     <td className="p-3">
                       <select
                         ref={(el) => {
-                          if (el && !statusSelectRefs.current.has(ticket.id)) {
+                          if (el) {
+                            // Set the value directly on the DOM element
+                            el.value = ticket.status || 'open';
+                            
+                            // Remove any existing listeners to prevent duplicates
+                            el.onchange = null;
+                            
+                            // Add direct DOM event listener (bypasses React synthetic events)
+                            el.onchange = (e) => {
+                              console.log('🎯 DIRECT DOM onChange fired!', ticket.id, e.target.value);
+                              handleUpdateTicketStatus(ticket.id, e.target.value);
+                            };
+                            
+                            // Store ref for cleanup
                             statusSelectRefs.current.set(ticket.id, el);
                           }
-                        }}
-                        value={ticket.status || 'open'}
-                        onChange={(e) => {
-                          alert(`🎯 STATUS ONCHANGE FIRED! Ticket: ${ticket.id.substring(0,8)} | New Status: ${e.target.value}`);
-                          console.log('🎯 Status onChange fired!', ticket.id, e.target.value);
-                          handleUpdateTicketStatus(ticket.id, e.target.value);
-                        }}
-                        onInput={(e) => {
-                          console.log('🔥 Status onInput fired!', ticket.id, e.target.value);
-                          handleUpdateTicketStatus(ticket.id, e.target.value);
                         }}
                         disabled={loading}
                         className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
