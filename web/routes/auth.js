@@ -264,8 +264,14 @@ router.post('/signup/start', async (req, res) => {
     res.json({ url: session.url });
   } catch (error) {
     console.error('signup/start error:', error);
+    console.error('Full error details:', JSON.stringify(error, null, 2));
+    if (error.type === 'StripeInvalidRequestError') {
+      console.error('Stripe error message:', error.message);
+      console.error('Stripe error param:', error.param);
+      console.error('Stripe error code:', error.code);
+    }
     if (error instanceof z.ZodError) return res.status(400).json({ error: 'Invalid input', details: error.errors });
-    res.status(500).json({ error: 'Failed to start signup' });
+    res.status(500).json({ error: 'Failed to start signup', message: error.message });
   }
 });
 
