@@ -234,8 +234,21 @@ router.get('/subscription', async (req, res) => {
     
     if (!existingCustomer || !existingCustomer.customerId) {
       console.log(`📭 No Stripe customer found for org ${orgId}`);
+      
+      // Check database for plan (for non-Stripe accounts)
+      const orgResult = await query(
+        'SELECT plan, included_seats FROM organisations WHERE id = $1',
+        [orgId]
+      );
+      
+      const dbPlan = orgResult.rows[0]?.plan || 'starter';
+      const dbIncludedSeats = orgResult.rows[0]?.included_seats || 1;
+      
+      console.log(`📋 Using database plan: ${dbPlan} with ${dbIncludedSeats} seats`);
+      
       return res.json({
-        plan: 'starter',
+        plan: dbPlan,
+        includedSeats: dbIncludedSeats,
         additionalSeats: 0,
         status: 'no_subscription',
         currentPeriodEnd: null,
