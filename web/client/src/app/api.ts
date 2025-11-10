@@ -26,6 +26,18 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   return r.json() as Promise<T>
 }
 
+export type User = {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
+export const UsersAPI = {
+  list: () =>
+    http<{ users: User[] }>(`/api/tickets/users/list`),
+}
+
 export const TicketsAPI = {
   list: (params?: Record<string, string>) =>
     http<{ tickets: Ticket[]; pagination: any }>(

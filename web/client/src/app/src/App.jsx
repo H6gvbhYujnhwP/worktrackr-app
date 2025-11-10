@@ -12,7 +12,7 @@ import Login from '../../Login.jsx';
 import './App.css';
 
 // ✅ Corrected imports: api.ts and map.ts live one level up from /src/
-import { TicketsAPI } from '../api';
+import { TicketsAPI, UsersAPI } from '../api';
 import { toApiTicket } from '../map';
 
 // ---------------- Auth context ----------------
@@ -67,14 +67,24 @@ const SimulationProvider = ({ children }) => {
   const [emailLogs, setEmailLogs] = useState([]);
   const [billingQueue, setBillingQueue] = useState([]);
 
-  // Load tickets from backend on mount
+  // Load tickets and users from backend on mount
   useEffect(() => {
     (async () => {
       try {
         const { tickets: serverTickets } = await TicketsAPI.list();
         setTickets(serverTickets || []);
+        console.log('✅ Loaded tickets from API:', serverTickets?.length);
       } catch (e) {
         console.error('[SimulationProvider] Failed to load tickets from API', e);
+      }
+      
+      try {
+        const { users: serverUsers } = await UsersAPI.list();
+        setUsers(serverUsers || []);
+        console.log('✅ Loaded users from API:', serverUsers?.length, serverUsers);
+      } catch (e) {
+        console.error('[SimulationProvider] Failed to load users from API', e);
+        console.log('⚠️ Falling back to mock users');
       }
     })();
   }, []);
