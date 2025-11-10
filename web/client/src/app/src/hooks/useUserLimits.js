@@ -52,7 +52,8 @@ export const useUserLimits = () => {
   const additionalSeats = subscriptionData?.additionalSeats || membership?.additionalSeats || 0;
   
   const limits = useMemo(() => {
-    const basePlanLimit = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.pro;
+    // Use includedSeats from API if available, otherwise fall back to PLAN_LIMITS
+    const basePlanLimit = subscriptionData?.includedSeats || PLAN_LIMITS[currentPlan] || PLAN_LIMITS.pro;
     const totalAllowedUsers = basePlanLimit === Infinity 
       ? Infinity 
       : basePlanLimit + additionalSeats;
