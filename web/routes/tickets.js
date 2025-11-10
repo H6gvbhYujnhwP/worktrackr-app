@@ -212,6 +212,8 @@ router.put('/bulk', async (req, res) => {
     
     const { organizationId } = req.orgContext;
     const { ids, updates } = req.body;
+    
+    console.log('🔧 Bulk update request:', { ids, updates, organizationId });
 
     // Validation
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -263,12 +265,29 @@ router.put('/bulk', async (req, res) => {
         AND id = ANY($${idsParam}::uuid[])
     `;
 
+    console.log('🔍 Executing query:', updateQuery);
+    console.log('🔍 Query values:', values);
+    
     const result = await query(updateQuery, values);
+    
+    console.log('✅ Bulk update successful:', { rowCount: result.rowCount });
     res.json({ updated: result.rowCount, success: true });
 
   } catch (error) {
-    console.error('Bulk update error:', error.message);
-    res.status(500).json({ error: 'Failed to bulk update tickets' });
+    console.error('❌ Bulk update error:', error.message);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error detail:', error.detail);
+    console.error('❌ Full error:', error);
+    
+    // Check for foreign key constraint violation
+    if (error.code === '23503') {
+      return res.status(400).json({ 
+        error: 'Invalid assignee: User does not exist or is not in this organization',
+        details: error.detail 
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to bulk update tickets', details: error.message });
   }
 });
 
