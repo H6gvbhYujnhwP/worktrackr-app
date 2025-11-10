@@ -232,18 +232,11 @@ router.post('/signup/start', async (req, res) => {
     const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Phase 2: Create line items for base plan + initial seat add-on (quantity 0)
+    // Phase 2: Create line items for base plan only
+    // Note: Additional seats will be added to subscription after provisioning via initializeSeatTracking()
     const lineItems = [
       { price: priceId, quantity: 1 } // Base plan
     ];
-    
-    // Add seat add-on with quantity 0 (will be adjusted after provisioning)
-    if (process.env.PRICE_ADDITIONAL_SEATS) {
-      lineItems.push({ 
-        price: process.env.PRICE_ADDITIONAL_SEATS, 
-        quantity: 0 
-      });
-    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
