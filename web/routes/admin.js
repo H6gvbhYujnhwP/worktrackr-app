@@ -106,4 +106,14 @@ router.post('/update-plan', async (req, res) => {
   }
 });
 
+// Test endpoint to verify database connection
+router.get('/test', async (req, res) => {
+  try {
+    const result = await query('SELECT NOW() as current_time');
+    res.json({ success: true, time: result.rows[0].current_time });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
