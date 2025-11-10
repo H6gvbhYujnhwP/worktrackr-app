@@ -237,6 +237,13 @@ router.put('/bulk', async (req, res) => {
       values.push(updates.status);
     }
 
+    // Support both camelCase and snake_case for assignee
+    const assigneeId = updates.assigneeId || updates.assignee_id;
+    if (assigneeId !== undefined) {
+      setClauses.push(`assignee_id = $${paramCount++}`);
+      values.push(assigneeId);
+    }
+
     setClauses.push('updated_at = NOW()');
 
     if (setClauses.length === 1) {

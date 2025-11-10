@@ -92,7 +92,7 @@ export default function TicketDetailView({ ticketId, onBack }) {
         priority: form.priority || undefined,
         status: form.status || undefined,
         sector: form.sector || null,
-        assigneeId: form.assignee_id || null,
+        assignee_id: form.assignee_id || null,  // Fixed: use snake_case to match backend
         scheduled_date: form.scheduled_date || null,
         scheduled_duration_mins:
           form.scheduled_duration_mins === '' ? null : Number(form.scheduled_duration_mins),
