@@ -116,4 +116,19 @@ router.get('/test', async (req, res) => {
   }
 });
 
+// Check organisations table schema
+router.get('/check-schema', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT column_name, data_type, column_default
+      FROM information_schema.columns
+      WHERE table_name = 'organisations'
+      ORDER BY ordinal_position
+    `);
+    res.json({ columns: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
