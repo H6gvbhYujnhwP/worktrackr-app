@@ -235,7 +235,7 @@ router.post('/signup/start', async (req, res) => {
       allow_promotion_codes: true,
       success_url: `${APP_BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_BASE_URL}/signup?canceled=1`,
-      customer_creation: 'if_required',
+      // customer_creation removed - not allowed in subscription mode, Stripe creates customer automatically
       metadata: { 
         email, 
         full_name, 
