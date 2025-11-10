@@ -23,11 +23,13 @@ export const useUserLimits = () => {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ Subscription data received:', data);
           setSubscriptionData(data);
         } else {
           console.warn('Failed to fetch subscription data, using defaults');
           setSubscriptionData({
             plan: 'pro',
+            includedSeats: 10,
             additionalSeats: 0,
             status: 'active'
           });
@@ -36,6 +38,7 @@ export const useUserLimits = () => {
         console.error('Error fetching subscription data:', error);
         setSubscriptionData({
           plan: 'pro',
+          includedSeats: 10,
           additionalSeats: 0,
           status: 'active'
         });
@@ -53,12 +56,14 @@ export const useUserLimits = () => {
   
   const limits = useMemo(() => {
     // Use includedSeats from API if available, otherwise fall back to PLAN_LIMITS
-    const basePlanLimit = subscriptionData?.includedSeats || PLAN_LIMITS[currentPlan] || PLAN_LIMITS.pro;
+    const basePlanLimit = subscriptionData?.includedSeats ?? PLAN_LIMITS[currentPlan] ?? PLAN_LIMITS.pro;
     console.log('🔍 useUserLimits calculation:', {
       subscriptionData,
       includedSeats: subscriptionData?.includedSeats,
       currentPlan,
-      basePlanLimit
+      basePlanLimit,
+      PLAN_LIMITS,
+      fallbackUsed: !subscriptionData?.includedSeats
     });
     const totalAllowedUsers = basePlanLimit === Infinity 
       ? Infinity 
