@@ -45,22 +45,22 @@ const PLAN_CONFIGS = {
   starter: {
     priceId: process.env.PRICE_STARTER_BASE,
     name: 'Starter',
-    maxUsers: Infinity, // No hard limit, just included seats + add-ons
-    includedSeats: 5,
+    maxUsers: 1,
+    includedSeats: 1,
     price: 49
   },
   pro: {
     priceId: process.env.PRICE_PRO_BASE,
     name: 'Pro',
-    maxUsers: Infinity,
-    includedSeats: 20,
+    maxUsers: 10,
+    includedSeats: 10,
     price: 99
   },
   enterprise: {
     priceId: process.env.PRICE_ENTERPRISE_BASE,
     name: 'Enterprise',
-    maxUsers: Infinity,
-    includedSeats: 100,
+    maxUsers: 50,
+    includedSeats: 50,
     price: 299
   }
 };

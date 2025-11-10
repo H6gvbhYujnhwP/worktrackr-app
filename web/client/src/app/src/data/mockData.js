@@ -122,9 +122,74 @@ export const categories = [
 export const mockOrganization = {
   id: 'org-1',
   name: 'WorkTrackr Demo Organization',
-  plan: 'pro',
-  maxUsers: 50,
-  currentUsers: 5,
+  subscription: {
+    plan: 'pro',
+    maxUsers: 10,
+    currentUsers: 1,
+    additionalSeats: 0,
+    billingCycle: 'monthly',
+    amount: 99,
+    status: 'active',
+    nextBilling: '2024-12-20',
+    stripeCustomerId: 'cus_example123',
+    stripeSubscriptionId: 'sub_example456'
+  },
   createdAt: '2024-01-15T10:00:00Z'
+};
+
+// Subscription plans
+export const subscriptionPlans = {
+  starter: { 
+    id: 'starter',
+    name: 'Starter', 
+    maxUsers: 1, 
+    price: 49,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_starter_49',
+    features: [
+      'Basic ticketing',
+      'Email notifications',
+      'Up to 1 user'
+    ]
+  },
+  pro: { 
+    id: 'pro',
+    name: 'Pro', 
+    maxUsers: 10, 
+    price: 99,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_pro_99',
+    features: [
+      'Workflow builder',
+      'Reports & inspections',
+      'Approvals',
+      'Up to 10 users'
+    ]
+  },
+  enterprise: { 
+    id: 'enterprise',
+    name: 'Enterprise', 
+    maxUsers: 50, 
+    price: 299,
+    currency: '£',
+    interval: 'month',
+    stripePriceId: 'price_enterprise_299',
+    features: [
+      'Unlimited users',
+      'Custom branding',
+      'Partner admin access',
+      'Dedicated support'
+    ]
+  }
+};
+
+// Additional seat pricing
+export const additionalSeatPrice = {
+  price: 9,
+  currency: '£',
+  interval: 'month',
+  stripePriceId: 'price_additional_seat_9'
 };
 

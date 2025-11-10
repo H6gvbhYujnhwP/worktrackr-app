@@ -2,9 +2,9 @@ import { useMemo, useState, useEffect } from 'react';
 import { useAuth, useSimulation } from '../App.jsx';
 
 const PLAN_LIMITS = {
-  starter: 5,
-  pro: 25,
-  enterprise: Infinity
+  starter: 1,
+  pro: 10,
+  enterprise: 50
 };
 
 export const useUserLimits = () => {
@@ -106,14 +106,14 @@ export const useUserLimits = () => {
     if (limits.currentPlan === 'starter' && limits.isNearLimit) {
       return {
         recommended: 'pro',
-        reason: 'Your team is growing! Upgrade to Pro for 25 users and advanced features.'
+        reason: 'Your team is growing! Upgrade to Pro for up to 10 users and advanced features.'
       };
     }
     
     if (limits.currentPlan === 'pro' && limits.isNearLimit) {
       return {
         recommended: 'enterprise',
-        reason: 'Consider Enterprise for unlimited users and advanced features.'
+        reason: 'Consider Enterprise for up to 50 users and advanced features.'
       };
     }
     

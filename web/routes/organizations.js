@@ -235,6 +235,44 @@ router.post('/:id/users/invite', async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Check user limit based on subscription plan
+    const orgResult = await query(
+      'SELECT subscription_plan FROM organisations WHERE id = $1',
+      [id]
+    );
+    
+    if (orgResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+    
+    const subscriptionPlan = orgResult.rows[0].subscription_plan || 'pro';
+    
+    // Define plan limits
+    const planLimits = {
+      starter: 1,
+      pro: 10,
+      enterprise: 50
+    };
+    
+    const maxUsers = planLimits[subscriptionPlan] || 10;
+    
+    // Count current users in organization
+    const userCountResult = await query(
+      'SELECT COUNT(*) as count FROM memberships WHERE organisation_id = $1',
+      [id]
+    );
+    
+    const currentUserCount = parseInt(userCountResult.rows[0].count);
+    
+    if (currentUserCount >= maxUsers) {
+      return res.status(403).json({ 
+        error: `User limit reached. Your ${subscriptionPlan} plan allows up to ${maxUsers} user${maxUsers > 1 ? 's' : ''}. Please upgrade your plan to add more users.`,
+        currentUsers: currentUserCount,
+        maxUsers: maxUsers,
+        plan: subscriptionPlan
+      });
+    }
+
     // Check if user already exists
     const existingUser = await query(
       'SELECT id FROM users WHERE email = $1',

@@ -3,9 +3,9 @@
 
 const PLAN_INCLUDED = {
   individual: 1,
-  starter: 5,
-  pro: 20,
-  enterprise: 100,
+  starter: 1,
+  pro: 10,
+  enterprise: 50,
 };
 
 const PLAN_PRICES = {
