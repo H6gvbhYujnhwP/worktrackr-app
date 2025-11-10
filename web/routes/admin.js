@@ -96,8 +96,13 @@ router.post('/update-plan', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Admin update plan error:', error);
-    res.status(500).json({ error: 'Failed to update plan' });
+    console.error('❌ Admin update plan error:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to update plan',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
