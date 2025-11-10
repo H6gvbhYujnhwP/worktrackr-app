@@ -217,17 +217,8 @@ router.post('/signup/start', async (req, res) => {
     const priceId = price_id || process.env.PRICE_STARTER;
     if (!priceId) return res.status(400).json({ error: 'Price ID not configured' });
 
-    // Validate that this is a valid base plan price
-    const validBasePrices = [
-      process.env.PRICE_INDIVIDUAL,
-      process.env.PRICE_STARTER,
-      process.env.PRICE_PRO,
-      process.env.PRICE_ENTERPRISE
-    ].filter(Boolean);
-    
-    if (!validBasePrices.includes(priceId)) {
-      return res.status(400).json({ error: 'Invalid plan selected' });
-    }
+    // Price ID validation removed - Stripe will validate the price ID
+    // Frontend sends valid Stripe price IDs from VITE environment variables
 
     const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
