@@ -214,15 +214,15 @@ router.post('/signup/start', async (req, res) => {
     const { full_name, email, password, org_slug, price_id } = startSignupSchema.parse(req.body);
 
     // Phase 2: Support all plan types including Individual
-    const priceId = price_id || process.env.PRICE_STARTER_BASE || process.env.PRICE_STARTER;
+    const priceId = price_id || process.env.PRICE_STARTER;
     if (!priceId) return res.status(400).json({ error: 'Price ID not configured' });
 
     // Validate that this is a valid base plan price
     const validBasePrices = [
-      process.env.PRICE_INDIVIDUAL_BASE,
-      process.env.PRICE_STARTER_BASE,
-      process.env.PRICE_PRO_BASE,
-      process.env.PRICE_ENTERPRISE_BASE
+      process.env.PRICE_INDIVIDUAL,
+      process.env.PRICE_STARTER,
+      process.env.PRICE_PRO,
+      process.env.PRICE_ENTERPRISE
     ].filter(Boolean);
     
     if (!validBasePrices.includes(priceId)) {

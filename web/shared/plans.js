@@ -19,20 +19,20 @@ const SEAT_ADDON_PRICE = 9; // £9 per additional seat/month
 
 function planFromPriceId(priceId, env) {
   const map = {
-    [env.PRICE_INDIVIDUAL_BASE]: 'individual',
-    [env.PRICE_STARTER_BASE]: 'starter',
-    [env.PRICE_PRO_BASE]: 'pro',
-    [env.PRICE_ENTERPRISE_BASE]: 'enterprise',
+    [env.PRICE_INDIVIDUAL]: 'individual',
+    [env.PRICE_STARTER]: 'starter',
+    [env.PRICE_PRO]: 'pro',
+    [env.PRICE_ENTERPRISE]: 'enterprise',
   };
   return map[priceId] || null;
 }
 
 function priceIdFromPlan(plan, env) {
   const map = {
-    individual: env.PRICE_INDIVIDUAL_BASE,
-    starter: env.PRICE_STARTER_BASE,
-    pro: env.PRICE_PRO_BASE,
-    enterprise: env.PRICE_ENTERPRISE_BASE,
+    individual: env.PRICE_INDIVIDUAL,
+    starter: env.PRICE_STARTER,
+    pro: env.PRICE_PRO,
+    enterprise: env.PRICE_ENTERPRISE,
   };
   return map[plan] || null;
 }

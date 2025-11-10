@@ -21,10 +21,10 @@ const {
 
 // Map plan → Stripe Price ID from env (Phase 2: includes Individual)
 const PLAN_TO_PRICE = {
-  individual: process.env.PRICE_INDIVIDUAL_BASE,
-  starter: process.env.PRICE_STARTER_BASE,
-  pro: process.env.PRICE_PRO_BASE,
-  enterprise: process.env.PRICE_ENTERPRISE_BASE,
+  individual: process.env.PRICE_INDIVIDUAL,
+  starter: process.env.PRICE_STARTER,
+  pro: process.env.PRICE_PRO,
+  enterprise: process.env.PRICE_ENTERPRISE,
 };
 
 // Seat add-on price ID
@@ -36,28 +36,28 @@ const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS || SEAT_ADD
 // Plan configurations (Phase 2: updated with Individual plan)
 const PLAN_CONFIGS = {
   individual: {
-    priceId: process.env.PRICE_INDIVIDUAL_BASE,
+    priceId: process.env.PRICE_INDIVIDUAL,
     name: 'Individual',
     maxUsers: 1,
     includedSeats: 1,
     price: 15
   },
   starter: {
-    priceId: process.env.PRICE_STARTER_BASE,
+    priceId: process.env.PRICE_STARTER,
     name: 'Starter',
     maxUsers: 1,
     includedSeats: 1,
     price: 49
   },
   pro: {
-    priceId: process.env.PRICE_PRO_BASE,
+    priceId: process.env.PRICE_PRO,
     name: 'Pro',
     maxUsers: 10,
     includedSeats: 10,
     price: 99
   },
   enterprise: {
-    priceId: process.env.PRICE_ENTERPRISE_BASE,
+    priceId: process.env.PRICE_ENTERPRISE,
     name: 'Enterprise',
     maxUsers: 50,
     includedSeats: 50,
