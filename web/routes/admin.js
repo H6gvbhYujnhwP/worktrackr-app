@@ -76,9 +76,9 @@ router.post('/update-plan', async (req, res) => {
     const planConfig = PLAN_CONFIGS[plan];
     const includedSeats = planConfig.includedSeats;
     
-    // Update organization plan (use subscription_plan column name)
+    // Update organization plan (use plan column name)
     await query(
-      'UPDATE organisations SET subscription_plan = $1, included_seats = $2, updated_at = NOW() WHERE id = $3',
+      'UPDATE organisations SET plan = $1, included_seats = $2, updated_at = NOW() WHERE id = $3',
       [plan, includedSeats, orgId]
     );
     
@@ -128,6 +128,64 @@ router.get('/check-schema', async (req, res) => {
     res.json({ columns: result.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Migration endpoint to add missing columns to organisations table
+router.post('/migrate-organisations', async (req, res) => {
+  try {
+    const { adminKey } = req.body;
+    
+    // Check admin key
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
+    
+    console.log('🔧 Running organisations table migration...');
+    
+    // Add plan column if it doesn't exist
+    await query(`
+      ALTER TABLE organisations 
+      ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'pro' 
+      CHECK (plan IN ('individual', 'starter', 'pro', 'enterprise'))
+    `);
+    
+    // Add included_seats column if it doesn't exist
+    await query(`
+      ALTER TABLE organisations 
+      ADD COLUMN IF NOT EXISTS included_seats INTEGER DEFAULT 10
+    `);
+    
+    // Add other Phase 2 columns if they don't exist
+    await query(`
+      ALTER TABLE organisations 
+      ADD COLUMN IF NOT EXISTS stripe_seat_item_id TEXT
+    `);
+    
+    await query(`
+      ALTER TABLE organisations 
+      ADD COLUMN IF NOT EXISTS active_user_count INTEGER DEFAULT 0
+    `);
+    
+    await query(`
+      ALTER TABLE organisations 
+      ADD COLUMN IF NOT EXISTS seat_overage_cached INTEGER DEFAULT 0
+    `);
+    
+    console.log('✅ Migration completed successfully');
+    
+    res.json({ 
+      success: true, 
+      message: 'Organisations table migrated successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({ 
+      error: 'Migration failed',
+      details: error.message
+    });
   }
 });
 

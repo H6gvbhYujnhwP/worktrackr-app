@@ -129,7 +129,9 @@ app.use('/api/auth', require('./routes/session')); // Session check endpoint
 
 // Admin routes (no auth required, protected by admin key)
 const adminRoutes = require('./routes/admin');
+const migrationsRoutes = require('./routes/migrations');
 app.use('/api/admin', adminRoutes);
+app.use('/api/migrations', migrationsRoutes);
 
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
