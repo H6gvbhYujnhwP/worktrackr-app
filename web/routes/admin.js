@@ -76,9 +76,9 @@ router.post('/update-plan', async (req, res) => {
     const planConfig = PLAN_CONFIGS[plan];
     const includedSeats = planConfig.includedSeats;
     
-    // Update organization plan
+    // Update organization plan (use subscription_plan column name)
     await query(
-      'UPDATE organisations SET plan = $1, included_seats = $2, updated_at = NOW() WHERE id = $3',
+      'UPDATE organisations SET subscription_plan = $1, included_seats = $2, updated_at = NOW() WHERE id = $3',
       [plan, includedSeats, orgId]
     );
     
