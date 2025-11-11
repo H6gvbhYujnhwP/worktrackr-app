@@ -19,9 +19,8 @@ const {
   initializeSeatTracking 
 } = require('../shared/stripeSeats.js');
 
-// Map plan → Stripe Price ID from env (Phase 2: includes Individual)
+// Map plan → Stripe Price ID from env
 const PLAN_TO_PRICE = {
-  individual: process.env.PRICE_INDIVIDUAL,
   starter: process.env.PRICE_STARTER,
   pro: process.env.PRICE_PRO,
   enterprise: process.env.PRICE_ENTERPRISE,
@@ -29,41 +28,50 @@ const PLAN_TO_PRICE = {
 
 // Seat add-on price ID
 const SEAT_ADDON_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS;
-
-// Legacy support for old environment variable
 const ADDITIONAL_SEATS_PRICE_ID = process.env.PRICE_ADDITIONAL_SEATS;
 
-// Plan configurations (Phase 2: updated with Individual plan)
+// Plan configurations - updated to match new pricing
 const PLAN_CONFIGS = {
-  individual: {
-    priceId: process.env.PRICE_INDIVIDUAL,
-    name: 'Individual',
-    maxUsers: 1,
-    includedSeats: 1,
-    price: 15
-  },
   starter: {
     priceId: process.env.PRICE_STARTER,
     name: 'Starter',
     maxUsers: 1,
     includedSeats: 1,
-    price: 49
+    price: 49,
+    tier: 1  // For upgrade/downgrade comparison
   },
   pro: {
     priceId: process.env.PRICE_PRO,
     name: 'Pro',
-    maxUsers: 10,
-    includedSeats: 10,
-    price: 99
+    maxUsers: 5,
+    includedSeats: 5,
+    price: 99,
+    tier: 2
   },
   enterprise: {
     priceId: process.env.PRICE_ENTERPRISE,
     name: 'Enterprise',
     maxUsers: 50,
     includedSeats: 50,
-    price: 299
+    price: 299,
+    tier: 3
   }
 };
+
+/**
+ * Determine if a plan change is an upgrade or downgrade
+ * @param {string} currentPlan - Current plan name
+ * @param {string} newPlan - New plan name
+ * @returns {string} 'upgrade', 'downgrade', or 'same'
+ */
+function getPlanChangeType(currentPlan, newPlan) {
+  const currentTier = PLAN_CONFIGS[currentPlan]?.tier || 0;
+  const newTier = PLAN_CONFIGS[newPlan]?.tier || 0;
+  
+  if (newTier > currentTier) return 'upgrade';
+  if (newTier < currentTier) return 'downgrade';
+  return 'same';
+}
 
 // Helper function to check if organization has existing Stripe customer and subscription
 async function checkExistingStripeCustomer(orgId) {
@@ -219,8 +227,6 @@ async function determineCustomerStatus(orgId, userId) {
   }
 }
 
-
-
 // Get current subscription details
 router.get('/subscription', async (req, res) => {
   try {
@@ -269,7 +275,6 @@ router.get('/subscription', async (req, res) => {
       // Determine if this is a new or existing customer
       const customerStatus = await determineCustomerStatus(orgId, user.id);
       
-      // FIX: Read plan and included_seats from database instead of hardcoding to 'starter'
       const orgResult = await query(
         'SELECT plan, included_seats FROM organisations WHERE id = $1',
         [orgId]
@@ -300,7 +305,7 @@ router.get('/subscription', async (req, res) => {
 
     console.log(`📋 Found subscription ${activeSubscription.id} with status ${activeSubscription.status}`);
     
-    // Parse subscription items to determine plan and additional seats (Phase 2)
+    // Parse subscription items to determine plan and additional seats
     let plan = 'starter';
     let additionalSeats = 0;
     let baseItem = null;
@@ -309,144 +314,78 @@ router.get('/subscription', async (req, res) => {
     activeSubscription.items.data.forEach(item => {
       const priceId = item.price.id;
       
-      // Check which plan this price ID belongs to (Phase 2: includes Individual)
-      const detectedPlan = planFromPriceId(priceId, process.env);
-      if (detectedPlan) {
-        plan = detectedPlan;
-        baseItem = item;
+      // Check which plan this price ID belongs to
+      for (const [planName, config] of Object.entries(PLAN_CONFIGS)) {
+        if (config.priceId === priceId) {
+          plan = planName;
+          baseItem = item;
+          break;
+        }
       }
       
-      // Check if this is seat add-on (Phase 2: unified seat pricing)
-      if (priceId === SEAT_ADDON_PRICE_ID || priceId === ADDITIONAL_SEATS_PRICE_ID) {
+      // Check if this is the additional seats item
+      if (priceId === ADDITIONAL_SEATS_PRICE_ID) {
         additionalSeats = item.quantity;
         seatItem = item;
       }
     });
 
-    // Determine customer status for trial eligibility
-    const customerStatus = await determineCustomerStatus(orgId, user.id);
-
-    // Get plan details (Phase 2)
-    const planDetails = getPlanDetails(plan);
+    const includedSeats = PLAN_CONFIGS[plan]?.includedSeats || 1;
     
-    const subscriptionData = {
+    // Check for scheduled changes (downgrades)
+    const schedule = activeSubscription.schedule ? 
+      await stripe.subscriptionSchedules.retrieve(activeSubscription.schedule) : null;
+    
+    let scheduledPlan = null;
+    let scheduledChangeDate = null;
+    
+    if (schedule && schedule.phases && schedule.phases.length > 1) {
+      const nextPhase = schedule.phases[schedule.phases.length - 1];
+      if (nextPhase.items && nextPhase.items.length > 0) {
+        const scheduledPriceId = nextPhase.items[0].price;
+        for (const [planName, config] of Object.entries(PLAN_CONFIGS)) {
+          if (config.priceId === scheduledPriceId) {
+            scheduledPlan = planName;
+            scheduledChangeDate = new Date(schedule.phases[1].start_date * 1000).toISOString();
+            break;
+          }
+        }
+      }
+    }
+
+    res.json({
       plan,
-      planDetails,
+      includedSeats,
       additionalSeats,
-      includedSeats: planDetails.includedSeats,
-      totalSeats: planDetails.includedSeats + additionalSeats,
       status: activeSubscription.status,
       currentPeriodEnd: new Date(activeSubscription.current_period_end * 1000).toISOString(),
-      subscriptionId: activeSubscription.id,
-      customerId: existingCustomer.customerId,
-      isNewCustomer: customerStatus.isNewCustomer,
-      trialEligible: customerStatus.isNewCustomer && activeSubscription.status !== 'active',
-      trialEnd: activeSubscription.trial_end ? new Date(activeSubscription.trial_end * 1000).toISOString() : null,
+      trialEnd: activeSubscription.trial_end ? 
+        new Date(activeSubscription.trial_end * 1000).toISOString() : null,
       cancelAtPeriodEnd: activeSubscription.cancel_at_period_end,
-      // Phase 2: Enhanced billing info
-      basePrice: planDetails.basePrice,
-      seatAddonPrice: planDetails.seatAddonPrice,
-      estimatedMonthly: calculateMonthlyCost(plan, planDetails.includedSeats + additionalSeats)
-    };
-
-    console.log(`✅ Subscription data:`, subscriptionData);
-    res.json(subscriptionData);
+      scheduledPlan,
+      scheduledChangeDate,
+      subscriptionId: activeSubscription.id,
+      customerId: existingCustomer.customerId
+    });
 
   } catch (error) {
     console.error('❌ Error fetching subscription:', error);
-    res.status(500).json({ error: 'Failed to fetch subscription details' });
+    res.status(500).json({ error: 'Failed to fetch subscription' });
   }
 });
 
-// Update additional seats for existing subscription
-router.post('/update-seats', async (req, res) => {
-  try {
-    const { additionalSeats } = req.body;
-    const { user } = req;
-    const orgId = req.orgContext?.organisationId;
-
-    console.log(`💺 Updating seats for org ${orgId} to ${additionalSeats}`);
-
-    if (typeof additionalSeats !== 'number' || additionalSeats < 0) {
-      return res.status(400).json({ error: 'Invalid additional seats count' });
-    }
-
-    // Check for existing customer and subscription
-    const existingCustomer = await checkExistingStripeCustomer(orgId);
-    
-    if (!existingCustomer || !existingCustomer.customerId) {
-      return res.status(400).json({ error: 'No Stripe customer found' });
-    }
-
-    // Get active subscription
-    const subscriptions = await stripe.subscriptions.list({
-      customer: existingCustomer.customerId,
-      status: 'active',
-      limit: 1
-    });
-
-    if (subscriptions.data.length === 0) {
-      return res.status(400).json({ error: 'No active subscription found' });
-    }
-
-    const subscription = subscriptions.data[0];
-    
-    // Find existing additional seats item
-    const existingSeatItem = subscription.items.data.find(item => 
-      item.price.id === ADDITIONAL_SEATS_PRICE_ID
-    );
-
-    const subscriptionItems = [];
-
-    if (additionalSeats > 0) {
-      if (existingSeatItem) {
-        // Update existing seat item
-        subscriptionItems.push({
-          id: existingSeatItem.id,
-          quantity: additionalSeats,
-        });
-      } else {
-        // Add new seat item
-        subscriptionItems.push({
-          price: ADDITIONAL_SEATS_PRICE_ID,
-          quantity: additionalSeats,
-        });
-      }
-    } else if (existingSeatItem) {
-      // Remove seat item
-      subscriptionItems.push({
-        id: existingSeatItem.id,
-        deleted: true,
-      });
-    }
-
-    // Update subscription
-    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
-      items: subscriptionItems,
-      proration_behavior: 'always_invoice'
-    });
-
-    console.log(`✅ Seats updated successfully for subscription ${subscription.id}`);
-    res.json({ 
-      success: true, 
-      message: 'Additional seats updated successfully',
-      subscriptionId: updatedSubscription.id
-    });
-
-  } catch (error) {
-    console.error('❌ Error updating seats:', error);
-    res.status(500).json({ error: 'Failed to update seats' });
-  }
-});
-
-// Immediate subscription update for existing customers
+/**
+ * POST /api/billing/update-subscription
+ * Handle plan upgrades (immediate with proration) and downgrades (scheduled for end of period)
+ * body: { plan: string, additionalSeats?: number }
+ */
 router.post('/update-subscription', async (req, res) => {
   try {
     const { plan, additionalSeats = 0 } = req.body;
     const { user } = req;
     const orgId = req.orgContext?.organisationId;
 
-    console.log(`🔄 Immediate subscription update for org ${orgId}: plan=${plan}, seats=${additionalSeats}`);
+    console.log(`🔄 Subscription change request for org ${orgId}: plan=${plan}, seats=${additionalSeats}`);
 
     // Validate plan
     const priceId = PLAN_TO_PRICE[plan?.toLowerCase()];
@@ -474,6 +413,47 @@ router.post('/update-subscription', async (req, res) => {
 
     const subscription = subscriptions.data[0];
     
+    // Determine current plan
+    let currentPlan = 'starter';
+    for (const item of subscription.items.data) {
+      for (const [planName, config] of Object.entries(PLAN_CONFIGS)) {
+        if (config.priceId === item.price.id) {
+          currentPlan = planName;
+          break;
+        }
+      }
+    }
+    
+    // Determine if this is an upgrade or downgrade
+    const changeType = getPlanChangeType(currentPlan, plan);
+    console.log(`📊 Plan change type: ${changeType} (${currentPlan} → ${plan})`);
+    
+    if (changeType === 'same') {
+      // Just updating seats, not changing plan
+      return await handleSeatUpdate(subscription, additionalSeats, orgId, res);
+    }
+    
+    if (changeType === 'upgrade') {
+      // UPGRADE: Immediate with proration
+      return await handleUpgrade(subscription, plan, priceId, additionalSeats, orgId, res);
+    } else {
+      // DOWNGRADE: Schedule for end of period
+      return await handleDowngrade(subscription, plan, priceId, additionalSeats, orgId, res);
+    }
+
+  } catch (error) {
+    console.error('❌ Error updating subscription:', error);
+    res.status(500).json({ error: 'Failed to update subscription' });
+  }
+});
+
+/**
+ * Handle immediate upgrade with proration
+ */
+async function handleUpgrade(subscription, newPlan, newPriceId, additionalSeats, orgId, res) {
+  try {
+    console.log(`⬆️ Processing UPGRADE to ${newPlan} for org ${orgId}`);
+    
     // Build new subscription items
     const subscriptionItems = [];
     
@@ -481,7 +461,7 @@ router.post('/update-subscription', async (req, res) => {
     if (subscription.items.data.length > 0) {
       subscriptionItems.push({
         id: subscription.items.data[0].id,
-        price: priceId,
+        price: newPriceId,
       });
     }
 
@@ -492,56 +472,240 @@ router.post('/update-subscription', async (req, res) => {
 
     if (additionalSeats > 0) {
       if (existingSeatItem) {
-        // Update existing seat item
         subscriptionItems.push({
           id: existingSeatItem.id,
           quantity: additionalSeats,
         });
       } else {
-        // Add new seat item
         subscriptionItems.push({
           price: ADDITIONAL_SEATS_PRICE_ID,
           quantity: additionalSeats,
         });
       }
     } else if (existingSeatItem) {
-      // Remove seat item if no additional seats needed
       subscriptionItems.push({
         id: existingSeatItem.id,
         deleted: true,
       });
     }
 
+    // Cancel any existing schedule (in case there was a pending downgrade)
+    if (subscription.schedule) {
+      await stripe.subscriptionSchedules.release(subscription.schedule);
+      console.log(`🗓️ Released existing subscription schedule`);
+    }
+
     // Update the subscription immediately with prorated billing
     const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
       items: subscriptionItems,
       proration_behavior: 'always_invoice', // Immediate prorated billing
+      billing_cycle_anchor: 'unchanged', // Keep the same billing date
       metadata: { 
         orgId: orgId.toString(), 
         additionalSeats: additionalSeats.toString(),
-        plan: plan || 'unknown',
+        plan: newPlan,
         updatedAt: new Date().toISOString()
       }
     });
 
-    console.log(`✅ Subscription updated immediately for org ${orgId}`);
+    console.log(`✅ UPGRADE completed immediately for org ${orgId}`);
     
-    res.json({ 
+    return res.json({ 
       success: true, 
-      message: 'Subscription updated successfully',
+      message: `Upgraded to ${newPlan} plan successfully. You've been charged the prorated difference.`,
       subscriptionId: updatedSubscription.id,
+      changeType: 'upgrade',
       immediate: true
     });
 
   } catch (error) {
-    console.error('❌ Error updating subscription:', error);
-    res.status(500).json({ error: 'Failed to update subscription' });
+    console.error('❌ Error processing upgrade:', error);
+    throw error;
   }
+}
+
+/**
+ * Handle downgrade scheduled for end of billing period
+ */
+async function handleDowngrade(subscription, newPlan, newPriceId, additionalSeats, orgId, res) {
+  try {
+    console.log(`⬇️ Processing DOWNGRADE to ${newPlan} for org ${orgId}`);
+    
+    // Build items for the new plan
+    const newPhaseItems = [
+      {
+        price: newPriceId,
+        quantity: 1
+      }
+    ];
+    
+    // Add additional seats if needed
+    if (additionalSeats > 0 && ADDITIONAL_SEATS_PRICE_ID) {
+      newPhaseItems.push({
+        price: ADDITIONAL_SEATS_PRICE_ID,
+        quantity: additionalSeats
+      });
+    }
+    
+    // Create or update subscription schedule
+    const currentPeriodEnd = subscription.current_period_end;
+    
+    // Check if there's already a schedule
+    if (subscription.schedule) {
+      // Update existing schedule
+      const schedule = await stripe.subscriptionSchedules.retrieve(subscription.schedule);
+      
+      const updatedSchedule = await stripe.subscriptionSchedules.update(subscription.schedule, {
+        phases: [
+          {
+            items: subscription.items.data.map(item => ({
+              price: item.price.id,
+              quantity: item.quantity
+            })),
+            start_date: schedule.phases[0].start_date,
+            end_date: currentPeriodEnd
+          },
+          {
+            items: newPhaseItems,
+            start_date: currentPeriodEnd
+          }
+        ],
+        metadata: {
+          orgId: orgId.toString(),
+          scheduledPlan: newPlan,
+          scheduledSeats: additionalSeats.toString()
+        }
+      });
+      
+      console.log(`🗓️ Updated existing schedule ${updatedSchedule.id}`);
+    } else {
+      // Create new schedule
+      const schedule = await stripe.subscriptionSchedules.create({
+        from_subscription: subscription.id,
+        phases: [
+          {
+            items: subscription.items.data.map(item => ({
+              price: item.price.id,
+              quantity: item.quantity
+            })),
+            start_date: subscription.current_period_start,
+            end_date: currentPeriodEnd
+          },
+          {
+            items: newPhaseItems,
+            start_date: currentPeriodEnd
+          }
+        ],
+        metadata: {
+          orgId: orgId.toString(),
+          scheduledPlan: newPlan,
+          scheduledSeats: additionalSeats.toString()
+        }
+      });
+      
+      console.log(`🗓️ Created new schedule ${schedule.id}`);
+    }
+    
+    const changeDate = new Date(currentPeriodEnd * 1000).toISOString();
+    console.log(`✅ DOWNGRADE scheduled for ${changeDate}`);
+    
+    return res.json({ 
+      success: true, 
+      message: `Downgrade to ${newPlan} plan scheduled. Change will take effect on ${new Date(currentPeriodEnd * 1000).toLocaleDateString()}.`,
+      subscriptionId: subscription.id,
+      changeType: 'downgrade',
+      immediate: false,
+      scheduledDate: changeDate
+    });
+
+  } catch (error) {
+    console.error('❌ Error processing downgrade:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle seat quantity updates (no plan change)
+ */
+async function handleSeatUpdate(subscription, additionalSeats, orgId, res) {
+  try {
+    console.log(`👥 Updating seats to ${additionalSeats} for org ${orgId}`);
+    
+    const subscriptionItems = [];
+    
+    // Keep the main plan item unchanged
+    if (subscription.items.data.length > 0) {
+      const mainItem = subscription.items.data[0];
+      subscriptionItems.push({
+        id: mainItem.id,
+        price: mainItem.price.id,
+      });
+    }
+
+    // Handle additional seats
+    const existingSeatItem = subscription.items.data.find(item => 
+      item.price.id === ADDITIONAL_SEATS_PRICE_ID
+    );
+
+    if (additionalSeats > 0) {
+      if (existingSeatItem) {
+        subscriptionItems.push({
+          id: existingSeatItem.id,
+          quantity: additionalSeats,
+        });
+      } else {
+        subscriptionItems.push({
+          price: ADDITIONAL_SEATS_PRICE_ID,
+          quantity: additionalSeats,
+        });
+      }
+    } else if (existingSeatItem) {
+      subscriptionItems.push({
+        id: existingSeatItem.id,
+        deleted: true,
+      });
+    }
+
+    // Update seats immediately with proration
+    const updatedSubscription = await stripe.subscriptions.update(subscription.id, {
+      items: subscriptionItems,
+      proration_behavior: 'always_invoice',
+      metadata: { 
+        orgId: orgId.toString(), 
+        additionalSeats: additionalSeats.toString(),
+        updatedAt: new Date().toISOString()
+      }
+    });
+
+    console.log(`✅ Seats updated for org ${orgId}`);
+    
+    return res.json({ 
+      success: true, 
+      message: 'Seat count updated successfully',
+      subscriptionId: updatedSubscription.id,
+      changeType: 'seats_only',
+      immediate: true
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating seats:', error);
+    throw error;
+  }
+}
+
+/**
+ * POST /api/billing/update-seats
+ * Update additional seats only (legacy endpoint, redirects to update-subscription)
+ */
+router.post('/update-seats', async (req, res) => {
+  // Redirect to update-subscription endpoint
+  req.body.plan = null; // No plan change, just seats
+  return router.handle(req, res);
 });
 
 /**
  * POST /api/billing/checkout
- * Smart billing: New customers get 7-day trial, existing customers get immediate plan updates
+ * Smart billing: New customers get 14-day trial, existing customers get immediate plan updates
  * body: { plan?: "starter"|"pro"|"enterprise", priceId?: string, orgId?: string, additionalSeats?: number }
  * Returns: { url } for new customers OR { success: true } for existing customers
  */
@@ -573,79 +737,16 @@ router.post('/checkout', async (req, res) => {
     const existingCustomer = await checkExistingStripeCustomer(orgId);
     
     if (existingCustomer && existingCustomer.subscriptionId && !customerStatus.isNewCustomer) {
-      // EXISTING CUSTOMER - Update subscription immediately (no trial, no checkout)
-      console.log(`🔄 Updating existing subscription ${existingCustomer.subscriptionId} for org ${orgId}`);
+      // EXISTING CUSTOMER - Use update-subscription endpoint logic
+      console.log(`🔄 Existing customer, redirecting to subscription update logic`);
       
-      try {
-        const subscription = await stripe.subscriptions.retrieve(existingCustomer.subscriptionId);
-        
-        // Build new subscription items
-        const subscriptionItems = [];
-        
-        // Update main plan item (always the first item)
-        if (subscription.items.data.length > 0) {
-          subscriptionItems.push({
-            id: subscription.items.data[0].id,
-            price: price,
-          });
-        }
-
-        // Handle additional seats
-        const existingSeatItem = subscription.items.data.find(item => 
-          item.price.id === ADDITIONAL_SEATS_PRICE_ID
-        );
-
-        if (additionalSeats > 0) {
-          if (existingSeatItem) {
-            // Update existing seat item
-            subscriptionItems.push({
-              id: existingSeatItem.id,
-              quantity: additionalSeats,
-            });
-          } else {
-            // Add new seat item
-            subscriptionItems.push({
-              price: ADDITIONAL_SEATS_PRICE_ID,
-              quantity: additionalSeats,
-            });
-          }
-        } else if (existingSeatItem) {
-          // Remove seat item if no additional seats needed
-          subscriptionItems.push({
-            id: existingSeatItem.id,
-            deleted: true,
-          });
-        }
-
-        // Update the subscription
-        const updatedSubscription = await stripe.subscriptions.update(existingCustomer.subscriptionId, {
-          items: subscriptionItems,
-          proration_behavior: 'always_invoice', // Immediate prorated billing
-          metadata: { 
-            orgId: orgId.toString(), 
-            additionalSeats: additionalSeats.toString(),
-            plan: plan || 'unknown'
-          }
-        });
-
-        console.log(`✅ Subscription updated successfully for org ${orgId}`);
-        
-        // Return success - frontend will refresh to show changes
-        return res.json({ 
-          success: true, 
-          message: 'Plan updated successfully',
-          subscriptionId: updatedSubscription.id,
-          immediate: true
-        });
-
-      } catch (updateError) {
-        console.error('❌ Failed to update existing subscription:', updateError);
-        return res.status(500).json({ error: 'Failed to update subscription' });
-      }
+      // Redirect to update logic
+      req.body = { plan, additionalSeats };
+      return router.handle(req, res);
 
     } else {
-      // NEW CUSTOMER - Create checkout session with appropriate trial period
-      const trialDays = customerStatus.isNewCustomer ? 7 : 0;
+      // NEW CUSTOMER - Create checkout session with 14-day trial
+      const trialDays = customerStatus.isNewCustomer ? 14 : 0; // UPDATED: 14 days instead of 7
       console.log(`🆕 Creating ${customerStatus.isNewCustomer ? 'new' : 'existing'} customer subscription with ${trialDays} day trial for org ${orgId}`);
       
       // Build line items
@@ -661,7 +762,7 @@ router.post('/checkout', async (req, res) => {
 
       const sessionConfig = {
         mode: 'subscription',
-        payment_method_collection: 'always', // Always collect payment method
+        payment_method_collection: 'always',
         allow_promotion_codes: true,
         line_items: lineItems,
         success_url: `${process.env.APP_BASE_URL}/app/dashboard?checkout=success`,
@@ -674,7 +775,7 @@ router.post('/checkout', async (req, res) => {
         },
       };
 
-      // Only add trial for new customers
+      // Add 14-day trial for new customers
       if (trialDays > 0) {
         sessionConfig.subscription_data = {
           trial_period_days: trialDays,
@@ -705,98 +806,53 @@ router.post('/checkout', async (req, res) => {
  */
 router.post('/portal', async (req, res) => {
   try {
-    const { stripeCustomerId } = req.body || {};
-    if (!stripeCustomerId) {
-      return res.status(400).json({ error: 'Missing stripeCustomerId' });
+    const orgId = req.orgContext?.organisationId;
+    
+    // Check for existing customer
+    const existingCustomer = await checkExistingStripeCustomer(orgId);
+    
+    if (!existingCustomer || !existingCustomer.customerId) {
+      return res.status(400).json({ error: 'No Stripe customer found' });
     }
 
     const session = await stripe.billingPortal.sessions.create({
-      customer: stripeCustomerId,
+      customer: existingCustomer.customerId,
       return_url: `${process.env.APP_BASE_URL}/app/dashboard`,
     });
 
-    return res.json({ url: session.url });
-  } catch (err) {
-    console.error('Stripe portal error:', err);
-    return res.status(500).json({ error: 'Portal creation failed' });
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('❌ Error creating portal session:', error);
+    res.status(500).json({ error: 'Failed to create portal session' });
   }
 });
 
-// Admin endpoint to update organization plan (bypass Stripe for testing)
+/**
+ * POST /api/billing/admin/update-plan
+ * Admin endpoint to manually update organization plan
+ */
 router.post('/admin/update-plan', async (req, res) => {
   try {
-    const { email, plan, adminKey } = req.body;
+    const { orgId, plan, includedSeats } = req.body;
     
-    // Check admin key (for testing/development)
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
-    if (adminKey !== expectedKey) {
-      return res.status(403).json({ error: 'Invalid admin key' });
+    if (!orgId || !plan) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Validate input
-    if (!email || !plan) {
-      return res.status(400).json({ error: 'Email and plan are required' });
-    }
+    const seats = includedSeats || PLAN_CONFIGS[plan]?.includedSeats || 1;
     
-    if (!['starter', 'pro', 'enterprise'].includes(plan)) {
-      return res.status(400).json({ error: 'Invalid plan. Must be starter, pro, or enterprise' });
-    }
-    
-    console.log(`🔧 Admin: Updating ${email} to ${plan} plan`);
-    
-    // Find user and organization
-    const userResult = await query(
-      'SELECT u.id, u.email FROM users u WHERE u.email = $1',
-      [email.toLowerCase()]
-    );
-    
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    const userId = userResult.rows[0].id;
-    
-    // Find organization through membership
-    const orgResult = await query(
-      'SELECT o.id, o.name FROM organisations o JOIN memberships m ON o.id = m.organisation_id WHERE m.user_id = $1',
-      [userId]
-    );
-    
-    if (orgResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Organization not found for user' });
-    }
-    
-    const orgId = orgResult.rows[0].id;
-    const orgName = orgResult.rows[0].name;
-    
-    // Get plan details
-    const planConfig = PLAN_CONFIGS[plan];
-    const includedSeats = planConfig.includedSeats;
-    
-    // Update organization plan
     await query(
-      'UPDATE organisations SET plan = $1, included_seats = $2, updated_at = NOW() WHERE id = $3',
-      [plan, includedSeats, orgId]
+      'UPDATE organisations SET plan = $1, included_seats = $2 WHERE id = $3',
+      [plan, seats, orgId]
     );
     
-    console.log(`✅ Updated ${orgName} (${orgId}) to ${plan} plan with ${includedSeats} seats`);
+    console.log(`✅ Admin updated org ${orgId} to plan ${plan} with ${seats} seats`);
     
-    res.json({
-      success: true,
-      message: `Organization updated to ${plan} plan`,
-      organization: {
-        id: orgId,
-        name: orgName,
-        plan: plan,
-        includedSeats: includedSeats
-      }
-    });
-    
+    res.json({ success: true, message: 'Plan updated successfully' });
   } catch (error) {
-    console.error('Admin update plan error:', error);
+    console.error('❌ Error updating plan:', error);
     res.status(500).json({ error: 'Failed to update plan' });
   }
 });
 
 module.exports = router;
-
