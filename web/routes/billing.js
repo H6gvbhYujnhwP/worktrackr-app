@@ -767,7 +767,8 @@ router.post('/checkout', async (req, res) => {
         line_items: lineItems,
         success_url: `${process.env.APP_BASE_URL}/app/dashboard?checkout=success`,
         cancel_url: `${process.env.APP_BASE_URL}/app/dashboard?checkout=cancel`,
-        statement_descriptor: 'WORKTRACKR',
+        // Note: statement_descriptor not allowed in subscription mode
+        // Statement descriptor is set on the Stripe product level instead
         metadata: { 
           orgId: orgId.toString(), 
           additionalSeats: additionalSeats.toString(),
