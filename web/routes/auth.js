@@ -274,8 +274,20 @@ router.post('/signup/complete', async (req, res) => {
     const sessionId = z.string().min(10).parse(req.query.session_id || req.body.session_id);
     const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['subscription'] });
 
+    // Strict validation: Only proceed if payment was successful
     if (session.status !== 'complete') {
-      return res.status(400).json({ error: 'Checkout not complete' });
+      console.log(`❌ Signup attempt with incomplete session: ${sessionId}, status: ${session.status}`);
+      return res.status(400).json({ error: 'Checkout not complete. Please complete payment first.' });
+    }
+
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') {
+      console.log(`❌ Signup attempt without payment: ${sessionId}, payment_status: ${session.payment_status}`);
+      return res.status(400).json({ error: 'Payment not completed. Please try again.' });
+    }
+
+    if (!session.subscription) {
+      console.log(`❌ Signup attempt without subscription: ${sessionId}`);
+      return res.status(400).json({ error: 'No subscription found. Please contact support.' });
     }
 
     const row = await query('SELECT * FROM checkout_sessions WHERE stripe_session_id = $1 LIMIT 1', [sessionId]);
