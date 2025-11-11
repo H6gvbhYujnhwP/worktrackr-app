@@ -124,7 +124,7 @@ export const mockOrganization = {
   name: 'WorkTrackr Demo Organization',
   subscription: {
     plan: 'pro',
-    maxUsers: 10,
+    maxUsers: 5,
     currentUsers: 1,
     additionalSeats: 0,
     billingCycle: 'monthly',
@@ -156,7 +156,7 @@ export const subscriptionPlans = {
   pro: { 
     id: 'pro',
     name: 'Pro', 
-    maxUsers: 10, 
+    maxUsers: 5, 
     price: 99,
     currency: '£',
     interval: 'month',
@@ -165,7 +165,7 @@ export const subscriptionPlans = {
       'Workflow builder',
       'Reports & inspections',
       'Approvals',
-      'Up to 10 users'
+      'Up to 5 users'
     ]
   },
   enterprise: { 
@@ -187,9 +187,9 @@ export const subscriptionPlans = {
 
 // Additional seat pricing
 export const additionalSeatPrice = {
-  price: 9,
+  price: 15,
   currency: '£',
   interval: 'month',
-  stripePriceId: 'price_additional_seat_9'
+  stripePriceId: 'price_additional_seat_15'
 };
 

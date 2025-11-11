@@ -11,7 +11,7 @@ BEGIN
     ) THEN
         ALTER TABLE organisations 
         ADD COLUMN plan VARCHAR(20) DEFAULT 'starter' 
-        CHECK (plan IN ('individual', 'starter', 'pro', 'enterprise'));
+        CHECK (plan IN ('starter', 'pro', 'enterprise'));
         
         RAISE NOTICE 'Added plan column to organisations table';
     ELSE

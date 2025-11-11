@@ -1,0 +1,21 @@
+{
+  "name": "WorkTrackr Cloud",
+  "short_name": "WorkTrackr",
+  "description": "Professional workflow and ticketing system for IT support providers",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#FFD700",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}

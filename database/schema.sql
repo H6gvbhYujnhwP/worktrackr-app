@@ -25,8 +25,8 @@ CREATE TABLE organisations (
     trial_end TIMESTAMPTZ,
     partner_id UUID REFERENCES partners(id),
     -- Phase 2: Seat management fields
-    plan VARCHAR(20) DEFAULT 'starter' CHECK (plan IN ('individual', 'starter', 'pro', 'enterprise')),
-    included_seats INTEGER DEFAULT 5,
+    plan VARCHAR(20) DEFAULT 'starter' CHECK (plan IN ('starter', 'pro', 'enterprise')),
+    included_seats INTEGER DEFAULT 1,
     stripe_seat_item_id TEXT, -- Stripe subscription item ID for seat add-ons
     active_user_count INTEGER DEFAULT 0, -- Cached count of active users
     seat_overage_cached INTEGER DEFAULT 0, -- Cached overage for quick UI rendering

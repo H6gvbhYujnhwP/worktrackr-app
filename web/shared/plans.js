@@ -1,38 +1,34 @@
 // Plan configuration and Stripe price mapping for WorkTrackr Cloud
-// Phase 2: Individual plan + seat add-ons
+// Updated pricing structure: Starter (1 seat), Pro (5 seats), Enterprise (50 seats)
 
 const PLAN_INCLUDED = {
-  individual: 1,
   starter: 1,
-  pro: 10,
+  pro: 5,
   enterprise: 50,
 };
 
 const PLAN_PRICES = {
-  individual: 15,
   starter: 49,
   pro: 99,
   enterprise: 299,
 };
 
-const SEAT_ADDON_PRICE = 9; // £9 per additional seat/month
+const SEAT_ADDON_PRICE = 15; // £15 per additional seat/month
 
 function planFromPriceId(priceId, env) {
   const map = {
-    [env.PRICE_INDIVIDUAL]: 'individual',
-    [env.PRICE_STARTER]: 'starter',
-    [env.PRICE_PRO]: 'pro',
-    [env.PRICE_ENTERPRISE]: 'enterprise',
+    [env.PRICE_STARTER_BASE]: 'starter',
+    [env.PRICE_PRO_BASE]: 'pro',
+    [env.PRICE_ENTERPRISE_BASE]: 'enterprise',
   };
   return map[priceId] || null;
 }
 
 function priceIdFromPlan(plan, env) {
   const map = {
-    individual: env.PRICE_INDIVIDUAL,
-    starter: env.PRICE_STARTER,
-    pro: env.PRICE_PRO,
-    enterprise: env.PRICE_ENTERPRISE,
+    starter: env.PRICE_STARTER_BASE,
+    pro: env.PRICE_PRO_BASE,
+    enterprise: env.PRICE_ENTERPRISE_BASE,
   };
   return map[plan] || null;
 }

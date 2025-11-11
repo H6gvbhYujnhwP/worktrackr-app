@@ -3,7 +3,7 @@ import { useAuth, useSimulation } from '../App.jsx';
 
 const PLAN_LIMITS = {
   starter: 1,
-  pro: 10,
+  pro: 5,
   enterprise: 50
 };
 
@@ -29,7 +29,7 @@ export const useUserLimits = () => {
           console.warn('Failed to fetch subscription data, using defaults');
           setSubscriptionData({
             plan: 'pro',
-            includedSeats: 10,
+            includedSeats: 5,
             additionalSeats: 0,
             status: 'active'
           });
@@ -38,7 +38,7 @@ export const useUserLimits = () => {
         console.error('Error fetching subscription data:', error);
         setSubscriptionData({
           plan: 'pro',
-          includedSeats: 10,
+          includedSeats: 5,
           additionalSeats: 0,
           status: 'active'
         });

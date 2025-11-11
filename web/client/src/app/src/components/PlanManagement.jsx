@@ -42,8 +42,8 @@ const PLAN_CONFIGS = {
   pro: {
     name: 'Pro',
     price: 99,
-    maxUsers: 10,
-    features: ['Workflow builder', 'Reports & inspections', 'Approvals', 'Up to 10 users']
+    maxUsers: 5,
+    features: ['Workflow builder', 'Reports & inspections', 'Approvals', 'Up to 5 users']
   },
   enterprise: {
     name: 'Enterprise',
@@ -53,7 +53,7 @@ const PLAN_CONFIGS = {
   }
 };
 
-const ADDITIONAL_SEAT_PRICE = 9;
+const ADDITIONAL_SEAT_PRICE = 15;
 
 export default function PlanManagement({ totalUsers }) {
   const [currentPlan, setCurrentPlan] = useState('pro');

@@ -172,34 +172,7 @@ function App() {
           <h2 className="text-2xl md:text-3xl font-bold text-center mb-4">Simple, transparent pricing</h2>
           <p className="text-center text-gray-600 mb-12">7-day free trial on all plans</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-6 max-w-7xl mx-auto">
-            {/* Individual */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Individual</CardTitle>
-                <CardDescription>Perfect for solo professionals</CardDescription>
-                <div className="text-3xl font-bold">
-                  £15<span className="text-lg font-normal text-gray-600">/month</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />1 user included</li>
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Basic ticketing</li>
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Email notifications</li>
-                  <li className="flex items-center text-sm text-gray-600">+ £9/month per additional user</li>
-                </ul>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  disabled={busy === 'individual'}
-                  onClick={() => startCheckout('individual')}
-                >
-                  {busy === 'individual' ? 'Preparing…' : 'Choose Plan'}
-                </Button>
-              </CardContent>
-            </Card>
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-6 max-w-6xl mx-auto">
             {/* Starter */}
             <Card>
               <CardHeader>
@@ -211,10 +184,10 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />5 users included</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />1 user included</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Advanced ticketing</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Email notifications</li>
-                  <li className="flex items-center text-sm text-gray-600">+ £9/month per additional user</li>
+                  <li className="flex items-center text-sm text-gray-600">+ £15/month per additional user</li>
                 </ul>
                 <Button
                   className="w-full"
@@ -242,11 +215,11 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />20 users included</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />5 users included</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Workflow builder</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Reports & inspections</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Approvals</li>
-                  <li className="flex items-center text-sm text-gray-600">+ £9/month per additional user</li>
+                  <li className="flex items-center text-sm text-gray-600">+ £15/month per additional user</li>
                 </ul>
                 <Button
                   className="w-full worktrackr-bg-yellow text-black hover:bg-yellow-400"
@@ -269,11 +242,11 @@ function App() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 mb-6">
-                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />100 users included</li>
+                  <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />50 users included</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />Advanced workflows</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />API access</li>
                   <li className="flex items-center"><CheckCircle className="w-4 h-4 worktrackr-yellow mr-2" />White-labeling</li>
-                  <li className="flex items-center text-sm text-gray-600">+ £9/month per additional user</li>
+                  <li className="flex items-center text-sm text-gray-600">+ £15/month per additional user</li>
                 </ul>
                 <Button
                   className="w-full worktrackr-bg-black hover:bg-gray-800"
