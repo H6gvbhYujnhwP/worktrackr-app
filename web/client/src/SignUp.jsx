@@ -114,8 +114,19 @@ export default function SignUp() {
       const data = await resp.json().catch(() => ({}))
       if (!resp.ok || !data?.url) {
         // surface validation-style messages if present
-        if (data?.error) setGeneralError(data.error)
-        else setGeneralError('Failed to start checkout. Please try again.')
+        let errorMsg = 'Failed to start checkout. Please try again.'
+        if (data?.error) {
+          errorMsg = data.error
+          // If there are additional details, append them
+          if (data?.details) {
+            errorMsg += ' ' + data.details
+          }
+        }
+        // Add helpful hint for cache-related issues
+        if (data?.error && data.error.includes('Invalid subscription plan')) {
+          errorMsg += ' Try clearing your browser cache (Ctrl+Shift+R or Cmd+Shift+R) and reload the pricing page.'
+        }
+        setGeneralError(errorMsg)
         return
       }
 

@@ -217,8 +217,23 @@ router.post('/signup/start', async (req, res) => {
     const priceId = price_id || process.env.PRICE_STARTER;
     if (!priceId) return res.status(400).json({ error: 'Price ID not configured' });
 
-    // Price ID validation removed - Stripe will validate the price ID
-    // Frontend sends valid Stripe price IDs from VITE environment variables
+    // Validate price ID format and check if it exists in Stripe
+    if (!priceId.startsWith('price_')) {
+      console.error('❌ Invalid price ID format:', priceId);
+      return res.status(400).json({ error: 'Invalid price ID format' });
+    }
+
+    // Verify the price exists in Stripe before creating checkout session
+    try {
+      await stripe.prices.retrieve(priceId);
+      console.log('✅ Validated Stripe price ID:', priceId);
+    } catch (stripeError) {
+      console.error('❌ Invalid Stripe price ID:', priceId, stripeError.message);
+      return res.status(400).json({ 
+        error: 'Invalid subscription plan selected. Please refresh the page and try again.',
+        details: 'The selected plan is no longer available. Please contact support if this persists.'
+      });
+    }
 
     const existing = await findUserByEmail(email);
     const password_hash = await bcrypt.hash(password, 10);
