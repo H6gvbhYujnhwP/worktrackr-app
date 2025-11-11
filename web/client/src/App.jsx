@@ -192,10 +192,9 @@ function App() {
                 <Button
                   className="w-full"
                   variant="outline"
-                  disabled={busy === 'starter'}
-                  onClick={() => startCheckout('starter')}
+                  onClick={() => navigate('/pricing')}
                 >
-                  {busy === 'starter' ? 'Preparing…' : 'Choose Plan'}
+                  Choose Plan
                 </Button>
               </CardContent>
             </Card>
@@ -223,10 +222,9 @@ function App() {
                 </ul>
                 <Button
                   className="w-full worktrackr-bg-yellow text-black hover:bg-yellow-400"
-                  disabled={busy === 'pro'}
-                  onClick={() => startCheckout('pro')}
+                  onClick={() => navigate('/pricing')}
                 >
-                  {busy === 'pro' ? 'Preparing…' : 'Choose Plan'}
+                  Choose Plan
                 </Button>
               </CardContent>
             </Card>
@@ -250,10 +248,9 @@ function App() {
                 </ul>
                 <Button
                   className="w-full worktrackr-bg-black hover:bg-gray-800"
-                  disabled={busy === 'enterprise'}
-                  onClick={() => startCheckout('enterprise')}
+                  onClick={() => navigate('/pricing')}
                 >
-                  {busy === 'enterprise' ? 'Preparing…' : 'Choose Plan'}
+                  Choose Plan
                 </Button>
               </CardContent>
             </Card>

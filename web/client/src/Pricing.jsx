@@ -7,12 +7,10 @@ import { Badge } from '@app/components/ui/badge.jsx'
 import { CheckCircle, Star } from 'lucide-react'
 
 // Updated pricing structure: Starter (1 seat), Pro (5 seats), Enterprise (50 seats)
-const PRICE_STARTER =
-  import.meta.env.VITE_PRICE_STARTER_BASE || 'price_xxx_STARTER_BASE'
-const PRICE_PRO =
-  import.meta.env.VITE_PRICE_PRO_BASE || 'price_xxx_PRO_BASE'
-const PRICE_ENTERPRISE =
-  import.meta.env.VITE_PRICE_ENTERPRISE_BASE || 'price_xxx_ENTERPRISE_BASE'
+// WorkTrackr Cloud - New Stripe Account Price IDs
+const PRICE_STARTER = 'price_1SSGjt6Ze1BRGAeTmazBu65E'
+const PRICE_PRO = 'price_1SSGm26Ze1BRGAeT0LfRaGks'
+const PRICE_ENTERPRISE = 'price_1SSGo86Ze1BRGAeTr5sHeR0k'
 
 export default function Pricing() {
   const nav = useNavigate()
