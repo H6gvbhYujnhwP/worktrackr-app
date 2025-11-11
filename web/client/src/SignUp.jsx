@@ -15,10 +15,10 @@ import worktrackrLogo from './assets/worktrackr_icon_only.png'
  * already writing them from Pricing.jsx via localStorage).
  */
 const PRICE_META = {
-  // Example:
-  // 'price_123STARTER': { name: 'Starter', amount: '£49', suffix: '/month' },
-  // 'price_123PRO':     { name: 'Pro',     amount: '£99', suffix: '/month' },
-  // 'price_123ENT':     { name: 'Enterprise', amount: '£299', suffix: '/month' },
+  // WorkTrackr Cloud Plans
+  'price_1S6VQPLCgRgCwthBm1FfHzIu': { name: 'Starter Plan', amount: '£49', suffix: '/month' },
+  'price_1S6VTkLCgRgCwthBYNGmAqA7': { name: 'Pro Plan', amount: '£99', suffix: '/month' },
+  'price_1S6W8GLCgRgCwthBHIt0Fahl': { name: 'Enterprise Plan', amount: '£299', suffix: '/month' },
 }
 
 /** Convert a human-friendly org name to a safe slug the API accepts. */
