@@ -97,7 +97,15 @@ export default function SignUp() {
       // keep what Pricing wrote so /welcome/flows can still read it if needed
       localStorage.setItem('selectedPriceId', selectedPriceId)
 
-      const resp = await fetch('/api/auth/signup/start', {
+      // Map price ID to plan name
+      const planMap = {
+        'price_1SSdcs63WhEcHhBQvXxeVFrW': 'starter',
+        'price_1SSddh63WhEcHhBQ2COGf6hV': 'pro',
+        'price_1SSdeU63WhEcHhBQUyZiZKsJ': 'enterprise'
+      };
+      const plan = planMap[selectedPriceId] || 'starter';
+
+      const resp = await fetch('/api/auth/signup/trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -105,33 +113,24 @@ export default function SignUp() {
           full_name: form.full_name.trim(),
           email: form.email.trim().toLowerCase(),
           password: form.password,
-          // Auto-generate slug from company name
           org_slug: toSlug(form.company_name),
-          price_id: selectedPriceId,
+          plan: plan
         }),
       })
 
       const data = await resp.json().catch(() => ({}))
-      if (!resp.ok || !data?.url) {
-        // surface validation-style messages if present
-        let errorMsg = 'Failed to start checkout. Please try again.'
+      if (!resp.ok || !data?.success) {
+        let errorMsg = 'Failed to create account. Please try again.'
         if (data?.error) {
           errorMsg = data.error
-          // If there are additional details, append them
-          if (data?.details) {
-            errorMsg += ' ' + data.details
-          }
-        }
-        // Add helpful hint for cache-related issues
-        if (data?.error && data.error.includes('Invalid subscription plan')) {
-          errorMsg += ' Try clearing your browser cache (Ctrl+Shift+R or Cmd+Shift+R) and reload the pricing page.'
         }
         setGeneralError(errorMsg)
         return
       }
 
-      // Off to Stripe 🎟️
-      window.location.href = data.url
+      // Success! Redirect to dashboard
+      console.log('✅ Trial account created successfully');
+      nav('/app/dashboard')
     } catch (err) {
       setGeneralError(err.message || 'Network error')
     } finally {
@@ -167,7 +166,7 @@ export default function SignUp() {
         <h1 className="text-3xl md:text-4xl font-bold">
           Start Your <span className="worktrackr-yellow">Free Trial</span>
         </h1>
-        <p className="text-gray-600 mt-2">7-day free trial • Cancel anytime</p>
+        <p className="text-gray-600 mt-2">14-day free trial • No credit card required</p>
       </section>
 
       <section className="px-4 pb-16">
@@ -175,7 +174,7 @@ export default function SignUp() {
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Create your account</CardTitle>
-              <CardDescription>You’ll be taken to secure checkout next</CardDescription>
+              <CardDescription>Start your free 14-day trial instantly</CardDescription>
             </CardHeader>
             <CardContent>
               {/* Plan status */}
@@ -307,10 +306,10 @@ export default function SignUp() {
                   {busy ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Continuing…
+                      Creating account…
                     </>
                   ) : (
-                    'Continue to Checkout'
+                    'Start Free Trial'
                   )}
                 </Button>
 
