@@ -481,7 +481,7 @@ router.post('/:id/hard-delete', async (req, res) => {
 });
 
 // Export users to CSV
-router.get('/export', async (req, res) => {{
+router.get('/export', async (req, res) => {
   try {
     const usersResult = await query(
       `SELECT u.id, u.email, u.name, u.is_suspended, u.created_at,
