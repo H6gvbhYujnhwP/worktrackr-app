@@ -262,4 +262,52 @@ router.post('/migrate-admin-system', async (req, res) => {
   }
 });
 
+// Endpoint to set a user as master admin
+router.post('/set-master-admin', async (req, res) => {
+  try {
+    const { adminKey, email } = req.body;
+    
+    // Check admin key
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    console.log(`🔧 Setting ${email} as master admin...`);
+    
+    const result = await query(
+      'UPDATE users SET is_master_admin = true WHERE LOWER(email) = LOWER($1) RETURNING id, email, name',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = result.rows[0];
+    console.log(`✅ User ${user.email} (${user.name}) is now a master admin`);
+    
+    res.json({ 
+      success: true, 
+      message: `User ${user.email} is now a master admin`,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error setting master admin:', error);
+    res.status(500).json({ 
+      error: 'Failed to set master admin',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
