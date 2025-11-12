@@ -343,8 +343,8 @@ router.post('/create-master-admin', async (req, res) => {
     
     // Create user with master admin flag
     const result = await query(
-      `INSERT INTO users (email, password_hash, name, status, is_master_admin, created_at, updated_at)
-       VALUES ($1, $2, $3, 'active', true, NOW(), NOW())
+      `INSERT INTO users (email, password_hash, name, is_master_admin, created_at, updated_at)
+       VALUES ($1, $2, $3, true, NOW(), NOW())
        RETURNING id, email, name`,
       [email, passwordHash, name]
     );
