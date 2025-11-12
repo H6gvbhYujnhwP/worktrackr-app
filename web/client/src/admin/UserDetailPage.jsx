@@ -5,7 +5,7 @@ import { Input } from '@app/components/ui/input.jsx';
 import { Textarea } from '@app/components/ui/textarea.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx';
 import { Badge } from '@app/components/ui/badge.jsx';
-import { ArrowLeft, Save, Ban, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Ban, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import worktrackrLogo from '../assets/worktrackr_icon_only.png';
 
 export default function UserDetailPage() {
@@ -21,6 +21,11 @@ export default function UserDetailPage() {
     email: '',
     admin_notes: ''
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteType, setDeleteType] = useState(''); // 'soft' or 'hard'
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchUserDetails();
@@ -108,6 +113,53 @@ export default function UserDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      setError('');
+      setSuccess('');
+
+      const endpoint = deleteType === 'soft' ? 'soft-delete' : 'hard-delete';
+      const body = deleteType === 'soft' 
+        ? { reason: deleteReason }
+        : { confirmation: deleteConfirmation };
+
+      const response = await fetch(`/api/admin/users/${userId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete user');
+      }
+
+      const data = await response.json();
+      setSuccess(data.message);
+      setShowDeleteModal(false);
+
+      // Redirect to dashboard after successful delete
+      setTimeout(() => {
+        navigate('/admin87476463/dashboard');
+      }, 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const openDeleteModal = (type) => {
+    setDeleteType(type);
+    setDeleteReason('');
+    setDeleteConfirmation('');
+    setShowDeleteModal(true);
   };
 
   const formatDate = (dateString) => {
@@ -263,6 +315,27 @@ export default function UserDetailPage() {
                         </>
                       )}
                     </Button>
+
+                    <div className="ml-auto flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => openDeleteModal('soft')}
+                        disabled={saving || deleting}
+                        className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Disable Login
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        onClick={() => openDeleteModal('hard')}
+                        disabled={saving || deleting}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Permanently
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -352,6 +425,85 @@ export default function UserDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">
+              {deleteType === 'soft' ? 'Disable User Login' : 'Permanently Delete User'}
+            </h3>
+            
+            {deleteType === 'soft' ? (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  This will disable the user's login while keeping all their data in the database for records.
+                  The user will not be able to log in, but their information will remain accessible.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Reason (optional)</label>
+                  <Textarea
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Enter reason for disabling this user..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                  <p className="text-sm text-red-800 font-medium mb-2">⚠️ Warning: This action cannot be undone!</p>
+                  <p className="text-sm text-red-700">
+                    This will permanently delete:
+                  </p>
+                  <ul className="text-sm text-red-700 list-disc list-inside mt-2">
+                    <li>User account and login credentials</li>
+                    <li>Organization membership</li>
+                    <li>All associated data</li>
+                    <li>Audit logs for this user</li>
+                  </ul>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Type <code className="bg-gray-100 px-2 py-1 rounded">DELETE</code> to confirm
+                  </label>
+                  <Input
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    placeholder="DELETE"
+                  />
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting || (deleteType === 'hard' && deleteConfirmation !== 'DELETE')}
+                className="flex-1"
+              >
+                {deleting ? 'Processing...' : (deleteType === 'soft' ? 'Disable Login' : 'Delete Permanently')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -378,9 +378,110 @@ router.patch('/:id', async (req, res) => {
 
 /**
  * GET /api/admin/users/export
- * Export all users to CSV
+ * Expo/**
+ * POST /api/admin/users/:id/soft-delete
+ * Soft delete user (disable login, keep data)
  */
-router.get('/export', async (req, res) => {
+router.post('/:id/soft-delete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    // Update user to disable login
+    await query(
+      `UPDATE users 
+       SET is_suspended = true,
+           admin_notes = COALESCE(admin_notes || E'\n\n', '') || $1
+       WHERE id = $2`,
+      [`[SOFT DELETED] ${new Date().toISOString()} - Reason: ${reason || 'No reason provided'}`, id]
+    );
+
+    // Log the action
+    await logAdminAction(req.user.id, 'USER_SOFT_DELETE', 'user', id, {
+      reason,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: 'User login disabled successfully' });
+  } catch (error) {
+    console.error('Error soft deleting user:', error);
+    res.status(500).json({ error: 'Failed to disable user login' });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/hard-delete
+ * Hard delete user (permanently remove all data)
+ */
+router.post('/:id/hard-delete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { confirmation } = req.body;
+
+    if (confirmation !== 'DELETE') {
+      return res.status(400).json({ error: 'Confirmation required' });
+    }
+
+    // Get user details before deletion for logging
+    const userResult = await query(
+      'SELECT email, name FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Get organization IDs where user is a member
+    const orgResult = await query(
+      'SELECT organisation_id FROM memberships WHERE user_id = $1',
+      [id]
+    );
+
+    // Delete in order (respecting foreign key constraints):
+    // 1. Memberships
+    await query('DELETE FROM memberships WHERE user_id = $1', [id]);
+
+    // 2. Audit logs
+    await query('DELETE FROM audit_logs WHERE actor_id = $1', [id]);
+
+    // 3. User
+    await query('DELETE FROM users WHERE id = $1', [id]);
+
+    // 4. Organizations if user was the only member
+    for (const org of orgResult.rows) {
+      const memberCount = await query(
+        'SELECT COUNT(*) as count FROM memberships WHERE organisation_id = $1',
+        [org.organisation_id]
+      );
+
+      if (memberCount.rows[0].count === '0') {
+        // Delete organization if no members left
+        await query('DELETE FROM organisations WHERE id = $1', [org.organisation_id]);
+      }
+    }
+
+    // Log the action (before user is deleted)
+    await logAdminAction(req.user.id, 'USER_HARD_DELETE', 'user', id, {
+      email: user.email,
+      name: user.name,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'User and all associated data permanently deleted' 
+    });
+  } catch (error) {
+    console.error('Error hard deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user permanently' });
+  }
+});
+
+// Export users to CSV
+router.get('/export', async (req, res) => {{
   try {
     const usersResult = await query(
       `SELECT u.id, u.email, u.name, u.is_suspended, u.created_at,
