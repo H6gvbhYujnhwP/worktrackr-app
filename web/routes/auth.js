@@ -246,6 +246,7 @@ router.post('/signup/start', async (req, res) => {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
+      payment_method_types: ['card'],
       line_items: lineItems,
       allow_promotion_codes: true,
       success_url: `${APP_BASE_URL}/welcome?session_id={CHECKOUT_SESSION_ID}`,
