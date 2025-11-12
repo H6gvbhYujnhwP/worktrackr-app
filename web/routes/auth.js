@@ -368,9 +368,9 @@ router.post('/signup/complete', async (req, res) => {
 
     // ensure membership
     await query(
-      `INSERT INTO memberships (user_id, organisation_id, role, status)
-       VALUES ($1,$2,'admin','active')
-       ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
+      `INSERT INTO memberships (user_id, organisation_id, role)
+       VALUES ($1,$2,'admin')
+       ON CONFLICT (user_id, organisation_id) DO NOTHING`,
       [userId, orgId]
     );
 
@@ -488,9 +488,9 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
       }
 
       await query(
-        `INSERT INTO memberships (user_id, organisation_id, role, status)
-         VALUES ($1,$2,'admin','active')
-         ON CONFLICT (user_id, organisation_id) DO UPDATE SET status = 'active'`,
+        `INSERT INTO memberships (user_id, organisation_id, role)
+         VALUES ($1,$2,'admin')
+         ON CONFLICT (user_id, organisation_id) DO NOTHING`,
         [userId, orgId]
       );
 
