@@ -188,7 +188,6 @@ router.get('/:id', async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        status: user.status,
         is_suspended: user.is_suspended,
         last_login: user.last_login,
         admin_notes: user.admin_notes,
@@ -331,13 +330,60 @@ router.post('/bulk', async (req, res) => {
 });
 
 /**
+ * PATCH /api/admin/users/:id
+ * Update user details
+ */
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, admin_notes } = req.body;
+
+    const updates = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+    if (email !== undefined) {
+      updates.push(`email = $${paramCount++}`);
+      values.push(email);
+    }
+    if (admin_notes !== undefined) {
+      updates.push(`admin_notes = $${paramCount++}`);
+      values.push(admin_notes);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
+
+    await query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
+
+    await logAdminAction(req.adminUser.id, 'USER_UPDATE', id, 'user', { name, email });
+
+    res.json({ ok: true, message: 'User updated successfully' });
+  } catch (error) {
+    console.error('[admin/users] Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+/**
  * GET /api/admin/users/export
  * Export all users to CSV
  */
 router.get('/export', async (req, res) => {
   try {
     const usersResult = await query(
-      `SELECT u.id, u.email, u.name, u.status, u.is_suspended, u.created_at,
+      `SELECT u.id, u.email, u.name, u.is_suspended, u.created_at,
               m.role, o.name as org_name, o.plan,
               o.included_seats, o.active_user_count,
               o.cancellation_reason, o.cancelled_at

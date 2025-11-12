@@ -13,6 +13,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx'; // Password reset reque
 import ResetPassword from './pages/ResetPassword.jsx'; // Password reset form
 import AdminLogin from './AdminLogin.jsx'; // Master admin login
 import AdminDashboard from './admin/AdminDashboard.jsx'; // Admin dashboard
+import UserDetailPage from './admin/UserDetailPage.jsx'; // Admin user detail page
 import { AuthProvider } from './context/AuthProvider.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppEntrypoint from './app/AppEntrypoint.jsx'; // Manus sandbox entry
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')).render(
           {/* Master Admin (secret URL) */}
           <Route path="/admin87476463" element={<AdminLogin />} />
           <Route path="/admin87476463/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin87476463/users/:userId" element={<UserDetailPage />} />
 
           {/* Protected app area */}
           <Route
