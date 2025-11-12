@@ -189,4 +189,77 @@ router.post('/migrate-organisations', async (req, res) => {
   }
 });
 
+// Migration endpoint to add admin system (users fields, audit logs, cancellation tracking)
+router.post('/migrate-admin-system', async (req, res) => {
+  try {
+    const { adminKey } = req.body;
+    
+    // Check admin key
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
+    
+    console.log('🔧 Running admin system migration...');
+    
+    // 1. Add admin fields to users table
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ');
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE');
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_notes TEXT');
+    await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_master_admin BOOLEAN DEFAULT FALSE');
+    
+    // Create indexes for performance
+    await query('CREATE INDEX IF NOT EXISTS idx_users_is_suspended ON users(is_suspended)');
+    await query('CREATE INDEX IF NOT EXISTS idx_users_is_master_admin ON users(is_master_admin)');
+    await query('CREATE INDEX IF NOT EXISTS idx_users_last_login ON users(last_login)');
+    
+    // 2. Create audit log table
+    await query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        actor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        action VARCHAR(100) NOT NULL,
+        target_id UUID,
+        target_type VARCHAR(50),
+        meta JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    
+    // Create indexes for audit logs
+    await query('CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id)');
+    await query('CREATE INDEX IF NOT EXISTS idx_audit_logs_target_id ON audit_logs(target_id)');
+    await query('CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at)');
+    await query('CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)');
+    
+    // 3. Add cancellation tracking to organisations
+    await query('ALTER TABLE organisations ADD COLUMN IF NOT EXISTS cancellation_reason TEXT');
+    await query('ALTER TABLE organisations ADD COLUMN IF NOT EXISTS cancellation_comment TEXT');
+    await query('ALTER TABLE organisations ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ');
+    
+    // 4. Add index for email search (case-insensitive)
+    await query('CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(LOWER(email))');
+    
+    console.log('✅ Admin system migration completed successfully');
+    
+    res.json({ 
+      success: true, 
+      message: 'Admin system migration completed successfully',
+      details: [
+        'Added admin fields to users table (last_login, is_suspended, admin_notes, is_master_admin)',
+        'Created audit_logs table',
+        'Added cancellation tracking to organisations',
+        'Created performance indexes'
+      ]
+    });
+    
+  } catch (error) {
+    console.error('❌ Admin system migration error:', error);
+    res.status(500).json({ 
+      error: 'Migration failed',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
