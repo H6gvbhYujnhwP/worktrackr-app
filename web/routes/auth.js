@@ -17,6 +17,16 @@ function signJwt(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
+function getCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
+  };
+}
+
 async function findUserByEmail(email) {
   const r = await query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [email]);
   return r.rows[0] || null;
@@ -127,13 +137,7 @@ router.post('/login', async (req, res) => {
     console.log('✅ JWT token generated, length:', token.length);
     
     console.log('🍪 Setting auth cookie...');
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
-    };
+    const cookieOptions = getCookieOptions();
     
     console.log('🔧 Cookie settings:', cookieOptions);
     
@@ -185,13 +189,7 @@ router.post('/register', async (req, res) => {
     });
 
     const token = signJwt({ userId: result.user.id, email: result.user.email });
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
-    };
+    const cookieOptions = getCookieOptions();
     
     res.cookie('auth_token', token, cookieOptions);
 
@@ -394,13 +392,7 @@ router.post('/signup/complete', async (req, res) => {
 
     const token = signJwt({ userId, email: s.email });
 
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
-    };
+    const cookieOptions = getCookieOptions();
     
     res.cookie('auth_token', token, cookieOptions);
 
@@ -828,13 +820,7 @@ router.post('/mfa/verify', async (req, res) => {
     // Generate JWT and set cookie
     const token = signJwt({ userId: challenge.user_id, email: challenge.email });
     
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
-    };
+    const cookieOptions = getCookieOptions();
     
     res.cookie('auth_token', token, cookieOptions);
     

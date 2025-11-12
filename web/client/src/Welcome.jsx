@@ -24,7 +24,7 @@ export default function Welcome() {
         if (!resp.ok) throw new Error(data?.error || 'Failed to complete signup');
 
         setStatus('All set! Redirecting to your dashboard…');
-        setTimeout(() => nav('/app/dashboard'), 1200);
+        setTimeout(() => nav('/app/dashboard'), 2000);
       } catch (e) {
         setStatus(`There was a problem completing signup: ${e.message}`);
       }
