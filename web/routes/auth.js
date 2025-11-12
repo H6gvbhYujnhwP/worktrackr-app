@@ -912,8 +912,8 @@ router.post('/signup/trial', async (req, res) => {
 
       // 2. Create user
       const userResult = await client.query(`
-        INSERT INTO users (email, name, password_hash, status)
-        VALUES ($1, $2, $3, 'active')
+        INSERT INTO users (email, name, password_hash)
+        VALUES ($1, $2, $3)
         RETURNING id, email, name
       `, [email, full_name, password_hash]);
 
@@ -923,8 +923,8 @@ router.post('/signup/trial', async (req, res) => {
 
       // 3. Create membership (admin role)
       await client.query(`
-        INSERT INTO memberships (organisation_id, user_id, role, status)
-        VALUES ($1, $2, 'admin', 'active')
+        INSERT INTO memberships (organisation_id, user_id, role)
+        VALUES ($1, $2, 'admin')
       `, [orgId, userId]);
 
       console.log(`✅ Created admin membership for user ${userId}`);
