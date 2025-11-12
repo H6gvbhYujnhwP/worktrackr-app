@@ -310,4 +310,65 @@ router.post('/set-master-admin', async (req, res) => {
   }
 });
 
+// Endpoint to create a master admin account directly
+router.post('/create-master-admin', async (req, res) => {
+  try {
+    const { adminKey, email, password, name } = req.body;
+    
+    // Check admin key
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
+    
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+    
+    console.log(`🔧 Creating master admin account for ${email}...`);
+    
+    // Check if user already exists
+    const existing = await query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+    
+    // Hash password
+    const bcrypt = require('bcryptjs');
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Create user with master admin flag
+    const result = await query(
+      `INSERT INTO users (email, password_hash, name, status, is_master_admin, created_at, updated_at)
+       VALUES ($1, $2, $3, 'active', true, NOW(), NOW())
+       RETURNING id, email, name`,
+      [email, passwordHash, name]
+    );
+    
+    const user = result.rows[0];
+    console.log(`✅ Master admin account created: ${user.email} (${user.name})`);
+    
+    res.json({ 
+      success: true, 
+      message: `Master admin account created successfully`,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error creating master admin:', error);
+    res.status(500).json({ 
+      error: 'Failed to create master admin',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;
