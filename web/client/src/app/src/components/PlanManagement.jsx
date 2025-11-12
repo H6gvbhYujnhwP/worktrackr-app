@@ -16,7 +16,8 @@ import {
   Check,
   AlertTriangle,
   Crown,
-  Zap
+  Zap,
+  Trash2
 } from 'lucide-react';
 import {
   Dialog,
@@ -61,6 +62,9 @@ export default function PlanManagement({ totalUsers }) {
   const [loading, setLoading] = useState(false);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
   const [seatChange, setSeatChange] = useState(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const totalAllowedUsers = useMemo(() => {
     const baseLimit = PLAN_CONFIGS[currentPlan]?.maxUsers || 0;
@@ -364,8 +368,120 @@ export default function PlanManagement({ totalUsers }) {
             </Dialog>
           </CardContent>
         </Card>
+
+        {/* Danger Zone - Account Deletion */}
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-red-700">
+              <AlertTriangle className="w-5 h-5" />
+              <span>Danger Zone</span>
+            </CardTitle>
+            <CardDescription className="text-red-600">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Account
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-red-700 flex items-center space-x-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span>Delete Account Permanently</span>
+                  </DialogTitle>
+                  <DialogDescription className="space-y-3 pt-4">
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Warning: This action cannot be undone!</strong>
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <p className="text-sm text-gray-700">
+                      This will permanently delete:
+                    </p>
+                    <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                      <li>Your account and all user data</li>
+                      <li>All tickets and workflows</li>
+                      <li>Team members and settings</li>
+                      <li>Files and attachments</li>
+                      <li>Your subscription will be cancelled</li>
+                    </ul>
+                    
+                    <div className="pt-4">
+                      <Label htmlFor="delete-confirm" className="text-sm font-semibold">
+                        Type <span className="font-mono bg-gray-100 px-1">DELETE</span> to confirm:
+                      </Label>
+                      <Input
+                        id="delete-confirm"
+                        value={deleteConfirmation}
+                        onChange={(e) => setDeleteConfirmation(e.target.value)}
+                        placeholder="DELETE"
+                        className="mt-2"
+                        disabled={deleting}
+                      />
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="flex space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      setShowDeleteDialog(false);
+                      setDeleteConfirmation('');
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmation !== 'DELETE' || deleting}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deleting ? 'Deleting...' : 'Delete Permanently'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </CardContent>
     </Card>
   );
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      const response = await fetch('/api/billing/delete-account', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete account');
+      }
+      
+      const data = await response.json();
+      
+      // Show success message
+      alert('Your account has been deleted. You will now be logged out.');
+      
+      // Redirect to home page
+      window.location.href = data.redirect || '/';
+      
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account: ' + error.message);
+      setDeleting(false);
+    }
+  }
 }
 

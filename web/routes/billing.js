@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { getOrgContext, query } = require('@worktrackr/shared/db');
+const { getOrgContext, query, transaction } = require('@worktrackr/shared/db');
+const { sendAccountDeletionEmail, sendCancellationConfirmedEmail } = require('@worktrackr/shared/emailService');
 
 // Import Phase 2 plan configuration
 const { 
@@ -854,6 +855,168 @@ router.post('/admin/update-plan', async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating plan:', error);
     res.status(500).json({ error: 'Failed to update plan' });
+  }
+});
+
+/**
+ * DELETE /api/billing/delete-account
+ * Delete user account, cancel subscription, and remove all data
+ */
+router.delete('/delete-account', async (req, res) => {
+  try {
+    const { user } = req;
+    const orgId = req.orgContext?.organisationId;
+    
+    if (!orgId) {
+      return res.status(400).json({ error: 'Organization context required' });
+    }
+    
+    console.log(`🗑️ Processing account deletion for user ${user.id}, org ${orgId}`);
+    
+    // Get organization and user details for email
+    const orgResult = await query(
+      'SELECT name, stripe_customer_id, stripe_subscription_id FROM organisations WHERE id = $1',
+      [orgId]
+    );
+    
+    if (orgResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+    
+    const org = orgResult.rows[0];
+    const organisationName = org.name;
+    
+    // Cancel Stripe subscription if exists
+    if (org.stripe_subscription_id) {
+      try {
+        console.log(`💳 Cancelling Stripe subscription ${org.stripe_subscription_id}`);
+        await stripe.subscriptions.cancel(org.stripe_subscription_id, {
+          prorate: true,
+          invoice_now: true
+        });
+        console.log(`✅ Stripe subscription cancelled`);
+      } catch (stripeError) {
+        console.error(`⚠️ Error cancelling Stripe subscription:`, stripeError);
+        // Continue with deletion even if Stripe cancellation fails
+      }
+    }
+    
+    // Delete Stripe customer if exists
+    if (org.stripe_customer_id) {
+      try {
+        console.log(`💳 Deleting Stripe customer ${org.stripe_customer_id}`);
+        await stripe.customers.del(org.stripe_customer_id);
+        console.log(`✅ Stripe customer deleted`);
+      } catch (stripeError) {
+        console.error(`⚠️ Error deleting Stripe customer:`, stripeError);
+        // Continue with deletion even if Stripe deletion fails
+      }
+    }
+    
+    // Send account deletion email before deleting data
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + 1); // Give 24 hours grace period
+    
+    try {
+      await sendAccountDeletionEmail({
+        to: user.email,
+        userName: user.name,
+        organisationName,
+        deletionDate
+      });
+      console.log(`📧 Account deletion email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error(`⚠️ Failed to send account deletion email:`, emailError);
+      // Continue with deletion even if email fails
+    }
+    
+    // Delete all organization data in a transaction
+    await transaction(async (client) => {
+      // Delete in order to respect foreign key constraints
+      
+      // 1. Delete comments (references tickets)
+      await client.query('DELETE FROM comments WHERE ticket_id IN (SELECT id FROM tickets WHERE organisation_id = $1)', [orgId]);
+      
+      // 2. Delete attachments (references tickets)
+      await client.query('DELETE FROM attachments WHERE ticket_id IN (SELECT id FROM tickets WHERE organisation_id = $1)', [orgId]);
+      
+      // 3. Delete inspections (references tickets)
+      await client.query('DELETE FROM inspections WHERE ticket_id IN (SELECT id FROM tickets WHERE organisation_id = $1)', [orgId]);
+      
+      // 4. Delete approvals (references tickets)
+      await client.query('DELETE FROM approvals WHERE ticket_id IN (SELECT id FROM tickets WHERE organisation_id = $1)', [orgId]);
+      
+      // 5. Delete tickets
+      await client.query('DELETE FROM tickets WHERE organisation_id = $1', [orgId]);
+      
+      // 6. Delete notifications
+      await client.query('DELETE FROM notifications WHERE ticket_id IN (SELECT id FROM tickets WHERE organisation_id = $1)', [orgId]);
+      
+      // 7. Delete workflows
+      await client.query('DELETE FROM workflows WHERE organisation_id = $1', [orgId]);
+      
+      // 8. Delete queues
+      await client.query('DELETE FROM queues WHERE organisation_id = $1', [orgId]);
+      
+      // 9. Delete memberships
+      await client.query('DELETE FROM memberships WHERE organisation_id = $1', [orgId]);
+      
+      // 10. Delete org_branding
+      await client.query('DELETE FROM org_branding WHERE organisation_id = $1', [orgId]);
+      
+      // 11. Delete org_domains
+      await client.query('DELETE FROM org_domains WHERE organisation_id = $1', [orgId]);
+      
+      // 12. Delete organisation_addons
+      await client.query('DELETE FROM organisation_addons WHERE organisation_id = $1', [orgId]);
+      
+      // 13. Delete audit logs for this org's users
+      await client.query(
+        'DELETE FROM audit_logs WHERE actor_id IN (SELECT user_id FROM memberships WHERE organisation_id = $1)',
+        [orgId]
+      );
+      
+      // 14. Finally, delete the organization
+      await client.query('DELETE FROM organisations WHERE id = $1', [orgId]);
+      
+      // 15. Delete user if they have no other org memberships
+      const otherMemberships = await client.query(
+        'SELECT COUNT(*) FROM memberships WHERE user_id = $1',
+        [user.id]
+      );
+      
+      if (parseInt(otherMemberships.rows[0].count) === 0) {
+        // User has no other organizations, delete user account
+        await client.query('DELETE FROM users WHERE id = $1', [user.id]);
+        console.log(`🗑️ User ${user.id} deleted (no other org memberships)`);
+      }
+    });
+    
+    console.log(`✅ Organization ${orgId} and all data deleted successfully`);
+    
+    // Send final goodbye email
+    try {
+      await sendCancellationConfirmedEmail({
+        to: user.email,
+        userName: user.name
+      });
+      console.log(`📧 Cancellation confirmation email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error(`⚠️ Failed to send cancellation confirmation email:`, emailError);
+    }
+    
+    // Log out the user by clearing their session
+    req.session.destroy();
+    
+    res.json({ 
+      success: true, 
+      message: 'Account deleted successfully',
+      redirect: '/'
+    });
+    
+  } catch (error) {
+    console.error('❌ Error deleting account:', error);
+    res.status(500).json({ error: 'Failed to delete account. Please contact support.' });
   }
 });
 
