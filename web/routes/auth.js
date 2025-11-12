@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const Stripe = require('stripe');
 const { query, transaction } = require('@worktrackr/shared/db');
+const { sendWelcomeEmail, sendTrialStartedEmail } = require('@worktrackr/shared/emailService');
 
 const router = express.Router();
 
@@ -845,6 +846,164 @@ router.post('/mfa/verify', async (req, res) => {
       });
     }
     res.status(500).json({ error: 'Failed to verify MFA code' });
+  }
+});
+
+/**
+ * POST /api/auth/signup/trial
+ * Create account with 14-day free trial (no payment required)
+ */
+router.post('/signup/trial', async (req, res) => {
+  try {
+    const { full_name, email, password, org_slug, plan } = z.object({
+      full_name: z.string().min(2),
+      email: z.string().email(),
+      password: z.string().min(8),
+      org_slug: z.string().min(2).max(80),
+      plan: z.enum(['starter', 'pro', 'enterprise']).default('starter')
+    }).parse(req.body);
+
+    console.log(`🎆 Starting trial signup for ${email} with ${plan} plan`);
+
+    // Check if user already exists
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return res.status(400).json({ error: 'An account with this email already exists' });
+    }
+
+    // Hash password
+    const password_hash = await bcrypt.hash(password, 10);
+    const safeSlug = toSlug(org_slug);
+
+    // Calculate trial period (14 days)
+    const trialStart = new Date();
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 14);
+
+    // Plan configuration
+    const planConfig = {
+      starter: { included_seats: 1 },
+      pro: { included_seats: 5 },
+      enterprise: { included_seats: 50 }
+    };
+
+    const includedSeats = planConfig[plan]?.included_seats || 1;
+
+    // Create user and organization in a transaction
+    const result = await transaction(async (client) => {
+      // 1. Create organization with trial period
+      const orgResult = await client.query(`
+        INSERT INTO organisations (
+          name, 
+          plan, 
+          included_seats,
+          trial_start,
+          trial_end,
+          active_user_count
+        )
+        VALUES ($1, $2, $3, $4, $5, 1)
+        RETURNING id, name
+      `, [org_slug, plan, includedSeats, trialStart, trialEnd]);
+
+      const orgId = orgResult.rows[0].id;
+      const orgName = orgResult.rows[0].name;
+
+      console.log(`✅ Created organization ${orgId} with ${plan} plan (${includedSeats} seats)`);
+
+      // 2. Create user
+      const userResult = await client.query(`
+        INSERT INTO users (email, name, password_hash, status)
+        VALUES ($1, $2, $3, 'active')
+        RETURNING id, email, name
+      `, [email, full_name, password_hash]);
+
+      const userId = userResult.rows[0].id;
+
+      console.log(`✅ Created user ${userId}`);
+
+      // 3. Create membership (admin role)
+      await client.query(`
+        INSERT INTO memberships (organisation_id, user_id, role, status)
+        VALUES ($1, $2, 'admin', 'active')
+      `, [orgId, userId]);
+
+      console.log(`✅ Created admin membership for user ${userId}`);
+
+      // 4. Create default queue
+      await client.query(`
+        INSERT INTO queues (organisation_id, name, is_default)
+        VALUES ($1, 'General', true)
+      `, [orgId]);
+
+      console.log(`✅ Created default queue`);
+
+      return {
+        userId,
+        orgId,
+        orgName,
+        userEmail: userResult.rows[0].email,
+        userName: userResult.rows[0].name
+      };
+    });
+
+    console.log(`🎉 Trial account created successfully for ${email}`);
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        to: result.userEmail,
+        userName: result.userName,
+        organisationName: result.orgName
+      });
+      console.log(`📧 Welcome email sent to ${result.userEmail}`);
+    } catch (emailError) {
+      console.error(`⚠️ Failed to send welcome email:`, emailError);
+    }
+
+    // Send trial started email
+    try {
+      await sendTrialStartedEmail({
+        to: result.userEmail,
+        userName: result.userName,
+        planName: plan.charAt(0).toUpperCase() + plan.slice(1),
+        trialEndDate: trialEnd
+      });
+      console.log(`📧 Trial started email sent to ${result.userEmail}`);
+    } catch (emailError) {
+      console.error(`⚠️ Failed to send trial email:`, emailError);
+    }
+
+    // Create JWT and set cookie
+    const token = signJwt({ userId: result.userId, email: result.userEmail });
+    res.cookie('token', token, getCookieOptions());
+
+    console.log(`✅ Trial signup complete for ${email}`);
+
+    res.json({
+      success: true,
+      message: 'Account created successfully',
+      user: {
+        id: result.userId,
+        email: result.userEmail,
+        name: result.userName
+      },
+      organization: {
+        id: result.orgId,
+        name: result.orgName
+      },
+      trial: {
+        start: trialStart,
+        end: trialEnd,
+        daysRemaining: 14
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Trial signup error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid input', details: error.errors });
+    }
+    res.status(500).json({ error: 'Failed to create trial account', message: error.message });
   }
 });
 
