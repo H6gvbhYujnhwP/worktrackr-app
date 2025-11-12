@@ -18,12 +18,14 @@ function signJwt(payload) {
 }
 
 function getCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-site cookies with secure
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/'
+    path: '/',
+    domain: isProduction ? 'worktrackr.cloud' : undefined
   };
 }
 
@@ -393,10 +395,13 @@ router.post('/signup/complete', async (req, res) => {
     const token = signJwt({ userId, email: s.email });
 
     const cookieOptions = getCookieOptions();
+    console.log('🍪 Cookie options:', JSON.stringify(cookieOptions, null, 2));
     
     res.cookie('auth_token', token, cookieOptions);
+    console.log('🍪 Cookie set with token length:', token.length);
 
     console.log(`✅ Signup completed for ${s.email} with plan ${selectedPlan}`);
+    console.log('📤 Returning response with token and orgId');
     res.json({ ok: true, token, organisationId: orgId });
   } catch (error) {
     console.error('signup/complete error:', error);
