@@ -9,7 +9,7 @@ const { query, transaction } = require('@worktrackr/shared/db');
 const router = express.Router();
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
-const APP_BASE_URL = process.env.CLIENT_URL || process.env.APP_BASE_URL || 'http://localhost:3000';
+const APP_BASE_URL = process.env.CLIENT_URL || process.env.APP_BASE_URL || (process.env.NODE_ENV === 'production' ? 'https://worktrackr.cloud' : 'http://localhost:3000');
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 // -------------------- helpers --------------------
