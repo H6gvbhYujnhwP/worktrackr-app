@@ -10,6 +10,7 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 
 const { getOrgContext } = require('@worktrackr/shared/db');
+const { checkTrialStatus, getTrialStatus } = require('./middleware/trialCheck');
 
 // Routes
 const authRoutes = require('./routes/auth');                // includes /api/auth/stripe/webhook
@@ -139,6 +140,12 @@ app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
 
 app.use('/api/billing', authenticateToken, billingRoutes);
+
+// Trial status endpoint
+app.get('/api/trial/status', authenticateToken, getTrialStatus);
+
+// Apply trial check middleware to protected routes (after auth)
+app.use('/api/', authenticateToken, checkTrialStatus);
 app.use('/api/auth/user', require('./routes/user.js'));
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);

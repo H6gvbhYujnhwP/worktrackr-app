@@ -1,6 +1,7 @@
 // web/routes/webhooks.js
 const express = require('express');
 const { query } = require('@worktrackr/shared/db');
+const { sendSubscriptionActivatedEmail } = require('@worktrackr/shared/emailService');
 
 const router = express.Router();
 
@@ -106,17 +107,62 @@ router.post('/mailgun-inbound', async (req, res) => {
 /* ========== Stripe helpers ========== */
 
 async function handleCheckoutCompleted(session) {
-  const orgId = session.metadata?.orgId;
-  if (!orgId) return;
+  const orgId = session.metadata?.organisation_id || session.metadata?.orgId;
+  if (!orgId) {
+    console.log('⚠️ No orgId in checkout session metadata');
+    return;
+  }
 
+  const isTrialConversion = session.metadata?.trial_conversion === 'true';
+  
+  // Update organization with Stripe IDs
   await query(
     `UPDATE organisations 
-       SET stripe_customer_id = $1, stripe_subscription_id = $2
+       SET stripe_customer_id = $1, 
+           stripe_subscription_id = $2,
+           trial_start = NULL,
+           trial_end = NULL
      WHERE id = $3`,
     [session.customer, session.subscription, orgId]
   );
 
-  console.log(`Checkout completed for org ${orgId}`);
+  console.log(`✅ Checkout completed for org ${orgId}${isTrialConversion ? ' (trial conversion)' : ''}`);
+  
+  // Send subscription activated email
+  if (isTrialConversion) {
+    try {
+      // Get user and org details for email
+      const result = await query(`
+        SELECT u.email, u.name, o.name as org_name, o.plan
+        FROM users u
+        JOIN memberships m ON u.id = m.user_id
+        JOIN organisations o ON m.organisation_id = o.id
+        WHERE o.id = $1 AND m.role = 'admin'
+        LIMIT 1
+      `, [orgId]);
+      
+      if (result.rows.length > 0) {
+        const { email, name, org_name, plan } = result.rows[0];
+        
+        // Get subscription details from Stripe
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        const price = subscription.items.data[0].price.unit_amount / 100;
+        const nextBillingDate = new Date(subscription.current_period_end * 1000);
+        
+        await sendSubscriptionActivatedEmail({
+          to: email,
+          userName: name,
+          planName: plan.charAt(0).toUpperCase() + plan.slice(1),
+          price: price,
+          nextBillingDate
+        });
+        
+        console.log(`📧 Subscription activated email sent to ${email}`);
+      }
+    } catch (emailError) {
+      console.error('⚠️ Failed to send subscription activated email:', emailError);
+    }
+  }
 }
 
 async function handleSubscriptionUpdated(subscription) {
@@ -137,6 +183,9 @@ async function handleSubscriptionUpdated(subscription) {
   );
   const planPriceId = mainItem ? mainItem.price.id : null;
 
+  // Clear trial dates if subscription is active (not trialing)
+  const clearTrial = subscription.status === 'active' && !subscription.trial_end;
+  
   await query(
     `UPDATE organisations 
         SET stripe_subscription_id = $1,
@@ -149,8 +198,8 @@ async function handleSubscriptionUpdated(subscription) {
       subscription.id,
       planPriceId,
       new Date(subscription.current_period_end * 1000),
-      subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-      subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+      clearTrial ? null : (subscription.trial_start ? new Date(subscription.trial_start * 1000) : null),
+      clearTrial ? null : (subscription.trial_end ? new Date(subscription.trial_end * 1000) : null),
       orgId,
     ]
   );

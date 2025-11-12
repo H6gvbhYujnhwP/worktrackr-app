@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { getOrgContext, query, transaction } = require('@worktrackr/shared/db');
-const { sendAccountDeletionEmail, sendCancellationConfirmedEmail } = require('@worktrackr/shared/emailService');
+const { sendAccountDeletionEmail, sendCancellationConfirmedEmail, sendSubscriptionActivatedEmail } = require('@worktrackr/shared/emailService');
 
 // Import Phase 2 plan configuration
 const { 
@@ -855,6 +855,96 @@ router.post('/admin/update-plan', async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating plan:', error);
     res.status(500).json({ error: 'Failed to update plan' });
+  }
+});
+
+/**
+ * POST /api/billing/convert-trial
+ * Convert trial account to paid subscription
+ */
+router.post('/convert-trial', async (req, res) => {
+  try {
+    const { user } = req;
+    const orgId = req.orgContext?.organisationId;
+    const { plan, additionalSeats = 0 } = req.body;
+    
+    if (!orgId) {
+      return res.status(400).json({ error: 'Organization context required' });
+    }
+    
+    if (!plan || !['starter', 'pro', 'enterprise'].includes(plan)) {
+      return res.status(400).json({ error: 'Valid plan required (starter, pro, or enterprise)' });
+    }
+    
+    console.log(`🔄 Converting trial to paid for org ${orgId}, plan: ${plan}`);
+    
+    // Get organization details
+    const orgResult = await query(
+      'SELECT name, stripe_customer_id, stripe_subscription_id, trial_end FROM organisations WHERE id = $1',
+      [orgId]
+    );
+    
+    if (orgResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+    
+    const org = orgResult.rows[0];
+    
+    // Check if already has subscription
+    if (org.stripe_subscription_id) {
+      return res.status(400).json({ error: 'Organization already has an active subscription' });
+    }
+    
+    // Get price ID for plan
+    const priceId = PLAN_CONFIGS[plan]?.priceId;
+    if (!priceId) {
+      return res.status(400).json({ error: 'Invalid plan selected' });
+    }
+    
+    // Create Stripe checkout session for trial conversion
+    const lineItems = [{ price: priceId, quantity: 1 }];
+    
+    // Add additional seats if requested
+    if (additionalSeats > 0) {
+      lineItems.push({
+        price: ADDITIONAL_SEATS_PRICE_ID,
+        quantity: additionalSeats
+      });
+    }
+    
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      allow_promotion_codes: true,
+      success_url: `${process.env.CLIENT_URL || 'https://worktrackr.cloud'}/billing?success=1`,
+      cancel_url: `${process.env.CLIENT_URL || 'https://worktrackr.cloud'}/billing?canceled=1`,
+      customer_email: user.email,
+      metadata: {
+        organisation_id: orgId,
+        user_id: user.id,
+        plan: plan,
+        trial_conversion: 'true'
+      },
+      subscription_data: {
+        metadata: {
+          organisation_id: orgId,
+          plan: plan
+        }
+      }
+    });
+    
+    console.log(`✅ Created checkout session for trial conversion: ${session.id}`);
+    
+    res.json({ 
+      success: true,
+      checkoutUrl: session.url,
+      sessionId: session.id
+    });
+    
+  } catch (error) {
+    console.error('❌ Error converting trial:', error);
+    res.status(500).json({ error: 'Failed to convert trial to paid subscription' });
   }
 });
 
