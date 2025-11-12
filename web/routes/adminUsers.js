@@ -55,11 +55,7 @@ router.get('/', async (req, res) => {
     if (status === 'suspended') {
       conditions.push('u.is_suspended = true');
     } else if (status === 'active') {
-      conditions.push('u.is_suspended = false AND u.status = \'active\'');
-    } else if (status) {
-      conditions.push(`u.status = $${paramIndex}`);
-      params.push(status);
-      paramIndex++;
+      conditions.push('(u.is_suspended = false OR u.is_suspended IS NULL)');
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -82,7 +78,6 @@ router.get('/', async (req, res) => {
         u.id,
         u.email,
         u.name,
-        u.status,
         u.is_suspended,
         u.last_login,
         u.admin_notes,
@@ -112,7 +107,7 @@ router.get('/', async (req, res) => {
       id: row.id,
       email: row.email,
       name: row.name,
-      status: row.status,
+      status: row.is_suspended ? 'suspended' : 'active',
       is_suspended: row.is_suspended,
       last_login: row.last_login,
       admin_notes: row.admin_notes,
