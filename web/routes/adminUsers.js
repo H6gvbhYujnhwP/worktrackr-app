@@ -397,7 +397,7 @@ router.post('/:id/soft-delete', async (req, res) => {
     );
 
     // Log the action
-    await logAdminAction(req.user.id, 'USER_SOFT_DELETE', 'user', id, {
+    await logAdminAction(req.adminUser.id, 'USER_SOFT_DELETE', 'user', id, {
       reason,
       timestamp: new Date().toISOString()
     });
@@ -464,7 +464,7 @@ router.post('/:id/hard-delete', async (req, res) => {
     }
 
     // Log the action (before user is deleted)
-    await logAdminAction(req.user.id, 'USER_HARD_DELETE', 'user', id, {
+    await logAdminAction(req.adminUser.id, 'USER_HARD_DELETE', 'user', id, {
       email: user.email,
       name: user.name,
       timestamp: new Date().toISOString()
