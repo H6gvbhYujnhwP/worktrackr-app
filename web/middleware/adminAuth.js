@@ -1,5 +1,22 @@
 const { query } = require('../../shared/db');
-const { readUserFromRequest } = require('../lib/auth');
+const jwt = require('jsonwebtoken');
+
+/**
+ * Read user from JWT token in cookies
+ * @param {Request} req - Express request object
+ * @returns {object|null} - Decoded user object or null
+ */
+function readUserFromRequest(req) {
+  const token = req.cookies.auth_token || req.cookies.jwt;
+  if (!token) return null;
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
 
 /**
  * Middleware to require Master Admin access
