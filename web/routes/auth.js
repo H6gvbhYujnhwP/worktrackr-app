@@ -574,7 +574,7 @@ router.get('/session', async (req, res) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const rUser = await query('SELECT id, email, name FROM users WHERE id = $1 LIMIT 1', [decoded.userId]);
+    const rUser = await query('SELECT id, email, name, is_master_admin FROM users WHERE id = $1 LIMIT 1', [decoded.userId]);
     if (rUser.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
     const rMem = await query(
