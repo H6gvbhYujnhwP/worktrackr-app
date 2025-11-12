@@ -8,9 +8,9 @@ import { CheckCircle, Star } from 'lucide-react'
 
 // Updated pricing structure: Starter (1 seat), Pro (5 seats), Enterprise (50 seats)
 // WorkTrackr Cloud - New Stripe Account Price IDs
-const PRICE_STARTER = 'price_1SSGjt6Ze1BRGAeTmazBu65E'
-const PRICE_PRO = 'price_1SSGm26Ze1BRGAeT0LfRaGks'
-const PRICE_ENTERPRISE = 'price_1SSGo86Ze1BRGAeTr5sHeR0k'
+const PRICE_STARTER = 'price_1SSdcs63WhEcHhBQvXxeVFrW'
+const PRICE_PRO = 'price_1SSddh63WhEcHhBQ2COGf6hV'
+const PRICE_ENTERPRISE = 'price_1SSdeU63WhEcHhBQUyZiZKsJ'
 
 export default function Pricing() {
   const nav = useNavigate()

@@ -15,10 +15,10 @@ import worktrackrLogo from './assets/worktrackr_icon_only.png'
  * already writing them from Pricing.jsx via localStorage).
  */
 const PRICE_META = {
-  // WorkTrackr Cloud Plans - New WorkTrackr Stripe Account
-  'price_1SSGjt6Ze1BRGAeTmazBu65E': { name: 'Starter Plan', amount: '£49', suffix: '/month' },
-  'price_1SSGm26Ze1BRGAeT0LfRaGks': { name: 'Pro Plan', amount: '£99', suffix: '/month' },
-  'price_1SSGo86Ze1BRGAeTr5sHeR0k': { name: 'Enterprise Plan', amount: '£299', suffix: '/month' },
+  // WorkTrackr Cloud Plans - TEST MODE
+  'price_1SSdcs63WhEcHhBQvXxeVFrW': { name: 'Starter Plan', amount: '£49', suffix: '/month' },
+  'price_1SSddh63WhEcHhBQ2COGf6hV': { name: 'Pro Plan', amount: '£99', suffix: '/month' },
+  'price_1SSdeU63WhEcHhBQUyZiZKsJ': { name: 'Enterprise Plan', amount: '£299', suffix: '/month' },
 }
 
 /** Convert a human-friendly org name to a safe slug the API accepts. */
