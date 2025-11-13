@@ -16,15 +16,17 @@ const APP_URL = 'https://worktrackr.cloud';
  * @param {string} options.html - HTML content
  * @returns {Promise<Object>} Resend response
  */
-async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, html, reply_to = null }) {
   try {
     console.log(`📧 Sending email to ${to}: ${subject}`);
     
     const response = await resend.emails.send({
       from: FROM_EMAIL,
+      reply_to: 'feedback@worktrackr.cloud',
       to,
       subject,
-      html
+      html,
+      ...(reply_to && { reply_to })
     });
     
     console.log(`✅ Email sent successfully to ${to}:`, response);
@@ -202,6 +204,33 @@ async function sendWelcomeEmail({ to, userName, organisationName }) {
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Welcome to ${COMPANY_NAME}!`,
@@ -239,6 +268,33 @@ async function sendTrialStartedEmail({ to, userName, planName, trialEndDate }) {
     <p>Happy tracking!<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Your ${planName} Trial Has Started - ${daysRemaining} Days Free!`,
@@ -250,6 +306,12 @@ async function sendTrialStartedEmail({ to, userName, planName, trialEndDate }) {
  * 3. Trial Reminder Email (7, 3, 1 day before expiration)
  */
 async function sendTrialReminderEmail({ to, userName, planName, daysRemaining, trialEndDate }) {
+  const feedbackRequest = `
+    <div class="highlight-box">
+      <p style="margin: 0;"><strong>How are you finding WorkTrackr?</strong> We'd love to hear your feedback! Simply reply to this email to share your thoughts.</p>
+    </div>
+  `;
+
   const urgency = daysRemaining === 1 ? 'warning-box' : 'highlight-box';
   
   const content = `
@@ -260,6 +322,34 @@ async function sendTrialReminderEmail({ to, userName, planName, daysRemaining, t
     <div class="${urgency}">
       <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
     </div>
+    
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding pasync function sendTrialReminderEmail({ to, userName, planName, daysRemaining, trialEndDate }) {
+  const urgency = daysRemaining === 1 ? 'warning-box' : 'highlight-box';
+  const feedbackRequest = `
+    <div class="highlight-box">
+      <p style="margin: 0;"><strong>How are you finding WorkTrackr?</strong> We'd love to hear your feedback! Simply reply to this email to share your thoughts.</p>
+    </div>
+  `;
+
+  const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+
+    ${feedbackRequest}
     
     <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
     
@@ -313,6 +403,33 @@ async function sendTrialExpiredEmail({ to, userName, planName }) {
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Your ${COMPANY_NAME} Trial Has Ended - Reactivate Today`,
@@ -354,6 +471,33 @@ async function sendSubscriptionActivatedEmail({ to, userName, planName, price, n
     <p>Thank you for choosing ${COMPANY_NAME}!<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Subscription Activated - Welcome to ${planName}!`,
@@ -406,6 +550,33 @@ async function sendPlanUpgradedEmail({ to, userName, oldPlan, newPlan, newPrice,
     <p>Enjoy your upgraded plan!<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Plan Upgraded to ${newPlan} - New Features Unlocked!`,
@@ -450,6 +621,33 @@ async function sendPlanDowngradedEmail({ to, userName, oldPlan, newPlan, newPric
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Plan Change Scheduled - ${oldPlan} to ${newPlan}`,
@@ -493,6 +691,33 @@ async function sendSeatsAddedEmail({ to, userName, seatsAdded, totalSeats, addit
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `${seatsAdded} Additional ${seatsAdded === 1 ? 'Seat' : 'Seats'} Added to Your Account`,
@@ -535,6 +760,33 @@ async function sendSeatsRemovedEmail({ to, userName, seatsRemoved, totalSeats, c
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `${seatsRemoved} ${seatsRemoved === 1 ? 'Seat' : 'Seats'} Removed from Your Subscription`,
@@ -568,6 +820,33 @@ async function sendPaymentFailedEmail({ to, userName, amount, retryDate }) {
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Payment Failed - Update Payment Method`,
@@ -604,6 +883,33 @@ async function sendAccountDeletionEmail({ to, userName, organisationName, deleti
     <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Account Deletion Confirmed - ${COMPANY_NAME}`,
@@ -632,6 +938,33 @@ async function sendCancellationConfirmedEmail({ to, userName }) {
     <p>Best wishes,<br>The ${COMPANY_NAME} Team</p>
   `;
   
+    const content = `
+    <h2>Your Trial Ends ${daysRemaining === 1 ? 'Tomorrow' : `in ${daysRemaining} Days`} ⏰</h2>
+    <p>Hi ${userName},</p>
+    <p>Just a friendly reminder that your <strong>${planName}</strong> trial will end on ${new Date(trialEndDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+    
+    <div class="${urgency}">
+      <p style="margin: 0;"><strong>${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining</strong> in your trial period.</p>
+    </div>
+    
+    ${feedbackRequest}
+
+    <p>To continue using ${COMPANY_NAME} without interruption, please add your payment details before your trial ends.</p>
+    
+    <a href="${APP_URL}/billing" class="button">Add Payment Details</a>
+    
+    <p><strong>What happens when my trial ends?</strong></p>
+    <ul>
+      <li>If you add payment details, you'll continue with uninterrupted service</li>
+      <li>If no payment is added, your account will be paused</li>
+      <li>Your data is safe and will be preserved</li>
+      <li>You can reactivate anytime by adding payment</li>
+    </ul>
+    
+    <p>Questions? We're here to help at ${SUPPORT_EMAIL}</p>
+    <p>Best regards,<br>The ${COMPANY_NAME} Team</p>
+  `;
+
   return sendEmail({
     to,
     subject: `Goodbye from ${COMPANY_NAME}`,

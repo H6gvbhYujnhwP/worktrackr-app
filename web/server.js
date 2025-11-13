@@ -18,6 +18,7 @@ const ticketsRoutes = require('./routes/tickets');
 const organizationsRoutes = require('./routes/organizations');
 const billingRoutes = require('./routes/billing');
 const webhooksRoutes = require('./routes/webhooks');
+const cronRoutes = require('./routes/cron');
 const publicAuthRoutes = require('./routes/public-auth');
 const customersRoutes = require('./routes/customers');
 const productsRoutes = require('./routes/products');
@@ -171,6 +172,9 @@ app.get('/api/version', (_req, res) => {
 
 /* =========================== Webhooks ============================ */
 app.use('/webhooks', webhooksRoutes);
+
+/* ========================== Cron Jobs ============================= */
+app.use('/api/cron', cronRoutes);
 
 /* ======================== STATIC + SPA =========================== */
 const clientDistPath = path.join(__dirname, 'client', 'dist');
