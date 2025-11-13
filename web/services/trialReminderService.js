@@ -44,13 +44,40 @@ async function sendTrialReminders() {
     
     console.log(`📊 Found ${trialAccounts.length} active trial accounts`);
     
+    let sentCheckin = 0;
     let sent7Day = 0;
     let sent3Day = 0;
     let sent1Day = 0;
     
     for (const account of trialAccounts) {
+      const trialStart = new Date(account.trial_start);
       const trialEnd = new Date(account.trial_end);
       const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+      const daysSinceStart = Math.floor((now - trialStart) / (1000 * 60 * 60 * 24));
+      
+      // Send day 2-3 check-in email (feedback request)
+      if (daysSinceStart >= 2 && daysSinceStart <= 3 && !account.trial_checkin_sent) {
+        console.log(`📧 Sending day ${daysSinceStart} check-in to ${account.email} (${account.org_name})`);
+        
+        try {
+          await emailService.sendTrialCheckinEmail({
+            to: account.email,
+            userName: account.full_name,
+            planName: account.plan,
+            daysRemaining: daysRemaining
+          });
+          
+          await pool.query(
+            'UPDATE organisations SET trial_checkin_sent = TRUE WHERE id = $1',
+            [account.org_id]
+          );
+          
+          sentCheckin++;
+          console.log(`✅ Check-in email sent to ${account.email}`);
+        } catch (error) {
+          console.error(`❌ Failed to send check-in email to ${account.email}:`, error.message);
+        }
+      }
       
       // Send 7-day reminder
       if (daysRemaining <= 7 && daysRemaining > 6 && !account.trial_reminder_7_sent) {
@@ -129,17 +156,19 @@ async function sendTrialReminders() {
     }
     
     console.log(`\n✅ [Trial Reminders] Completed:`);
+    console.log(`   - Check-in emails sent: ${sentCheckin}`);
     console.log(`   - 7-day reminders sent: ${sent7Day}`);
     console.log(`   - 3-day reminders sent: ${sent3Day}`);
     console.log(`   - 1-day reminders sent: ${sent1Day}`);
-    console.log(`   - Total reminders sent: ${sent7Day + sent3Day + sent1Day}\n`);
+    console.log(`   - Total emails sent: ${sentCheckin + sent7Day + sent3Day + sent1Day}\n`);
     
     return {
       success: true,
+      sentCheckin,
       sent7Day,
       sent3Day,
       sent1Day,
-      total: sent7Day + sent3Day + sent1Day
+      total: sentCheckin + sent7Day + sent3Day + sent1Day
     };
     
   } catch (error) {
