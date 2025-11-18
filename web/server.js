@@ -133,8 +133,10 @@ app.use('/api/auth', require('./routes/session')); // Session check endpoint
 const adminRoutes = require('./routes/admin');
 const adminUsersRoutes = require('./routes/adminUsers');
 const migrationsRoutes = require('./routes/migrations');
+const adminSetTrialRoutes = require('./routes/adminSetTrial');
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/users', adminUsersRoutes);
+app.use('/api/admin', adminSetTrialRoutes);
 app.use('/api/migrations', migrationsRoutes);
 
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
