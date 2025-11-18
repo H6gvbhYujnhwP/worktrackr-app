@@ -215,6 +215,44 @@ export default function PlanManagement({ totalUsers }) {
     }
   };
 
+  const handleConvertTrial = async () => {
+    setLoading(true);
+    try {
+      console.log('Converting trial to paid subscription');
+      
+      const response = await fetch('/api/billing/convert-trial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          plan: currentPlan,
+          additionalSeats: additionalSeats
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to convert trial');
+      }
+
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Failed to convert trial:', error);
+      alert('Failed to start checkout. Please try again.');
+      setLoading(false);
+    }
+    // Don't setLoading(false) here because we're redirecting
+  };
+
   const handleCombinedChange = async (newPlan, seatChange) => {
     setLoading(true);
     try {
@@ -319,10 +357,11 @@ export default function PlanManagement({ totalUsers }) {
                 </div>
               </div>
               <Button 
-                onClick={() => alert('Add payment details feature coming soon')}
+                onClick={handleConvertTrial}
+                disabled={loading}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                Add Payment Details
+                {loading ? 'Processing...' : 'Add Payment Details'}
               </Button>
             </div>
           </div>
@@ -344,10 +383,11 @@ export default function PlanManagement({ totalUsers }) {
                 </div>
               </div>
               <Button 
-                onClick={() => alert('Add payment details feature coming soon')}
+                onClick={handleConvertTrial}
+                disabled={loading}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Add Payment Now
+                {loading ? 'Processing...' : 'Add Payment Now'}
               </Button>
             </div>
           </div>
