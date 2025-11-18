@@ -7,7 +7,14 @@ const { query } = require('@worktrackr/shared/db');
 // Body: { email: "user@example.com", days: 14 }
 router.post('/set-trial', async (req, res) => {
   try {
-    const { email, days = 14 } = req.body;
+    const { email, days = 14, adminKey } = req.body;
+    
+    // Check admin key
+    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    if (adminKey !== expectedKey) {
+      console.log('❌ Invalid admin key provided');
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
     
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
