@@ -66,6 +66,29 @@ export default function PlanManagement({ totalUsers }) {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // Fetch organization plan data on mount
+  useEffect(() => {
+    const fetchOrgData = async () => {
+      try {
+        const response = await fetch('/api/billing/subscription', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.plan) {
+            setCurrentPlan(data.plan);
+          }
+          if (data.additionalSeats !== undefined) {
+            setAdditionalSeats(data.additionalSeats);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization data:', error);
+      }
+    };
+    fetchOrgData();
+  }, []);
+
   const totalAllowedUsers = useMemo(() => {
     const baseLimit = PLAN_CONFIGS[currentPlan]?.maxUsers || 0;
     return baseLimit === Infinity ? Infinity : baseLimit + additionalSeats;
