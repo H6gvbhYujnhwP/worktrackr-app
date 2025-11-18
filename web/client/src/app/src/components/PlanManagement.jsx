@@ -65,6 +65,9 @@ export default function PlanManagement({ totalUsers }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [trialStatus, setTrialStatus] = useState(null); // 'active', 'expired', or null
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(null);
+  const [trialEndDate, setTrialEndDate] = useState(null);
 
   // Fetch organization plan data on mount
   useEffect(() => {
@@ -80,6 +83,22 @@ export default function PlanManagement({ totalUsers }) {
           }
           if (data.additionalSeats !== undefined) {
             setAdditionalSeats(data.additionalSeats);
+          }
+          // Check for trial status
+          if (data.trialEnd) {
+            const trialEnd = new Date(data.trialEnd);
+            const now = new Date();
+            const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+            
+            if (daysRemaining > 0) {
+              setTrialStatus('active');
+              setTrialDaysRemaining(daysRemaining);
+              setTrialEndDate(trialEnd.toLocaleDateString());
+            } else {
+              setTrialStatus('expired');
+              setTrialDaysRemaining(0);
+              setTrialEndDate(trialEnd.toLocaleDateString());
+            }
           }
         }
       } catch (error) {
@@ -282,6 +301,57 @@ export default function PlanManagement({ totalUsers }) {
         <CardDescription>Manage your subscription plan and billing details.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Trial Status Banner */}
+        {trialStatus === 'active' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-500 text-white rounded-full p-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900">Free Trial Active</h3>
+                  <p className="text-sm text-blue-700">
+                    {trialDaysRemaining} {trialDaysRemaining === 1 ? 'day' : 'days'} remaining • Expires on {trialEndDate}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => alert('Add payment details feature coming soon')}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add Payment Details
+              </Button>
+            </div>
+          </div>
+        )}
+        {trialStatus === 'expired' && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-red-500 text-white rounded-full p-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-red-900">Trial Expired</h3>
+                  <p className="text-sm text-red-700">
+                    Your trial expired on {trialEndDate}. Add payment details to continue using WorkTrackr.
+                  </p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => alert('Add payment details feature coming soon')}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Add Payment Now
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {Object.entries(PLAN_CONFIGS).map(([planId, config]) => (
             <Card 

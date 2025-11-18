@@ -244,14 +244,16 @@ router.get('/subscription', async (req, res) => {
       
       // Check database for plan (for non-Stripe accounts)
       const orgResult = await query(
-        'SELECT plan, included_seats FROM organisations WHERE id = $1',
+        'SELECT plan, included_seats, trial_start, trial_end FROM organisations WHERE id = $1',
         [orgId]
       );
       
       const dbPlan = orgResult.rows[0]?.plan || 'starter';
       const dbIncludedSeats = orgResult.rows[0]?.included_seats || 1;
+      const trialStart = orgResult.rows[0]?.trial_start;
+      const trialEnd = orgResult.rows[0]?.trial_end;
       
-      console.log(`📋 Using database plan: ${dbPlan} with ${dbIncludedSeats} seats`);
+      console.log(`📋 Using database plan: ${dbPlan} with ${dbIncludedSeats} seats, trial_end: ${trialEnd}`);
       
       return res.json({
         plan: dbPlan,
@@ -260,7 +262,9 @@ router.get('/subscription', async (req, res) => {
         status: 'no_subscription',
         currentPeriodEnd: null,
         isNewCustomer: true,
-        trialEligible: true
+        trialEligible: true,
+        trialStart: trialStart,
+        trialEnd: trialEnd
       });
     }
 
@@ -277,14 +281,16 @@ router.get('/subscription', async (req, res) => {
       const customerStatus = await determineCustomerStatus(orgId, user.id);
       
       const orgResult = await query(
-        'SELECT plan, included_seats FROM organisations WHERE id = $1',
+        'SELECT plan, included_seats, trial_start, trial_end FROM organisations WHERE id = $1',
         [orgId]
       );
       
       const dbPlan = orgResult.rows[0]?.plan || 'starter';
       const dbIncludedSeats = orgResult.rows[0]?.included_seats || 1;
+      const trialStart = orgResult.rows[0]?.trial_start;
+      const trialEnd = orgResult.rows[0]?.trial_end;
       
-      console.log(`📋 No Stripe subscription, using database plan: ${dbPlan} with ${dbIncludedSeats} seats`);
+      console.log(`📋 No Stripe subscription, using database plan: ${dbPlan} with ${dbIncludedSeats} seats, trial_end: ${trialEnd}`);
       
       return res.json({
         plan: dbPlan,
@@ -294,7 +300,9 @@ router.get('/subscription', async (req, res) => {
         currentPeriodEnd: null,
         isNewCustomer: customerStatus.isNewCustomer,
         trialEligible: customerStatus.isNewCustomer,
-        customerId: existingCustomer.customerId
+        customerId: existingCustomer.customerId,
+        trialStart: trialStart,
+        trialEnd: trialEnd
       });
     }
 
