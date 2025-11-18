@@ -232,7 +232,7 @@ async function determineCustomerStatus(orgId, userId) {
 router.get('/subscription', async (req, res) => {
   try {
     const { user, membership } = req;
-    const orgId = req.orgContext?.organisationId;
+    const orgId = req.orgContext?.organizationId;
     
     console.log(`📋 Fetching subscription for user ${user.id}, org ${orgId}`);
     
@@ -392,7 +392,7 @@ router.post('/update-subscription', async (req, res) => {
   try {
     const { plan, additionalSeats = 0 } = req.body;
     const { user } = req;
-    const orgId = req.orgContext?.organisationId;
+    const orgId = req.orgContext?.organizationId;
 
     console.log(`🔄 Subscription change request for org ${orgId}: plan=${plan}, seats=${additionalSeats}`);
 
@@ -730,7 +730,7 @@ router.post('/checkout', async (req, res) => {
 
     // Prefer org from auth middleware, else accept client-provided orgId (from signup)
     const orgId =
-      (req.orgContext && req.orgContext.organisationId) ||
+      (req.orgContext && req.orgContext.organizationId) ||
       orgIdFromBody ||
       'unknown';
 
@@ -817,7 +817,7 @@ router.post('/checkout', async (req, res) => {
  */
 router.post('/portal', async (req, res) => {
   try {
-    const orgId = req.orgContext?.organisationId;
+    const orgId = req.orgContext?.organizationId;
     
     // Check for existing customer
     const existingCustomer = await checkExistingStripeCustomer(orgId);
@@ -873,7 +873,7 @@ router.post('/admin/update-plan', async (req, res) => {
 router.post('/convert-trial', async (req, res) => {
   try {
     const { user } = req;
-    const orgId = req.orgContext?.organisationId;
+    const orgId = req.orgContext?.organizationId;
     const { plan, additionalSeats = 0 } = req.body;
     
     if (!orgId) {
@@ -963,7 +963,7 @@ router.post('/convert-trial', async (req, res) => {
 router.delete('/delete-account', async (req, res) => {
   try {
     const { user } = req;
-    const orgId = req.orgContext?.organisationId;
+    const orgId = req.orgContext?.organizationId;
     
     if (!orgId) {
       return res.status(400).json({ error: 'Organization context required' });
