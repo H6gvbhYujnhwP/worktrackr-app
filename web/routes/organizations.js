@@ -218,7 +218,7 @@ router.get('/:id/users', async (req, res) => {
 router.post('/:id/users/invite', async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, name, role = 'staff' } = req.body;
+    const { email, name, role = 'staff', mobile, emailNotifications, password, sendInvitation = true } = req.body;
     const { type, partnerId, organizationId, role: userRole } = req.orgContext;
 
     // Check access permissions
@@ -285,18 +285,28 @@ router.post('/:id/users/invite', async (req, res) => {
         return res.status(400).json({ error: 'User is already a member' });
       }
     } else {
-      // Create new user with temporary password
+      // Create new user
       const bcrypt = require('bcryptjs');
-      const tempPassword = Math.random().toString(36).slice(-8);
-      const passwordHash = await bcrypt.hash(tempPassword, 12);
+      let passwordHash;
+      
+      if (sendInvitation) {
+        // Generate temporary password for invitation flow
+        const tempPassword = Math.random().toString(36).slice(-8);
+        passwordHash = await bcrypt.hash(tempPassword, 12);
+        // TODO: Send invitation email with password setup link
+      } else {
+        // Use admin-provided password
+        if (!password || password.length < 8) {
+          return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+        }
+        passwordHash = await bcrypt.hash(password, 12);
+      }
       
       const userResult = await query(
-        'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id',
-        [email.toLowerCase(), name, passwordHash]
+        'INSERT INTO users (email, name, password_hash, mobile, email_notifications) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [email.toLowerCase(), name, passwordHash, mobile || null, emailNotifications !== false]
       );
       userId = userResult.rows[0].id;
-      
-      // TODO: Send invitation email with temp password
     }
 
     // Create membership

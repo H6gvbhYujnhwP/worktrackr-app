@@ -55,7 +55,7 @@ export default function UserManagementImproved({ users, currentUser }) {
     sendInvitation: true // Toggle: true = send email invitation, false = admin sets password
   });
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newUser.name || !newUser.email) return;
     
     // Validate password if admin is setting it
@@ -81,42 +81,56 @@ export default function UserManagementImproved({ users, currentUser }) {
       return;
     }
     
-    const userToAdd = {
-      id: Date.now(),
-      name: newUser.name,
-      email: newUser.email,
-      mobile: newUser.mobile,
-      role: newUser.role,
-      isOrgOwner: false,
-      emailNotifications: newUser.emailNotifications,
-      department: 'General',
-      status: 'active'
-    };
+    try {
+      // Call backend API to create user
+      const response = await fetch(`/api/organizations/${organization.id}/users/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newUser.name,
+          email: newUser.email,
+          mobile: newUser.mobile,
+          role: newUser.role,
+          emailNotifications: newUser.emailNotifications,
+          password: newUser.sendInvitation ? null : newUser.password,
+          sendInvitation: newUser.sendInvitation
+        }),
+      });
 
-    setUsers(prev => [...prev, userToAdd]);
-    setNewUser({ name: '', email: '', mobile: '', role: 'staff', emailNotifications: true, password: '', sendInvitation: true });
-    setShowAddUser(false);
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || 'Failed to add user');
+        return;
+      }
 
-    // Send invitation or welcome email based on password setup method
-    if (newUser.sendInvitation) {
-      // Send invitation email with password setup link
-      emailService.sendEmail(
-        userToAdd.email,
-        'You\'ve been invited to WorkTrackr',
-        `Hi ${userToAdd.name},\n\nYou've been invited to join WorkTrackr. Please click the link below to set your password and activate your account:\n\n[Set Password Link - To be implemented]\n\nBest regards,\nWorkTrackr Team`
-      );
-    } else {
-      // Send welcome email (password was set by admin)
-      emailService.sendEmail(
-        userToAdd.email,
-        'Welcome to WorkTrackr',
-        `Hi ${userToAdd.name},\n\nYour WorkTrackr account has been created. You can now log in with your email and the password provided by your administrator.\n\nBest regards,\nWorkTrackr Team`
-      );
-    }
-    
-    // Refresh subscription data to get updated limits
-    if (refreshSubscription) {
-      refreshSubscription();
+      // Update local state with new user
+      const userToAdd = {
+        id: Date.now(),
+        name: newUser.name,
+        email: newUser.email,
+        mobile: newUser.mobile,
+        role: newUser.role,
+        isOrgOwner: false,
+        emailNotifications: newUser.emailNotifications,
+        department: 'General',
+        status: 'active'
+      };
+
+      setUsers(prev => [...prev, userToAdd]);
+      setNewUser({ name: '', email: '', mobile: '', role: 'staff', emailNotifications: true, password: '', sendInvitation: true });
+      setShowAddUser(false);
+      
+      // Refresh subscription data to get updated limits
+      if (refreshSubscription) {
+        refreshSubscription();
+      }
+      
+      alert('User added successfully!');
+    } catch (error) {
+      console.error('Add user error:', error);
+      alert('Failed to add user. Please try again.');
     }
   };
 
