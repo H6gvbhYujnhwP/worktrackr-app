@@ -49,7 +49,7 @@ const PLAN_CONFIGS = {
   enterprise: {
     name: 'Enterprise',
     price: 299,
-    maxUsers: 50,
+    maxUsers: Infinity,
     features: ['Unlimited users', 'Custom branding', 'Partner admin access', 'Dedicated support']
   }
 };
@@ -58,6 +58,7 @@ const ADDITIONAL_SEAT_PRICE = 15;
 
 export default function PlanManagement({ totalUsers }) {
   const [currentPlan, setCurrentPlan] = useState('pro');
+  const [includedSeats, setIncludedSeats] = useState(null);
   const [additionalSeats, setAdditionalSeats] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showSeatDialog, setShowSeatDialog] = useState(false);
@@ -80,6 +81,9 @@ export default function PlanManagement({ totalUsers }) {
           const data = await response.json();
           if (data.plan) {
             setCurrentPlan(data.plan);
+          }
+          if (data.includedSeats !== undefined) {
+            setIncludedSeats(data.includedSeats);
           }
           if (data.additionalSeats !== undefined) {
             setAdditionalSeats(data.additionalSeats);
@@ -109,9 +113,10 @@ export default function PlanManagement({ totalUsers }) {
   }, []);
 
   const totalAllowedUsers = useMemo(() => {
-    const baseLimit = PLAN_CONFIGS[currentPlan]?.maxUsers || 0;
+    // Use includedSeats from API if available, otherwise fall back to hardcoded config
+    const baseLimit = includedSeats !== null ? includedSeats : (PLAN_CONFIGS[currentPlan]?.maxUsers || 0);
     return baseLimit === Infinity ? Infinity : baseLimit + additionalSeats;
-  }, [currentPlan, additionalSeats]);
+  }, [includedSeats, currentPlan, additionalSeats]);
 
   const calculatePrice = (plan, seats) => {
     const planPrice = PLAN_CONFIGS[plan]?.price || 0;
@@ -443,7 +448,7 @@ export default function PlanManagement({ totalUsers }) {
             </CardTitle>
             <CardDescription>
               Add more users to your plan for £{ADDITIONAL_SEAT_PRICE}/user/month. 
-              Your current plan includes {PLAN_CONFIGS[currentPlan]?.maxUsers} users.
+              Your current plan includes {includedSeats !== null ? includedSeats : PLAN_CONFIGS[currentPlan]?.maxUsers} users.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
