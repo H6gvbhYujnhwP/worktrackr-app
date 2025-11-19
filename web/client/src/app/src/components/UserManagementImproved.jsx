@@ -50,11 +50,19 @@ export default function UserManagementImproved({ users, currentUser }) {
     email: '',
     mobile: '',
     role: 'staff',
-    emailNotifications: true
+    emailNotifications: true,
+    password: '',
+    sendInvitation: true // Toggle: true = send email invitation, false = admin sets password
   });
 
   const handleAddUser = () => {
     if (!newUser.name || !newUser.email) return;
+    
+    // Validate password if admin is setting it
+    if (!newUser.sendInvitation && (!newUser.password || newUser.password.length < 8)) {
+      alert('Password must be at least 8 characters long');
+      return;
+    }
     
     // Validate user limit
     const validation = validateUserAddition(1);
@@ -86,15 +94,25 @@ export default function UserManagementImproved({ users, currentUser }) {
     };
 
     setUsers(prev => [...prev, userToAdd]);
-    setNewUser({ name: '', email: '', mobile: '', role: 'staff', emailNotifications: true });
+    setNewUser({ name: '', email: '', mobile: '', role: 'staff', emailNotifications: true, password: '', sendInvitation: true });
     setShowAddUser(false);
 
-    // Send welcome email
-    emailService.sendEmail(
-      userToAdd.email,
-      'Welcome to WorkTrackr',
-      `Welcome ${userToAdd.name}! You've been added to the WorkTrackr system.`
-    );
+    // Send invitation or welcome email based on password setup method
+    if (newUser.sendInvitation) {
+      // Send invitation email with password setup link
+      emailService.sendEmail(
+        userToAdd.email,
+        'You\'ve been invited to WorkTrackr',
+        `Hi ${userToAdd.name},\n\nYou've been invited to join WorkTrackr. Please click the link below to set your password and activate your account:\n\n[Set Password Link - To be implemented]\n\nBest regards,\nWorkTrackr Team`
+      );
+    } else {
+      // Send welcome email (password was set by admin)
+      emailService.sendEmail(
+        userToAdd.email,
+        'Welcome to WorkTrackr',
+        `Hi ${userToAdd.name},\n\nYour WorkTrackr account has been created. You can now log in with your email and the password provided by your administrator.\n\nBest regards,\nWorkTrackr Team`
+      );
+    }
     
     // Refresh subscription data to get updated limits
     if (refreshSubscription) {
@@ -473,6 +491,42 @@ export default function UserManagementImproved({ users, currentUser }) {
                     <option value="staff">Staff</option>
                     <option value="admin">Admin</option>
                   </select>
+                </div>
+                
+                {/* Password Setup Toggle */}
+                <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Password Setup</Label>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-600">
+                        {newUser.sendInvitation ? 'Send invitation email' : 'Set password now'}
+                      </span>
+                      <Switch
+                        checked={!newUser.sendInvitation}
+                        onCheckedChange={(checked) => setNewUser(prev => ({ ...prev, sendInvitation: !checked, password: '' }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  {newUser.sendInvitation ? (
+                    <p className="text-xs text-gray-600">
+                      ✉️ User will receive an email with a link to set their password
+                    </p>
+                  ) : (
+                    <div>
+                      <Label>Password *</Label>
+                      <Input
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Enter password (min 8 characters)"
+                        minLength={8}
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        🔒 User can log in immediately with this password
+                      </p>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-2">
