@@ -205,7 +205,7 @@ export default function Dashboard() {
               <div className="text-lg sm:text-xl font-bold min-w-0">
                 <span className="hidden sm:inline">Work<span className="text-yellow-500">Trackr</span></span>
                 <span className="sm:hidden">WT</span>
-                <span className="text-xs sm:text-sm font-normal text-gray-500 ml-1 sm:ml-2 hidden sm:inline">Simulation</span>
+
               </div>
               <Badge className="ml-2 sm:ml-3 flex-shrink-0" variant={isAdmin ? 'default' : 'secondary'}>
                 {isAdmin ? 'Admin' : 'Staff'}

@@ -67,7 +67,7 @@ const SimulationProvider = ({ children }) => {
   const [emailLogs, setEmailLogs] = useState([]);
   const [billingQueue, setBillingQueue] = useState([]);
 
-  // Load tickets and users from backend on mount
+  // Load tickets, users, and organization from backend on mount
   useEffect(() => {
     (async () => {
       try {
@@ -85,6 +85,22 @@ const SimulationProvider = ({ children }) => {
       } catch (e) {
         console.error('[SimulationProvider] Failed to load users from API', e);
         console.log('⚠️ Falling back to mock users');
+      }
+      
+      // Load real organization data from backend
+      try {
+        const response = await fetch('/api/organizations/current');
+        if (response.ok) {
+          const orgData = await response.json();
+          setOrganization(orgData);
+          console.log('✅ Loaded organization from API:', orgData);
+        } else {
+          console.error('[SimulationProvider] Failed to load organization:', response.status);
+          console.log('⚠️ Falling back to mock organization');
+        }
+      } catch (e) {
+        console.error('[SimulationProvider] Failed to load organization from API', e);
+        console.log('⚠️ Falling back to mock organization');
       }
     })();
   }, []);

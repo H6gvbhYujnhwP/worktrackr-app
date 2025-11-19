@@ -82,18 +82,8 @@ export default function UserManagementImproved({ users, currentUser }) {
     }
     
     try {
-      // Get real organization ID from user context
-      const userResponse = await fetch('/api/auth/me');
-      const userData = await userResponse.json();
-      const realOrgId = userData.organisation_id;
-      
-      if (!realOrgId) {
-        alert('Unable to determine organization. Please try again.');
-        return;
-      }
-      
       // Call backend API to create user
-      const response = await fetch(`/api/organizations/${realOrgId}/users/invite`, {
+      const response = await fetch(`/api/organizations/${organization.id}/users/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
