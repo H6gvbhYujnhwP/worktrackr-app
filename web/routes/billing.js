@@ -839,6 +839,79 @@ router.post('/portal', async (req, res) => {
 });
 
 /**
+ * POST /api/billing/upgrade-trial-plan
+ * Allow trial users to upgrade their plan without payment
+ * Keeps the same trial period, just updates plan and included seats
+ */
+router.post('/upgrade-trial-plan', async (req, res) => {
+  try {
+    const { plan } = req.body;
+    const orgId = req.orgContext?.organizationId;
+    
+    if (!orgId || !plan) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Validate plan
+    const validPlans = ['starter', 'pro', 'enterprise'];
+    if (!validPlans.includes(plan.toLowerCase())) {
+      return res.status(400).json({ error: 'Invalid plan specified' });
+    }
+    
+    // Get current organization data
+    const orgResult = await query(
+      'SELECT plan, trial_start, trial_end, stripe_subscription_id FROM organisations WHERE id = $1',
+      [orgId]
+    );
+    
+    if (orgResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
+    
+    const org = orgResult.rows[0];
+    
+    // Check if organization is in trial period
+    const now = new Date();
+    const trialEnd = org.trial_end ? new Date(org.trial_end) : null;
+    const isInTrial = trialEnd && trialEnd > now && !org.stripe_subscription_id;
+    
+    if (!isInTrial) {
+      return res.status(400).json({ 
+        error: 'This endpoint is only for trial accounts. Please use the regular upgrade flow.' 
+      });
+    }
+    
+    // Get included seats for the new plan
+    const planConfig = {
+      starter: { includedSeats: 1 },
+      pro: { includedSeats: 5 },
+      enterprise: { includedSeats: 50 }
+    };
+    
+    const includedSeats = planConfig[plan.toLowerCase()]?.includedSeats || 1;
+    
+    // Update the organization plan and seats (keep trial dates unchanged)
+    await query(
+      'UPDATE organisations SET plan = $1, included_seats = $2 WHERE id = $3',
+      [plan.toLowerCase(), includedSeats, orgId]
+    );
+    
+    console.log(`✅ Trial plan upgraded for org ${orgId}: ${org.plan} → ${plan} (${includedSeats} seats)`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Plan upgraded successfully',
+      plan: plan.toLowerCase(),
+      includedSeats,
+      trialEnd: org.trial_end
+    });
+  } catch (error) {
+    console.error('❌ Error upgrading trial plan:', error);
+    res.status(500).json({ error: 'Failed to upgrade plan' });
+  }
+});
+
+/**
  * POST /api/billing/admin/update-plan
  * Admin endpoint to manually update organization plan
  */

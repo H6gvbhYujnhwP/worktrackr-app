@@ -129,7 +129,33 @@ export default function PlanManagement({ totalUsers }) {
     try {
       console.log(`Changing plan from ${currentPlan} to ${newPlan}`);
       
-      // First try immediate update for existing customers
+      // Check if user is in trial period
+      const isInTrial = trialStatus === 'active' && data?.trialEnd;
+      
+      if (isInTrial) {
+        // Use trial plan upgrade endpoint (no payment required)
+        console.log('Trial user detected, using trial upgrade endpoint');
+        const trialUpgradeResponse = await fetch('/api/billing/upgrade-trial-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ plan: newPlan })
+        });
+        
+        if (!trialUpgradeResponse.ok) {
+          const errorData = await trialUpgradeResponse.json();
+          throw new Error(errorData.error || 'Failed to upgrade trial plan');
+        }
+        
+        const upgradeData = await trialUpgradeResponse.json();
+        alert(`Plan upgraded to ${upgradeData.plan}! You now have ${upgradeData.includedSeats} seats. Your trial period remains unchanged.`);
+        window.location.reload();
+        return;
+      }
+      
+      // For non-trial users, try immediate update for existing customers
       const updateResponse = await fetch('/api/billing/update-subscription', {
         method: 'POST',
         headers: {
