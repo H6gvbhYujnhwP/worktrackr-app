@@ -105,26 +105,30 @@ export default function UserManagementImproved({ users, currentUser }) {
         return;
       }
 
-      // Update local state with new user
-      const userToAdd = {
-        id: Date.now(),
-        name: newUser.name,
-        email: newUser.email,
-        mobile: newUser.mobile,
-        role: newUser.role,
-        isOrgOwner: false,
-        emailNotifications: newUser.emailNotifications,
-        department: 'General',
-        status: 'active'
-      };
-
-      setUsers(prev => [...prev, userToAdd]);
+      // Reset form and close modal
       setNewUser({ name: '', email: '', mobile: '', role: 'staff', emailNotifications: true, password: '', sendInvitation: true });
       setShowAddUser(false);
       
       // Refresh subscription data to get updated limits
-      if (refreshSubscription) {
-        refreshSubscription();
+      if (typeof refreshSubscription === 'function') {
+        try {
+          await refreshSubscription();
+        } catch (err) {
+          console.warn('Failed to refresh subscription data:', err);
+        }
+      }
+      
+      // Reload users from API to get the updated list
+      try {
+        const usersResponse = await fetch(`/api/organizations/${organization.id}/users`, {
+          credentials: 'include'
+        });
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json();
+          setUsers(usersData);
+        }
+      } catch (err) {
+        console.warn('Failed to reload users:', err);
       }
       
       alert('User added successfully!');
