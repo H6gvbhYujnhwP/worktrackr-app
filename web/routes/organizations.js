@@ -303,8 +303,8 @@ router.post('/:id/users/invite', async (req, res) => {
       }
       
       const userResult = await query(
-        'INSERT INTO users (email, name, password_hash, mobile, email_notifications) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-        [email.toLowerCase(), name, passwordHash, mobile || null, emailNotifications !== false]
+        'INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id',
+        [email.toLowerCase(), name, passwordHash]
       );
       userId = userResult.rows[0].id;
     }
