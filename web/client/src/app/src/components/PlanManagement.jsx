@@ -270,9 +270,9 @@ export default function PlanManagement({ totalUsers }) {
 
       const data = await response.json();
       
-      if (data.url) {
+      if (data.checkoutUrl) {
         // Redirect to Stripe Checkout
-        window.location.href = data.url;
+        window.location.href = data.checkoutUrl;
       } else {
         throw new Error('No checkout URL received');
       }
