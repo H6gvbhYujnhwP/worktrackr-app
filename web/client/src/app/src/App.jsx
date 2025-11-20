@@ -92,8 +92,8 @@ const SimulationProvider = ({ children }) => {
         const response = await fetch('/api/organizations/current');
         if (response.ok) {
           const orgData = await response.json();
-          setOrganization(orgData);
-          console.log('✅ Loaded organization from API:', orgData);
+          setOrganization(orgData.organization);
+          console.log('✅ Loaded organization from API:', orgData.organization);
         } else {
           console.error('[SimulationProvider] Failed to load organization:', response.status);
           console.log('⚠️ Falling back to mock organization');
