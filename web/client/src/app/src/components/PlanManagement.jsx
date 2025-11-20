@@ -130,7 +130,7 @@ export default function PlanManagement({ totalUsers }) {
       console.log(`Changing plan from ${currentPlan} to ${newPlan}`);
       
       // Check if user is in trial period
-      const isInTrial = trialStatus === 'active' && data?.trialEnd;
+      const isInTrial = trialStatus === 'active' && trialEndDate;
       
       if (isInTrial) {
         // Use trial plan upgrade endpoint (no payment required)
