@@ -166,7 +166,11 @@ export default function AdminDashboard() {
       const deletePromises = selectedUsers.map(userId => 
         fetch(`/api/admin/users/${userId}/hard-delete`, {
           method: 'POST',
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ confirmation: 'DELETE' })
         })
       );
 
