@@ -4,6 +4,7 @@ import { Button } from '@app/components/ui/button.jsx';
 import { Input } from '@app/components/ui/input.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@app/components/ui/card.jsx';
 import { Badge } from '@app/components/ui/badge.jsx';
+import { Checkbox } from '@app/components/ui/checkbox.jsx';
 import { 
   Table, 
   TableBody, 
@@ -20,7 +21,8 @@ import {
   Ban, 
   CheckCircle,
   Eye,
-  LogOut
+  LogOut,
+  Trash2
 } from 'lucide-react';
 import worktrackrLogo from '../assets/worktrackr_icon_only.png';
 
@@ -30,6 +32,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -127,6 +130,62 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Unsuspend error:', error);
       alert('Failed to unsuspend user');
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(users.map(u => u.id));
+    }
+  };
+
+  const toggleSelectUser = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) {
+      alert('Please select users to delete');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to PERMANENTLY DELETE ${selectedUsers.length} user(s)? This action cannot be undone and will remove all associated data.`;
+    
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      setIsDeleting(true);
+      
+      // Delete users one by one
+      const deletePromises = selectedUsers.map(userId => 
+        fetch(`/api/admin/users/${userId}/hard-delete`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const successCount = results.filter(r => r.ok).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        alert(`Successfully deleted ${successCount} user(s)${failCount > 0 ? `, ${failCount} failed` : ''}`);
+        setSelectedUsers([]);
+        await fetchUsers();
+      } else {
+        alert('Failed to delete users');
+      }
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      alert('An error occurred during bulk delete');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -229,10 +288,22 @@ export default function AdminDashboard() {
                   Manage users, roles, and permissions
                 </CardDescription>
               </div>
-              <Button onClick={handleExport} variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
+              <div className="flex space-x-2">
+                {selectedUsers.length > 0 && (
+                  <Button 
+                    onClick={handleBulkDelete} 
+                    variant="destructive"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Selected ({selectedUsers.length})
+                  </Button>
+                )}
+                <Button onClick={handleExport} variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export CSV
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -262,6 +333,12 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox 
+                          checked={selectedUsers.length === users.length && users.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
@@ -275,13 +352,19 @@ export default function AdminDashboard() {
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-gray-500">
+                        <TableCell colSpan={9} className="text-center text-gray-500">
                           No users found
                         </TableCell>
                       </TableRow>
                     ) : (
                       users.map((user) => (
                         <TableRow key={user.id}>
+                          <TableCell>
+                            <Checkbox 
+                              checked={selectedUsers.includes(user.id)}
+                              onCheckedChange={() => toggleSelectUser(user.id)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">{user.email}</TableCell>
                           <TableCell>{user.name}</TableCell>
                           <TableCell>
