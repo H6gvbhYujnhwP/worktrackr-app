@@ -440,7 +440,7 @@ export default function CRMDashboard() {
     // Add to all existing customers' service lists
     setCustomerServices(prev => {
       const updated = { ...prev };
-      mockCompanies.forEach(company => {
+      contacts.forEach(company => {
         const newService = {
           id: productId,
           name: newProduct.name,
@@ -548,7 +548,7 @@ export default function CRMDashboard() {
     
     // Create CRM calendar entry if date is set
     if (date) {
-      const company = mockCompanies.find(c => c.id === companyId);
+      const company = contacts.find(c => c.id === companyId);
       const service = getCustomerServices(companyId).find(s => s.id === serviceId);
       
       // Create calendar entry for CRM Calendar
@@ -592,7 +592,7 @@ export default function CRMDashboard() {
     ]);
     
     // Add company data
-    mockCompanies.forEach(company => {
+    contacts.forEach(company => {
       csvData.push([
         company.name,
         company.primaryContact,
@@ -664,7 +664,7 @@ export default function CRMDashboard() {
           <CardContent className="p-0.5 sm:p-6 h-full flex items-center justify-center">
             <div className="flex flex-col items-center text-center w-full">
               <Building2 className="w-3 h-3 sm:w-8 sm:h-8 text-blue-600 mb-0.5 sm:mb-2" />
-              <p className="text-xs sm:text-2xl font-bold leading-none">{mockCompanies.length}</p>
+              <p className="text-xs sm:text-2xl font-bold leading-none">{contacts.length}</p>
             </div>
           </CardContent>
         </Card>
@@ -742,7 +742,7 @@ export default function CRMDashboard() {
                       ALL
                     </Button>
                     {alphabetLetters.map(letter => {
-                      const hasCompanies = mockCompanies.some(company => 
+                      const hasCompanies = contacts.some(company => 
                         company.name.charAt(0).toUpperCase() === letter
                       );
                       return (
@@ -760,7 +760,7 @@ export default function CRMDashboard() {
                     })}
                   </div>
                   <p className="text-sm text-gray-600 mt-2 text-center">
-                    Showing {filteredCompanies.length} of {mockCompanies.length} customers
+                    Showing {filteredCompanies.length} of {contacts.length} customers
                     {alphabetFilter !== 'ALL' && ` starting with "${alphabetFilter}"`}
                   </p>
                 </div>
