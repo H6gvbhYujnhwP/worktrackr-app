@@ -317,7 +317,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-              <CardTitle className="text-base sm:text-lg">Booking Calendar</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Ticket Calendar</CardTitle>
             </div>
             
             <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">

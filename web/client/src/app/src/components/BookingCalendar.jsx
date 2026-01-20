@@ -251,9 +251,9 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl text-gray-900">Booking Calendar</CardTitle>
+              <CardTitle className="text-2xl text-gray-900">Ticket Calendar</CardTitle>
               <CardDescription className="text-lg mt-2">
-                Manage your appointments and schedule new bookings
+                Manage your appointments and schedule new tickets
               </CardDescription>
             </div>
             <div className="flex items-center space-x-3">

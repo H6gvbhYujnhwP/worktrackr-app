@@ -337,7 +337,7 @@ export default function Dashboard() {
                       className="flex items-center space-x-2"
                     >
                       <Clock className="w-4 h-4" />
-                      <span>Booking Calendar</span>
+                      <span>Ticket Calendar</span>
                     </Button>
                   </div>
                 </div>
