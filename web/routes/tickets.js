@@ -13,10 +13,12 @@ const createTicketSchema = z.object({
   assigneeId: z.string().uuid().nullable().optional(),
   contact_id: z.string().uuid().nullable().optional(),
   sector: z.string().max(255).nullable().optional(),
-  scheduled_date: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined) ? null : val,
-    z.string().datetime().nullable().optional()
-  ), // ISO string - empty strings converted to null
+  scheduled_date: z.union([
+    z.string().datetime(),
+    z.literal(''),
+    z.null(),
+    z.undefined()
+  ]).transform(val => (val === '' || val === undefined) ? null : val).optional(), // ISO string - empty strings converted to null
   scheduled_duration_mins: z.number().int().positive().nullable().optional(),
   method_statement: z.any().nullable().optional(), // JSON object
   risk_assessment: z.any().nullable().optional()   // JSON object
@@ -30,10 +32,12 @@ const updateTicketSchema = z.object({
   assigneeId: z.string().uuid().nullable().optional(),
   assignee_id: z.string().uuid().nullable().optional(), // Support both camelCase and snake_case
   sector: z.string().max(255).nullable().optional(),
-  scheduled_date: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined) ? null : val,
-    z.string().datetime().nullable().optional()
-  ),
+  scheduled_date: z.union([
+    z.string().datetime(),
+    z.literal(''),
+    z.null(),
+    z.undefined()
+  ]).transform(val => (val === '' || val === undefined) ? null : val).optional(),
   scheduled_duration_mins: z.number().int().positive().nullable().optional(),
   method_statement: z.any().nullable().optional(),
   risk_assessment: z.any().nullable().optional()
