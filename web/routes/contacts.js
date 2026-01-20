@@ -263,12 +263,12 @@ router.get('/statistics', async (req, res) => {
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE (crm->>'status')::text = 'active') as active,
         COUNT(*) FILTER (WHERE (crm->>'status')::text = 'prospect') as prospects,
-        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'at_risk') as at_risk,
+        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'at_risk') as "atRisk",
         COUNT(*) FILTER (WHERE "type" = 'company') as companies,
         COUNT(*) FILTER (WHERE "type" = 'individual') as individuals,
-        COALESCE(SUM((crm->>'totalProfit')::numeric), 0) as total_profit,
-        COALESCE(SUM((crm->>'renewalsCount')::numeric), 0) as total_renewals,
-        COALESCE(SUM((crm->>'openOppsCount')::numeric), 0) as total_opportunities
+        COALESCE(SUM((crm->>'totalProfit')::numeric), 0) as "totalProfit",
+        COALESCE(SUM((crm->>'renewalsCount')::numeric), 0) as "totalRenewals",
+        COALESCE(SUM((crm->>'openOppsCount')::numeric), 0) as "totalOpportunities"
        FROM contacts WHERE organisation_id = $1`,
       [organizationId]
     );

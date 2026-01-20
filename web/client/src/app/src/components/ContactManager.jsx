@@ -83,9 +83,17 @@ const ContactManager = () => {
     notes: ''
   });
 
-  // Load contacts on component mount
+  // Load contacts on component mount and set up auto-refresh
   useEffect(() => {
     loadContacts();
+    
+    // Auto-refresh every 10 seconds
+    const intervalId = setInterval(() => {
+      loadContacts();
+    }, 10000);
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   // Filter contacts when search term or filters change
