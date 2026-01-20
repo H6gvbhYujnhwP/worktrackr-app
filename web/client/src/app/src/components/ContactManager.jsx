@@ -1183,7 +1183,292 @@ const ContactManager = () => {
                   </div>
                 </TabsContent>
 
-                {/* Other tabs would be similar to create form */}
+                <TabsContent value="addresses" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Addresses</h4>
+                    <Button onClick={addAddress} size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Address
+                    </Button>
+                  </div>
+
+                  {formData.addresses.map((address, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <Select 
+                          value={address.type} 
+                          onValueChange={(value) => updateAddress(index, 'type', value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
+                            <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
+                            <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
+                            <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => removeAddress(index)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                          <Label>Address Line 1</Label>
+                          <Input
+                            value={address.line1}
+                            onChange={(e) => updateAddress(index, 'line1', e.target.value)}
+                            placeholder="123 Main Street"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label>Address Line 2</Label>
+                          <Input
+                            value={address.line2}
+                            onChange={(e) => updateAddress(index, 'line2', e.target.value)}
+                            placeholder="Suite 100"
+                          />
+                        </div>
+                        <div>
+                          <Label>City</Label>
+                          <Input
+                            value={address.city}
+                            onChange={(e) => updateAddress(index, 'city', e.target.value)}
+                            placeholder="London"
+                          />
+                        </div>
+                        <div>
+                          <Label>State/Region</Label>
+                          <Input
+                            value={address.state}
+                            onChange={(e) => updateAddress(index, 'state', e.target.value)}
+                            placeholder="England"
+                          />
+                        </div>
+                        <div>
+                          <Label>Postal Code</Label>
+                          <Input
+                            value={address.postcode}
+                            onChange={(e) => updateAddress(index, 'postcode', e.target.value)}
+                            placeholder="SW1A 1AA"
+                          />
+                        </div>
+                        <div>
+                          <Label>Country</Label>
+                          <Input
+                            value={address.country}
+                            onChange={(e) => updateAddress(index, 'country', e.target.value)}
+                            placeholder="United Kingdom"
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </TabsContent>
+
+                <TabsContent value="accounting" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="currency">Currency</Label>
+                      <Select 
+                        value={formData.accounting.currency} 
+                        onValueChange={(value) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, currency: value }
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CURRENCIES).map(([code, info]) => (
+                            <SelectItem key={code} value={code}>
+                              {info.symbol} {info.name} ({code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="paymentTerms">Payment Terms</Label>
+                      <Select 
+                        value={formData.accounting.paymentTerms} 
+                        onValueChange={(value) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, paymentTerms: value }
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
+                            <SelectItem key={key} value={value}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="taxNumber">Tax Number/VAT ID</Label>
+                      <Input
+                        id="taxNumber"
+                        value={formData.accounting.taxNumber}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, taxNumber: e.target.value }
+                          }))
+                        }
+                        placeholder="GB123456789"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="accountCode">Account Code</Label>
+                      <Input
+                        id="accountCode"
+                        value={formData.accounting.accountCode}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, accountCode: e.target.value }
+                          }))
+                        }
+                        placeholder="4000"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="creditLimit">Credit Limit</Label>
+                      <Input
+                        id="creditLimit"
+                        type="number"
+                        value={formData.accounting.creditLimit}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, creditLimit: parseFloat(e.target.value) || 0 }
+                          }))
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="discountRate">Discount Rate (%)</Label>
+                      <Input
+                        id="discountRate"
+                        type="number"
+                        value={formData.accounting.discountRate}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            accounting: { ...prev.accounting, discountRate: parseFloat(e.target.value) || 0 }
+                          }))
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="crm" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select 
+                        value={formData.crm.status} 
+                        onValueChange={(value) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            crm: { ...prev.crm, status: value }
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
+                          <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
+                          <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
+                          <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="source">Source</Label>
+                      <Input
+                        id="source"
+                        value={formData.crm.source}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            crm: { ...prev.crm, source: e.target.value }
+                          }))
+                        }
+                        placeholder="Website, Referral, etc."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="industry">Industry</Label>
+                      <Input
+                        id="industry"
+                        value={formData.crm.industry}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            crm: { ...prev.crm, industry: e.target.value }
+                          }))
+                        }
+                        placeholder="Technology, Healthcare, etc."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="companySize">Company Size</Label>
+                      <Input
+                        id="companySize"
+                        value={formData.crm.companySize}
+                        onChange={(e) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            crm: { ...prev.crm, companySize: e.target.value }
+                          }))
+                        }
+                        placeholder="1-10, 11-50, 51-200, etc."
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Additional notes about this contact..."
+                      rows={4}
+                    />
+                  </div>
+                </TabsContent>
               </Tabs>
 
               <div className="flex justify-end space-x-4 pt-4 border-t">
