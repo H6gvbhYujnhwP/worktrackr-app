@@ -358,16 +358,58 @@ export default function CRMDashboard() {
     }
   };
 
-  const updateCustomerService = (companyId, serviceId, updates) => {
-    // Ensure customer services are initialized
-    initializeCustomerServices(companyId);
-    
-    setCustomerServices(prev => ({
-      ...prev,
-      [companyId]: (prev[companyId] || []).map(service => 
-        service.id === serviceId ? { ...service, ...updates } : service
-      )
-    }));
+  const updateCustomerService = async (companyId, serviceId, updates) => {
+    try {
+      // Check if service assignment exists in database
+      const servicesResponse = await fetch('/api/customer-services', { credentials: 'include' });
+      const services = await servicesResponse.json();
+      const existingService = services.find(s => s.contact_id === companyId && s.product_id === serviceId);
+      
+      if (existingService) {
+        // Update existing service
+        const response = await fetch(`/api/customer-services/${existingService.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            quantity: updates.quantity,
+            our_cost: updates.ourCost,
+            client_price: updates.clientPrice,
+            active: updates.active
+          })
+        });
+        if (!response.ok) throw new Error('Failed to update service');
+      } else if (updates.active || updates.quantity > 0) {
+        // Create new service assignment
+        const response = await fetch('/api/customer-services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            contact_id: companyId,
+            product_id: serviceId,
+            quantity: updates.quantity || 0,
+            our_cost: updates.ourCost || 0,
+            client_price: updates.clientPrice || 0,
+            active: updates.active || false
+          })
+        });
+        if (!response.ok) throw new Error('Failed to create service');
+      }
+      
+      // Refresh customer services from API
+      const refreshResponse = await fetch('/api/customer-services', { credentials: 'include' });
+      const refreshedServices = await refreshResponse.json();
+      const servicesObj = {};
+      refreshedServices.forEach(service => {
+        if (!servicesObj[service.contact_id]) servicesObj[service.contact_id] = [];
+        servicesObj[service.contact_id].push(service);
+      });
+      setCustomerServices(servicesObj);
+    } catch (error) {
+      console.error('Error updating customer service:', error);
+      alert('Failed to update service. Please try again.');
+    }
   };
 
   const getContactInfo = (contact) => {
