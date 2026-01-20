@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     const organizationId = orgContext.organizationId;
     const { start_date, end_date, status, contact_id } = req.query;
 
-    let whereClause = 'WHERE organisation_id = $1';
+    let whereClause = 'WHERE e.organisation_id = $1';
     const params = [organizationId];
     let paramCount = 1;
 
