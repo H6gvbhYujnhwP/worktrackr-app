@@ -29,7 +29,7 @@ import {
   Download,
   FileText
 } from 'lucide-react';
-import { contactDB } from '../data/contactDatabase.js';
+// Contacts are now fetched from the database API instead of localStorage
 
 // World currencies data
 const worldCurrencies = [
@@ -55,51 +55,7 @@ const worldCurrencies = [
   { code: 'TRY', symbol: '₺', name: 'Turkish Lira' }
 ];
 
-// Mock data for CRM
-const mockCompanies = [
-  {
-    id: 1,
-    name: 'Acme Corp',
-    primaryContact: 'John Smith',
-    email: 'john@acme.com',
-    phone: '+44 20 7123 4567',
-    address: '123 Business St, London, SW1A 1AA',
-    lastActivity: '2024-01-15',
-    nextCRMEvent: '2024-01-20',
-    renewalsCount: 2,
-    openOppsCount: 1,
-    totalProfit: 15420.50,
-    status: 'Active'
-  },
-  {
-    id: 2,
-    name: 'TechStart Ltd',
-    primaryContact: 'Sarah Johnson',
-    email: 'sarah@techstart.co.uk',
-    phone: '+44 161 234 5678',
-    address: '456 Innovation Ave, Manchester, M1 2AB',
-    lastActivity: '2024-01-10',
-    nextCRMEvent: '2024-01-25',
-    renewalsCount: 0,
-    openOppsCount: 3,
-    totalProfit: 8750.00,
-    status: 'Active'
-  },
-  {
-    id: 3,
-    name: 'Global Services Inc',
-    primaryContact: 'Mike Wilson',
-    email: 'mike@globalservices.com',
-    phone: '+44 113 345 6789',
-    address: '789 Enterprise Rd, Leeds, LS1 3CD',
-    lastActivity: '2023-12-20',
-    nextCRMEvent: '2024-02-01',
-    renewalsCount: 1,
-    openOppsCount: 0,
-    totalProfit: 22100.75,
-    status: 'At Risk'
-  }
-];
+// Contacts are now fetched from the database API
 
 const mockProductCatalog = [
   {
@@ -216,15 +172,37 @@ export default function CRMDashboard() {
     return worldCurrencies.find(c => c.code === selectedCurrency)?.symbol || '£';
   };
 
-  // Load contacts from contact database
+  // Load contacts from database API
   const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
   
   useEffect(() => {
-    const loadContacts = () => {
-      const allContacts = contactDB.getAllContacts();
-      setContacts(allContacts);
+    const loadContacts = async () => {
+      setContactsLoading(true);
+      try {
+        const response = await fetch('/api/contacts', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setContacts(data);
+          console.log('[CRMDashboard] Contacts loaded:', data.length);
+        } else {
+          console.error('[CRMDashboard] Failed to fetch contacts:', response.statusText);
+          setContacts([]);
+        }
+      } catch (error) {
+        console.error('[CRMDashboard] Error fetching contacts:', error);
+        setContacts([]);
+      } finally {
+        setContactsLoading(false);
+      }
     };
     loadContacts();
+    
+    // Auto-refresh every 10 seconds
+    const intervalId = setInterval(loadContacts, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Fetch quotes from API
