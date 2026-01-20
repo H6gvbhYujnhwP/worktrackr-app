@@ -51,11 +51,9 @@ router.get('/', async (req, res) => {
     const result = await query(
       `SELECT 
         e.*,
-        c.name as contact_name,
-        u.name as assigned_user_name
+        c.name as contact_name
        FROM crm_events e
        LEFT JOIN contacts c ON e.contact_id = c.id
-       LEFT JOIN users u ON e.assigned_user_id = u.id
        ${whereClause}
        ORDER BY start_at ASC`,
       params
@@ -78,11 +76,9 @@ router.get('/:id', async (req, res) => {
     const result = await query(
       `SELECT 
         e.*,
-        c.name as contact_name,
-        u.name as assigned_user_name
+        c.name as contact_name
        FROM crm_events e
        LEFT JOIN contacts c ON e.contact_id = c.id
-       LEFT JOIN users u ON e.assigned_user_id = u.id
        WHERE e.id = $1 AND e.organisation_id = $2`,
       [id, organizationId]
     );
