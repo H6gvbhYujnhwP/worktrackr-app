@@ -1,8 +1,6 @@
--- Drop the contacts table if it exists (to handle failed previous migrations)
-DROP TABLE IF EXISTS contacts CASCADE;
-
 -- Create contacts table for organization-wide contact management
-CREATE TABLE contacts (
+-- This migration is idempotent and safe to run multiple times
+CREATE TABLE IF NOT EXISTS contacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
   
@@ -40,18 +38,18 @@ CREATE TABLE contacts (
   custom_fields JSONB DEFAULT '{}'::jsonb
 );
 
--- Create indexes for performance
-CREATE INDEX idx_contacts_organisation_id ON contacts(organisation_id);
-CREATE INDEX idx_contacts_type ON contacts("type");
-CREATE INDEX idx_contacts_email ON contacts(email);
-CREATE INDEX idx_contacts_name ON contacts(name);
-CREATE INDEX idx_contacts_created_by ON contacts(created_by);
+-- Create indexes for performance (only if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_contacts_organisation_id ON contacts(organisation_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_type ON contacts("type");
+CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
+CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name);
+CREATE INDEX IF NOT EXISTS idx_contacts_created_by ON contacts(created_by);
 
 -- Create GIN index for JSONB fields
-CREATE INDEX idx_contacts_crm ON contacts USING GIN(crm);
-CREATE INDEX idx_contacts_tags ON contacts USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_contacts_crm ON contacts USING GIN(crm);
+CREATE INDEX IF NOT EXISTS idx_contacts_tags ON contacts USING GIN(tags);
 
--- Add updated_at trigger
+-- Add updated_at trigger (only if it doesn't exist)
 CREATE OR REPLACE FUNCTION update_contacts_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -60,7 +58,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_contacts_updated_at
-  BEFORE UPDATE ON contacts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_contacts_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'trigger_contacts_updated_at'
+  ) THEN
+    CREATE TRIGGER trigger_contacts_updated_at
+      BEFORE UPDATE ON contacts
+      FOR EACH ROW
+      EXECUTE FUNCTION update_contacts_updated_at();
+  END IF;
+END $$;
