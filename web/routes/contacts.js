@@ -39,7 +39,7 @@ const contactSchema = z.object({
   tags: z.array(z.string()).default([]),
   notes: z.string().optional(),
   customFields: z.object({}).optional().default({})
-});
+}).strict(false);
 
 // GET /api/contacts - Get all contacts for the organization
 router.get('/', async (req, res) => {
