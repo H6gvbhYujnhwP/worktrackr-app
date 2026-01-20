@@ -22,57 +22,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-// Mock CRM Calendar Events
-const mockCRMEvents = [
-  {
-    id: 1,
-    title: 'Follow-up call with Acme Corp',
-    type: 'Call',
-    company: 'Acme Corp',
-    contact: 'John Smith',
-    startAt: '2024-01-20T10:00:00',
-    endAt: '2024-01-20T10:30:00',
-    assignedUser: 'Sarah Manager',
-    status: 'Planned',
-    notes: 'Discuss renewal options for HVAC maintenance contract'
-  },
-  {
-    id: 2,
-    title: 'Site meeting with TechStart Ltd',
-    type: 'Meeting',
-    company: 'TechStart Ltd',
-    contact: 'Sarah Johnson',
-    startAt: '2024-01-22T14:00:00',
-    endAt: '2024-01-22T15:00:00',
-    assignedUser: 'Mike Sales',
-    status: 'Planned',
-    notes: 'Present new electrical inspection services'
-  },
-  {
-    id: 3,
-    title: 'HVAC Maintenance @ Global Services Inc • Renewal',
-    type: 'Renewal',
-    company: 'Global Services Inc',
-    contact: 'Mike Wilson',
-    startAt: '2024-01-25T09:00:00',
-    endAt: '2024-01-25T09:30:00',
-    assignedUser: 'Sarah Manager',
-    status: 'Planned',
-    notes: 'Contract renewal due in 60 days - competitor held service'
-  },
-  {
-    id: 4,
-    title: 'Quarterly review with Acme Corp',
-    type: 'FollowUp',
-    company: 'Acme Corp',
-    contact: 'John Smith',
-    startAt: '2024-01-18T11:00:00',
-    endAt: '2024-01-18T12:00:00',
-    assignedUser: 'Sarah Manager',
-    status: 'Done',
-    notes: 'Reviewed service performance and discussed expansion opportunities'
-  }
-];
+// CRM Events are now loaded from database API
 
 const eventTypes = [
   { value: 'Call', label: 'Call', icon: Phone, color: 'bg-blue-100 text-blue-800' },
@@ -82,10 +32,19 @@ const eventTypes = [
 ];
 
 export default function CRMCalendar({ timezone = 'Europe/London' }) {
-  // Load events from localStorage and merge with mock data
-  const loadEventsFromStorage = () => {
-    const storedEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-    return [...mockCRMEvents, ...storedEvents];
+  // Load events from database API
+  const loadEventsFromAPI = async () => {
+    try {
+      const response = await fetch('/api/crm-events', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const events = await response.json();
+      return events;
+    } catch (error) {
+      console.error('Error loading CRM events:', error);
+      return [];
+    }
   };
 
   // Timezone-aware date formatting functions
@@ -120,7 +79,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     return (utc.getTime() - targetTime.getTime()) / 60000;
   };
 
-  const [events, setEvents] = useState(loadEventsFromStorage());
+  const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -161,12 +120,17 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     notes: ''
   });
 
-  // Refresh events from localStorage periodically
+  // Load events from API on mount and refresh periodically
   useEffect(() => {
-    const interval = setInterval(() => {
-      setEvents(loadEventsFromStorage());
-    }, 1000); // Check every second for new events
-
+    const fetchEvents = async () => {
+      const eventsData = await loadEventsFromAPI();
+      setEvents(eventsData);
+    };
+    
+    fetchEvents();
+    
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchEvents, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -216,13 +180,20 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
       location: newMeeting.location
     };
     
-    // Store in localStorage
-    const existingEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-    const updatedEvents = [...existingEvents, meetingEntry];
-    localStorage.setItem('crmCalendarEvents', JSON.stringify(updatedEvents));
-    
-    // Update local state
-    setEvents(loadEventsFromStorage());
+    // Save to database via API
+    fetch('/api/crm-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(meetingEntry)
+    })
+    .then(response => response.json())
+    .then(async () => {
+      // Refresh events from API
+      const eventsData = await loadEventsFromAPI();
+      setEvents(eventsData);
+    })
+    .catch(error => console.error('Error creating meeting:', error));
     
     // Reset form
     setNewMeeting({
@@ -279,13 +250,20 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
       location: scheduleMeeting.location
     };
     
-    // Store in localStorage
-    const existingEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-    const updatedEvents = [...existingEvents, meetingEntry];
-    localStorage.setItem('crmCalendarEvents', JSON.stringify(updatedEvents));
-    
-    // Update local state
-    setEvents(loadEventsFromStorage());
+    // Save to database via API
+    fetch('/api/crm-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(meetingEntry)
+    })
+    .then(response => response.json())
+    .then(async () => {
+      // Refresh events from API
+      const eventsData = await loadEventsFromAPI();
+      setEvents(eventsData);
+    })
+    .catch(error => console.error('Error creating meeting:', error));
     
     // Send email notifications to assigned users
     sendMeetingInvitations(meetingEntry);
@@ -306,13 +284,17 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
 
   const deleteEvent = () => {
     if (selectedEvent) {
-      // Remove event from localStorage
-      const existingEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-      const updatedEvents = existingEvents.filter(event => event.id !== selectedEvent.id);
-      localStorage.setItem('crmCalendarEvents', JSON.stringify(updatedEvents));
-      
-      // Update state
-      setEvents(updatedEvents);
+      // Delete event via API
+      fetch(`/api/crm-events/${selectedEvent.id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      .then(async () => {
+        // Refresh events from API
+        const eventsData = await loadEventsFromAPI();
+        setEvents(eventsData);
+      })
+      .catch(error => console.error('Error deleting event:', error));
       
       // Send cancellation emails if toggle is enabled
       if (sendCancellationEmail && selectedEvent.assignedUsers && selectedEvent.assignedUsers.length > 0) {
@@ -359,17 +341,19 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
       endAt: endDateTime.toISOString()
     };
 
-    // Update in localStorage
-    const existingEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-    const eventIndex = existingEvents.findIndex(e => e.id === editingEvent.id);
-    
-    if (eventIndex !== -1) {
-      existingEvents[eventIndex] = updatedEvent;
-      localStorage.setItem('crmCalendarEvents', JSON.stringify(existingEvents));
-    }
-
-    // Update local state
-    setEvents(loadEventsFromStorage());
+    // Update event via API
+    fetch(`/api/crm-events/${editingEvent.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(updatedEvent)
+    })
+    .then(async () => {
+      // Refresh events from API
+      const eventsData = await loadEventsFromAPI();
+      setEvents(eventsData);
+    })
+    .catch(error => console.error('Error updating event:', error));
     
     // Send update notifications
     if (updatedEvent.assignedUsers && updatedEvent.assignedUsers.length > 0) {
@@ -971,13 +955,20 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                     notes: newEvent.notes
                   };
                   
-                  // Store in localStorage
-                  const existingEvents = JSON.parse(localStorage.getItem('crmCalendarEvents') || '[]');
-                  const updatedEvents = [...existingEvents, activityEntry];
-                  localStorage.setItem('crmCalendarEvents', JSON.stringify(updatedEvents));
-                  
-                  // Update local state
-                  setEvents(loadEventsFromStorage());
+                  // Save to database via API
+                  fetch('/api/crm-events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(activityEntry)
+                  })
+                  .then(response => response.json())
+                  .then(async () => {
+                    // Refresh events from API
+                    const eventsData = await loadEventsFromAPI();
+                    setEvents(eventsData);
+                  })
+                  .catch(error => console.error('Error creating event:', error));
                   
                   // Close modal and reset form
                   setShowCreateModal(false);
