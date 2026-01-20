@@ -22,6 +22,7 @@ const cronRoutes = require('./routes/cron');
 const publicAuthRoutes = require('./routes/public-auth');
 const customersRoutes = require('./routes/customers');
 const productsRoutes = require('./routes/products');
+const contactsRoutes = require('./routes/contacts');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -141,6 +142,7 @@ app.use('/api/migrations', migrationsRoutes);
 
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 app.use('/api/organizations', authenticateToken, organizationsRoutes);
+app.use('/api/contacts', authenticateToken, contactsRoutes);
 
 app.use('/api/billing', authenticateToken, billingRoutes);
 
@@ -245,10 +247,26 @@ app.use((error, _req, res, _next) => {
 });
 
 /* ============================= Start ============================= */
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 WorkTrackr Cloud server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Base URL: ${process.env.APP_BASE_URL || `http://localhost:${PORT}`}`);
-});
+// Run database migrations before starting server
+const { runMigrations } = require('./run-migrations');
+
+async function startServer() {
+  try {
+    // Run migrations
+    await runMigrations();
+    
+    // Start server
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 WorkTrackr Cloud server running on port ${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🔗 Base URL: ${process.env.APP_BASE_URL || `http://localhost:${PORT}`}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 module.exports = app;

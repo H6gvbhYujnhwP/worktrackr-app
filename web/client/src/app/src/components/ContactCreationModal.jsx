@@ -155,10 +155,20 @@ const ContactCreationModal = ({
         updatedAt: new Date().toISOString()
       };
 
-      // Add contact to database
+      // Add contact to database via API
       console.log('[ContactCreationModal] Adding contact to database:', newContact);
-      const createdContact = contactDB.createContact(newContact);
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newContact)
+      });
       
+      if (!response.ok) {
+        throw new Error('Failed to create contact');
+      }
+      
+      const createdContact = await response.json();
       console.log('[ContactCreationModal] Contact created successfully:', createdContact);
       
       // Call the callback with the created contact

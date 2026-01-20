@@ -93,11 +93,24 @@ const ContactManager = () => {
     filterContacts();
   }, [contacts, searchTerm, statusFilter, typeFilter]);
 
-  const loadContacts = () => {
-    const allContacts = contactDB.getAllContacts();
-    const stats = contactDB.getStatistics();
-    setContacts(allContacts);
-    setStatistics(stats);
+  const loadContacts = async () => {
+    try {
+      const response = await fetch('/api/contacts', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch contacts');
+      const allContacts = await response.json();
+      
+      const statsResponse = await fetch('/api/contacts/statistics', {
+        credentials: 'include'
+      });
+      const stats = statsResponse.ok ? await statsResponse.json() : {};
+      
+      setContacts(allContacts);
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+    }
   };
 
   const filterContacts = () => {
@@ -152,39 +165,60 @@ const ContactManager = () => {
     });
   };
 
-  const handleCreateContact = () => {
+  const handleCreateContact = async () => {
     try {
-      const newContact = contactDB.createContact(formData);
-      loadContacts();
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+      if (!response.ok) throw new Error('Failed to create contact');
+      const newContact = await response.json();
+      await loadContacts();
       setShowCreateForm(false);
       resetForm();
       setSelectedContact(newContact);
     } catch (error) {
       console.error('Error creating contact:', error);
+      alert('Failed to create contact. Please try again.');
     }
   };
 
-  const handleUpdateContact = () => {
+  const handleUpdateContact = async () => {
     try {
-      const updatedContact = contactDB.updateContact(selectedContact.id, formData);
-      loadContacts();
+      const response = await fetch(`/api/contacts/${selectedContact.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+      if (!response.ok) throw new Error('Failed to update contact');
+      const updatedContact = await response.json();
+      await loadContacts();
       setShowEditForm(false);
       setSelectedContact(updatedContact);
     } catch (error) {
       console.error('Error updating contact:', error);
+      alert('Failed to update contact. Please try again.');
     }
   };
 
-  const handleDeleteContact = (contactId) => {
+  const handleDeleteContact = async (contactId) => {
     if (window.confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
       try {
-        contactDB.deleteContact(contactId);
-        loadContacts();
+        const response = await fetch(`/api/contacts/${contactId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Failed to delete contact');
+        await loadContacts();
         if (selectedContact && selectedContact.id === contactId) {
           setSelectedContact(null);
         }
       } catch (error) {
         console.error('Error deleting contact:', error);
+        alert('Failed to delete contact. Please try again.');
       }
     }
   };
