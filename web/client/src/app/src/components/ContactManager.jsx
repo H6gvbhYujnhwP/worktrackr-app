@@ -41,6 +41,7 @@ import {
   CURRENCIES 
 } from '../data/contactDatabase.js';
 
+// Contact Manager Component - Professional table layout for scalable contact management
 const ContactManager = () => {
   const [contacts, setContacts] = useState([]);
   const [filteredContacts, setFilteredContacts] = useState([]);
