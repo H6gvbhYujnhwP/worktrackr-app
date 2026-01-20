@@ -392,72 +392,73 @@ export default function CRMDashboard() {
   };
 
   // Product catalog management
-  const updateProduct = (productId, updates) => {
-    setProductCatalog(prev => prev.map(product => 
-      product.id === productId ? { ...product, ...updates } : product
-    ));
+  const updateProduct = async (productId, updates) => {
+    try {
+      // Update in database via API
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update product');
+      
+      // Refresh products from API
+      const productsResponse = await fetch('/api/products', { credentials: 'include' });
+      const productsData = await productsResponse.json();
+      setProductCatalog(productsData.products || []);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
+    }
   };
 
-  const addNewProduct = () => {
+  const addNewProduct = async () => {
     if (!newProduct.name.trim()) return;
     
-    const productId = Date.now().toString();
     const productToAdd = {
-      ...newProduct,
-      id: productId,
-      defaultOurCost: parseFloat(newProduct.defaultOurCost) || 0,
-      defaultClientPrice: parseFloat(newProduct.defaultClientPrice) || 0
+      name: newProduct.name,
+      type: newProduct.category,
+      our_cost: parseFloat(newProduct.defaultOurCost) || 0,
+      client_price: parseFloat(newProduct.defaultClientPrice) || 0,
+      unit: newProduct.unit,
+      default_quantity: parseInt(newProduct.defaultQuantity) || 0,
+      tax_rate: 0,
+      active: newProduct.active
     };
     
-    // Add to catalog
-    setProductCatalog(prev => [...prev, productToAdd]);
-    
-    // Add to all existing customers' service lists
-    setCustomerServices(prev => {
-      const updated = { ...prev };
-      contacts.forEach(company => {
-        const newService = {
-          id: productId,
-          name: newProduct.name,
-          category: newProduct.category,
-          ourCost: parseFloat(newProduct.defaultOurCost) || 0,
-          clientPrice: parseFloat(newProduct.defaultClientPrice) || 0,
-          quantity: 0,
-          unit: newProduct.unit,
-          active: false
-        };
-        
-        if (updated[company.id]) {
-          updated[company.id] = [...updated[company.id], newService];
-        } else {
-          // Initialize customer services if not already done
-          const allServices = productCatalog.map(product => ({
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            ourCost: product.defaultOurCost,
-            clientPrice: product.defaultClientPrice,
-            quantity: 0,
-            unit: product.unit,
-            active: false
-          }));
-          updated[company.id] = [...allServices, newService];
-        }
+    try {
+      // Save to database via API
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(productToAdd)
       });
-      return updated;
-    });
-    
-    // Reset form with empty values
-    setNewProduct({
-      name: '',
-      category: '',
-      defaultOurCost: '',
-      defaultClientPrice: '',
-      unit: '',
-      defaultQuantity: 0,
-      active: true
-    });
-    setShowNewProductForm(false);
+      
+      if (!response.ok) throw new Error('Failed to create product');
+      
+      // Refresh products from API
+      const productsResponse = await fetch('/api/products', { credentials: 'include' });
+      const productsData = await productsResponse.json();
+      setProductCatalog(productsData.products || []);
+      
+      // Reset form
+      setNewProduct({
+        name: '',
+        category: '',
+        defaultOurCost: '',
+        defaultClientPrice: '',
+        unit: '',
+        defaultQuantity: 0,
+        active: true
+      });
+      setShowNewProductForm(false);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert('Failed to add product. Please try again.');
+    }
   };
 
   const cancelNewProduct = () => {
@@ -473,18 +474,26 @@ export default function CRMDashboard() {
     setShowNewProductForm(false);
   };
 
-  const removeProduct = (productId) => {
-    // Remove from catalog
-    setProductCatalog(prev => prev.filter(product => product.id !== productId));
+  const removeProduct = async (productId) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
     
-    // Remove from all customers' service lists
-    setCustomerServices(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(companyId => {
-        updated[companyId] = updated[companyId].filter(service => service.id !== productId);
+    try {
+      // Delete from database via API
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+        credentials: 'include'
       });
-      return updated;
-    });
+      
+      if (!response.ok) throw new Error('Failed to delete product');
+      
+      // Refresh products from API
+      const productsResponse = await fetch('/api/products', { credentials: 'include' });
+      const productsData = await productsResponse.json();
+      setProductCatalog(productsData.products || []);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
   };
 
   // Generate alphabet buttons
