@@ -44,7 +44,7 @@ const contactSchema = z.object({
 // GET /api/contacts - Get all contacts for the organization
 router.get('/', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
 
     const result = await query(
@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
 // GET /api/contacts/:id - Get a single contact
 router.get('/:id', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
     const { id } = req.params;
 
@@ -85,7 +85,7 @@ router.get('/:id', async (req, res) => {
 // POST /api/contacts - Create a new contact
 router.post('/', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
 
     const validatedData = contactSchema.parse(req.body);
@@ -112,7 +112,7 @@ router.post('/', async (req, res) => {
         validatedData.tags,
         validatedData.notes || '',
         JSON.stringify(validatedData.customFields),
-        req.user.id
+        req.user.userId
       ]
     );
 
@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
 // PUT /api/contacts/:id - Update a contact
 router.put('/:id', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
     const { id } = req.params;
 
@@ -232,7 +232,7 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/contacts/:id - Delete a contact
 router.delete('/:id', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
     const { id } = req.params;
 
@@ -255,7 +255,7 @@ router.delete('/:id', async (req, res) => {
 // GET /api/contacts/statistics - Get contact statistics
 router.get('/statistics', async (req, res) => {
   try {
-    const orgContext = await getOrgContext(req.user.id);
+    const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
 
     const result = await query(
