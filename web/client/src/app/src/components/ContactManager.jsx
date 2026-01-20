@@ -729,12 +729,12 @@ const ContactManager = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="name">Name *</Label>
+                      <Label htmlFor="name">Company Name *</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Company or person name"
+                        placeholder="Enter company name"
                         required
                       />
                     </div>
@@ -1130,12 +1130,12 @@ const ContactManager = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="name">Name *</Label>
+                      <Label htmlFor="name">Company Name *</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Company or person name"
+                        placeholder="Enter company name"
                         required
                       />
                     </div>

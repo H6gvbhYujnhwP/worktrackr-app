@@ -109,8 +109,8 @@ const ContactCreationModal = ({
     console.log('[ContactCreationModal] Validating form with name:', formData.name);
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Contact name is required';
-      console.log('[ContactCreationModal] Validation error: name is required');
+      newErrors.name = 'Company name is required';
+      console.log('[ContactCreationModal] Validation error: company name is required');
     }
     
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -265,12 +265,12 @@ const ContactCreationModal = ({
                   </div>
 
                   <div>
-                    <Label htmlFor="name">Name *</Label>
+                    <Label htmlFor="name">Company Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Company or person name"
+                      placeholder="Enter company name"
                       className={errors.name ? 'border-red-500' : ''}
                       required
                     />
