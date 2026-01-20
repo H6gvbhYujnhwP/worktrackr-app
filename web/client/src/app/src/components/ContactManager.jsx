@@ -511,92 +511,103 @@ const ContactManager = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredContacts.map((contact) => (
-                    <Card 
-                      key={contact.id} 
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        selectedContact?.id === contact.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''
-                      }`}
-                      onClick={() => setSelectedContact(contact)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-3 flex-1">
-                            <div className="p-2 bg-gray-100 rounded-lg">
-                              {contact.type === CONTACT_TYPES.COMPANY ? (
-                                <Building2 className="w-5 h-5 text-gray-600" />
-                              ) : (
-                                <User className="w-5 h-5 text-gray-600" />
-                              )}
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <h4 className="font-semibold text-gray-900">{contact.name}</h4>
-                                <Badge className={getStatusColor(contact.crm.status)}>
-                                  {contact.crm.status}
-                                </Badge>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredContacts.map((contact) => (
+                        <tr 
+                          key={contact.id}
+                          className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+                            selectedContact?.id === contact.id ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => setSelectedContact(contact)}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0">
+                                {contact.type === CONTACT_TYPES.COMPANY ? (
+                                  <Building2 className="w-5 h-5 text-gray-400" />
+                                ) : (
+                                  <User className="w-5 h-5 text-gray-400" />
+                                )}
                               </div>
-                              
-                              <div className="text-sm text-gray-600 space-y-1">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{contact.name}</div>
                                 {contact.primaryContact && (
-                                  <p className="flex items-center">
-                                    <User className="w-4 h-4 mr-2" />
-                                    {contact.primaryContact}
-                                  </p>
-                                )}
-                                {contact.email && (
-                                  <p className="flex items-center">
-                                    <Mail className="w-4 h-4 mr-2" />
-                                    {contact.email}
-                                  </p>
-                                )}
-                                {contact.phone && (
-                                  <p className="flex items-center">
-                                    <Phone className="w-4 h-4 mr-2" />
-                                    {contact.phone}
-                                  </p>
+                                  <div className="text-xs text-gray-500">{contact.primaryContact}</div>
                                 )}
                               </div>
-                              
-                              {contact.crm.totalProfit > 0 && (
-                                <div className="mt-2">
-                                  <span className="text-sm font-medium text-green-600">
-                                    {formatCurrency(contact.crm.totalProfit, contact.accounting.currency)}
-                                  </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge className={getStatusColor(contact.crm.status)}>
+                              {contact.crm.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600 space-y-1">
+                              {contact.email && (
+                                <div className="flex items-center">
+                                  <Mail className="w-3 h-3 mr-1.5 text-gray-400" />
+                                  <span className="truncate max-w-[200px]">{contact.email}</span>
+                                </div>
+                              )}
+                              {contact.phone && (
+                                <div className="flex items-center">
+                                  <Phone className="w-3 h-3 mr-1.5 text-gray-400" />
+                                  <span>{contact.phone}</span>
                                 </div>
                               )}
                             </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditContact(contact);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteContact(contact.id);
-                              }}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </td>
+                          <td className="px-4 py-3">
+                            {contact.crm.totalProfit > 0 ? (
+                              <span className="text-sm font-medium text-green-600">
+                                {formatCurrency(contact.crm.totalProfit, contact.accounting.currency)}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-gray-400">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditContact(contact);
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteContact(contact.id);
+                                }}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
