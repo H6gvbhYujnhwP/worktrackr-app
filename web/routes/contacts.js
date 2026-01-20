@@ -59,6 +59,34 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/contacts/statistics - Get contact statistics
+router.get('/statistics', async (req, res) => {
+  try {
+    const orgContext = await getOrgContext(req.user.userId);
+    const organizationId = orgContext.organizationId;
+
+    const result = await query(
+      `SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'active') as active,
+        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'prospect') as prospects,
+        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'at_risk') as "atRisk",
+        COUNT(*) FILTER (WHERE "type" = 'company') as companies,
+        COUNT(*) FILTER (WHERE "type" = 'individual') as individuals,
+        COALESCE(SUM((crm->>'totalProfit')::numeric), 0) as "totalProfit",
+        COALESCE(SUM((crm->>'renewalsCount')::numeric), 0) as "totalRenewals",
+        COALESCE(SUM((crm->>'openOppsCount')::numeric), 0) as "totalOpportunities"
+       FROM contacts WHERE organisation_id = $1`,
+      [organizationId]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching contact statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
 // GET /api/contacts/:id - Get a single contact
 router.get('/:id', async (req, res) => {
   try {
@@ -249,34 +277,6 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting contact:', error);
     res.status(500).json({ error: 'Failed to delete contact' });
-  }
-});
-
-// GET /api/contacts/statistics - Get contact statistics
-router.get('/statistics', async (req, res) => {
-  try {
-    const orgContext = await getOrgContext(req.user.userId);
-    const organizationId = orgContext.organizationId;
-
-    const result = await query(
-      `SELECT 
-        COUNT(*) as total,
-        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'active') as active,
-        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'prospect') as prospects,
-        COUNT(*) FILTER (WHERE (crm->>'status')::text = 'at_risk') as "atRisk",
-        COUNT(*) FILTER (WHERE "type" = 'company') as companies,
-        COUNT(*) FILTER (WHERE "type" = 'individual') as individuals,
-        COALESCE(SUM((crm->>'totalProfit')::numeric), 0) as "totalProfit",
-        COALESCE(SUM((crm->>'renewalsCount')::numeric), 0) as "totalRenewals",
-        COALESCE(SUM((crm->>'openOppsCount')::numeric), 0) as "totalOpportunities"
-       FROM contacts WHERE organisation_id = $1`,
-      [organizationId]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching contact statistics:', error);
-    res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
 
