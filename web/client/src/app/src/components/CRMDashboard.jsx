@@ -117,6 +117,10 @@ export default function CRMDashboard() {
       }
     };
     loadCustomerServices();
+    
+    // Auto-refresh every 10 seconds
+    const intervalId = setInterval(loadCustomerServices, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Customer services are now saved to database via API calls
@@ -138,6 +142,10 @@ export default function CRMDashboard() {
       }
     };
     loadProducts();
+    
+    // Auto-refresh every 10 seconds
+    const intervalId = setInterval(loadProducts, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Product catalog is now saved to database via API calls
@@ -206,6 +214,10 @@ export default function CRMDashboard() {
       }
     };
     fetchQuotes();
+    
+    // Auto-refresh every 10 seconds
+    const intervalId = setInterval(fetchQuotes, 10000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const filteredCompanies = contacts.filter(contact => {
