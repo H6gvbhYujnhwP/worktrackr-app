@@ -163,11 +163,50 @@ export default function UserManagementImproved({ users, currentUser }) {
     setEditingUser({ ...user });
   };
 
-  const handleSaveUser = () => {
-    setUsers(prev => prev.map(u => 
-      u.id === editingUser.id ? editingUser : u
-    ));
-    setEditingUser(null);
+  const handleSaveUser = async () => {
+    try {
+      const updateData = {
+        name: editingUser.name,
+        email: editingUser.email,
+        mobile: editingUser.mobile,
+        department: editingUser.department,
+        role: editingUser.role
+      };
+      
+      // Add password if it was changed
+      if (editingUser.newPassword && editingUser.newPassword.length >= 8) {
+        updateData.password = editingUser.newPassword;
+      }
+      
+      const response = await fetch(`/api/organizations/${organization.id}/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+      
+      // Update local state
+      setUsers(prev => prev.map(u => 
+        u.id === editingUser.id ? { ...editingUser, newPassword: undefined } : u
+      ));
+      setEditingUser(null);
+      
+      // Show success message
+      if (updateData.password) {
+        alert('User updated successfully! Password has been changed.');
+      } else {
+        alert('User updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user. Please try again.');
+    }
   };
 
   const handleCancelEdit = () => {
@@ -324,6 +363,25 @@ export default function UserManagementImproved({ users, currentUser }) {
                           />
                         </div>
                       </div>
+                      
+                      {/* Change Password Section */}
+                      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                          <Label className="font-medium">Change Password</Label>
+                        </div>
+                        <Input
+                          type="password"
+                          value={editingUser.newPassword || ''}
+                          onChange={(e) => setEditingUser(prev => ({ ...prev, newPassword: e.target.value }))}
+                          placeholder="Enter new password (min 8 characters, leave empty to keep current)"
+                          minLength={8}
+                        />
+                        <p className="text-xs text-gray-600">
+                          🔒 Leave empty to keep the current password. Minimum 8 characters required for new password.
+                        </p>
+                      </div>
+                      
                       <div className="flex space-x-2">
                         <Button onClick={handleSaveUser} size="sm">
                           <Save className="w-4 h-4 mr-2" />

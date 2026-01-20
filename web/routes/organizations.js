@@ -214,6 +214,83 @@ router.get('/:id/users', async (req, res) => {
   }
 });
 
+// Update user in organization
+router.put('/:id/users/:userId', async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const { name, email, mobile, department, role, password } = req.body;
+    const { type, partnerId, organizationId, role: userRole } = req.orgContext;
+
+    // Check access permissions
+    if (type === 'partner_admin') {
+      // Verify organization belongs to partner
+      const orgCheck = await query(
+        'SELECT id FROM organisations WHERE id = $1 AND partner_id = $2',
+        [id, partnerId]
+      );
+      if (orgCheck.rows.length === 0) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else if (id !== organizationId || !['admin', 'manager'].includes(userRole)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Verify user is a member of the organization
+    const membershipCheck = await query(
+      'SELECT id FROM memberships WHERE user_id = $1 AND organisation_id = $2',
+      [userId, id]
+    );
+    
+    if (membershipCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found in organization' });
+    }
+
+    // Update user information
+    const updateFields = [];
+    const updateValues = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updateFields.push(`name = $${paramCount++}`);
+      updateValues.push(name);
+    }
+    if (email !== undefined) {
+      updateFields.push(`email = $${paramCount++}`);
+      updateValues.push(email.toLowerCase());
+    }
+
+    // Handle password update
+    if (password && password.length >= 8) {
+      const bcrypt = require('bcryptjs');
+      const passwordHash = await bcrypt.hash(password, 12);
+      updateFields.push(`password_hash = $${paramCount++}`);
+      updateValues.push(passwordHash);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(userId);
+      await query(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount}`,
+        updateValues
+      );
+    }
+
+    // Update role in membership if provided
+    if (role !== undefined) {
+      await query(
+        'UPDATE memberships SET role = $1 WHERE user_id = $2 AND organisation_id = $3',
+        [role, userId, id]
+      );
+    }
+
+    res.json({ message: 'User updated successfully' });
+
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 // Invite user to organization
 router.post('/:id/users/invite', async (req, res) => {
   try {

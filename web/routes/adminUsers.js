@@ -441,16 +441,24 @@ router.post('/:id/hard-delete', async (req, res) => {
     );
 
     // Delete in order (respecting foreign key constraints):
-    // 1. Memberships
+    
+    // 1. Handle tickets created by this user
+    // Option: Delete tickets created by this user
+    await query('DELETE FROM tickets WHERE created_by = $1', [id]);
+    
+    // Also handle tickets assigned to this user
+    await query('UPDATE tickets SET assigned_to = NULL WHERE assigned_to = $1', [id]);
+    
+    // 2. Memberships
     await query('DELETE FROM memberships WHERE user_id = $1', [id]);
 
-    // 2. Audit logs
+    // 3. Audit logs
     await query('DELETE FROM audit_logs WHERE actor_id = $1', [id]);
 
-    // 3. User
+    // 4. User
     await query('DELETE FROM users WHERE id = $1', [id]);
 
-    // 4. Organizations if user was the only member
+    // 5. Organizations if user was the only member
     for (const org of orgResult.rows) {
       const memberCount = await query(
         'SELECT COUNT(*) as count FROM memberships WHERE organisation_id = $1',
