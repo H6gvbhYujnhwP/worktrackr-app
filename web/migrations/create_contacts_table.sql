@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
   
   -- Basic Information
-  type VARCHAR(20) NOT NULL DEFAULT 'company', -- 'company' or 'individual'
+  "type" VARCHAR(20) NOT NULL DEFAULT 'company', -- 'company' or 'individual'
   name VARCHAR(255) NOT NULL,
   display_name VARCHAR(255),
   
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS contacts (
 
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_contacts_organisation_id ON contacts(organisation_id);
-CREATE INDEX IF NOT EXISTS idx_contacts_type ON contacts(type);
+CREATE INDEX IF NOT EXISTS idx_contacts_type ON contacts("type");
 CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
 CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name);
 CREATE INDEX IF NOT EXISTS idx_contacts_created_by ON contacts(created_by);

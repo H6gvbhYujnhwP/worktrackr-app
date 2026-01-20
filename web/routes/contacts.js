@@ -92,7 +92,7 @@ router.post('/', async (req, res) => {
 
     const result = await query(
       `INSERT INTO contacts (
-        organisation_id, type, name, display_name, primary_contact, email, phone, website,
+        organisation_id, "type", name, display_name, primary_contact, email, phone, website,
         addresses, accounting, crm, contact_persons, tags, notes, custom_fields, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *`,
@@ -150,7 +150,7 @@ router.put('/:id', async (req, res) => {
     let paramIndex = 1;
 
     if (validatedData.type !== undefined) {
-      updateFields.push(`type = $${paramIndex++}`);
+      updateFields.push(`"type" = $${paramIndex++}`);
       updateValues.push(validatedData.type);
     }
     if (validatedData.name !== undefined) {
@@ -264,8 +264,8 @@ router.get('/statistics', async (req, res) => {
         COUNT(*) FILTER (WHERE (crm->>'status')::text = 'active') as active,
         COUNT(*) FILTER (WHERE (crm->>'status')::text = 'prospect') as prospects,
         COUNT(*) FILTER (WHERE (crm->>'status')::text = 'at_risk') as at_risk,
-        COUNT(*) FILTER (WHERE type = 'company') as companies,
-        COUNT(*) FILTER (WHERE type = 'individual') as individuals,
+        COUNT(*) FILTER (WHERE "type" = 'company') as companies,
+        COUNT(*) FILTER (WHERE "type" = 'individual') as individuals,
         COALESCE(SUM((crm->>'totalProfit')::numeric), 0) as total_profit,
         COALESCE(SUM((crm->>'renewalsCount')::numeric), 0) as total_renewals,
         COALESCE(SUM((crm->>'openOppsCount')::numeric), 0) as total_opportunities
