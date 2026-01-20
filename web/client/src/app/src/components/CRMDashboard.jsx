@@ -57,38 +57,7 @@ const worldCurrencies = [
 
 // Contacts are now fetched from the database API
 
-const mockProductCatalog = [
-  {
-    id: 1,
-    name: 'HVAC Maintenance',
-    category: 'Maintenance',
-    defaultOurCost: 150.00,
-    defaultClientPrice: 300.00,
-    defaultQuantity: 1,
-    unit: 'service',
-    active: true
-  },
-  {
-    id: 2,
-    name: 'Electrical Inspection',
-    category: 'Inspection',
-    defaultOurCost: 80.00,
-    defaultClientPrice: 180.00,
-    defaultQuantity: 1,
-    unit: 'inspection',
-    active: true
-  },
-  {
-    id: 3,
-    name: 'Plumbing Repair',
-    category: 'Repair',
-    defaultOurCost: 120.00,
-    defaultClientPrice: 250.00,
-    defaultQuantity: 1,
-    unit: 'job',
-    active: true
-  }
-];
+// Products are now fetched from the database API
 
 export default function CRMDashboard() {
   console.log('[CRMDashboard] Component mounting...');
@@ -103,7 +72,7 @@ export default function CRMDashboard() {
   const [customerServices, setCustomerServices] = useState({});
   const [contactInfo, setContactInfo] = useState({});
   const [selectedCurrency, setSelectedCurrency] = useState('GBP');
-  const [productCatalog, setProductCatalog] = useState(mockProductCatalog);
+  const [productCatalog, setProductCatalog] = useState([]);
   const [renewalAlertDays, setRenewalAlertDays] = useState(60);
   const [showNewProductForm, setShowNewProductForm] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -123,49 +92,55 @@ export default function CRMDashboard() {
   const [quotes, setQuotes] = useState([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
 
-  // Load customer services from localStorage on component mount
+  // Load customer services from database API
   useEffect(() => {
-    const savedServices = localStorage.getItem('customerServices');
-    console.log('Loading customerServices from localStorage:', savedServices);
-    if (savedServices) {
+    const loadCustomerServices = async () => {
       try {
-        const parsedServices = JSON.parse(savedServices);
-        console.log('Parsed customerServices:', parsedServices);
-        setCustomerServices(parsedServices);
+        const response = await fetch('/api/customer-services', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Convert array to object keyed by contact_id
+          const servicesObj = {};
+          data.forEach(service => {
+            if (!servicesObj[service.contact_id]) {
+              servicesObj[service.contact_id] = [];
+            }
+            servicesObj[service.contact_id].push(service);
+          });
+          setCustomerServices(servicesObj);
+          console.log('[CRMDashboard] Customer services loaded:', data.length);
+        }
       } catch (error) {
-        console.warn('Error loading customer services from localStorage:', error);
+        console.error('[CRMDashboard] Error loading customer services:', error);
       }
-    } else {
-      console.log('No customerServices found in localStorage, initializing with empty object');
-      setCustomerServices({});
-    }
+    };
+    loadCustomerServices();
   }, []);
 
-  // Save customer services to localStorage whenever they change
-  useEffect(() => {
-    if (Object.keys(customerServices).length > 0) {
-      localStorage.setItem('customerServices', JSON.stringify(customerServices));
-    }
-  }, [customerServices]);
+  // Customer services are now saved to database via API calls
 
-  // Load product catalog from localStorage on component mount
+  // Load product catalog from database API
   useEffect(() => {
-    const savedCatalog = localStorage.getItem('productCatalog');
-    if (savedCatalog) {
+    const loadProducts = async () => {
       try {
-        setProductCatalog(JSON.parse(savedCatalog));
+        const response = await fetch('/api/products', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProductCatalog(data.products || []);
+          console.log('[CRMDashboard] Products loaded:', data.products?.length || 0);
+        }
       } catch (error) {
-        console.warn('Error loading product catalog from localStorage:', error);
+        console.error('[CRMDashboard] Error loading products:', error);
       }
-    }
+    };
+    loadProducts();
   }, []);
 
-  // Save product catalog to localStorage whenever it changes
-  useEffect(() => {
-    if (productCatalog.length > 0) {
-      localStorage.setItem('productCatalog', JSON.stringify(productCatalog));
-    }
-  }, [productCatalog]);
+  // Product catalog is now saved to database via API calls
 
   // Get current currency symbol
   const getCurrentCurrencySymbol = () => {
