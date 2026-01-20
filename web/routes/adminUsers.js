@@ -336,7 +336,7 @@ router.post('/bulk', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, admin_notes } = req.body;
+    const { name, email, admin_notes, password } = req.body;
 
     const updates = [];
     const values = [];
@@ -353,6 +353,14 @@ router.patch('/:id', async (req, res) => {
     if (admin_notes !== undefined) {
       updates.push(`admin_notes = $${paramCount++}`);
       values.push(admin_notes);
+    }
+    
+    // Handle password update
+    if (password && password.length >= 8) {
+      const bcrypt = require('bcryptjs');
+      const passwordHash = await bcrypt.hash(password, 12);
+      updates.push(`password_hash = $${paramCount++}`);
+      values.push(passwordHash);
     }
 
     if (updates.length === 0) {

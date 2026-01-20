@@ -19,7 +19,8 @@ export default function UserDetailPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    admin_notes: ''
+    admin_notes: '',
+    newPassword: ''
   });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState(''); // 'soft' or 'hard'
@@ -47,7 +48,8 @@ export default function UserDetailPage() {
       setFormData({
         name: data.user.name || '',
         email: data.user.email || '',
-        admin_notes: data.user.admin_notes || ''
+        admin_notes: data.user.admin_notes || '',
+        newPassword: ''
       });
     } catch (err) {
       setError(err.message);
@@ -62,13 +64,25 @@ export default function UserDetailPage() {
       setError('');
       setSuccess('');
 
+      // Prepare data to send
+      const dataToSend = {
+        name: formData.name,
+        email: formData.email,
+        admin_notes: formData.admin_notes
+      };
+      
+      // Only include password if it's been set and is at least 8 characters
+      if (formData.newPassword && formData.newPassword.length >= 8) {
+        dataToSend.password = formData.newPassword;
+      }
+
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       if (!response.ok) {
@@ -76,7 +90,11 @@ export default function UserDetailPage() {
         throw new Error(data.error || 'Failed to update user');
       }
 
-      setSuccess('User updated successfully');
+      if (dataToSend.password) {
+        setSuccess('User updated successfully! Password has been changed.');
+      } else {
+        setSuccess('User updated successfully');
+      }
       await fetchUserDetails();
     } catch (err) {
       setError(err.message);
@@ -290,6 +308,24 @@ export default function UserDetailPage() {
                       rows={4}
                       placeholder="Add internal notes about this user..."
                     />
+                  </div>
+
+                  {/* Password Change Section */}
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-600" />
+                      <label className="block text-sm font-medium">Change Password</label>
+                    </div>
+                    <Input
+                      type="password"
+                      value={formData.newPassword}
+                      onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                      placeholder="Enter new password (min 8 characters, leave empty to keep current)"
+                      minLength={8}
+                    />
+                    <p className="text-xs text-gray-600">
+                      🔒 Leave empty to keep the current password. Minimum 8 characters required for new password.
+                    </p>
                   </div>
 
                   <div className="flex gap-3 pt-4">
