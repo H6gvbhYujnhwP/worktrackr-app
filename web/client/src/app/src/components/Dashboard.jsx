@@ -47,7 +47,7 @@ import ContactManager from './ContactManager.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
-import TicketDetailView from './TicketDetailView.jsx';
+import TicketDetailView from './TicketDetailViewTabbed.jsx';
 
 export default function Dashboard() {
   const { user, membership, logout } = useAuth();
