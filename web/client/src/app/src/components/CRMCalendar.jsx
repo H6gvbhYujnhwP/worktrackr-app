@@ -820,24 +820,24 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Total Events</span>
-                  <span className="font-medium">{mockCRMEvents.length}</span>
+                  <span className="font-medium">{events.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Completed</span>
                   <span className="font-medium text-green-600">
-                    {mockCRMEvents.filter(e => e.status === 'Done').length}
+                    {events.filter(e => e.status === 'Done').length}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Pending</span>
                   <span className="font-medium text-orange-600">
-                    {mockCRMEvents.filter(e => e.status === 'Planned').length}
+                    {events.filter(e => e.status === 'Planned').length}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Renewals</span>
                   <span className="font-medium text-red-600">
-                    {mockCRMEvents.filter(e => e.type === 'Renewal').length}
+                    {events.filter(e => e.type === 'Renewal').length}
                   </span>
                 </div>
               </div>
