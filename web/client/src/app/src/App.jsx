@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { mockUsers, mockTickets, mockWorkflows, mockOrganization } from './data/mockData.js';
-import Dashboard from './components/Dashboard.jsx';
+import DashboardWithLayout from './components/DashboardWithLayout.jsx';
 import WorkflowBuilder from './components/WorkflowBuilder.jsx';
 import QuoteDetails from './components/QuoteDetails.jsx';
 import QuoteForm from './components/QuoteForm.jsx';
@@ -524,7 +524,7 @@ export default function App() {
           <Routes>
             <Route
               path="dashboard"
-              element={<Dashboard />}
+              element={<DashboardWithLayout />}
             />
             <Route
               path="workflow-builder"
