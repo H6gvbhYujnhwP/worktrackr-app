@@ -93,11 +93,14 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         {!isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">W</span>
-            </div>
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="16" height="16" rx="2" fill="#1a1a1a" />
+              <rect x="7" y="7" width="10" height="2" fill="#fbbf24" />
+              <rect x="7" y="11" width="10" height="2" fill="#fbbf24" />
+              <rect x="7" y="15" width="6" height="2" fill="#fbbf24" />
+            </svg>
             <span className="font-bold text-lg">
-              Work<span className="text-orange-500">Trackr</span>
+              Work<span className="text-yellow-500">Trackr</span>
             </span>
           </div>
         )}

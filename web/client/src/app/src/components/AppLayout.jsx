@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { Menu, X } from 'lucide-react';
 
-const AppLayout = ({ children, user, isAdmin, onNavigate }) => {
+const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -44,11 +44,14 @@ const AppLayout = ({ children, user, isAdmin, onNavigate }) => {
           </button>
           
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">W</span>
-            </div>
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="16" height="16" rx="2" fill="#1a1a1a" />
+              <rect x="7" y="7" width="10" height="2" fill="#fbbf24" />
+              <rect x="7" y="11" width="10" height="2" fill="#fbbf24" />
+              <rect x="7" y="15" width="6" height="2" fill="#fbbf24" />
+            </svg>
             <span className="font-bold text-lg">
-              Work<span className="text-orange-500">Trackr</span>
+              Work<span className="text-yellow-500">Trackr</span>
             </span>
           </div>
 
@@ -86,26 +89,44 @@ const AppLayout = ({ children, user, isAdmin, onNavigate }) => {
         {/* Top Bar - Desktop Only */}
         {!isMobile && (
           <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-            <div className="flex-1 max-w-xl">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full px-4 py-2 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <svg
-                  className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+            <div className="flex-1">
+              <div className="flex items-center space-x-6">
+                {/* Welcome Message */}
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">
+                    Welcome back, {user?.name || 'User'}
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {isAdmin ? 'Manage your organization and workflows' : 'View and manage your assigned tickets'}
+                    {lastUpdate && (
+                      <span className="ml-2">• Last updated: {lastUpdate.toLocaleTimeString()}</span>
+                    )}
+                  </p>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      className="w-full px-4 py-2 pl-10 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <svg
+                      className="absolute left-3 top-2.5 w-5 h-5 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -179,9 +200,9 @@ const AppLayout = ({ children, user, isAdmin, onNavigate }) => {
             ${isMobile ? 'pt-16' : ''}
           `}
         >
-          <div className="p-6">
+          <div className="p-4">
             {/* White contained card wrapper for all content */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               {children}
             </div>
           </div>

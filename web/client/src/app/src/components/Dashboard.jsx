@@ -241,25 +241,9 @@ const Dashboard = forwardRef((props, ref) => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name || 'User'}
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {isAdmin ? 'Manage your organization and workflows' : 'View and manage your assigned tickets'}
-          </p>
-          <div className="text-xs text-gray-500 mt-1">
-            Last updated: {lastUpdate.toLocaleTimeString()}
-            <RefreshCw className="w-3 h-3 inline ml-1" />
-          </div>
-        </div>
-
-
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Main Content */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Navigation Tabs - HIDDEN: Now in sidebar */}
           <Card className="hidden">
             <CardContent className="p-4">
