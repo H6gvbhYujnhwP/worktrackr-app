@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { Menu, X } from 'lucide-react';
 
-const AppLayout = ({ children, currentPage, user, isAdmin }) => {
+const AppLayout = ({ children, user, isAdmin, onNavigate }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -17,12 +17,14 @@ const AppLayout = ({ children, currentPage, user, isAdmin }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleNavigation = (path) => {
+  const handleNavigation = (view) => {
     // Close mobile menu on navigation
     setIsMobileMenuOpen(false);
     
-    // Handle navigation
-    window.location.href = path;
+    // Use provided onNavigate callback instead of page reload
+    if (onNavigate) {
+      onNavigate(view);
+    }
   };
 
   return (
@@ -73,7 +75,6 @@ const AppLayout = ({ children, currentPage, user, isAdmin }) => {
         `}
       >
         <Sidebar
-          currentPage={currentPage}
           onNavigate={handleNavigation}
           user={user}
           isAdmin={isAdmin}
@@ -174,12 +175,15 @@ const AppLayout = ({ children, currentPage, user, isAdmin }) => {
         {/* Main Content with Light Gray Background */}
         <main 
           className={`
-            flex-1 overflow-y-auto bg-gray-50
+            flex-1 overflow-y-auto bg-gray-100
             ${isMobile ? 'pt-16' : ''}
           `}
         >
           <div className="p-6">
-            {children}
+            {/* White contained card wrapper for all content */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              {children}
+            </div>
           </div>
         </main>
       </div>

@@ -36,28 +36,28 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       id: 'dashboard',
       label: 'Dashboard',
       icon: Home,
-      path: '/app/dashboard'
+      view: 'tickets'
     },
     {
       id: 'tickets',
       label: 'Tickets',
       icon: Ticket,
-      path: '/app/tickets',
+      view: 'tickets',
       subItems: [
-        { id: 'all-tickets', label: 'All Tickets', path: '/app/tickets' },
-        { id: 'ticket-calendar', label: 'Ticket Calendar', path: '/app/ticket-calendar', icon: Calendar }
+        { id: 'all-tickets', label: 'All Tickets', view: 'tickets' },
+        { id: 'ticket-calendar', label: 'Ticket Calendar', view: 'calendar', icon: Calendar }
       ]
     },
     {
       id: 'crm',
       label: 'CRM',
       icon: Users,
-      path: '/app/crm',
+      view: 'crm',
       subItems: [
-        { id: 'contacts', label: 'Contacts', path: '/app/crm/contacts' },
-        { id: 'product-catalog', label: 'Product Catalog', path: '/app/crm/products', icon: Package },
-        { id: 'crm-calendar', label: 'CRM Calendar', path: '/app/crm/calendar', icon: Calendar },
-        { id: 'quotes', label: 'Quotes', path: '/app/crm/quotes', icon: FileText }
+        { id: 'contacts', label: 'Contacts', view: 'contacts' },
+        { id: 'product-catalog', label: 'Product Catalog', view: 'crm', icon: Package },
+        { id: 'crm-calendar', label: 'CRM Calendar', view: 'crm-calendar', icon: Calendar },
+        { id: 'quotes', label: 'Quotes', view: 'crm', icon: FileText }
       ]
     }
   ];
@@ -67,21 +67,19 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      path: '/app/settings',
+      view: 'users',
       subItems: [
-        { id: 'manage-users', label: 'Manage Users', path: '/app/settings/users', icon: UserCog },
-        { id: 'billing', label: 'Billing', path: '/app/settings/billing', icon: CreditCard },
-        { id: 'security', label: 'Security', path: '/app/settings/security', icon: Shield },
-        { id: 'email-intake', label: 'Email Intake', path: '/app/settings/email', icon: Mail }
+        { id: 'manage-users', label: 'Manage Users', view: 'users', icon: UserCog },
+        { id: 'billing', label: 'Billing', view: 'billing', icon: CreditCard },
+        { id: 'security', label: 'Security', view: 'security', icon: Shield },
+        { id: 'email-intake', label: 'Email Intake', view: 'email-intake', icon: Mail }
       ]
     });
   }
 
-  const handleNavigation = (path) => {
+  const handleNavigation = (view) => {
     if (onNavigate) {
-      onNavigate(path);
-    } else {
-      window.location.href = path;
+      onNavigate(view);
     }
   };
 
@@ -130,7 +128,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
                   if (item.subItems) {
                     toggleSection(item.id);
                   } else {
-                    handleNavigation(item.path);
+                    handleNavigation(item.view);
                   }
                 }}
                 className={`w-full flex items-center px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -165,7 +163,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
                     return (
                       <button
                         key={subItem.id}
-                        onClick={() => handleNavigation(subItem.path)}
+                        onClick={() => handleNavigation(subItem.view)}
                         className={`w-full flex items-center px-4 py-2 text-sm transition-colors rounded-lg ${
                           isSubActive
                             ? 'bg-blue-50 text-blue-600'

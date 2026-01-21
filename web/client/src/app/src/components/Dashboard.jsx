@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
@@ -49,7 +49,7 @@ import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
 import TicketDetailView from './TicketDetailViewTabbed.jsx';
 
-export default function Dashboard() {
+const Dashboard = forwardRef((props, ref) => {
   const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
@@ -76,6 +76,13 @@ export default function Dashboard() {
     return localStorage.getItem('worktrackr-ticket-view-mode') || 'table'; // 'cards' or 'table'
   });
   const [lastUpdate, setLastUpdate] = useState(new Date());
+
+  // Expose setCurrentView to parent via ref
+  useImperativeHandle(ref, () => ({
+    setCurrentView: (view) => {
+      setCurrentView(view);
+    }
+  }));
 
   // Show loading spinner while authentication data is being fetched
   if (user === undefined || membership === undefined) {
@@ -253,8 +260,8 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="space-y-6">
-          {/* Navigation Tabs */}
-          <Card>
+          {/* Navigation Tabs - HIDDEN: Now in sidebar */}
+          <Card className="hidden">
             <CardContent className="p-4">
               <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-4 lg:space-y-0">
                 {/* Settings Section */}
@@ -627,5 +634,7 @@ export default function Dashboard() {
       <AppVersion />
     </div>
   );
-}
+});
+
+export default Dashboard;
 
