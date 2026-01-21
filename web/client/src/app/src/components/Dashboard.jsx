@@ -433,63 +433,31 @@ const Dashboard = forwardRef((props, ref) => {
                   </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-4 gap-1 sm:gap-3">
-                  {/* My Tickets */}
-                  <Card className="mobile-ticket-card">
-                    <CardContent className="p-1 sm:p-4">
-                      <div className="flex flex-col text-center">
-                        <User className="w-3 h-3 sm:w-6 sm:h-6 text-purple-600 mx-auto mb-1 hidden sm:block" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">My Tickets</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">My Tickets</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.my_tickets}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* Quick Stats - Compact Inline Badges */}
+                <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-medium text-gray-700">My Tickets:</span>
+                    <Badge variant="secondary" className="font-semibold">{ticketCounts.my_tickets}</Badge>
+                  </div>
                   
-                  {/* Open */}
-                  <Card className="mobile-ticket-card">
-                    <CardContent className="p-1 sm:p-4">
-                      <div className="flex flex-col text-center">
-                        <AlertCircle className="w-3 h-3 sm:w-6 sm:h-6 text-red-600 mx-auto mb-1 hidden sm:block" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Open</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Open</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.open}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-sm font-medium text-gray-700">Open:</span>
+                    <Badge variant="secondary" className="font-semibold">{ticketCounts.open}</Badge>
+                  </div>
 
-                  {/* Closed */}
-                  <Card className="mobile-ticket-card" onClick={() => setActiveTab('closed')} style={{cursor: 'pointer'}}>
-                    <CardContent className="p-1 sm:p-4">
-                      <div className="flex flex-col text-center">
-                        <XCircle className="w-3 h-3 sm:w-6 sm:h-6 text-red-600 mx-auto mb-1 hidden sm:block" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Closed</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Closed</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.closed}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('closed')}>
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-sm font-medium text-gray-700">Closed:</span>
+                    <Badge variant="secondary" className="font-semibold">{ticketCounts.closed}</Badge>
+                  </div>
 
-                  {/* Resolved */}
-                  <Card className="mobile-ticket-card" onClick={() => setActiveTab('resolved')} style={{cursor: 'pointer'}}>
-                    <CardContent className="p-1 sm:p-4">
-                      <div className="flex flex-col text-center">
-                        <CheckCircle className="w-3 h-3 sm:w-6 sm:h-6 text-green-600 mx-auto mb-1 hidden sm:block" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-600 leading-none block sm:hidden">Resolved</p>
-                          <p className="text-xs font-medium text-gray-600 leading-none hidden sm:block">Resolved</p>
-                          <p className="text-xs sm:text-lg font-bold leading-none">{ticketCounts.resolved}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('resolved')}>
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-gray-700">Resolved:</span>
+                    <Badge variant="secondary" className="font-semibold">{ticketCounts.resolved}</Badge>
+                  </div>
                 </div>
               </div>
 
@@ -560,6 +528,12 @@ const Dashboard = forwardRef((props, ref) => {
           {currentView === 'crm' && (
             <ErrorBoundary>
               <CRMDashboard timezone={selectedTimezone} />
+            </ErrorBoundary>
+          )}
+
+          {currentView === 'quotes' && (
+            <ErrorBoundary>
+              <CRMDashboard timezone={selectedTimezone} defaultTab="quotes" />
             </ErrorBoundary>
           )}
 

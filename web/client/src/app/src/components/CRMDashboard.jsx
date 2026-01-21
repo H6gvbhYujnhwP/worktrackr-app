@@ -59,10 +59,10 @@ const worldCurrencies = [
 
 // Products are now fetched from the database API
 
-export default function CRMDashboard() {
+export default function CRMDashboard({ defaultTab = 'customers' }) {
   console.log('[CRMDashboard] Component mounting...');
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('customers');
+  const [activeTab, setActiveTab] = useState(defaultTab);
   console.log('[CRMDashboard] State initialized');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);

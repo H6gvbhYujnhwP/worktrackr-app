@@ -57,7 +57,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
         { id: 'contacts', label: 'Contacts', view: 'contacts' },
         { id: 'product-catalog', label: 'Product Catalog', view: 'crm', icon: Package },
         { id: 'crm-calendar', label: 'CRM Calendar', view: 'crm-calendar', icon: Calendar },
-        { id: 'quotes', label: 'Quotes', view: 'crm', icon: FileText }
+        { id: 'quotes', label: 'Quotes', view: 'quotes', icon: FileText }
       ]
     }
   ];
