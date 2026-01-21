@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea.jsx';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import SafetyTab from './SafetyTab.jsx';
+import SafetyTab from './SafetyTabComprehensive.jsx';
 
 const SECTORS = [
   'Health & Safety Compliance',
@@ -348,13 +348,11 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             {/* Safety Tab */}
             <TabsContent value="safety" className="space-y-6">
               <SafetyTab 
-                methodStatements={form.method_statement?.method_statements || []}
-                riskAssessments={form.risk_assessment?.risk_assessments || []}
+                ticket={ticket}
                 onUpdate={(data) => {
                   setForm(prev => ({
                     ...prev,
-                    method_statement: { method_statements: data.method_statements || prev.method_statement?.method_statements || [] },
-                    risk_assessment: { risk_assessments: data.risk_assessments || prev.risk_assessment?.risk_assessments || [] }
+                    ...data
                   }));
                 }}
               />
