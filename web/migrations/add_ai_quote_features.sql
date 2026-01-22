@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS quote_templates (
 );
 
 -- 5. Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_quote_line_items_item_type ON quote_line_items(item_type);
+CREATE INDEX IF NOT EXISTS idx_quote_lines_item_type ON quote_lines(item_type);
 CREATE INDEX IF NOT EXISTS idx_quotes_created_via ON quotes(created_via);
 CREATE INDEX IF NOT EXISTS idx_quotes_ticket_id ON quotes(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_quote_templates_org ON quote_templates(organisation_id);
