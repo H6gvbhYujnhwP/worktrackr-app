@@ -381,7 +381,10 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
           <p className="text-muted-foreground">
             {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your customer'}
           </p>
-        <//* Quote Header Section */}
+        </div>
+      </div>
+
+      {/* Quote Information Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Quote Information</CardTitle>
