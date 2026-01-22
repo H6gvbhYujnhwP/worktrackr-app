@@ -108,12 +108,12 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT 
         q.*,
-        c.company_name as customer_name,
-        c.contact_name,
+        c.name as customer_name,
+        c.primary_contact as contact_name,
         (SELECT COUNT(*) FROM quote_lines WHERE quote_id = q.id) as line_item_count,
         u.name as created_by_name
       FROM quotes q
-      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN contacts c ON q.customer_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
       WHERE q.organisation_id = $1
     `;
@@ -208,14 +208,14 @@ router.get('/:id', async (req, res) => {
     const quoteQuery = `
       SELECT 
         q.*,
-        c.company_name as customer_name,
-        c.contact_name,
+        c.name as customer_name,
+        c.primary_contact as contact_name,
         c.email as customer_email,
         c.phone as customer_phone,
-        c.address as customer_address,
+        c.addresses as customer_address,
         u.name as created_by_name
       FROM quotes q
-      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN contacts c ON q.customer_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
       WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2
     `;

@@ -57,12 +57,19 @@ export default function QuoteForm({ mode = 'create' }) {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('/api/customers', {
+        const response = await fetch('/api/contacts', {
           credentials: 'include'
         });
         if (response.ok) {
           const data = await response.json();
-          setCustomers(data.customers || []);
+          // Map contacts to customer format for compatibility
+          const mappedContacts = (data || []).map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone
+          }));
+          setCustomers(mappedContacts);
         }
       } catch (error) {
         console.error('Error fetching customers:', error);
@@ -741,12 +748,19 @@ export default function QuoteForm({ mode = 'create' }) {
         onSave={async (newCustomer) => {
           // Refresh customers list
           try {
-            const response = await fetch('/api/customers', {
+            const response = await fetch('/api/contacts', {
               credentials: 'include'
             });
             if (response.ok) {
               const data = await response.json();
-              setCustomers(data.customers || []);
+              // Map contacts to customer format for compatibility
+              const mappedContacts = (data || []).map(contact => ({
+                id: contact.id,
+                name: contact.name,
+                email: contact.email,
+                phone: contact.phone
+              }));
+              setCustomers(mappedContacts);
               // Auto-select the newly created customer
               if (newCustomer && newCustomer.id) {
                 setFormData({ ...formData, customer_id: newCustomer.id });

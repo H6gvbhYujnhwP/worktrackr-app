@@ -7,11 +7,11 @@ import { X, Building2, User, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
 
 export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState({
-    company_name: '',
-    contact_name: '',
+    name: '',
+    primary_contact: '',
     email: '',
     phone: '',
-    address: ''
+    addresses: []
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -21,21 +21,34 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
     setError('');
 
     // Validation
-    if (!formData.company_name.trim() && !formData.contact_name.trim()) {
-      setError('Please provide either a company name or contact name');
+    if (!formData.name.trim()) {
+      setError('Please provide a company or contact name');
       return;
     }
 
     setSaving(true);
 
     try {
-      const response = await fetch('/api/customers', {
+      // Map form data to contacts API format
+      const contactData = {
+        type: 'company',
+        name: formData.name,
+        primaryContact: formData.primary_contact || '',
+        email: formData.email || '',
+        phone: formData.phone || '',
+        addresses: formData.addresses || [],
+        crm: {
+          status: 'prospect'
+        }
+      };
+
+      const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData)
+        body: JSON.stringify(contactData)
       });
 
       if (!response.ok) {
@@ -47,16 +60,22 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
       
       // Reset form
       setFormData({
-        company_name: '',
-        contact_name: '',
+        name: '',
+        primary_contact: '',
         email: '',
         phone: '',
-        address: ''
+        addresses: []
       });
 
-      // Call onSave with the new customer
+      // Call onSave with the new contact (mapped to customer format)
       if (onSave) {
-        onSave(data.customer || data);
+        const mappedContact = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone
+        };
+        onSave(mappedContact);
       }
 
       onClose();
@@ -71,11 +90,11 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
   const handleClose = () => {
     if (!saving) {
       setFormData({
-        company_name: '',
-        contact_name: '',
+        name: '',
+        primary_contact: '',
         email: '',
         phone: '',
-        address: ''
+        addresses: []
       });
       setError('');
       onClose();
@@ -115,14 +134,14 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company Name */}
             <div className="space-y-2">
-              <Label htmlFor="company_name">
+              <Label htmlFor="name">
                 <Building2 className="w-4 h-4 inline mr-1" />
-                Company Name
+                Company/Contact Name *
               </Label>
               <Input
-                id="company_name"
-                value={formData.company_name}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g., Acme Corp"
                 disabled={saving}
               />
@@ -130,14 +149,14 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
 
             {/* Contact Name */}
             <div className="space-y-2">
-              <Label htmlFor="contact_name">
+              <Label htmlFor="primary_contact">
                 <User className="w-4 h-4 inline mr-1" />
-                Contact Name
+                Primary Contact Person
               </Label>
               <Input
-                id="contact_name"
-                value={formData.contact_name}
-                onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                id="primary_contact"
+                value={formData.primary_contact}
+                onChange={(e) => setFormData({ ...formData, primary_contact: e.target.value })}
                 placeholder="e.g., John Smith"
                 disabled={saving}
               />
@@ -184,8 +203,8 @@ export default function QuickAddCustomerModal({ isOpen, onClose, onSave }) {
             </Label>
             <Textarea
               id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              value={formData.addresses[0] || ''}
+              onChange={(e) => setFormData({ ...formData, addresses: e.target.value ? [e.target.value] : [] })}
               placeholder="Full address including postcode"
               rows={3}
               disabled={saving}
