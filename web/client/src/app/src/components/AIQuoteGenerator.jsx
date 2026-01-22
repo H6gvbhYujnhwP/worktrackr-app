@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Upload, FileText, Mic, CheckSquare, Info, Loader } from 'lucide-react';
 
-export default function AIQuoteGenerator({ ticketId, customerId, onDraftGenerated }) {
+export default function AIQuoteGenerator({ ticketId, customerId, onDraftComplete }) {
   const [prompt, setPrompt] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [contextSources, setContextSources] = useState({
@@ -97,7 +97,7 @@ export default function AIQuoteGenerator({ ticketId, customerId, onDraftGenerate
       }
 
       const data = await response.json();
-      onDraftGenerated(data);
+      onDraftComplete(data);
     } catch (error) {
       console.error('Error generating draft:', error);
       setError('Failed to generate draft quote. Please try again.');
