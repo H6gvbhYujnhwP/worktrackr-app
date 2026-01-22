@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Save, Loader2, Calendar as CalIcon, Clock, FileText, User, Tag, Shield, MessageSquare, Paperclip, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Calendar as CalIcon, Clock, FileText, User, Tag, Shield, MessageSquare, Paperclip, Plus, Trash2, Edit2, DollarSign } from 'lucide-react';
 import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
@@ -10,6 +10,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { Badge } from '@/components/ui/badge.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import SafetyTab from './SafetyTabComprehensive.jsx';
+import QuotesTab from './QuotesTab.jsx';
 
 const SECTORS = [
   'Health & Safety Compliance',
@@ -169,7 +170,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         {/* Main Content with Tabs */}
         <div className="lg:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-6 mb-6">
               <TabsTrigger value="details" className="gap-2">
                 <FileText className="w-4 h-4" />
                 Details
@@ -181,6 +182,10 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
               <TabsTrigger value="safety" className="gap-2">
                 <Shield className="w-4 h-4" />
                 Safety
+              </TabsTrigger>
+              <TabsTrigger value="quotes" className="gap-2">
+                <DollarSign className="w-4 h-4" />
+                Quotes
               </TabsTrigger>
               <TabsTrigger value="comments" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -356,6 +361,11 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                   }));
                 }}
               />
+            </TabsContent>
+
+            {/* Quotes Tab */}
+            <TabsContent value="quotes" className="space-y-6">
+              <QuotesTab ticketId={ticketId} />
             </TabsContent>
 
             {/* Comments Tab */}
