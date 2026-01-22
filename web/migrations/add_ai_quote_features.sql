@@ -2,8 +2,8 @@
 -- Date: 2026-01-22
 -- Description: Adds support for line item types (labour, parts, fixed_fee, recurring) and organisation pricing configuration
 
--- 1. Add line item type fields to quote_line_items table
-ALTER TABLE quote_line_items
+-- 1. Add line item type fields to quote_lines table
+ALTER TABLE quote_lines
 ADD COLUMN IF NOT EXISTS item_type VARCHAR(20) DEFAULT 'parts' 
   CHECK (item_type IN ('labour', 'parts', 'fixed_fee', 'recurring')),
 ADD COLUMN IF NOT EXISTS hours DECIMAL(10,2),
@@ -92,10 +92,10 @@ WHERE NOT EXISTS (
 );
 
 -- 7. Add comment documentation
-COMMENT ON COLUMN quote_line_items.item_type IS 'Type of line item: labour (time-based), parts (products), fixed_fee (flat rate), recurring (monthly/annual)';
-COMMENT ON COLUMN quote_line_items.hours IS 'Number of hours for labour items';
-COMMENT ON COLUMN quote_line_items.hourly_rate IS 'Hourly rate for labour items';
-COMMENT ON COLUMN quote_line_items.recurrence IS 'Recurrence period for recurring items: monthly or annual';
+COMMENT ON COLUMN quote_lines.item_type IS 'Type of line item: labour (time-based), parts (products), fixed_fee (flat rate), recurring (monthly/annual)';
+COMMENT ON COLUMN quote_lines.hours IS 'Number of hours for labour items';
+COMMENT ON COLUMN quote_lines.hourly_rate IS 'Hourly rate for labour items';
+COMMENT ON COLUMN quote_lines.recurrence IS 'Recurrence period for recurring items: monthly or annual';
 COMMENT ON COLUMN quotes.created_via IS 'How the quote was created: manual, ai, or template';
 COMMENT ON COLUMN quotes.ai_prompt IS 'Original AI prompt used to generate the quote (if created via AI)';
 COMMENT ON COLUMN quotes.ai_context_used IS 'JSON object containing context sources used by AI (ticket, customer, similar quotes, etc.)';

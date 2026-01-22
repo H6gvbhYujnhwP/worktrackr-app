@@ -22,7 +22,11 @@ const createQuoteSchema = z.object({
     unit_price: z.number().min(0),
     discount_percent: z.number().min(0).max(100).optional(),
     tax_rate: z.number().min(0).max(100).optional(),
-    sort_order: z.number().int().optional()
+    sort_order: z.number().int().optional(),
+    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring']).optional(),
+    hours: z.number().min(0).optional(),
+    hourly_rate: z.number().min(0).optional(),
+    recurrence: z.enum(['monthly', 'annual']).optional()
   })).min(1)
 });
 
@@ -49,6 +53,10 @@ const updateLineItemsSchema = z.object({
     discount_percent: z.number().min(0).max(100).optional(),
     tax_rate: z.number().min(0).max(100).optional(),
     sort_order: z.number().int().optional(),
+    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring']).optional(),
+    hours: z.number().min(0).optional(),
+    hourly_rate: z.number().min(0).optional(),
+    recurrence: z.enum(['monthly', 'annual']).optional(),
     _delete: z.boolean().optional() // Flag to delete this line item
   })).min(1)
 });
@@ -323,8 +331,9 @@ router.post('/', async (req, res) => {
         const lineItemQuery = `
           INSERT INTO quote_lines (
             quote_id, product_id, description, quantity, unit_price,
-            discount_percent, tax_rate, line_total, sort_order
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            discount_percent, tax_rate, line_total, sort_order,
+            item_type, hours, hourly_rate, recurrence
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING *
         `;
 
@@ -337,7 +346,11 @@ router.post('/', async (req, res) => {
           item.discount_percent || 0,
           item.tax_rate || 20,
           lineTotal,
-          item.sort_order || i
+          item.sort_order || i,
+          item.item_type || 'parts',
+          item.hours || null,
+          item.hourly_rate || null,
+          item.recurrence || null
         ];
 
         await client.query(lineItemQuery, lineItemValues);
