@@ -356,9 +356,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   }, [formData, lineItems, loading, saving, isEditMode, quoteId, navigate]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Button
           variant="outline"
           size="sm"
@@ -369,7 +369,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
               {isEditMode ? `Edit Quote ${quoteNumber}` : 'Create New Quote'}
             </h1>
             {isEditMode && quoteNumber && (
@@ -391,7 +391,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
           <CardDescription>Basic quote details and customer selection</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Customer Selection */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -441,7 +441,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             </div>
 
             {/* Quote Title */}
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="title">Quote Title *</Label>
               <Input
                 id="title"
@@ -563,9 +563,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                   </div>
                   
                   {/* Line Item Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {/* Description (Item Name) */}
-                    <div className="md:col-span-5 space-y-2">
+                    <div className="space-y-2">
                     <Label htmlFor={`description_${index}`}>
                       Item Description *
                       {item.product_id && <span className="text-xs text-gray-500 ml-2">(Auto-filled, editable)</span>}
@@ -579,7 +579,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                   </div>
 
                   {/* Quantity */}
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor={`quantity_${index}`}>Quantity *</Label>
                     <Input
                       id={`quantity_${index}`}
@@ -592,7 +592,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                   </div>
 
                   {/* Unit Price */}
-                  <div className="md:col-span-2 space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor={`unit_price_${index}`}>Unit Price (£) *</Label>
                     <Input
                       id={`unit_price_${index}`}
@@ -605,7 +605,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                   </div>
 
                   {/* Line Total & Remove Button */}
-                  <div className="md:col-span-1 space-y-2 flex flex-col justify-end">
+                  <div className="space-y-2 flex flex-row sm:flex-col justify-between sm:justify-end items-center">
                     <div className="text-sm font-medium text-right mb-2">
                       £{calculateLineTotal(item).toFixed(2)}
                     </div>
@@ -627,7 +627,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
 
           {/* Pricing Summary */}
           <div className="mt-6 flex justify-end">
-            <div className="w-full md:w-1/3 space-y-2">
+            <div className="w-full sm:w-2/3 md:w-1/3 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
                 <span>£{calculateSubtotal().toFixed(2)}</span>
@@ -678,7 +678,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-end">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-end">
         {console.log('=== RENDER: Button state ===', 'loading:', loading, 'saving:', saving, 'disabled:', saving || loading)}
         <Button
           variant="outline"
