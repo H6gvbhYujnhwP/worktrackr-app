@@ -6,7 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon, UserPlus } from 'lucide-react';
+import QuickAddCustomerModal from './QuickAddCustomerModal';
 
 export default function QuoteForm({ mode = 'create' }) {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function QuoteForm({ mode = 'create' }) {
   const isEditMode = mode === 'edit' || quoteId;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
@@ -395,7 +397,21 @@ export default function QuoteForm({ mode = 'create' }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Customer Selection */}
             <div className="space-y-2">
-              <Label htmlFor="customer">Customer *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="customer">Customer *</Label>
+                {!isEditMode && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowCreateCustomer(true)}
+                    className="h-auto p-0 text-blue-600 hover:text-blue-700"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Create New Customer
+                  </Button>
+                )}
+              </div>
               {isEditMode ? (
                 <Input
                   id="customer"
@@ -413,13 +429,17 @@ export default function QuoteForm({ mode = 'create' }) {
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.company_name || customer.contact_name || customer.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+                    {customers.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500">No customers found. Create one first.</div>
+                    ) : (
+                      customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.company_name || customer.contact_name || customer.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
@@ -713,6 +733,30 @@ export default function QuoteForm({ mode = 'create' }) {
           </>
         )}
       </div>
+
+      {/* Quick Add Customer Modal */}
+      <QuickAddCustomerModal
+        isOpen={showCreateCustomer}
+        onClose={() => setShowCreateCustomer(false)}
+        onSave={async (newCustomer) => {
+          // Refresh customers list
+          try {
+            const response = await fetch('/api/customers', {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const data = await response.json();
+              setCustomers(data.customers || []);
+              // Auto-select the newly created customer
+              if (newCustomer && newCustomer.id) {
+                setFormData({ ...formData, customer_id: newCustomer.id });
+              }
+            }
+          } catch (error) {
+            console.error('Error refreshing customers:', error);
+          }
+        }}
+      />
     </div>
   );
 }
