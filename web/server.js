@@ -160,8 +160,14 @@ app.use('/api/crm-events', authenticateToken, crmEventsRoutes);
 app.use('/api/customer-services', authenticateToken, customerServicesRoutes);
 const quotesRoutes = require('./routes/quotes');
 const quotesEmailRoutes = require('./routes/quotes-email');
+const quotesAIRoutes = require('./routes/quotes-ai');
+const quoteTemplatesRoutes = require('./routes/quote-templates');
+const transcribeRoutes = require('./routes/transcribe');
 app.use('/api/quotes', authenticateToken, quotesRoutes);
 app.use('/api/quotes', authenticateToken, quotesEmailRoutes);
+app.use('/api/quotes', authenticateToken, quotesAIRoutes);
+app.use('/api/quote-templates', authenticateToken, quoteTemplatesRoutes);
+app.use('/api/transcribe', authenticateToken, transcribeRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
