@@ -3,32 +3,32 @@
 -- Description: Adds new ticket statuses for quote workflow integration
 
 -- Update tickets status constraint to include quote-related statuses
+-- IMPORTANT: Keep all existing statuses to avoid constraint violations
 ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_check;
 
 ALTER TABLE tickets ADD CONSTRAINT tickets_status_check 
     CHECK (status IN (
-        -- Pre-quote statuses
+        -- Existing statuses (keep all)
         'new',
         'open', 
+        'pending',
+        'resolved',
+        'closed',
+        'cancelled',
         'awaiting_info',
         'in_progress',
         
-        -- Quote workflow statuses
+        -- New quote workflow statuses
         'awaiting_quote',
         'quote_sent',
         'quote_accepted',
         'quote_declined',
         'quote_expired',
         
-        -- Work statuses
+        -- New work statuses
         'scheduled',
         'on_hold',
-        
-        -- Completion statuses
-        'completed',
-        'invoiced',
-        'closed',
-        'cancelled'
+        'invoiced'
     ));
 
 -- Success message
