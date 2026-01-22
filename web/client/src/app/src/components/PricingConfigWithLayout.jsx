@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthProvider.jsx';
+import { useAuth } from '../App.jsx';
 import AppLayout from './AppLayout.jsx';
 import PricingConfig from './PricingConfig.jsx';
 
