@@ -30,8 +30,7 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
   return (
     <div className="h-screen flex overflow-hidden bg-gray-50">
       {/* Mobile Menu Button */}
-      {isMobile && (
-        <div className="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -59,12 +58,11 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
             {user?.name?.charAt(0) || 'U'}
           </div>
         </div>
-      )}
 
       {/* Mobile Drawer Overlay */}
-      {isMobile && isMobileMenuOpen && (
+      {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -72,8 +70,8 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
       {/* Sidebar - Desktop or Mobile Drawer */}
       <div
         className={`
-          ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'}
-          ${isMobile && !isMobileMenuOpen ? '-translate-x-full' : 'translate-x-0'}
+          md:relative fixed inset-y-0 left-0 z-50
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           transition-transform duration-300 ease-in-out
         `}
       >
@@ -87,8 +85,7 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar - Desktop Only */}
-        {!isMobile && (
-          <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        <div className="hidden md:flex bg-white border-b border-gray-200 px-6 py-3 items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center space-x-6">
                 {/* Welcome Message */}
@@ -191,14 +188,10 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
               </div>
             </div>
           </div>
-        )}
 
         {/* Main Content with Light Gray Background */}
         <main 
-          className={`
-            flex-1 overflow-y-auto bg-gray-100
-            ${isMobile ? 'pt-16' : ''}
-          `}
+          className="flex-1 overflow-y-auto bg-gray-100 pt-16 md:pt-0"
         >
           <div className="p-4">
             {/* White contained card wrapper for all content */}
