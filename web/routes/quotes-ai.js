@@ -4,10 +4,19 @@ const { z } = require('zod');
 const db = require('../../shared/db');
 const OpenAI = require('openai');
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Lazy-load OpenAI client to avoid startup errors if API key not set
+let openai = null;
+function getOpenAIClient() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  return openai;
+}
 
 // Validation schemas
 const generateAIQuoteSchema = z.object({
@@ -134,7 +143,8 @@ router.post('/generate-ai', async (req, res) => {
     console.log('[AI Quote] Calling OpenAI API...');
 
     // 5. Call OpenAI API
-    const completion = await openai.chat.completions.create({
+    const openaiClient = getOpenAIClient();
+    const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [
         { 

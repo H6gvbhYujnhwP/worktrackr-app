@@ -7,10 +7,19 @@ const OpenAI = require('openai');
 const fs = require('fs');
 const path = require('path');
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Lazy-load OpenAI client to avoid startup errors if API key not set
+let openai = null;
+function getOpenAIClient() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  return openai;
+}
 
 // Configure multer for file uploads
 const upload = multer({
@@ -99,7 +108,8 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
     // Transcribe with Whisper
     console.log('[Transcribe] Calling Whisper API...');
     
-    const transcription = await openai.audio.transcriptions.create({
+    const openaiClient = getOpenAIClient();
+    const transcription = await openaiClient.audio.transcriptions.create({
       file: fs.createReadStream(tempFilePath),
       model: 'whisper-1',
       language: 'en',
@@ -194,7 +204,8 @@ router.post('/extract-ticket', async (req, res) => {
     console.log('[Extract Ticket] Calling OpenAI API...');
 
     // Call GPT-4 for extraction
-    const completion = await openai.chat.completions.create({
+    const openaiClient = getOpenAIClient();
+    const completion = await openaiClient.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [
         { 
