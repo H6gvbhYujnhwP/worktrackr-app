@@ -13,7 +13,9 @@ import {
   Mail,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  List,
+  UserCircle
 } from 'lucide-react';
 
 const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
@@ -44,7 +46,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       icon: Ticket,
       view: 'tickets',
       subItems: [
-        { id: 'all-tickets', label: 'All Tickets', view: 'tickets' },
+        { id: 'all-tickets', label: 'All Tickets', view: 'tickets', icon: List },
         { id: 'ticket-calendar', label: 'Ticket Calendar', view: 'calendar', icon: Calendar }
       ]
     },
@@ -54,7 +56,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       icon: Users,
       view: 'crm',
       subItems: [
-        { id: 'contacts', label: 'Contacts', view: 'contacts' },
+        { id: 'contacts', label: 'Contacts', view: 'contacts', icon: UserCircle },
         { id: 'product-catalog', label: 'Product Catalog', view: 'crm', icon: Package },
         { id: 'crm-calendar', label: 'CRM Calendar', view: 'crm-calendar', icon: Calendar },
         { id: 'quotes', label: 'Quotes', view: 'quotes', icon: FileText }
