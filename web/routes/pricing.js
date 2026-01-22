@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('@worktrackr/shared/db');
-const { authenticateToken } = require('../middleware/auth');
 
 // Get organisation pricing configuration
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { organisationId } = req.user;
 
@@ -59,7 +58,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Update organisation pricing configuration
-router.put('/', authenticateToken, async (req, res) => {
+router.put('/', async (req, res) => {
   try {
     const { organisationId } = req.user;
     const {
