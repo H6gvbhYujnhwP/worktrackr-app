@@ -23,11 +23,11 @@ export default function QuoteFormTabs() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-7xl">
       {/* Tab Navigation */}
-      <div className="flex border-b mb-6">
+      <div className="flex border-b mb-4 sm:mb-6 overflow-x-auto">
         <button
-          className={`px-6 py-3 font-medium transition-colors ${
+          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'manual'
               ? 'border-b-2 border-blue-500 text-blue-600'
               : 'text-gray-500 hover:text-gray-700'
@@ -37,7 +37,7 @@ export default function QuoteFormTabs() {
           Manual Entry
         </button>
         <button
-          className={`px-6 py-3 font-medium transition-colors ${
+          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors whitespace-nowrap ${
             activeTab === 'ai'
               ? 'border-b-2 border-blue-500 text-blue-600'
               : 'text-gray-500 hover:text-gray-700'

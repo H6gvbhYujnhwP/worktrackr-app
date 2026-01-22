@@ -381,48 +381,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
           <p className="text-muted-foreground">
             {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your customer'}
           </p>
-        </div>
-      </div>
-
-      {/* AI Generation Section - Only show in create mode */}
-      {!isEditMode && (
-        <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600" />
-              AI Quote Assistant
-            </CardTitle>
-            <CardDescription>
-              Generate this quote automatically using AI based on ticket context, meeting notes, or templates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="default"
-                className="gap-2 bg-blue-600 hover:bg-blue-700"
-                onClick={() => alert('AI generation coming soon! This will analyze the ticket and generate a quote draft.')}
-              >
-                <Sparkles className="w-4 h-4" />
-                Generate with AI
-              </Button>
-              <Button
-                variant="outline"
-                className="gap-2"
-                onClick={() => alert('Upload feature coming soon! You\'ll be able to upload meeting recordings or transcripts.')}
-              >
-                <Upload className="w-4 h-4" />
-                Upload Meeting Recording
-              </Button>
-            </div>
-            <p className="text-xs text-gray-600 mt-3">
-              💡 Tip: AI can analyze ticket details, customer history, and similar past quotes to create an accurate draft
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quote Header Section */}
+        <//* Quote Header Section */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Quote Information</CardTitle>

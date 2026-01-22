@@ -113,11 +113,11 @@ export default function AIQuoteGenerator({ ticketId, customerId, onDraftComplete
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-        <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
-        <div className="text-sm text-blue-900">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 flex gap-2 sm:gap-3">
+        <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={18} />
+        <div className="text-xs sm:text-sm text-blue-900">
           <p className="font-medium">AI Quote Generator</p>
           <p className="mt-1">
             Paste a customer email, type requirements, or upload files. The AI will analyze the information
@@ -140,7 +140,7 @@ Example:
 - Paste: 'Hi, we need a quote for network upgrade for 21 units...'
 - Type: 'Create quote for server installation, 3 days labour, Dell server, migration'
 - Notes: 'Customer called about WiFi upgrade, needs completion by end of month'"
-          className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-none"
+          className="w-full h-48 sm:h-64 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
         />
         <p className="mt-2 text-xs text-gray-500">
           This is your primary input. Paste anything here - emails, notes, requirements, instructions to the AI.
@@ -152,7 +152,7 @@ Example:
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Upload Files (Optional)
         </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-blue-400 transition-colors">
           <input
             type="file"
             id="file-upload"
@@ -165,7 +165,7 @@ Example:
             htmlFor="file-upload"
             className="cursor-pointer flex flex-col items-center"
           >
-            <Upload className="text-gray-400 mb-2" size={32} />
+            <Upload className="text-gray-400 mb-2" size={24} />
             <p className="text-sm text-gray-600 font-medium">
               Click to upload or drag and drop
             </p>
@@ -207,7 +207,7 @@ Example:
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Context to Include
         </label>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 space-y-3">
           <div className="flex items-start gap-3">
             <input
               type="checkbox"
@@ -305,17 +305,19 @@ Example:
         <button
           onClick={handleGenerate}
           disabled={isGenerating || (!prompt.trim() && uploadedFiles.length === 0)}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm sm:text-base w-full sm:w-auto"
         >
           {isGenerating ? (
             <>
-              <Loader className="animate-spin" size={20} />
-              Generating Draft...
+              <Loader className="animate-spin" size={18} />
+              <span className="hidden sm:inline">Generating Draft...</span>
+              <span className="sm:hidden">Generating...</span>
             </>
           ) : (
             <>
-              <Sparkles size={20} />
-              Generate Draft Quote
+              <Sparkles size={18} />
+              <span className="hidden sm:inline">Generate Draft Quote</span>
+              <span className="sm:hidden">Generate Quote</span>
             </>
           )}
         </button>
