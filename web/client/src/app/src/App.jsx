@@ -8,6 +8,9 @@ import WorkflowBuilder from './components/WorkflowBuilder.jsx';
 import QuoteDetails from './components/QuoteDetails.jsx';
 import QuoteForm from './components/QuoteForm.jsx';
 import QuotesList from './components/QuotesList.jsx';
+import QuotesListWithLayout from './components/QuotesListWithLayout.jsx';
+import QuoteFormWithLayout from './components/QuoteFormWithLayout.jsx';
+import QuoteDetailsWithLayout from './components/QuoteDetailsWithLayout.jsx';
 import Login from '../../Login.jsx';
 import './App.css';
 
@@ -532,19 +535,19 @@ export default function App() {
             />
             <Route
               path="crm/quotes"
-              element={<QuotesList />}
+              element={<QuotesListWithLayout />}
             />
             <Route
               path="crm/quotes/new"
-              element={<QuoteForm />}
+              element={<QuoteFormWithLayout mode="create" />}
             />
             <Route
               path="crm/quotes/:id"
-              element={<QuoteDetails />}
+              element={<QuoteDetailsWithLayout />}
             />
             <Route
               path="crm/quotes/:id/edit"
-              element={<QuoteForm mode="edit" />}
+              element={<QuoteFormWithLayout mode="edit" />}
             />
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
