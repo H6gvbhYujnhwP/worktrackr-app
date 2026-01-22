@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon, UserPlus } from 'lucide-react';
 import QuickAddCustomerModal from './QuickAddCustomerModal';
 
-export default function QuoteForm({ mode = 'create' }) {
+export default function QuoteForm({ mode = 'create', initialData = null, onClearDraft = null }) {
   const navigate = useNavigate();
   const { id: quoteId } = useParams();
   const isEditMode = mode === 'edit' || quoteId;
@@ -92,6 +92,34 @@ export default function QuoteForm({ mode = 'create' }) {
     fetchCustomers();
     fetchProducts();
   }, []);
+
+  // Populate form with AI-generated draft data
+  useEffect(() => {
+    if (initialData && !isEditMode) {
+      setFormData(prev => ({
+        ...prev,
+        title: initialData.title || '',
+        description: initialData.description || '',
+        terms_conditions: initialData.terms_conditions || prev.terms_conditions,
+        notes: initialData.notes || ''
+      }));
+
+      if (initialData.line_items && initialData.line_items.length > 0) {
+        setLineItems(initialData.line_items.map(item => ({
+          product_id: null,
+          description: item.description || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          discount_percent: 0,
+          tax_rate: item.tax_rate || 20,
+          item_type: item.item_type || 'parts',
+          hours: item.hours || null,
+          hourly_rate: item.hourly_rate || null,
+          recurrence: item.recurrence || null
+        })));
+      }
+    }
+  }, [initialData, isEditMode]);
 
   // Fetch existing quote data in edit mode
   useEffect(() => {

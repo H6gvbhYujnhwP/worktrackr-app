@@ -11,6 +11,7 @@ import {
   CreditCard, 
   Shield, 
   Mail,
+  DollarSign,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -72,6 +73,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       view: 'users',
       subItems: [
         { id: 'manage-users', label: 'Manage Users', view: 'users', icon: UserCog },
+        { id: 'pricing-config', label: 'Pricing Configuration', view: 'pricing-config', icon: DollarSign },
         { id: 'billing', label: 'Billing', view: 'billing', icon: CreditCard },
         { id: 'security', label: 'Security', view: 'security', icon: Shield },
         { id: 'email-intake', label: 'Email Intake', view: 'email-intake', icon: Mail }

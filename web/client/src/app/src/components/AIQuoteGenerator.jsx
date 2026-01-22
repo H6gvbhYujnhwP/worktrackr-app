@@ -82,8 +82,8 @@ export default function AIQuoteGenerator({ ticketId, customerId, onDraftGenerate
       if (ticketId) formData.append('ticket_id', ticketId);
       if (customerId) formData.append('customer_id', customerId);
 
-      uploadedFiles.forEach((file, index) => {
-        formData.append(`file_${index}`, file);
+      uploadedFiles.forEach((file) => {
+        formData.append('files', file);
       });
 
       const response = await fetch('/api/quotes/ai-generate-draft', {

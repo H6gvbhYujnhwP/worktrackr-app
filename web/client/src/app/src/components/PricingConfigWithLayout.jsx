@@ -2,10 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 import AppLayout from './AppLayout.jsx';
-import QuoteForm from './QuoteForm.jsx';
-import QuoteFormTabs from './QuoteFormTabs.jsx';
+import PricingConfig from './PricingConfig.jsx';
 
-export default function QuoteFormWithLayout({ mode = 'create' }) {
+export default function PricingConfigWithLayout() {
   const { user, membership } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +21,7 @@ export default function QuoteFormWithLayout({ mode = 'create' }) {
       'crm-calendar': '/app/crm/calendar',
       'quotes': '/app/crm/quotes',
       'users': '/app/users',
+      'pricing-config': '/app/pricing-config',
       'billing': '/app/billing',
       'security': '/app/security',
       'email-intake': '/app/email-intake'
@@ -39,7 +39,7 @@ export default function QuoteFormWithLayout({ mode = 'create' }) {
       isAdmin={isAdmin}
       onNavigate={handleNavigate}
     >
-      {mode === 'create' ? <QuoteFormTabs /> : <QuoteForm mode={mode} />}
+      <PricingConfig />
     </AppLayout>
   );
 }
