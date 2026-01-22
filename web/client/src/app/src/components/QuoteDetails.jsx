@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Send, Download, Trash2, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Edit, Send, Download, Trash2, MoreVertical, Calendar, FileText, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -457,6 +457,59 @@ export default function QuoteDetails() {
               >
                 Duplicate Quote
               </Button>
+              
+              {/* Workflow Actions */}
+              {quote.status === 'accepted' && (
+                <>
+                  <div className="border-t my-2 pt-2">
+                    <p className="text-xs text-gray-500 mb-2 font-semibold">Workflow Actions</p>
+                  </div>
+                  <Button 
+                    variant="default" 
+                    className="w-full justify-start bg-green-600 hover:bg-green-700" 
+                    size="sm"
+                    onClick={() => {
+                      const assignedUserId = prompt('Enter assigned user ID:');
+                      const scheduledDate = prompt('Enter scheduled date (YYYY-MM-DD):');
+                      if (assignedUserId && scheduledDate) {
+                        fetch(`/api/quotes/${id}/schedule-work`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({ assigned_user_id: assignedUserId, scheduled_date: scheduledDate })
+                        }).then(() => {
+                          alert('Work scheduled successfully!');
+                          window.location.reload();
+                        }).catch(err => alert('Failed to schedule work'));
+                      }
+                    }}
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule Work
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start" 
+                    size="sm"
+                    onClick={() => {
+                      if (confirm('Create invoice from this quote?')) {
+                        fetch(`/api/quotes/${id}/create-invoice`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({})
+                        }).then(() => {
+                          alert('Invoice created successfully!');
+                          window.location.reload();
+                        }).catch(err => alert('Failed to create invoice'));
+                      }
+                    }}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Create Invoice
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
