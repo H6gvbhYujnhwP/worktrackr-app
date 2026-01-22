@@ -551,7 +551,7 @@ export default function App() {
               element={<QuoteFormWithLayout mode="edit" />}
             />
             <Route
-              path="pricing-config"
+              path="settings/pricing-config"
               element={<PricingConfigWithLayout />}
             />
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
