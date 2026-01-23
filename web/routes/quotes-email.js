@@ -29,7 +29,7 @@ router.post('/:id/send', async (req, res) => {
               c.phone,
               c.address
        FROM quotes q
-       JOIN customers c ON q.customer_id = c.id
+       JOIN contacts c ON q.contact_id = c.id
        WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2`,
       [id, organizationId]
     );

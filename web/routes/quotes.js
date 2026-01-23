@@ -6,7 +6,7 @@ const db = require('../../shared/db');
 
 // Validation schemas
 const createQuoteSchema = z.object({
-  customer_id: z.string().uuid(),
+  contact_id: z.string().uuid(),
   title: z.string().min(1).max(255),
   description: z.string().optional(),
   valid_until: z.string().optional(), // ISO date string
@@ -31,7 +31,7 @@ const createQuoteSchema = z.object({
 });
 
 const updateQuoteSchema = z.object({
-  customer_id: z.string().uuid().optional(),
+  contact_id: z.string().uuid().optional(),
   title: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
   status: z.enum(['draft', 'sent', 'accepted', 'declined', 'expired']).optional(),
@@ -111,7 +111,7 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
     const status = req.query.status; // Filter by status
-    const customerId = req.query.customer_id; // Filter by customer
+    const customerId = req.query.contact_id; // Filter by customer
 
     let query = `
       SELECT 
@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
         (SELECT COUNT(*) FROM quote_lines WHERE quote_id = q.id) as line_item_count,
         u.name as created_by_name
       FROM quotes q
-      LEFT JOIN contacts c ON q.customer_id = c.id
+      LEFT JOIN contacts c ON q.contact_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
       WHERE q.organisation_id = $1
     `;
@@ -137,7 +137,7 @@ router.get('/', async (req, res) => {
 
     if (customerId) {
       paramCount++;
-      query += ` AND q.customer_id = $${paramCount}`;
+      query += ` AND q.contact_id = $${paramCount}`;
       params.push(customerId);
     }
 
@@ -154,7 +154,7 @@ router.get('/', async (req, res) => {
       countParams.push(status);
     }
     if (customerId) {
-      countQuery += ` AND customer_id = $${countParams.length + 1}`;
+      countQuery += ` AND contact_id = $${countParams.length + 1}`;
       countParams.push(customerId);
     }
 
@@ -223,7 +223,7 @@ router.get('/:id', async (req, res) => {
         c.addresses as customer_address,
         u.name as created_by_name
       FROM quotes q
-      LEFT JOIN contacts c ON q.customer_id = c.id
+      LEFT JOIN contacts c ON q.contact_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
       WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2
     `;
@@ -290,7 +290,7 @@ router.post('/', async (req, res) => {
       // Insert quote
       const quoteQuery = `
         INSERT INTO quotes (
-          organisation_id, customer_id, quote_number, title, description,
+          organisation_id, contact_id, quote_number, title, description,
           subtotal, discount_amount, discount_percent, tax_amount, total_amount,
           valid_until, terms_conditions, notes, internal_notes, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
@@ -299,7 +299,7 @@ router.post('/', async (req, res) => {
 
       const quoteValues = [
         organizationId,
-        validatedData.customer_id,
+        validatedData.contact_id,
         quoteNumber,
         validatedData.title,
         validatedData.description || null,
@@ -377,7 +377,7 @@ router.post('/', async (req, res) => {
             ) ORDER BY ql.sort_order
           ) as line_items
         FROM quotes q
-        LEFT JOIN customers c ON q.customer_id = c.id
+        LEFT JOIN contacts c ON q.contact_id = c.id
         LEFT JOIN quote_lines ql ON ql.quote_id = q.id
         WHERE q.id = $1
         GROUP BY q.id, c.company_name
@@ -768,13 +768,13 @@ router.post('/:id/convert-to-job', async (req, res) => {
       // Create job
       const jobResult = await client.query(
         `INSERT INTO jobs (
-          organisation_id, customer_id, quote_id, job_number, title, description,
+          organisation_id, contact_id, quote_id, job_number, title, description,
           status, scheduled_start, scheduled_end, assigned_to, created_by, notes
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *`,
         [
           organizationId,
-          quote.customer_id,
+          quote.contact_id,
           id,
           jobNumber,
           quote.title,
@@ -844,14 +844,14 @@ router.post('/:id/duplicate', async (req, res) => {
       // Create new quote
       const newQuoteResult = await client.query(
         `INSERT INTO quotes (
-          organisation_id, customer_id, quote_number, title, description,
+          organisation_id, contact_id, quote_number, title, description,
           subtotal, discount_amount, discount_percent, tax_amount, total_amount,
           valid_until, terms_conditions, notes, internal_notes, created_by, status
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'draft')
         RETURNING *`,
         [
           organizationId,
-          originalQuote.customer_id,
+          originalQuote.contact_id,
           quoteNumber,
           originalQuote.title + ' (Copy)',
           originalQuote.description,
@@ -933,7 +933,7 @@ router.get('/:id/pdf', async (req, res) => {
         c.address as customer_address,
         u.name as created_by_name
       FROM quotes q
-      LEFT JOIN customers c ON q.customer_id = c.id
+      LEFT JOIN contacts c ON q.contact_id = c.id
       LEFT JOIN users u ON q.created_by = u.id
       WHERE ${isQuoteNumber ? 'q.quote_number' : 'q.id'} = $1 AND q.organisation_id = $2
     `;

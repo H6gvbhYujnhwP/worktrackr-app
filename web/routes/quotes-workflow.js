@@ -38,7 +38,7 @@ router.post('/:id/send', async (req, res) => {
       const quoteResult = await client.query(
         `SELECT q.*, c.company_name, c.email as customer_email
          FROM quotes q
-         LEFT JOIN customers c ON q.customer_id = c.id
+         LEFT JOIN contacts c ON q.contact_id = c.id
          WHERE q.id = $1 AND q.organisation_id = $2`,
         [id, orgId]
       );
@@ -233,13 +233,13 @@ router.post('/:id/create-invoice', async (req, res) => {
 
       const invoiceResult = await client.query(
         `INSERT INTO invoices (
-          organisation_id, customer_id, quote_id, invoice_number,
+          organisation_id, contact_id, quote_id, invoice_number,
           title, description, status, subtotal, discount_amount, discount_percent,
           tax_amount, total_amount, due_date, notes, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *`,
         [
-          orgId, quote.customer_id, id, invoiceNumber,
+          orgId, quote.contact_id, id, invoiceNumber,
           quote.title, quote.description,
           quote.subtotal, quote.discount_amount, quote.discount_percent,
           quote.tax_amount, quote.total_amount,

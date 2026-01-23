@@ -274,7 +274,7 @@ router.post('/:id/create-revision', async (req, res) => {
       // Create new quote
       const newQuoteResult = await client.query(
         `INSERT INTO quotes (
-          organisation_id, customer_id, quote_number, title, description,
+          organisation_id, contact_id, quote_number, title, description,
           status, subtotal, discount_amount, discount_percent, tax_amount, total_amount,
           valid_until, terms_conditions, notes, internal_notes,
           version, parent_quote_id, ticket_id, ai_generated, ai_context,
@@ -287,7 +287,7 @@ router.post('/:id/create-revision', async (req, res) => {
           $20
         ) RETURNING *`,
         [
-          orgId, original.customer_id, newQuoteNumber, original.title, original.description,
+          orgId, original.contact_id, newQuoteNumber, original.title, original.description,
           original.subtotal, original.discount_amount, original.discount_percent, 
           original.tax_amount, original.total_amount,
           original.valid_until, original.terms_conditions, 

@@ -116,7 +116,7 @@ async function fetchContext(organizationId, contextSources, ticketId, customerId
         ) as line_items
       FROM quotes q
       LEFT JOIN quote_lines ql ON ql.quote_id = q.id
-      WHERE q.customer_id = $1 AND q.organisation_id = $2 AND q.status = 'accepted'
+      WHERE q.contact_id = $1 AND q.organisation_id = $2 AND q.status = 'accepted'
       GROUP BY q.id
       ORDER BY q.created_at DESC
       LIMIT 3
@@ -215,7 +215,7 @@ router.post('/ai-generate-draft', upload.array('files', 5), async (req, res) => 
   
   try {
     const { organizationId } = req.orgContext;
-    const { prompt, context_sources, ticket_id, customer_id } = req.body;
+    const { prompt, context_sources, ticket_id, contact_id } = req.body;
 
     // Parse context sources
     const contextSources = JSON.parse(context_sources || '{}');
@@ -253,7 +253,7 @@ router.post('/ai-generate-draft', upload.array('files', 5), async (req, res) => 
     }
 
     // Fetch context
-    const context = await fetchContext(organizationId, contextSources, ticket_id, customer_id);
+    const context = await fetchContext(organizationId, contextSources, ticket_id, contact_id);
 
     // Build AI prompt
     const { systemPrompt, userMessage } = buildAIPrompt(prompt, fileContents, context, pricing);
