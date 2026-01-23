@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon, UserPlus } from 'lucide-react';
-import QuickAddCustomerModal from './QuickAddCustomerModal';
+import QuickAddContactModal from './QuickAddContactModal';
 
 export default function QuoteForm({ mode = 'create', initialData = null, onClearDraft = null }) {
   const navigate = useNavigate();
@@ -15,8 +15,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   const isEditMode = mode === 'edit' || quoteId;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
-  const [customers, setCustomers] = useState([]);
+  const [showCreateContact, setShowCreateContact] = useState(false);
+  const [contacts, setContacts] = useState([]);
   const [products, setProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
   
@@ -31,9 +31,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     );
   });
   const [quoteNumber, setQuoteNumber] = useState('');
-  const [customerName, setCustomerName] = useState('');
+  const [contactName, setContactName] = useState('');
   const [formData, setFormData] = useState({
-    customer_id: '',
+    contact_id: '',
     title: '',
     description: '',
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -53,26 +53,26 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     }
   ]);
 
-  // Fetch customers on mount
+  // Fetch contacts on mount
   useEffect(() => {
-    const fetchCustomers = async () => {
+    const fetchContacts = async () => {
       try {
         const response = await fetch('/api/contacts', {
           credentials: 'include'
         });
         if (response.ok) {
           const data = await response.json();
-          // Map contacts to customer format for compatibility
+          // Map contacts to contact format for compatibility
           const mappedContacts = (data || []).map(contact => ({
             id: contact.id,
             name: contact.name,
             email: contact.email,
             phone: contact.phone
           }));
-          setCustomers(mappedContacts);
+          setContacts(mappedContacts);
         }
       } catch (error) {
-        console.error('Error fetching customers:', error);
+        console.error('Error fetching contacts:', error);
       }
     };
     const fetchProducts = async () => {
@@ -89,7 +89,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       }
     };
     
-    fetchCustomers();
+    fetchContacts();
     fetchProducts();
   }, []);
 
@@ -138,9 +138,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             
             // Set quote data
             setQuoteNumber(quote.quote_number);
-            setCustomerName(quote.customer_name);
+            setContactName(quote.contact_name);
             setFormData({
-              customer_id: quote.customer_id,
+              contact_id: quote.contact_id,
               title: quote.title || '',
               description: quote.description || '',
               valid_until: quote.valid_until ? quote.valid_until.split('T')[0] : '',
@@ -266,9 +266,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   };
 
   // Handle form submission with defensive programming
-  const handleSubmit = useCallback(async (sendToCustomer = false) => {
+  const handleSubmit = useCallback(async (sendToContact = false) => {
     console.log('🎯 handleSubmit CALLED!', {
-      sendToCustomer,
+      sendToContact,
       formData,
       lineItems,
       loading,
@@ -277,8 +277,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     });
     
     // Validation
-    if (!formData.customer_id) {
-      alert('Please select a customer');
+    if (!formData.contact_id) {
+      alert('Please select a contact');
       return;
     }
 
@@ -314,9 +314,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       const payload = isEditMode ? {
         ...formData,
         line_items: sanitizedLineItems,
-        status: sendToCustomer ? 'sent' : formData.status
+        status: sendToContact ? 'sent' : formData.status
       } : {
-        customer_id: formData.customer_id,
+        contact_id: formData.contact_id,
         title: formData.title,
         description: formData.description || undefined,
         valid_until: formData.valid_until || undefined,
@@ -379,7 +379,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             )}
           </div>
           <p className="text-muted-foreground">
-            {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your customer'}
+            {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your contact'}
           </p>
         </div>
       </div>
@@ -388,50 +388,50 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Quote Information</CardTitle>
-          <CardDescription>Basic quote details and customer selection</CardDescription>
+          <CardDescription>Basic quote details and contact selection</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            {/* Customer Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Contact Selection */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="customer">Customer *</Label>
+                <Label htmlFor="contact">Contact *</Label>
                 {!isEditMode && (
                   <Button
                     type="button"
                     variant="link"
                     size="sm"
-                    onClick={() => setShowCreateCustomer(true)}
+                    onClick={() => setShowCreateContact(true)}
                     className="h-auto p-0 text-blue-600 hover:text-blue-700"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
-                    Create New Customer
+                    Create New Contact
                   </Button>
                 )}
               </div>
               {isEditMode ? (
                 <Input
-                  id="customer"
-                  value={customerName}
+                  id="contact"
+                  value={contactName}
                   disabled
                   className="bg-gray-50"
-                  title="Cannot change customer after quote creation"
+                  title="Cannot change contact after quote creation"
                 />
               ) : (
                 <Select
-                  value={formData.customer_id}
-                  onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
+                  value={formData.contact_id}
+                  onValueChange={(value) => setFormData({ ...formData, contact_id: value })}
                 >
-                  <SelectTrigger id="customer">
-                    <SelectValue placeholder="Select a customer" />
+                  <SelectTrigger id="contact">
+                    <SelectValue placeholder="Select a contact" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.length === 0 ? (
-                      <div className="p-2 text-sm text-gray-500">No customers found. Create one first.</div>
+                    {contacts.length === 0 ? (
+                      <div className="p-2 text-sm text-gray-500">No contacts found. Create one first.</div>
                     ) : (
-                      customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.company_name || customer.contact_name || customer.name}
+                      contacts.map((contact) => (
+                        <SelectItem key={contact.id} value={contact.id}>
+                          {contact.company_name || contact.contact_name || contact.name}
                         </SelectItem>
                       ))
                     )}
@@ -665,7 +665,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Internal Notes</CardTitle>
-          <CardDescription>Notes for staff only (not visible to customer)</CardDescription>
+          <CardDescription>Notes for staff only (not visible to contact)</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -731,33 +731,33 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         )}
       </div>
 
-      {/* Quick Add Customer Modal */}
-      <QuickAddCustomerModal
-        isOpen={showCreateCustomer}
-        onClose={() => setShowCreateCustomer(false)}
-        onSave={async (newCustomer) => {
-          // Refresh customers list
+      {/* Quick Add Contact Modal */}
+      <QuickAddContactModal
+        isOpen={showCreateContact}
+        onClose={() => setShowCreateContact(false)}
+        onSave={async (newContact) => {
+          // Refresh contacts list
           try {
             const response = await fetch('/api/contacts', {
               credentials: 'include'
             });
             if (response.ok) {
               const data = await response.json();
-              // Map contacts to customer format for compatibility
+              // Map contacts to contact format for compatibility
               const mappedContacts = (data || []).map(contact => ({
                 id: contact.id,
                 name: contact.name,
                 email: contact.email,
                 phone: contact.phone
               }));
-              setCustomers(mappedContacts);
-              // Auto-select the newly created customer
-              if (newCustomer && newCustomer.id) {
-                setFormData({ ...formData, customer_id: newCustomer.id });
+              setContacts(mappedContacts);
+              // Auto-select the newly created contact
+              if (newContact && newContact.id) {
+                setFormData({ ...formData, contact_id: newContact.id });
               }
             }
           } catch (error) {
-            console.error('Error refreshing customers:', error);
+            console.error('Error refreshing contacts:', error);
           }
         }}
       />
