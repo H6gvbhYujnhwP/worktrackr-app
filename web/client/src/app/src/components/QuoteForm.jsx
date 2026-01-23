@@ -454,8 +454,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             {/* Quote Description */}
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="description">Description</Label>
-              <Input
+              <textarea
                 id="description"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Brief description of the quote"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -570,8 +571,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                       Item Description *
                       {item.product_id && <span className="text-xs text-gray-500 ml-2">(Auto-filled, editable)</span>}
                     </Label>
-                    <Input
+                    <textarea
                       id={`description_${index}`}
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder="e.g., Website Hosting - Annual Plan"
                       value={item.description}
                       onChange={(e) => updateLineItem(index, 'description', e.target.value)}
