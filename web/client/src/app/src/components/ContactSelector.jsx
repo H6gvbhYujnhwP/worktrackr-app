@@ -14,11 +14,18 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
-import { 
-  contactDB, 
-  CONTACT_TYPES, 
-  CONTACT_STATUS 
-} from '../data/contactDatabase.js';
+// Removed mock contactDB import - now using real API
+const CONTACT_TYPES = {
+  COMPANY: 'company',
+  INDIVIDUAL: 'individual'
+};
+
+const CONTACT_STATUS = {
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
+  PROSPECT: 'prospect',
+  ARCHIVED: 'archived'
+};
 
 const ContactSelector = ({ 
   selectedContactId, 
@@ -39,21 +46,34 @@ const ContactSelector = ({
   }, []);
 
   useEffect(() => {
-    if (selectedContactId) {
-      const contact = contactDB.getContact(selectedContactId);
-      setSelectedContact(contact);
+    if (selectedContactId && contacts.length > 0) {
+      const contact = contacts.find(c => c.id === selectedContactId);
+      setSelectedContact(contact || null);
     } else {
       setSelectedContact(null);
     }
-  }, [selectedContactId]);
+  }, [selectedContactId, contacts]);
 
   useEffect(() => {
     filterContacts();
   }, [contacts, searchTerm]);
 
-  const loadContacts = () => {
-    const allContacts = contactDB.getAllContacts();
-    setContacts(allContacts);
+  const loadContacts = async () => {
+    try {
+      const response = await fetch('/api/contacts', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data.contacts || data || []);
+      } else {
+        console.error('Failed to load contacts:', response.statusText);
+        setContacts([]);
+      }
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      setContacts([]);
+    }
   };
 
   const filterContacts = () => {
@@ -62,7 +82,16 @@ const ContactSelector = ({
       return;
     }
 
-    const filtered = contactDB.searchContacts(searchTerm);
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = contacts.filter(contact => {
+      return (
+        contact.name?.toLowerCase().includes(searchLower) ||
+        contact.display_name?.toLowerCase().includes(searchLower) ||
+        contact.company_name?.toLowerCase().includes(searchLower) ||
+        contact.email?.toLowerCase().includes(searchLower) ||
+        contact.phone?.toLowerCase().includes(searchLower)
+      );
+    });
     setFilteredContacts(filtered.slice(0, 10)); // Limit to 10 results
   };
 
@@ -81,17 +110,17 @@ const ContactSelector = ({
   };
 
   const getContactDisplayInfo = (contact) => {
-    const primaryAddress = contact.addresses.find(addr => addr.isPrimary) || contact.addresses[0];
-    const location = primaryAddress ? 
-      `${primaryAddress.city}${primaryAddress.state ? ', ' + primaryAddress.state : ''}` : 
+    // Handle real API data structure
+    const location = contact.city ? 
+      `${contact.city}${contact.postal_code ? ', ' + contact.postal_code : ''}` : 
       '';
 
     return {
-      name: contact.name,
-      subtitle: contact.primaryContact || contact.email || contact.phone || '',
+      name: contact.display_name || contact.name || contact.company_name || 'Unnamed Contact',
+      subtitle: contact.email || contact.phone || contact.mobile || '',
       location,
-      type: contact.type,
-      status: contact.crm.status
+      type: contact.type || CONTACT_TYPES.INDIVIDUAL,
+      status: contact.is_active ? CONTACT_STATUS.ACTIVE : CONTACT_STATUS.INACTIVE
     };
   };
 
