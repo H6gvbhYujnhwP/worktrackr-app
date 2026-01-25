@@ -254,6 +254,10 @@ const Dashboard = forwardRef((props, ref) => {
     if (activeTab === 'resolved' && ticket.status !== 'resolved') {
       return false;
     }
+    // All Open: show open, in_progress, and pending tickets
+    if (activeTab === 'all_open' && ticket.status !== 'open' && ticket.status !== 'in_progress' && ticket.status !== 'pending') {
+      return false;
+    }
     if (activeTab === 'my_tickets' && ticket.assignedTo !== user?.id) {
       return false;
     }
@@ -279,6 +283,7 @@ const Dashboard = forwardRef((props, ref) => {
     pending: tickets.filter(t => t.status === 'pending').length,
     closed: tickets.filter(t => t.status === 'closed').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
+    all_open: tickets.filter(t => t.status === 'open' || t.status === 'in_progress' || t.status === 'pending').length,
     my_tickets: tickets.filter(t => {
       // Match by user ID (assignedTo transformed from assignee_id in API layer)
       return t.assignedTo === user?.id;
@@ -507,8 +512,8 @@ const Dashboard = forwardRef((props, ref) => {
                   <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); }}>
                     Closed: {ticketCounts.closed}
                   </Badge>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); }}>
-                    All: {tickets.length}
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); }}>
+                    All Open: {ticketCounts.all_open}
                   </Badge>
                 </div>
 
