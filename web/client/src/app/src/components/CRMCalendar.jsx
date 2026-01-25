@@ -910,6 +910,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                   <Input
                     id="scheduleTask"
                     type="datetime-local"
+                    step="900"
                     value={newEvent.scheduleTask}
                     onChange={(e) => setNewEvent({...newEvent, scheduleTask: e.target.value})}
                   />
@@ -1154,6 +1155,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                   <Input
                     id="meeting-time"
                     type="time"
+                    step="900"
                     value={newMeeting.time}
                     onChange={(e) => setNewMeeting(prev => ({ ...prev, time: e.target.value }))}
                   />
@@ -1274,6 +1276,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                   <Input
                     id="schedule-time"
                     type="time"
+                    step="900"
                     value={scheduleMeeting.time}
                     onChange={(e) => setScheduleMeeting(prev => ({ ...prev, time: e.target.value }))}
                   />
@@ -1510,6 +1513,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                   <Input
                     id="edit-time"
                     type="time"
+                    step="900"
                     value={editingEvent.time}
                     onChange={(e) => setEditingEvent(prev => ({ ...prev, time: e.target.value }))}
                   />

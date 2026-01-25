@@ -863,6 +863,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                   <Label>Start Time</Label>
                   <Input
                     type="time"
+                    step="900"
                     value={scheduleData.startTime}
                     onChange={(e) => setScheduleData(prev => ({ ...prev, startTime: e.target.value }))}
                   />
@@ -871,6 +872,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                   <Label>End Time</Label>
                   <Input
                     type="time"
+                    step="900"
                     value={scheduleData.endTime}
                     onChange={(e) => setScheduleData(prev => ({ ...prev, endTime: e.target.value }))}
                   />

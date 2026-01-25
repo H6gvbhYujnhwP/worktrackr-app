@@ -213,10 +213,25 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'contact':
           return (
             <div key={fieldKey} className="mb-6">
-              <Label className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Contact
-              </Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Contact
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setContactCreationInitialName('');
+                    setShowContactCreationModal(true);
+                  }}
+                  className="h-8 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  New Contact
+                </Button>
+              </div>
               <ContactSelector
                 selectedContactId={formData.contact}
                 onContactSelect={(contact) => {
@@ -414,6 +429,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
               </Label>
               <Input 
                 type="datetime-local"
+                step="900"
                 value={formData.scheduled_date}
                 onChange={(e) => handleInputChange('scheduled_date', e.target.value)}
                 placeholder="Select date and time"
