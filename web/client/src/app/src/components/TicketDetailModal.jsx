@@ -53,13 +53,25 @@ export default function TicketDetailModal({ ticketId, onClose }) {
     setSaving(true)
     setError('')
     try {
+      // Convert date-only scheduled_date to ISO datetime for backend
+      let scheduledDateISO = null;
+      if (form.scheduled_date) {
+        // If it's already a full datetime, use it; otherwise convert date to datetime
+        if (form.scheduled_date.includes('T')) {
+          scheduledDateISO = form.scheduled_date;
+        } else {
+          // Convert date-only (YYYY-MM-DD) to ISO datetime with default time 09:00
+          scheduledDateISO = new Date(form.scheduled_date + 'T09:00:00').toISOString();
+        }
+      }
+      
       // Coerce payload to API shape
       const patch = {
         title: form.title || undefined,
         description: form.description || undefined,
         priority: form.priority || undefined,
         sector: form.sector || null,
-        scheduled_date: form.scheduled_date || null,
+        scheduled_date: scheduledDateISO,
         scheduled_duration_mins:
           form.scheduled_duration_mins === '' ? null : Number(form.scheduled_duration_mins),
         // Safely parse JSON fields if provided
@@ -127,10 +139,10 @@ export default function TicketDetailModal({ ticketId, onClose }) {
             <CardContent className="space-y-4">
               <div>
                 <Label>Sector</Label>
-                <Select value={form.sector} onValueChange={onChange('sector')}>
+                <Select value={form.sector || 'none'} onValueChange={(val) => onChange('sector')(val === 'none' ? '' : val)}>
                   <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
