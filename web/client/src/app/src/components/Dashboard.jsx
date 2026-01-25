@@ -242,10 +242,18 @@ const Dashboard = forwardRef((props, ref) => {
       return false;
     }
 
-    // Search filter
-    if (searchTerm && !ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !ticket.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
+    // Search filter - search in title, description, contact name, and company name
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const titleMatch = ticket.title?.toLowerCase().includes(searchLower);
+      const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
+      const contactNameMatch = ticket.contactDetails?.contact_name?.toLowerCase().includes(searchLower);
+      const companyNameMatch = ticket.contactDetails?.company_name?.toLowerCase().includes(searchLower);
+      const displayNameMatch = ticket.contactDetails?.display_name?.toLowerCase().includes(searchLower);
+      
+      if (!titleMatch && !descriptionMatch && !contactNameMatch && !companyNameMatch && !displayNameMatch) {
+        return false;
+      }
     }
 
     // Priority filter
@@ -475,18 +483,6 @@ const Dashboard = forwardRef((props, ref) => {
                       className="pl-10 h-9"
                     />
                   </div>
-                  
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-[130px] h-9">
-                      <SelectValue placeholder="All Priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Priority</SelectItem>
-                      {Object.entries(priorities).map(([key, priority]) => (
-                        <SelectItem key={key} value={key}>{priority.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 {/* Row 2: Stats Badges */}
