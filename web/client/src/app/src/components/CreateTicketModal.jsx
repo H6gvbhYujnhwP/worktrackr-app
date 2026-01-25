@@ -125,6 +125,9 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
       // Clean up empty fields - convert empty strings to null or remove them
       if (!ticketData.scheduled_date || ticketData.scheduled_date === '') {
         delete ticketData.scheduled_date;
+      } else {
+        // Convert datetime-local format (2026-01-28T16:50) to ISO datetime
+        ticketData.scheduled_date = new Date(ticketData.scheduled_date).toISOString();
       }
       if (!ticketData.equipment_id || ticketData.equipment_id === '') {
         delete ticketData.equipment_id;
