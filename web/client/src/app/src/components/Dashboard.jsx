@@ -61,7 +61,6 @@ const Dashboard = forwardRef((props, ref) => {
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('open');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -246,19 +245,6 @@ const Dashboard = forwardRef((props, ref) => {
     // Search filter
     if (searchTerm && !ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) && 
         !ticket.description?.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-
-    // Status filter
-    if (statusFilter === 'my_tickets' && ticket.assignedTo !== user?.id) {
-      return false;
-    } else if (statusFilter === 'open' && !['open', 'in_progress', 'pending'].includes(ticket.status)) {
-      return false;
-    } else if (statusFilter === 'closed' && ticket.status !== 'closed') {
-      return false;
-    } else if (statusFilter === 'resolved' && ticket.status !== 'resolved') {
-      return false;
-    } else if (statusFilter !== 'all' && statusFilter !== 'my_tickets' && statusFilter !== 'open' && statusFilter !== 'closed' && statusFilter !== 'resolved' && ticket.status !== statusFilter) {
       return false;
     }
 
