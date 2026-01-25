@@ -27,7 +27,11 @@ import {
   Workflow,
   Bell,
   RefreshCw,
-  Calendar
+  Calendar,
+  Trash2,
+  UserPlus,
+  Flag,
+  GitMerge
 } from 'lucide-react';
 import { ticketStatuses, priorities, categories } from '../data/mockData.js';
 import AppVersion from './AppVersion.jsx';
@@ -377,93 +381,99 @@ const Dashboard = forwardRef((props, ref) => {
           {/* View Content */}
           {currentView === 'tickets' && (
             <>
-              {/* Actions Bar */}
-              <div className="space-y-4">
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <Button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto">
+              {/* Compact Three-Row Layout */}
+              <div className="bg-white rounded-lg border p-4 space-y-3">
+                {/* Row 1: Buttons + Search + Filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-9">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Ticket
                   </Button>
                   
                   {isAdmin && (
-                    <>
-                      <Button variant="outline" onClick={() => setShowTicketCustomizer(true)} className="w-full sm:w-auto">
-                        <Workflow className="w-4 h-4 mr-2" />
-                        Customize your tickets
-                      </Button>
-                    </>
+                    <Button variant="outline" size="sm" onClick={() => setShowTicketCustomizer(true)} className="h-9">
+                      <Workflow className="w-4 h-4 mr-2" />
+                      Customize
+                    </Button>
                   )}
-                </div>
-
-                {/* Search and Filters */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1 sm:flex-none">
+                  
+                  <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                       placeholder="Search tickets..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full sm:w-64"
+                      className="pl-10 h-9"
                     />
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="flex-1 sm:w-40">
-                        <SelectValue placeholder="All Open Tickets" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">All Open Tickets</SelectItem>
-                        <SelectItem value="my_tickets">My Tickets</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                        <SelectItem value="all">All Tickets</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="flex-1 sm:w-32">
-                        <SelectValue placeholder="All Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Priority</SelectItem>
-                        {Object.entries(priorities).map(([key, priority]) => (
-                          <SelectItem key={key} value={key}>{priority.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[180px] h-9">
+                      <SelectValue placeholder="All Open Tickets" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">All Open Tickets</SelectItem>
+                      <SelectItem value="my_tickets">My Tickets</SelectItem>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                      <SelectItem value="all">All Tickets</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-[130px] h-9">
+                      <SelectValue placeholder="All Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Priority</SelectItem>
+                      {Object.entries(priorities).map(([key, priority]) => (
+                        <SelectItem key={key} value={key}>{priority.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Quick Stats - Compact Inline Badges */}
-                <div className="flex items-center gap-2 py-1.5 px-2.5 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-purple-600" />
-                    <span className="text-xs font-medium text-gray-700">My Tickets:</span>
-                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.my_tickets}</Badge>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                    <span className="text-xs font-medium text-gray-700">Open:</span>
-                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.open}</Badge>
-                  </div>
+                {/* Row 2: Stats Badges */}
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1">
+                    My: {ticketCounts.my_tickets}
+                  </Badge>
+                  <Badge className="bg-red-600 hover:bg-red-700 text-white px-3 py-1">
+                    Open: {ticketCounts.open}
+                  </Badge>
+                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>
+                    Closed: {ticketCounts.closed}
+                  </Badge>
+                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('resolved')}>
+                    Resolved: {ticketCounts.resolved}
+                  </Badge>
+                </div>
 
-                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setActiveTab('closed')}>
-                    <XCircle className="w-3.5 h-3.5 text-red-600" />
-                    <span className="text-xs font-medium text-gray-700">Closed:</span>
-                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.closed}</Badge>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setActiveTab('resolved')}>
-                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-xs font-medium text-gray-700">Resolved:</span>
-                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.resolved}</Badge>
-                  </div>
+                {/* Row 3: Bulk Actions */}
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Delete
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
+                    <UserPlus className="w-4 h-4 mr-1.5" />
+                    Assign ticket
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
+                    <Settings className="w-4 h-4 mr-1.5" />
+                    Set status
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
+                    <Flag className="w-4 h-4 mr-1.5" />
+                    Set priority
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
+                    <GitMerge className="w-4 h-4 mr-1.5" />
+                    Merge tickets
+                  </Button>
                 </div>
               </div>
 
