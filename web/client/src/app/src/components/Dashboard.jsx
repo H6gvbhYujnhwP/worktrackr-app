@@ -528,61 +528,61 @@ const Dashboard = forwardRef((props, ref) => {
                   </Badge>
                 </div>
 
-                {/* Row 3: Bulk Actions (only visible when tickets are selected) */}
-                {selectedTickets.size > 0 && (
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkDelete} disabled={loading}>
-                      <Trash2 className="w-4 h-4 mr-1.5" />
-                      Delete
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkAssign} disabled={loading}>
-                      <UserPlus className="w-4 h-4 mr-1.5" />
-                      Assign ticket
-                    </Button>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={loading}>
-                          <Settings className="w-4 h-4 mr-1.5" />
-                          Set status
-                          <ChevronDown className="w-3 h-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>Open</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkSetStatus('in_progress')}>In Progress</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>Pending</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>Resolved</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>Closed</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={loading}>
-                          <Flag className="w-4 h-4 mr-1.5" />
-                          Set priority
-                          <ChevronDown className="w-3 h-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {Object.entries(priorities).map(([key, priority]) => (
-                          <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
-                            {priority.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}>
-                      <GitMerge className="w-4 h-4 mr-1.5" />
-                      Merge tickets
-                    </Button>
+                {/* Row 3: Bulk Actions */}
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkDelete} disabled={selectedTickets.size === 0 || loading}>
+                    <Trash2 className="w-4 h-4 mr-1.5" />
+                    Delete
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkAssign} disabled={selectedTickets.size === 0 || loading}>
+                    <UserPlus className="w-4 h-4 mr-1.5" />
+                    Assign ticket
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={selectedTickets.size === 0 || loading}>
+                        <Settings className="w-4 h-4 mr-1.5" />
+                        Set status
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>Open</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkSetStatus('in_progress')}>In Progress</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>Pending</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>Resolved</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>Closed</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={selectedTickets.size === 0 || loading}>
+                        <Flag className="w-4 h-4 mr-1.5" />
+                        Set priority
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {Object.entries(priorities).map(([key, priority]) => (
+                        <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
+                          {priority.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}>
+                    <GitMerge className="w-4 h-4 mr-1.5" />
+                    Merge tickets
+                  </Button>
+                  {selectedTickets.size > 0 && (
                     <span className="ml-auto text-sm text-gray-600">
                       {selectedTickets.size} selected
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Tickets Display */}
