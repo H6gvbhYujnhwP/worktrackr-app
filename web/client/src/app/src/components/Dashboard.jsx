@@ -514,10 +514,10 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1">
+                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('my_tickets')}>
                     My: {ticketCounts.my_tickets}
                   </Badge>
-                  <Badge className="bg-red-600 hover:bg-red-700 text-white px-3 py-1">
+                  <Badge className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
                     Open: {ticketCounts.open}
                   </Badge>
                   <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>

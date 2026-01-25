@@ -206,7 +206,13 @@ const SimulationProvider = ({ children }) => {
     try {
       const payload = toApiTicket(ticketData);
       const { ticket } = await TicketsAPI.create(payload);
-      setTickets((prev) => [ticket, ...prev]);
+      // Transform API response: assignee_id → assignedTo for frontend compatibility
+      const transformedTicket = {
+        ...ticket,
+        assignedTo: ticket.assignee_id,
+        assignedUser: ticket.assignee_name
+      };
+      setTickets((prev) => [transformedTicket, ...prev]);
       if (ticket.scheduled_date) {
         createBookingFromTicket(ticket);
       }
@@ -221,7 +227,13 @@ const SimulationProvider = ({ children }) => {
   const updateTicket = async (ticketId, updates) => {
     try {
       const { ticket: updatedFromServer } = await TicketsAPI.update(ticketId, updates);
-      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...updatedFromServer } : t)));
+      // Transform API response: assignee_id → assignedTo for frontend compatibility
+      const transformedTicket = {
+        ...updatedFromServer,
+        assignedTo: updatedFromServer.assignee_id,
+        assignedUser: updatedFromServer.assignee_name
+      };
+      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...transformedTicket } : t)));
       if (updatedFromServer?.scheduled_date) {
         updateBookingFromTicket(updatedFromServer);
       }
