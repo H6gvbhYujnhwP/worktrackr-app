@@ -494,25 +494,25 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); }}>
+                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); setViewingTicketId(null); }}>
                     All Open: {ticketCounts.all_open}
                   </Badge>
-                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('my_tickets'); setSearchTerm(''); }}>
+                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('my_tickets'); setSearchTerm(''); setViewingTicketId(null); }}>
                     My: {ticketCounts.my_tickets}
                   </Badge>
-                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('in_progress'); setSearchTerm(''); }}>
+                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('in_progress'); setSearchTerm(''); setViewingTicketId(null); }}>
                     In Progress: {ticketCounts.in_progress}
                   </Badge>
-                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('pending'); setSearchTerm(''); }}>
+                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('pending'); setSearchTerm(''); setViewingTicketId(null); }}>
                     Pending: {ticketCounts.pending}
                   </Badge>
-                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('resolved'); setSearchTerm(''); }}>
+                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('resolved'); setSearchTerm(''); setViewingTicketId(null); }}>
                     Resolved: {ticketCounts.resolved}
                   </Badge>
-                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); }}>
+                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); setViewingTicketId(null); }}>
                     Closed: {ticketCounts.closed}
                   </Badge>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); }}>
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); setViewingTicketId(null); }}>
                     All: {tickets.length}
                   </Badge>
                 </div>
@@ -579,7 +579,10 @@ const Dashboard = forwardRef((props, ref) => {
                 {viewingTicketId ? (
                   <TicketDetailView
                     ticketId={viewingTicketId}
-                    onBack={() => setViewingTicketId(null)}
+                    onBack={() => {
+                      setViewingTicketId(null);
+                      setActiveTab('all_open');
+                    }}
                   />
                 ) : ticketViewMode === 'table' ? (
                   <TicketsTableView
