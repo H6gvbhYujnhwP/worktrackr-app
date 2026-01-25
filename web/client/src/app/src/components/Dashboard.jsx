@@ -451,30 +451,6 @@ const Dashboard = forwardRef((props, ref) => {
                     Resolved: {ticketCounts.resolved}
                   </Badge>
                 </div>
-
-                {/* Row 3: Bulk Actions */}
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
-                    <Trash2 className="w-4 h-4 mr-1.5" />
-                    Delete
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
-                    <UserPlus className="w-4 h-4 mr-1.5" />
-                    Assign ticket
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
-                    <Settings className="w-4 h-4 mr-1.5" />
-                    Set status
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
-                    <Flag className="w-4 h-4 mr-1.5" />
-                    Set priority
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600">
-                    <GitMerge className="w-4 h-4 mr-1.5" />
-                    Merge tickets
-                  </Button>
-                </div>
               </div>
 
               {/* Tickets Display */}
