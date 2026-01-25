@@ -494,8 +494,8 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('open'); setSearchTerm(''); }}>
-                    Open: {ticketCounts.open}
+                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); }}>
+                    All Open: {ticketCounts.all_open}
                   </Badge>
                   <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('my_tickets'); setSearchTerm(''); }}>
                     My: {ticketCounts.my_tickets}
@@ -512,8 +512,8 @@ const Dashboard = forwardRef((props, ref) => {
                   <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); }}>
                     Closed: {ticketCounts.closed}
                   </Badge>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); }}>
-                    All Open: {ticketCounts.all_open}
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); }}>
+                    All: {tickets.length}
                   </Badge>
                 </div>
 
