@@ -220,7 +220,23 @@ const Dashboard = forwardRef((props, ref) => {
   };
 
   const filteredTickets = tickets.filter(ticket => {
-    // Tab filter
+    // Search filter - when searching, show ALL matching tickets regardless of badge filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const titleMatch = ticket.title?.toLowerCase().includes(searchLower);
+      const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
+      const contactNameMatch = ticket.contactDetails?.contact_name?.toLowerCase().includes(searchLower);
+      const companyNameMatch = ticket.contactDetails?.company_name?.toLowerCase().includes(searchLower);
+      const displayNameMatch = ticket.contactDetails?.display_name?.toLowerCase().includes(searchLower);
+      
+      if (!titleMatch && !descriptionMatch && !contactNameMatch && !companyNameMatch && !displayNameMatch) {
+        return false;
+      }
+      // If search matches, skip badge filtering and show the ticket
+      return true;
+    }
+
+    // Status filters based on activeTab (only applied when NOT searching)
     if (activeTab === 'open' && ticket.status !== 'open') {
       return false;
     }
@@ -240,20 +256,6 @@ const Dashboard = forwardRef((props, ref) => {
     }
     if (activeTab === 'my_tickets' && ticket.assignedTo !== user?.id) {
       return false;
-    }
-
-    // Search filter - search in title, description, contact name, and company name
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const titleMatch = ticket.title?.toLowerCase().includes(searchLower);
-      const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
-      const contactNameMatch = ticket.contactDetails?.contact_name?.toLowerCase().includes(searchLower);
-      const companyNameMatch = ticket.contactDetails?.company_name?.toLowerCase().includes(searchLower);
-      const displayNameMatch = ticket.contactDetails?.display_name?.toLowerCase().includes(searchLower);
-      
-      if (!titleMatch && !descriptionMatch && !contactNameMatch && !companyNameMatch && !displayNameMatch) {
-        return false;
-      }
     }
 
     // Priority filter
