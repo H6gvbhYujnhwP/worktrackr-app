@@ -54,7 +54,7 @@ const Dashboard = forwardRef((props, ref) => {
   const { tickets, users, emailLogs } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('open');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -196,7 +196,12 @@ const Dashboard = forwardRef((props, ref) => {
     open: tickets.filter(t => ['open', 'in_progress', 'pending'].includes(t.status)).length,
     closed: tickets.filter(t => t.status === 'closed').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
-    my_tickets: tickets.filter(t => t.assignedTo === user?.id).length
+    my_tickets: tickets.filter(t => {
+      // Match by user ID or user name (for backward compatibility)
+      return t.assignedTo === user?.id || 
+             t.assignedTo === user?.name || 
+             t.assignedUser === user?.name;
+    }).length
   };
 
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
@@ -407,15 +412,18 @@ const Dashboard = forwardRef((props, ref) => {
                   
                   <div className="flex gap-2">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="flex-1 sm:w-32">
-                        <SelectValue placeholder="My Tickets" />
+                      <SelectTrigger className="flex-1 sm:w-40">
+                        <SelectValue placeholder="All Open Tickets" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="open">All Open Tickets</SelectItem>
                         <SelectItem value="my_tickets">My Tickets</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                        <SelectItem value="all">All Tickets</SelectItem>
                       </SelectContent>
                     </Select>
                     
