@@ -156,29 +156,10 @@ const ContactSelector = ({
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2">
-                <p className="font-medium text-gray-900 truncate">{selectedContact.name}</p>
-                <Badge className={getStatusColor(selectedContact.crm.status)} size="sm">
-                  {selectedContact.crm.status}
-                </Badge>
-              </div>
-              {selectedContact.primaryContact && (
-                <p className="text-sm text-gray-600 truncate">{selectedContact.primaryContact}</p>
+              <p className="font-medium text-gray-900 truncate">{selectedContact.display_name || selectedContact.name || selectedContact.company_name}</p>
+              {(selectedContact.email || selectedContact.phone) && (
+                <p className="text-sm text-gray-500 truncate">{selectedContact.email || selectedContact.phone}</p>
               )}
-              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                {selectedContact.email && (
-                  <span className="flex items-center">
-                    <Mail className="w-3 h-3 mr-1" />
-                    {selectedContact.email}
-                  </span>
-                )}
-                {selectedContact.phone && (
-                  <span className="flex items-center">
-                    <Phone className="w-3 h-3 mr-1" />
-                    {selectedContact.phone}
-                  </span>
-                )}
-              </div>
             </div>
           </div>
         ) : (
@@ -192,7 +173,7 @@ const ContactSelector = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden">
           {/* Search Input */}
           <div className="p-3 border-b">
             <div className="relative">
@@ -208,7 +189,7 @@ const ContactSelector = ({
           </div>
 
           {/* Contact List */}
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-48 overflow-y-auto">
             {filteredContacts.length === 0 ? (
               <div className="p-4 text-center">
                 {searchTerm ? (
@@ -251,8 +232,8 @@ const ContactSelector = ({
                     <div
                       key={contact.id}
                       className={`
-                        flex items-center space-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50
-                        ${isSelected ? 'bg-blue-50 border-r-2 border-blue-500' : ''}
+                        flex items-center space-x-3 px-4 py-3 cursor-pointer transition-colors
+                        ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}
                       `}
                       onClick={() => handleContactSelect(contact)}
                     >
@@ -265,37 +246,10 @@ const ContactSelector = ({
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-medium text-gray-900 truncate">{displayInfo.name}</p>
-                          <Badge className={getStatusColor(contact.crm.status)} size="sm">
-                            {contact.crm.status}
-                          </Badge>
-                        </div>
-                        
+                        <p className="font-medium text-gray-900 truncate">{displayInfo.name}</p>
                         {displayInfo.subtitle && (
-                          <p className="text-sm text-gray-600 truncate">{displayInfo.subtitle}</p>
+                          <p className="text-sm text-gray-500 truncate">{displayInfo.subtitle}</p>
                         )}
-                        
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                          {contact.email && (
-                            <span className="flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {contact.email}
-                            </span>
-                          )}
-                          {contact.phone && (
-                            <span className="flex items-center">
-                              <Phone className="w-3 h-3 mr-1" />
-                              {contact.phone}
-                            </span>
-                          )}
-                          {displayInfo.location && (
-                            <span className="flex items-center">
-                              <MapPin className="w-3 h-3 mr-1" />
-                              {displayInfo.location}
-                            </span>
-                          )}
-                        </div>
                       </div>
                       
                       {isSelected && (
