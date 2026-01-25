@@ -150,9 +150,8 @@ const ContactCreationModal = ({
           country: 'United Kingdom',
           isPrimary: true,
           fullAddress: ''
-        }],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        }]
+        // createdAt and updatedAt are automatically added by the backend
       };
 
       // Add contact to database via API
