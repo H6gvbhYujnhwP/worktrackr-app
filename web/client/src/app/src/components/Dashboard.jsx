@@ -638,7 +638,10 @@ const Dashboard = forwardRef((props, ref) => {
             <IntegratedCalendar 
               currentUser={user}
               timezone={selectedTimezone}
-              onTicketClick={(ticket) => setViewingTicketId(ticket.id)}
+              onTicketClick={(ticket) => {
+                setViewingTicketId(ticket.id);
+                setCurrentView('tickets');
+              }}
             />
           )}
 
