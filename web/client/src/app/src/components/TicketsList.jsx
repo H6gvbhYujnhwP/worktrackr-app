@@ -33,7 +33,13 @@ export default function TicketsList({ onSelectTicket }) {
     setError('')
     try {
       const { tickets: rows } = await TicketsAPI.list()
-      setTickets(Array.isArray(rows) ? rows : [])
+      // Transform API response: assignee_id → assignedTo for frontend compatibility
+      const transformedTickets = (rows || []).map(ticket => ({
+        ...ticket,
+        assignedTo: ticket.assignee_id,
+        assignedUser: ticket.assignee_name
+      }));
+      setTickets(Array.isArray(transformedTickets) ? transformedTickets : [])
     } catch (e) {
       console.error('[TicketsList] load failed', e)
       setError(e?.message || 'Failed to load tickets')

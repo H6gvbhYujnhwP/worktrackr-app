@@ -249,7 +249,13 @@ const SimulationProvider = ({ children }) => {
       await TicketsAPI.bulkUpdate(ticketIds, updates);
       // Refresh tickets list
       const { tickets: serverTickets } = await TicketsAPI.list();
-      setTickets(serverTickets || []);
+      // Transform API response: assignee_id → assignedTo for frontend compatibility
+      const transformedTickets = (serverTickets || []).map(ticket => ({
+        ...ticket,
+        assignedTo: ticket.assignee_id,
+        assignedUser: ticket.assignee_name
+      }));
+      setTickets(transformedTickets);
     } catch (e) {
       console.error('[bulkUpdateTickets] API error', e);
       throw e;
