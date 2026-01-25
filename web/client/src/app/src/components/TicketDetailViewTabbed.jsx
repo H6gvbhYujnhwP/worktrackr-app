@@ -147,6 +147,8 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       };
       await updateTicket(ticketId, patch);
       alert('Ticket updated successfully!');
+      // Return to All Open tickets view
+      if (onBack) onBack();
     } catch (e) {
       console.error('[TicketDetailView] save failed', e);
       setError(e?.message || 'Failed to save changes');
