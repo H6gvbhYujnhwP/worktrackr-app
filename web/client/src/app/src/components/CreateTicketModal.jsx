@@ -179,9 +179,9 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Detailed description of the issue or request"
+                placeholder="Describe the issue in detail..."
                 className={errors.description ? 'border-red-500' : ''}
-                rows={3}
+                rows={8}
               />
               {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
             </div>
@@ -455,48 +455,56 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
     }
   };
 
+  // Separate fields into main content and sidebar metadata
+  const mainContentFields = ['title', 'description', 'contact'];
+  const sidebarFields = fieldOrder.filter(field => !mainContentFields.includes(field) && savedTemplate[field]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl h-[90vh] flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 flex-shrink-0">
+      <Card className="w-full max-w-5xl h-[90vh] flex flex-col">
+        {/* Header */}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b flex-shrink-0">
           <div>
             <CardTitle className="text-xl">Create New Ticket</CardTitle>
-            <CardDescription>Fill out the form below to create a new support ticket</CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
         
+        {/* Main Content Area */}
         <div className="flex-1 overflow-hidden">
-          <CardContent className="h-full p-4 overflow-y-auto">
-          <form id="create-ticket-form" onSubmit={handleSubmit} className="space-y-4 pb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-medium">Create New Ticket</h3>
-                <Badge variant="secondary" className="text-xs">
-                  Using saved template ({getRenderableFieldCount(savedTemplate, fieldOrder)} {getRenderableFieldCount(savedTemplate, fieldOrder) === 1 ? 'field' : 'fields'})
-                </Badge>
-            </div>
-
+          <form id="create-ticket-form" onSubmit={handleSubmit} className="h-full">
             {/* Error display */}
             {errors.submit && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="m-4">
                 <AlertTriangle className="w-4 h-4" />
                 <AlertDescription>{errors.submit}</AlertDescription>
               </Alert>
             )}
 
-            {/* Dynamic Fields */}
-            <div className="space-y-4">
-              {fieldOrder.map(fieldKey => {
-                if (!savedTemplate[fieldKey]) return null;
-                return renderField(fieldKey);
-              })}
-            </div>
+            {/* Sidebar Layout: Main Content (70%) + Sidebar (30%) */}
+            <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+              {/* Left Main Content Area */}
+              <div className="flex-1 lg:w-[70%] p-6 overflow-y-auto">
+                <div className="space-y-6">
+                  {mainContentFields.map(fieldKey => {
+                    if (!savedTemplate[fieldKey]) return null;
+                    return renderField(fieldKey);
+                  })}
+                </div>
+              </div>
 
-            {/* Submit Buttons */}
-            </form>
-          </CardContent>
+              {/* Right Sidebar - Metadata Fields */}
+              <div className="lg:w-[30%] bg-gray-50 border-t lg:border-t-0 lg:border-l p-6 overflow-y-auto">
+                <div className="space-y-4">
+                  {sidebarFields.map(fieldKey => {
+                    return renderField(fieldKey);
+                  })}
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
         
         <div className="flex justify-end gap-2 p-4 border-t flex-shrink-0">
