@@ -87,9 +87,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
           return false;
         }
         
-        // Include tickets with due dates or scheduled work
-        const hasEvents = ticket.dueDate || (ticket.scheduledWork && ticket.scheduledWork.length > 0);
-        console.log('Ticket has events:', hasEvents, 'dueDate:', ticket.dueDate, 'scheduledWork:', ticket.scheduledWork);
+        // Include tickets with due dates, scheduled dates, or scheduled work
+        const hasEvents = ticket.dueDate || ticket.scheduled_date || (ticket.scheduledWork && ticket.scheduledWork.length > 0);
+        console.log('Ticket has events:', hasEvents, 'dueDate:', ticket.dueDate, 'scheduled_date:', ticket.scheduled_date, 'scheduledWork:', ticket.scheduledWork);
         return hasEvents;
       })
       .map(ticket => {
@@ -119,6 +119,29 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
             status: ticket.status
           });
           console.log('Created due date event:', events[events.length - 1]);
+        }
+        
+        // Create events for scheduled dates
+        if (ticket.scheduled_date) {
+          console.log('Processing scheduled date for ticket:', ticket.id, 'scheduled_date:', ticket.scheduled_date);
+          // Handle both date-only and datetime formats
+          let scheduledDateStr = ticket.scheduled_date;
+          if (scheduledDateStr.includes('T')) {
+            scheduledDateStr = scheduledDateStr.split('T')[0]; // Extract date part
+          }
+          
+          events.push({
+            id: `scheduled-${ticket.id}`,
+            ticketId: ticket.id,
+            title: `${ticket.title}`,
+            type: 'scheduled',
+            date: scheduledDateStr,
+            time: ticket.scheduled_date.includes('T') ? ticket.scheduled_date.split('T')[1].substring(0, 5) : '09:00',
+            ticket: ticket,
+            assignedUser: assignedUser,
+            status: ticket.status
+          });
+          console.log('Created scheduled date event:', events[events.length - 1]);
         }
         
         // Create events for scheduled work
@@ -268,6 +291,13 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
         case 'closed': return 'bg-gray-100 text-gray-600 border-gray-200';
         default: return 'bg-red-100 text-red-800 border-red-200';
       }
+    } else if (type === 'scheduled') {
+      switch (status) {
+        case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+        case 'parked': return 'bg-gray-100 text-gray-600 border-gray-200';
+        case 'closed': return 'bg-gray-100 text-gray-600 border-gray-200';
+        default: return 'bg-purple-100 text-purple-800 border-purple-200';
+      }
     } else {
       switch (status) {
         case 'completed': return 'bg-green-100 text-green-800 border-green-200';
@@ -286,6 +316,13 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
         case 'parked': return '#f3f4f6'; // gray-100
         case 'closed': return '#f3f4f6'; // gray-100
         default: return '#fecaca'; // red-100
+      }
+    } else if (event.type === 'scheduled') {
+      switch (event.status) {
+        case 'completed': return '#dcfce7'; // green-100
+        case 'parked': return '#f3f4f6'; // gray-100
+        case 'closed': return '#f3f4f6'; // gray-100
+        default: return '#f3e8ff'; // purple-100
       }
     } else {
       switch (event.status) {
