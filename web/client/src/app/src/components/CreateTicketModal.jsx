@@ -115,12 +115,32 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
 
       console.log('[CreateTicket] Creating ticket with data:', formData);
       
-      // Create ticket
+      // Create ticket - remove empty string fields that should be null
       const ticketData = {
         ...formData,
         createdBy: currentUser?.name || 'Unknown User',
         createdAt: new Date().toISOString()
       };
+      
+      // Clean up empty fields - convert empty strings to null or remove them
+      if (!ticketData.scheduled_date || ticketData.scheduled_date === '') {
+        delete ticketData.scheduled_date;
+      }
+      if (!ticketData.equipment_id || ticketData.equipment_id === '') {
+        delete ticketData.equipment_id;
+      }
+      if (!ticketData.work_type || ticketData.work_type === '') {
+        delete ticketData.work_type;
+      }
+      if (!ticketData.service_category || ticketData.service_category === '') {
+        delete ticketData.service_category;
+      }
+      if (!ticketData.photos || ticketData.photos === '') {
+        delete ticketData.photos;
+      }
+      if (!ticketData.attachments || ticketData.attachments === '') {
+        delete ticketData.attachments;
+      }
       
       const result = await createTicket(ticketData);
       
