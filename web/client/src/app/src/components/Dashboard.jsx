@@ -197,10 +197,8 @@ const Dashboard = forwardRef((props, ref) => {
     closed: tickets.filter(t => t.status === 'closed').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
     my_tickets: tickets.filter(t => {
-      // Match by user ID or user name (for backward compatibility)
-      return t.assignedTo === user?.id || 
-             t.assignedTo === user?.name || 
-             t.assignedUser === user?.name;
+      // Match by user ID (assignedTo transformed from assignee_id in API layer)
+      return t.assignedTo === user?.id;
     }).length
   };
 
@@ -442,29 +440,29 @@ const Dashboard = forwardRef((props, ref) => {
                 </div>
 
                 {/* Quick Stats - Compact Inline Badges */}
-                <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg border">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">My Tickets:</span>
-                    <Badge variant="secondary" className="font-semibold">{ticketCounts.my_tickets}</Badge>
+                <div className="flex items-center gap-2 py-1.5 px-2.5 bg-gray-50 rounded-lg border">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="text-xs font-medium text-gray-700">My Tickets:</span>
+                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.my_tickets}</Badge>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                    <span className="text-sm font-medium text-gray-700">Open:</span>
-                    <Badge variant="secondary" className="font-semibold">{ticketCounts.open}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                    <span className="text-xs font-medium text-gray-700">Open:</span>
+                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.open}</Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('closed')}>
-                    <XCircle className="w-4 h-4 text-red-600" />
-                    <span className="text-sm font-medium text-gray-700">Closed:</span>
-                    <Badge variant="secondary" className="font-semibold">{ticketCounts.closed}</Badge>
+                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setActiveTab('closed')}>
+                    <XCircle className="w-3.5 h-3.5 text-red-600" />
+                    <span className="text-xs font-medium text-gray-700">Closed:</span>
+                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.closed}</Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('resolved')}>
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-sm font-medium text-gray-700">Resolved:</span>
-                    <Badge variant="secondary" className="font-semibold">{ticketCounts.resolved}</Badge>
+                  <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setActiveTab('resolved')}>
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                    <span className="text-xs font-medium text-gray-700">Resolved:</span>
+                    <Badge variant="secondary" className="font-semibold text-xs px-1.5 py-0">{ticketCounts.resolved}</Badge>
                   </div>
                 </div>
               </div>

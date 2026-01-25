@@ -76,8 +76,14 @@ const SimulationProvider = ({ children }) => {
     (async () => {
       try {
         const { tickets: serverTickets } = await TicketsAPI.list();
-        setTickets(serverTickets || []);
-        console.log('✅ Loaded tickets from API:', serverTickets?.length);
+        // Transform API response: assignee_id → assignedTo for frontend compatibility
+        const transformedTickets = (serverTickets || []).map(ticket => ({
+          ...ticket,
+          assignedTo: ticket.assignee_id,
+          assignedUser: ticket.assignee_name
+        }));
+        setTickets(transformedTickets);
+        console.log('✅ Loaded tickets from API:', transformedTickets?.length);
       } catch (e) {
         console.error('[SimulationProvider] Failed to load tickets from API', e);
       }
