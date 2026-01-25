@@ -36,9 +36,8 @@ const STATUS_COLORS = {
   resolved: 'bg-green-100 text-green-800 border-green-200',
 };
 
-export default function TicketsTableView({ tickets, users, onTicketClick }) {
+export default function TicketsTableView({ tickets, users, onTicketClick, selectedTickets, setSelectedTickets }) {
   const { bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
-  const [selectedTickets, setSelectedTickets] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(false);
   
@@ -225,106 +224,6 @@ export default function TicketsTableView({ tickets, users, onTicketClick }) {
 
   return (
     <div className="space-y-4">
-      {/* Bulk Actions Toolbar */}
-      <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleBulkDelete}
-          disabled={selectedTickets.size === 0 || loading}
-          className="gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleBulkAssign}
-          disabled={selectedTickets.size === 0 || loading}
-          className="gap-2"
-        >
-          <UserPlus className="w-4 h-4" />
-          Assign ticket
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selectedTickets.size === 0 || loading}
-              className="gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Set status
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>
-              Open
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>
-              Closed
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>
-              Resolved
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={selectedTickets.size === 0 || loading}
-              className="gap-2"
-            >
-              <Flag className="w-4 h-4" />
-              Set priority
-              <ChevronDown className="w-3 h-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleBulkSetPriority('low')}>
-              Low
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetPriority('medium')}>
-              Medium
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetPriority('high')}>
-              High
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleBulkSetPriority('urgent')}>
-              Urgent
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleMergeTickets}
-          disabled={selectedTickets.size < 2 || loading}
-          className="gap-2"
-        >
-          <Merge className="w-4 h-4" />
-          Merge tickets
-        </Button>
-
-        {selectedTickets.size > 0 && (
-          <span className="ml-auto text-sm text-gray-600">
-            {selectedTickets.size} selected
-          </span>
-        )}
-      </div>
-
       {/* Tickets Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">

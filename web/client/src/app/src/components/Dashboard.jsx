@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
 import { 
   Building2, 
   LogOut, 
@@ -31,13 +32,15 @@ import {
   Trash2,
   UserPlus,
   Flag,
-  GitMerge
+  GitMerge,
+  ChevronDown
 } from 'lucide-react';
 import { ticketStatuses, priorities, categories } from '../data/mockData.js';
 import AppVersion from './AppVersion.jsx';
 import TicketCard from './TicketCard.jsx';
 import TicketDetailModal from './TicketDetailModal.jsx';
 import CreateTicketModal from './CreateTicketModal.jsx';
+import AssignTicketsModal from './AssignTicketsModal.jsx';
 import EmailLogModal from './EmailLogModal.jsx';
 import TicketFieldCustomizer from './TicketFieldCustomizer.jsx';
 
@@ -55,7 +58,7 @@ import TicketDetailView from './TicketDetailViewTabbed.jsx';
 
 const Dashboard = forwardRef((props, ref) => {
   const { user, membership, logout } = useAuth();
-  const { tickets, users, emailLogs } = useSimulation();
+  const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('open');
@@ -80,6 +83,9 @@ const Dashboard = forwardRef((props, ref) => {
     return localStorage.getItem('worktrackr-ticket-view-mode') || 'table'; // 'cards' or 'table'
   });
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [selectedTickets, setSelectedTickets] = useState(new Set());
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Expose setCurrentView to parent via ref
   useImperativeHandle(ref, () => ({
@@ -142,6 +148,76 @@ const Dashboard = forwardRef((props, ref) => {
       { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
       { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' }
     ];
+  };
+
+  // Bulk action handlers
+  const handleBulkDelete = async () => {
+    if (!confirm(`Delete ${selectedTickets.size} ticket(s)? This action cannot be undone.`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await bulkDeleteTickets(Array.from(selectedTickets));
+      setSelectedTickets(new Set());
+      alert('Tickets deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete tickets:', error);
+      alert('Failed to delete tickets. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkAssign = () => {
+    setShowAssignModal(true);
+  };
+
+  const handleAssignConfirm = async (userId) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
+      setSelectedTickets(new Set());
+      setShowAssignModal(false);
+    } catch (error) {
+      console.error('Failed to assign tickets:', error);
+      alert(`Failed to assign tickets: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkSetStatus = async (status) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { status });
+      setSelectedTickets(new Set());
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkSetPriority = async (priority) => {
+    setLoading(true);
+    try {
+      await bulkUpdateTickets(Array.from(selectedTickets), { priority });
+      setSelectedTickets(new Set());
+    } catch (error) {
+      console.error('Failed to update priority:', error);
+      alert('Failed to update priority. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMergeTickets = () => {
+    if (selectedTickets.size < 2) {
+      alert('Please select at least 2 tickets to merge');
+      return;
+    }
+    alert('Merge functionality coming soon!');
   };
 
   const filteredTickets = tickets.filter(ticket => {
@@ -451,6 +527,62 @@ const Dashboard = forwardRef((props, ref) => {
                     Resolved: {ticketCounts.resolved}
                   </Badge>
                 </div>
+
+                {/* Row 3: Bulk Actions (only visible when tickets are selected) */}
+                {selectedTickets.size > 0 && (
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkDelete} disabled={loading}>
+                      <Trash2 className="w-4 h-4 mr-1.5" />
+                      Delete
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkAssign} disabled={loading}>
+                      <UserPlus className="w-4 h-4 mr-1.5" />
+                      Assign ticket
+                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={loading}>
+                          <Settings className="w-4 h-4 mr-1.5" />
+                          Set status
+                          <ChevronDown className="w-3 h-3 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>Open</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkSetStatus('in_progress')}>In Progress</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>Pending</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>Resolved</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>Closed</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={loading}>
+                          <Flag className="w-4 h-4 mr-1.5" />
+                          Set priority
+                          <ChevronDown className="w-3 h-3 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        {Object.entries(priorities).map(([key, priority]) => (
+                          <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
+                            {priority.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}>
+                      <GitMerge className="w-4 h-4 mr-1.5" />
+                      Merge tickets
+                    </Button>
+                    <span className="ml-auto text-sm text-gray-600">
+                      {selectedTickets.size} selected
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Tickets Display */}
@@ -464,6 +596,8 @@ const Dashboard = forwardRef((props, ref) => {
                   <TicketsTableView
                     tickets={filteredTickets}
                     users={users}
+                    selectedTickets={selectedTickets}
+                    setSelectedTickets={setSelectedTickets}
                     onTicketClick={(ticket) => {
                       console.log('[Dashboard] onTicketClick called with ticket:', ticket.id);
                       setViewingTicketId(ticket.id);
@@ -495,6 +629,16 @@ const Dashboard = forwardRef((props, ref) => {
                   </div>
                 )}
               </div>
+
+              {/* Assign Modal */}
+              {showAssignModal && (
+                <AssignTicketsModal
+                  users={users}
+                  ticketIds={Array.from(selectedTickets)}
+                  onAssign={handleAssignConfirm}
+                  onClose={() => setShowAssignModal(false)}
+                />
+              )}
             </>
           )}
 
