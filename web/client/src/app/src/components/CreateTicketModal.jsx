@@ -281,7 +281,6 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="new">New</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="in-progress">In Progress</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>

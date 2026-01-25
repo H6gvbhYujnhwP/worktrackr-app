@@ -222,8 +222,13 @@ const Dashboard = forwardRef((props, ref) => {
 
   const filteredTickets = tickets.filter(ticket => {
     // Tab filter
-    // Active tickets: open, in_progress, pending (visible in main queue)
-    if (activeTab === 'open' && !['open', 'in_progress', 'pending'].includes(ticket.status)) {
+    if (activeTab === 'open' && ticket.status !== 'open') {
+      return false;
+    }
+    if (activeTab === 'in_progress' && ticket.status !== 'in_progress') {
+      return false;
+    }
+    if (activeTab === 'pending' && ticket.status !== 'pending') {
       return false;
     }
     // Closed tickets: closed status (moved to closed queue)
@@ -273,7 +278,9 @@ const Dashboard = forwardRef((props, ref) => {
   // Get ticket counts for tabs
   const ticketCounts = {
     all: tickets.length,
-    open: tickets.filter(t => ['open', 'in_progress', 'pending'].includes(t.status)).length,
+    open: tickets.filter(t => t.status === 'open').length,
+    in_progress: tickets.filter(t => t.status === 'in_progress').length,
+    pending: tickets.filter(t => t.status === 'pending').length,
     closed: tickets.filter(t => t.status === 'closed').length,
     resolved: tickets.filter(t => t.status === 'resolved').length,
     my_tickets: tickets.filter(t => {
@@ -483,22 +490,6 @@ const Dashboard = forwardRef((props, ref) => {
                     />
                   </div>
                   
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px] h-9">
-                      <SelectValue placeholder="All Open Tickets" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">All Open Tickets</SelectItem>
-                      <SelectItem value="my_tickets">My Tickets</SelectItem>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                      <SelectItem value="all">All Tickets</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                     <SelectTrigger className="w-[130px] h-9">
                       <SelectValue placeholder="All Priority" />
@@ -514,17 +505,26 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('all')}>
+                    All: {tickets.length}
+                  </Badge>
                   <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('my_tickets')}>
                     My: {ticketCounts.my_tickets}
                   </Badge>
-                  <Badge className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
+                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
                     Open: {ticketCounts.open}
                   </Badge>
-                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>
-                    Closed: {ticketCounts.closed}
+                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('in_progress')}>
+                    In Progress: {ticketCounts.in_progress}
+                  </Badge>
+                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('pending')}>
+                    Pending: {ticketCounts.pending}
                   </Badge>
                   <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('resolved')}>
                     Resolved: {ticketCounts.resolved}
+                  </Badge>
+                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>
+                    Closed: {ticketCounts.closed}
                   </Badge>
                 </div>
 
