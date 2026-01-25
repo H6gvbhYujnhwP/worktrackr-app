@@ -120,6 +120,18 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
     setSaving(true);
     setError('');
     try {
+      // Convert date-only scheduled_date to ISO datetime for backend
+      let scheduledDateISO = null;
+      if (form.scheduled_date) {
+        // If it's already a full datetime, use it; otherwise convert date to datetime
+        if (form.scheduled_date.includes('T')) {
+          scheduledDateISO = form.scheduled_date;
+        } else {
+          // Convert date-only (YYYY-MM-DD) to ISO datetime with default time 09:00
+          scheduledDateISO = new Date(form.scheduled_date + 'T09:00:00').toISOString();
+        }
+      }
+      
       const patch = {
         title: form.title || undefined,
         description: form.description || undefined,
@@ -127,7 +139,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         status: form.status || undefined,
         sector: form.sector || null,
         assignee_id: form.assignee_id || null,
-        scheduled_date: form.scheduled_date || null,
+        scheduled_date: scheduledDateISO,
         scheduled_duration_mins:
           form.scheduled_duration_mins === '' ? null : Number(form.scheduled_duration_mins),
         method_statement: form.method_statement,

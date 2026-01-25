@@ -520,9 +520,15 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                           <div
                             key={event.id}
                             className={`text-xs p-2 rounded mb-1 border cursor-pointer hover:opacity-80 ${getStatusColor(event.status, event.type)}`}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent day click
+                              console.log('[IntegratedCalendar] Event clicked:', event);
+                              console.log('[IntegratedCalendar] onTicketClick exists:', !!onTicketClick);
+                              console.log('[IntegratedCalendar] event.ticket:', event.ticket);
+                              
                               // Open ticket modal for any calendar event
                               if (onTicketClick && event.ticket) {
+                                console.log('[IntegratedCalendar] Calling onTicketClick with ticket:', event.ticket.id);
                                 onTicketClick(event.ticket);
                               } else if (event.type === 'work') {
                                 // Allow editing of scheduled work
@@ -767,7 +773,12 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                             title={`${event.title} - ${event.assignedUser?.name || 'Unassigned'} ${event.type === 'work' ? `(${event.startTime})` : ''}`}
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log('[IntegratedCalendar Month] Event clicked:', event);
+                              console.log('[IntegratedCalendar Month] onTicketClick exists:', !!onTicketClick);
+                              console.log('[IntegratedCalendar Month] event.ticket:', event.ticket);
+                              
                               if (onTicketClick && event.ticket) {
+                                console.log('[IntegratedCalendar Month] Calling onTicketClick with ticket:', event.ticket.id);
                                 onTicketClick(event.ticket);
                               }
                             }}
