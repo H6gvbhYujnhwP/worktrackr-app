@@ -491,14 +491,11 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('all')}>
-                    All: {tickets.length}
+                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
+                    Open: {ticketCounts.open}
                   </Badge>
                   <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('my_tickets')}>
                     My: {ticketCounts.my_tickets}
-                  </Badge>
-                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
-                    Open: {ticketCounts.open}
                   </Badge>
                   <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('in_progress')}>
                     In Progress: {ticketCounts.in_progress}
@@ -511,6 +508,9 @@ const Dashboard = forwardRef((props, ref) => {
                   </Badge>
                   <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>
                     Closed: {ticketCounts.closed}
+                  </Badge>
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('all')}>
+                    All: {tickets.length}
                   </Badge>
                 </div>
 
