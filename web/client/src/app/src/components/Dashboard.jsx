@@ -489,25 +489,25 @@ const Dashboard = forwardRef((props, ref) => {
 
                 {/* Row 2: Stats Badges */}
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('open')}>
+                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('open'); setSearchTerm(''); }}>
                     Open: {ticketCounts.open}
                   </Badge>
-                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('my_tickets')}>
+                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('my_tickets'); setSearchTerm(''); }}>
                     My: {ticketCounts.my_tickets}
                   </Badge>
-                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('in_progress')}>
+                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('in_progress'); setSearchTerm(''); }}>
                     In Progress: {ticketCounts.in_progress}
                   </Badge>
-                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('pending')}>
+                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('pending'); setSearchTerm(''); }}>
                     Pending: {ticketCounts.pending}
                   </Badge>
-                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('resolved')}>
+                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('resolved'); setSearchTerm(''); }}>
                     Resolved: {ticketCounts.resolved}
                   </Badge>
-                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('closed')}>
+                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); }}>
                     Closed: {ticketCounts.closed}
                   </Badge>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => setActiveTab('all')}>
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); }}>
                     All: {tickets.length}
                   </Badge>
                 </div>
