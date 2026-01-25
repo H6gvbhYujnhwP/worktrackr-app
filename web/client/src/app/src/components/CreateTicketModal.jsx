@@ -181,7 +181,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Describe the issue in detail..."
                 className={errors.description ? 'border-red-500' : ''}
-                rows={8}
+                rows={20}
               />
               {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
             </div>
@@ -456,7 +456,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
   };
 
   // Separate fields into main content and sidebar metadata
-  const mainContentFields = ['title', 'description', 'contact'];
+  const mainContentFields = ['contact', 'title', 'description'];
   const sidebarFields = fieldOrder.filter(field => !mainContentFields.includes(field) && savedTemplate[field]);
 
   return (
