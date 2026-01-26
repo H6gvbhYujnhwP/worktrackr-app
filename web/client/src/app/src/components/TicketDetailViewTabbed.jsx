@@ -93,7 +93,9 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   });
 
   useEffect(() => {
+    console.log('[TicketDetailView] useEffect triggered', { ticketId, ticketsCount: tickets.length });
     const t = tickets.find(t => String(t.id) === String(ticketId));
+    console.log('[TicketDetailView] Found ticket:', t ? t.id : 'NOT FOUND');
     if (t) {
       setTicket(t);
       setForm({

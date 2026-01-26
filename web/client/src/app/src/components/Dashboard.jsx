@@ -642,6 +642,8 @@ const Dashboard = forwardRef((props, ref) => {
               currentUser={user}
               timezone={selectedTimezone}
               onTicketClick={(ticket) => {
+                console.log('[Dashboard] Calendar event clicked, ticket:', ticket.id);
+                // Set both states - React will batch these updates
                 setViewingTicketId(ticket.id);
                 setCurrentView('tickets');
               }}
