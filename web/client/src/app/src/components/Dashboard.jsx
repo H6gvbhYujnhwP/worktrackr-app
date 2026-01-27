@@ -33,7 +33,8 @@ import {
   UserPlus,
   Flag,
   GitMerge,
-  ChevronDown
+  ChevronDown,
+  Package
 } from 'lucide-react';
 import { ticketStatuses, priorities, categories } from '../data/mockData.js';
 import AppVersion from './AppVersion.jsx';
@@ -450,6 +451,15 @@ const Dashboard = forwardRef((props, ref) => {
                     </Button>
                     
                     <Button 
+                      variant={currentView === 'product-catalog' ? 'default' : 'outline'} 
+                      onClick={() => setCurrentView('product-catalog')}
+                      className="flex items-center space-x-2"
+                    >
+                      <Package className="w-4 h-4" />
+                      <span>Product Catalog</span>
+                    </Button>
+                    
+                    <Button 
                       variant={currentView === 'crm-calendar' ? 'default' : 'outline'} 
                       onClick={() => setCurrentView('crm-calendar')}
                       className="flex items-center space-x-2"
@@ -662,6 +672,12 @@ const Dashboard = forwardRef((props, ref) => {
           {currentView === 'crm' && (
             <ErrorBoundary>
               <CRMDashboard timezone={selectedTimezone} />
+            </ErrorBoundary>
+          )}
+
+          {currentView === 'product-catalog' && (
+            <ErrorBoundary>
+              <CRMDashboard timezone={selectedTimezone} defaultTab="catalog" />
             </ErrorBoundary>
           )}
 

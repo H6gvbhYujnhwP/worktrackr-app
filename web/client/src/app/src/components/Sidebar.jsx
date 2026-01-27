@@ -58,7 +58,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
       view: 'crm',
       subItems: [
         { id: 'contacts', label: 'Contacts', view: 'contacts', icon: UserCircle },
-        { id: 'product-catalog', label: 'Product Catalog', view: 'crm', icon: Package },
+        { id: 'product-catalog', label: 'Product Catalog', view: 'product-catalog', icon: Package },
         { id: 'crm-calendar', label: 'CRM Calendar', view: 'crm-calendar', icon: Calendar },
         { id: 'quotes', label: 'Quotes', view: 'quotes', icon: FileText },
         { id: 'quote-templates', label: 'Quote Templates', view: 'quote-templates', icon: FileText }
