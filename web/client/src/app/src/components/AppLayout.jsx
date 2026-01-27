@@ -212,12 +212,19 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentVie
         <main 
           className="flex-1 overflow-y-auto bg-gray-100 pt-16 md:pt-0"
         >
-          <div className="p-4">
-            {/* White contained card wrapper for all content */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          {/* Conditional wrapper - no white card for calendar views to prevent white-on-white */}
+          {currentView === 'calendar' || currentView === 'crm-calendar' ? (
+            <div className="p-4 min-h-full">
               {children}
             </div>
-          </div>
+          ) : (
+            <div className="p-4">
+              {/* White contained card wrapper for non-calendar content */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                {children}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

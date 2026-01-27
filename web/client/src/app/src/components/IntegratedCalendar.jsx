@@ -347,7 +347,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
   const timeSlots = generateTimeSlots();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-screen">
       {/* Calendar Header */}
       <Card>
         <CardHeader className="p-3 sm:p-6">
