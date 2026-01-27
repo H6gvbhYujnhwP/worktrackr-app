@@ -35,12 +35,14 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
       
       if (response.ok) {
         const data = await response.json();
-        setTemplates(data);
+        setTemplates(Array.isArray(data) ? data : []);
       } else {
         console.error('Failed to load templates');
+        setTemplates([]);
       }
     } catch (error) {
       console.error('Error loading templates:', error);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }

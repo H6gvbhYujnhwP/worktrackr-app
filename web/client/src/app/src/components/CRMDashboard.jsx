@@ -70,6 +70,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
   const [editingContact, setEditingContact] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProductData, setEditingProductData] = useState(null);
   const [customerServices, setCustomerServices] = useState({});
   const [contactInfo, setContactInfo] = useState({});
   const [selectedCurrency, setSelectedCurrency] = useState('GBP');
@@ -949,8 +950,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           {isEditing ? (
                             <Input
-                              value={product.name}
-                              onChange={(e) => updateProduct(product.id, { name: e.target.value })}
+                              value={editingProductData?.name !== undefined ? editingProductData.name : product.name}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, name: e.target.value }))}
                               className="font-semibold mobile-input"
                             />
                           ) : (
@@ -958,8 +959,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           )}
                           {isEditing ? (
                             <Input
-                              value={product.type}
-                              onChange={(e) => updateProduct(product.id, { type: e.target.value })}
+                              value={editingProductData?.type !== undefined ? editingProductData.type : product.type}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, type: e.target.value }))}
                               className="mobile-input"
                             />
                           ) : (
@@ -968,8 +969,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           <label className="flex items-center space-x-2">
                             <input
                               type="checkbox"
-                              checked={product.is_active}
-                              onChange={(e) => updateProduct(product.id, { is_active: e.target.checked })}
+                              checked={editingProductData?.is_active !== undefined ? editingProductData.is_active : product.is_active}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, is_active: e.target.checked }))}
                               className="rounded"
                             />
                             <span className="text-xs sm:text-sm">Active</span>
@@ -979,7 +980,20 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setEditingProduct(isEditing ? null : product.id)}
+                            onClick={async () => {
+                              if (isEditing) {
+                                // Save changes
+                                if (editingProductData) {
+                                  await updateProduct(product.id, editingProductData);
+                                }
+                                setEditingProduct(null);
+                                setEditingProductData(null);
+                              } else {
+                                // Start editing
+                                setEditingProduct(product.id);
+                                setEditingProductData({});
+                              }
+                            }}
                             className="text-xs px-2 py-1"
                           >
                             {isEditing ? 'Save' : <Edit className="w-3 h-3 sm:w-4 sm:h-4" />}
@@ -1006,8 +1020,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               step="0.01"
-                              value={product.our_cost}
-                              onChange={(e) => updateProduct(product.id, { our_cost: parseFloat(e.target.value) || 0 })}
+                              value={editingProductData?.our_cost !== undefined ? editingProductData.our_cost : product.our_cost}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, our_cost: parseFloat(e.target.value) || 0 }))}
                               className="mt-1"
                             />
                           ) : (
@@ -1020,8 +1034,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               step="0.01"
-                              value={product.client_price}
-                              onChange={(e) => updateProduct(product.id, { client_price: parseFloat(e.target.value) || 0 })}
+                              value={editingProductData?.client_price !== undefined ? editingProductData.client_price : product.client_price}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, client_price: parseFloat(e.target.value) || 0 }))}
                               className="mt-1"
                             />
                           ) : (
@@ -1038,8 +1052,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           <span className="font-medium">Unit: </span>
                           {isEditing ? (
                             <Input
-                              value={product.unit}
-                              onChange={(e) => updateProduct(product.id, { unit: e.target.value })}
+                              value={editingProductData?.unit !== undefined ? editingProductData.unit : product.unit}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, unit: e.target.value }))}
                               className="mt-1"
                             />
                           ) : (
@@ -1052,8 +1066,8 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               min="1"
-                              value={product.default_quantity}
-                              onChange={(e) => updateProduct(product.id, { default_quantity: parseInt(e.target.value) || 1 })}
+                              value={editingProductData?.default_quantity !== undefined ? editingProductData.default_quantity : product.default_quantity}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, default_quantity: parseInt(e.target.value) || 1 }))}
                               className="mt-1"
                             />
                           ) : (
