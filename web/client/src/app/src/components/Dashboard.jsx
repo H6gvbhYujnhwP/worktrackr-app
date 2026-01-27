@@ -637,16 +637,24 @@ const Dashboard = forwardRef((props, ref) => {
           {currentView === 'users' && isAdmin && (
             <UserManagementImproved users={users} currentUser={user} />
           )}
-          {currentView === 'calendar' && (
-            <IntegratedCalendar 
-              currentUser={user}
-              timezone={selectedTimezone}
-              onTicketClick={(ticket) => {
-                setViewingTicketId(ticket.id);
-                setCurrentView('tickets');
-              }}
-            />
-          )}
+          {currentView === 'calendar' && (() => {
+            console.log('[Dashboard] Rendering calendar view', { user, timezone: selectedTimezone });
+            try {
+              return (
+                <IntegratedCalendar 
+                  currentUser={user}
+                  timezone={selectedTimezone}
+                  onTicketClick={(ticket) => {
+                    setViewingTicketId(ticket.id);
+                    setCurrentView('tickets');
+                  }}
+                />
+              );
+            } catch (error) {
+              console.error('[Dashboard] Error rendering IntegratedCalendar:', error);
+              return <div className="p-4 text-red-600">Error loading calendar: {error.message}</div>;
+            }
+          })()}
 
           {currentView === 'billing' && isAdmin && (
             <XeroIntegration />
