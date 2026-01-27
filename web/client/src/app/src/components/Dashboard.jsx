@@ -637,23 +637,16 @@ const Dashboard = forwardRef((props, ref) => {
           {currentView === 'users' && isAdmin && (
             <UserManagementImproved users={users} currentUser={user} />
           )}
-          {(() => {
-            console.log('[Dashboard] Current view:', currentView);
-            if (currentView === 'calendar') {
-              console.log('[Dashboard] About to render calendar');
-              return (
-                <IntegratedCalendar 
-                  currentUser={user}
-                  timezone={selectedTimezone}
-                  onTicketClick={(ticket) => {
-                    setViewingTicketId(ticket.id);
-                    setCurrentView('tickets');
-                  }}
-                />
-              );
-            }
-            return null;
-          })()}
+          {currentView === 'calendar' && (
+            <IntegratedCalendar 
+              currentUser={user}
+              timezone={selectedTimezone}
+              onTicketClick={(ticket) => {
+                setViewingTicketId(ticket.id);
+                setCurrentView('tickets');
+              }}
+            />
+          )}
 
           {currentView === 'billing' && isAdmin && (
             <XeroIntegration />
