@@ -637,9 +637,10 @@ const Dashboard = forwardRef((props, ref) => {
           {currentView === 'users' && isAdmin && (
             <UserManagementImproved users={users} currentUser={user} />
           )}
-          {currentView === 'calendar' && (() => {
-            console.log('[Dashboard] Rendering calendar view', { user, timezone: selectedTimezone });
-            try {
+          {(() => {
+            console.log('[Dashboard] Current view:', currentView);
+            if (currentView === 'calendar') {
+              console.log('[Dashboard] About to render calendar');
               return (
                 <IntegratedCalendar 
                   currentUser={user}
@@ -650,10 +651,8 @@ const Dashboard = forwardRef((props, ref) => {
                   }}
                 />
               );
-            } catch (error) {
-              console.error('[Dashboard] Error rendering IntegratedCalendar:', error);
-              return <div className="p-4 text-red-600">Error loading calendar: {error.message}</div>;
             }
+            return null;
           })()}
 
           {currentView === 'billing' && isAdmin && (
