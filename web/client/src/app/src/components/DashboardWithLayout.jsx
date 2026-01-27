@@ -29,12 +29,12 @@ export default function DashboardWithLayout() {
     
     // Call Dashboard's setCurrentView and clear any viewing ticket
     if (dashboardRef.current) {
+      // ALWAYS clear viewing ticket when navigating (not just for calendar)
+      if (dashboardRef.current.clearViewingTicket) {
+        dashboardRef.current.clearViewingTicket();
+      }
       if (dashboardRef.current.setCurrentView) {
         dashboardRef.current.setCurrentView(view);
-      }
-      // Clear viewing ticket when navigating to calendar
-      if (view === 'calendar' && dashboardRef.current.clearViewingTicket) {
-        dashboardRef.current.clearViewingTicket();
       }
     }
   };
