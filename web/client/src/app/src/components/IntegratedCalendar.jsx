@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label.jsx';
 import { Switch } from '@/components/ui/switch.jsx';
 
 const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/London' }) => {
+  console.log('[IntegratedCalendar] Component mounted/rendered', { currentUser, timezone, ticketsAvailable: 'checking...' });
   const { tickets, users, updateTicket } = useSimulation();
+  console.log('[IntegratedCalendar] Tickets from simulation:', tickets?.length || 0);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('week'); // 'week', 'day', 'month'
   const [showAssignedOnly, setShowAssignedOnly] = useState(false);
