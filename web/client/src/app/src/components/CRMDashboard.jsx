@@ -222,7 +222,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
     return () => clearInterval(intervalId);
   }, []);
 
-  const filteredCompanies = contacts.filter(contact => {
+  const filteredCompanies = (Array.isArray(contacts) ? contacts : []).filter(contact => {
     // Sequential matching from the beginning of the contact name
     const matchesSearch = searchTerm === '' || 
       contact.name.toLowerCase().startsWith(searchTerm.toLowerCase());
@@ -239,7 +239,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
     // Check if we have customer services data
     if (customerServices && Object.keys(customerServices).length > 0) {
       // Calculate from actual data using contacts
-      total = contacts.reduce((sum, contact) => {
+      total = (Array.isArray(contacts) ? contacts : []).reduce((sum, contact) => {
         const services = customerServices[contact.id] || [];
         const contactProfit = services.reduce((contactSum, service) => {
           if (service && service.quantity > 0) {
@@ -251,14 +251,14 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
       }, 0);
     } else {
       // Calculate from contact CRM data
-      total = contacts.reduce((sum, contact) => sum + (contact.crm?.totalProfit || 0), 0);
+      total = (Array.isArray(contacts) ? contacts : []).reduce((sum, contact) => sum + (contact.crm?.totalProfit || 0), 0);
     }
     
     return total;
   }, [customerServices, contacts]);
   
-  const totalRenewals = contacts.reduce((sum, contact) => sum + (contact.crm?.renewalsCount || 0), 0);
-  const totalOpportunities = contacts.reduce((sum, contact) => sum + (contact.crm?.openOppsCount || 0), 0);
+  const totalRenewals = (Array.isArray(contacts) ? contacts : []).reduce((sum, contact) => sum + (contact.crm?.renewalsCount || 0), 0);
+  const totalOpportunities = (Array.isArray(contacts) ? contacts : []).reduce((sum, contact) => sum + (contact.crm?.openOppsCount || 0), 0);
 
   const initializeCustomerServices = (companyId) => {
     // If customer doesn't have services initialized, create them from catalog
@@ -783,7 +783,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                       ALL
                     </Button>
                     {alphabetLetters.map(letter => {
-                      const hasCompanies = contacts.some(company => 
+                      const hasCompanies = (Array.isArray(contacts) ? contacts : []).some(company => 
                         company.name.charAt(0).toUpperCase() === letter
                       );
                       return (
@@ -984,7 +984,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                               if (isEditing) {
                                 // Save changes
                                 if (editingProductData) {
-                                  await updateProduct(product.id, editingProductData);
+                                  // Convert empty strings to 0 for number fields before saving
+                                  const dataToSave = { ...editingProductData };
+                                  if (dataToSave.our_cost === '') dataToSave.our_cost = 0;
+                                  if (dataToSave.client_price === '') dataToSave.client_price = 0;
+                                  if (dataToSave.default_quantity === '') dataToSave.default_quantity = 0;
+                                  await updateProduct(product.id, dataToSave);
                                 }
                                 setEditingProduct(null);
                                 setEditingProductData(null);
@@ -1021,7 +1026,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                               type="number"
                               step="0.01"
                               value={editingProductData?.our_cost !== undefined ? editingProductData.our_cost : product.our_cost}
-                              onChange={(e) => setEditingProductData(prev => ({ ...prev, our_cost: parseFloat(e.target.value) || 0 }))}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, our_cost: e.target.value === '' ? '' : parseFloat(e.target.value) }))}
                               className="mt-1"
                             />
                           ) : (
@@ -1035,7 +1040,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                               type="number"
                               step="0.01"
                               value={editingProductData?.client_price !== undefined ? editingProductData.client_price : product.client_price}
-                              onChange={(e) => setEditingProductData(prev => ({ ...prev, client_price: parseFloat(e.target.value) || 0 }))}
+                              onChange={(e) => setEditingProductData(prev => ({ ...prev, client_price: e.target.value === '' ? '' : parseFloat(e.target.value) }))}
                               className="mt-1"
                             />
                           ) : (
