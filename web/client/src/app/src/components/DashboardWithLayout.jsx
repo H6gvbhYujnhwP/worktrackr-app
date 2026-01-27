@@ -24,12 +24,18 @@ export default function DashboardWithLayout() {
   const handleSidebarNavigation = (view) => {
     console.log('[DashboardWithLayout] Navigation to:', view);
     
-    // Update local state first
+    // Update local state
     setCurrentView(view);
     
-    // Call Dashboard's setCurrentView if available
-    if (dashboardRef.current && dashboardRef.current.setCurrentView) {
-      dashboardRef.current.setCurrentView(view);
+    // Call Dashboard's setCurrentView and clear any viewing ticket
+    if (dashboardRef.current) {
+      if (dashboardRef.current.setCurrentView) {
+        dashboardRef.current.setCurrentView(view);
+      }
+      // Clear viewing ticket when navigating to calendar
+      if (view === 'calendar' && dashboardRef.current.clearViewingTicket) {
+        dashboardRef.current.clearViewingTicket();
+      }
     }
   };
 

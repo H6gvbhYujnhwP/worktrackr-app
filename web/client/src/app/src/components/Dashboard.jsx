@@ -86,10 +86,13 @@ const Dashboard = forwardRef((props, ref) => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Expose setCurrentView to parent via ref
+  // Expose setCurrentView and clearViewingTicket to parent via ref
   useImperativeHandle(ref, () => ({
     setCurrentView: (view) => {
       setCurrentView(view);
+    },
+    clearViewingTicket: () => {
+      setViewingTicketId(null);
     }
   }));
 
