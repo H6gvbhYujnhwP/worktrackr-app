@@ -941,7 +941,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                 {/* Existing Products */}
                 {productCatalog.map((product) => {
                   const isEditing = editingProduct === product.id;
-                  const margin = product.defaultClientPrice - product.defaultOurCost;
+                  const margin = product.client_price - product.our_cost;
                   
                   return (
                     <div key={product.id} className="border rounded-lg p-3 sm:p-4 w-full">
@@ -958,18 +958,18 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           )}
                           {isEditing ? (
                             <Input
-                              value={product.category}
-                              onChange={(e) => updateProduct(product.id, { category: e.target.value })}
+                              value={product.type}
+                              onChange={(e) => updateProduct(product.id, { type: e.target.value })}
                               className="mobile-input"
                             />
                           ) : (
-                            <Badge variant="outline" className="text-xs w-fit">{product.category}</Badge>
+                            <Badge variant="outline" className="text-xs w-fit">{product.type}</Badge>
                           )}
                           <label className="flex items-center space-x-2">
                             <input
                               type="checkbox"
-                              checked={product.active}
-                              onChange={(e) => updateProduct(product.id, { active: e.target.checked })}
+                              checked={product.is_active}
+                              onChange={(e) => updateProduct(product.id, { is_active: e.target.checked })}
                               className="rounded"
                             />
                             <span className="text-xs sm:text-sm">Active</span>
@@ -1006,12 +1006,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               step="0.01"
-                              value={product.defaultOurCost}
-                              onChange={(e) => updateProduct(product.id, { defaultOurCost: parseFloat(e.target.value) || 0 })}
+                              value={product.our_cost}
+                              onChange={(e) => updateProduct(product.id, { our_cost: parseFloat(e.target.value) || 0 })}
                               className="mt-1"
                             />
                           ) : (
-                            <span>{getCurrentCurrencySymbol()}{product.defaultOurCost}</span>
+                            <span>{getCurrentCurrencySymbol()}{product.our_cost}</span>
                           )}
                         </div>
                         <div>
@@ -1020,12 +1020,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               step="0.01"
-                              value={product.defaultClientPrice}
-                              onChange={(e) => updateProduct(product.id, { defaultClientPrice: parseFloat(e.target.value) || 0 })}
+                              value={product.client_price}
+                              onChange={(e) => updateProduct(product.id, { client_price: parseFloat(e.target.value) || 0 })}
                               className="mt-1"
                             />
                           ) : (
-                            <span>{getCurrentCurrencySymbol()}{product.defaultClientPrice}</span>
+                            <span>{getCurrentCurrencySymbol()}{product.client_price}</span>
                           )}
                         </div>
                         <div>
@@ -1052,12 +1052,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                             <Input
                               type="number"
                               min="1"
-                              value={product.defaultQuantity}
-                              onChange={(e) => updateProduct(product.id, { defaultQuantity: parseInt(e.target.value) || 1 })}
+                              value={product.default_quantity}
+                              onChange={(e) => updateProduct(product.id, { default_quantity: parseInt(e.target.value) || 1 })}
                               className="mt-1"
                             />
                           ) : (
-                            <span>{product.defaultQuantity}</span>
+                            <span>{product.default_quantity}</span>
                           )}
                         </div>
                       </div>
