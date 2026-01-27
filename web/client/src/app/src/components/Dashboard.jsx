@@ -671,6 +671,12 @@ const Dashboard = forwardRef((props, ref) => {
             </ErrorBoundary>
           )}
 
+          {currentView === 'quote-templates' && (
+            <ErrorBoundary>
+              <CRMDashboard timezone={selectedTimezone} defaultTab="templates" />
+            </ErrorBoundary>
+          )}
+
           {currentView === 'crm-calendar' && (
             <CRMCalendar timezone={selectedTimezone} />
           )}

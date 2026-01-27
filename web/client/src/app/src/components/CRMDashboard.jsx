@@ -29,6 +29,7 @@ import {
   Download,
   FileText
 } from 'lucide-react';
+import QuoteTemplatesManager from './QuoteTemplatesManager';
 // Contacts are now fetched from the database API instead of localStorage
 
 // World currencies data
@@ -737,10 +738,11 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 text-xs sm:text-sm">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 text-xs sm:text-sm">
           <TabsTrigger value="customers" className="text-xs sm:text-sm">Customers</TabsTrigger>
           <TabsTrigger value="catalog" className="text-xs sm:text-sm">Product Catalog</TabsTrigger>
           <TabsTrigger value="quotes" className="text-xs sm:text-sm">Quotes</TabsTrigger>
+          <TabsTrigger value="templates" className="text-xs sm:text-sm">Quote Templates</TabsTrigger>
           <TabsTrigger value="settings" className="text-xs sm:text-sm col-span-2 sm:col-span-1">CRM Settings</TabsTrigger>
         </TabsList>
 
@@ -1145,6 +1147,10 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <QuoteTemplatesManager />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">

@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon, UserPlus } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Sparkles, Upload, Loader2 as LoaderIcon, UserPlus, FileText } from 'lucide-react';
 import QuickAddContactModal from './QuickAddContactModal';
 
 export default function QuoteForm({ mode = 'create', initialData = null, onClearDraft = null }) {
@@ -19,6 +19,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   const [contacts, setContacts] = useState([]);
   const [products, setProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
+  const [templates, setTemplates] = useState([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   
   // Filter products based on search
   const filteredProducts = products.filter(product => {
@@ -89,8 +91,23 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       }
     };
     
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/quote-templates?is_active=true', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTemplates(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      }
+    };
+    
     fetchContacts();
     fetchProducts();
+    fetchTemplates();
   }, []);
 
   // Populate form with AI-generated draft data
@@ -238,6 +255,65 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         tax_rate: product.tax_rate || 20
       };
       setLineItems(updatedItems);
+    }
+  };
+
+  // Load template into quote
+  const handleLoadTemplate = async (templateId) => {
+    try {
+      const response = await fetch(`/api/quote-templates/${templateId}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const template = await response.json();
+        
+        // Load template line items and pull current prices from Product Catalog
+        const templateLineItems = template.default_line_items || [];
+        const loadedLineItems = await Promise.all(
+          templateLineItems.map(async (item) => {
+            let unitPrice = 0;
+            
+            // If linked to product catalog, fetch current price
+            if (item.product_id) {
+              const product = products.find(p => p.id === item.product_id);
+              if (product) {
+                unitPrice = product.client_price || 0;
+              }
+            }
+            
+            return {
+              product_id: item.product_id || null,
+              description: item.description || '',
+              quantity: item.default_quantity || 1,
+              unit_price: unitPrice,
+              discount_percent: 0,
+              tax_rate: 20
+            };
+          })
+        );
+        
+        // Update line items
+        if (loadedLineItems.length > 0) {
+          setLineItems(loadedLineItems);
+        }
+        
+        // Update terms and conditions if template has them
+        if (template.terms_and_conditions) {
+          setFormData(prev => ({
+            ...prev,
+            terms_conditions: template.terms_and_conditions
+          }));
+        }
+        
+        setShowTemplateSelector(false);
+        alert(`Template "${template.name}" loaded successfully!`);
+      } else {
+        alert('Failed to load template');
+      }
+    } catch (error) {
+      console.error('Error loading template:', error);
+      alert('Error loading template');
     }
   };
 
@@ -506,10 +582,16 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
               <CardTitle>Line Items</CardTitle>
               <CardDescription>Add products or services to this quote</CardDescription>
             </div>
-            <Button onClick={addLineItem} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Item
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowTemplateSelector(!showTemplateSelector)} size="sm" variant="outline">
+                <FileText className="w-4 h-4 mr-2" />
+                Load from Template
+              </Button>
+              <Button onClick={addLineItem} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Item
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -626,6 +708,40 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
               </Card>
             ))}
           </div>
+
+          {/* Template Selector */}
+          {showTemplateSelector && (
+            <Card className="mt-4">
+              <CardContent className="p-4">
+                <h4 className="font-medium mb-3">Select a Template</h4>
+                {templates.length === 0 ? (
+                  <p className="text-sm text-gray-500">No templates available. Create templates in CRM → Quote Templates.</p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {templates.map(template => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        onClick={() => handleLoadTemplate(template.id)}
+                        className="w-full text-left p-3 hover:bg-gray-100 rounded border flex items-center justify-between"
+                      >
+                        <div>
+                          <div className="font-medium text-sm">{template.name}</div>
+                          {template.sector && (
+                            <div className="text-xs text-gray-500">{template.sector}</div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-1">
+                            {template.default_line_items?.length || 0} items
+                          </div>
+                        </div>
+                        <FileText className="w-4 h-4 text-gray-400" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pricing Summary */}
           <div className="mt-6 flex justify-end">
