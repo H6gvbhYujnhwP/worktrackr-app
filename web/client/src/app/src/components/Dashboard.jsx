@@ -293,7 +293,46 @@ const Dashboard = forwardRef((props, ref) => {
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
 
   return (
-    <div className="w-full">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center min-w-0 flex-1">
+              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 mr-2 sm:mr-3 flex-shrink-0" />
+              <div className="text-lg sm:text-xl font-bold min-w-0">
+                <span className="hidden sm:inline">Work<span className="text-yellow-500">Trackr</span></span>
+                <span className="sm:hidden">WT</span>
+
+              </div>
+              <Badge className="ml-2 sm:ml-3 flex-shrink-0" variant={isAdmin ? 'default' : 'secondary'}>
+                {isAdmin ? 'Admin' : 'Staff'}
+              </Badge>
+            </div>
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="relative">
+                <Mail className="w-4 h-4" />
+                {emailLogs.length > 0 && (
+                  <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">
+                    {emailLogs.length}
+                  </Badge>
+                )}
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Bell className="w-4 h-4" />
+              </Button>
+              <div className="text-sm font-medium text-gray-700 hidden sm:block max-w-[100px] truncate">
+                {user?.name || 'User'}
+              </div>
+              <Button variant="ghost" size="sm" onClick={logout}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Main Content */}
         <div className="space-y-4">
           {/* Navigation Tabs - HIDDEN: Now in sidebar */}
@@ -603,8 +642,6 @@ const Dashboard = forwardRef((props, ref) => {
               currentUser={user}
               timezone={selectedTimezone}
               onTicketClick={(ticket) => {
-                console.log('[Dashboard] Calendar event clicked, ticket:', ticket.id);
-                // Set both states - React will batch these updates
                 setViewingTicketId(ticket.id);
                 setCurrentView('tickets');
               }}
@@ -643,6 +680,7 @@ const Dashboard = forwardRef((props, ref) => {
             <EmailIntakeSettings />
           )}
         </div>
+      </div>
 
       {/* Modals */}
       {showCreateModal && (
