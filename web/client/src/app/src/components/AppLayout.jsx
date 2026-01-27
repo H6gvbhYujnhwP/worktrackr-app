@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import { Menu, X } from 'lucide-react';
 
-const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
+const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentView = 'tickets' }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -24,6 +24,24 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
     // Use provided onNavigate callback instead of page reload
     if (onNavigate) {
       onNavigate(view);
+    }
+  };
+
+  // Map currentView to sidebar navigation ID
+  const getCurrentPage = () => {
+    switch(currentView) {
+      case 'tickets': return 'all-tickets';
+      case 'calendar': return 'ticket-calendar';
+      case 'contacts': return 'contacts';
+      case 'crm': return 'product-catalog';
+      case 'crm-calendar': return 'crm-calendar';
+      case 'quotes': return 'quotes';
+      case 'users': return 'manage-users';
+      case 'pricing-config': return 'pricing-config';
+      case 'billing': return 'billing';
+      case 'security': return 'security';
+      case 'email-intake': return 'email-intake';
+      default: return 'all-tickets';
     }
   };
 
@@ -76,6 +94,7 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate }) => {
         `}
       >
         <Sidebar
+          currentPage={getCurrentPage()}
           onNavigate={handleNavigation}
           user={user}
           isAdmin={isAdmin}

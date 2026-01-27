@@ -7,6 +7,7 @@ export default function DashboardWithLayout() {
   const { user, membership } = useAuth();
   const dashboardRef = useRef(null);
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [currentView, setCurrentView] = useState('tickets');
 
   // Check if user is admin
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
@@ -21,6 +22,11 @@ export default function DashboardWithLayout() {
 
   // Handle navigation from sidebar
   const handleSidebarNavigation = (view) => {
+    console.log('[DashboardWithLayout] Navigation to:', view);
+    
+    // Update local state first
+    setCurrentView(view);
+    
     // Call Dashboard's setCurrentView if available
     if (dashboardRef.current && dashboardRef.current.setCurrentView) {
       dashboardRef.current.setCurrentView(view);
@@ -33,6 +39,7 @@ export default function DashboardWithLayout() {
       isAdmin={isAdmin}
       onNavigate={handleSidebarNavigation}
       lastUpdate={lastUpdate}
+      currentView={currentView}
     >
       <Dashboard ref={dashboardRef} />
     </AppLayout>
