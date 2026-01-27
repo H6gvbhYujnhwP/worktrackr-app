@@ -56,10 +56,13 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
       
       if (response.ok) {
         const data = await response.json();
-        setSectors(data);
+        setSectors(Array.isArray(data) ? data : []);
+      } else {
+        setSectors([]);
       }
     } catch (error) {
       console.error('Error loading sectors:', error);
+      setSectors([]);
     }
   };
 
