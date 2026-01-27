@@ -460,7 +460,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                       >
                         <div className="font-medium truncate">{event.title}</div>
                         {event.assignedUser && (
-                          <div className="text-gray-600 truncate">{event.assignedUser}</div>
+                          <div className="text-gray-600 truncate">{event.assignedUser.name || 'Unassigned'}</div>
                         )}
                         {event.time && (
                           <div className="text-gray-600">{event.time}</div>
