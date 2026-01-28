@@ -807,10 +807,10 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                 </div>
                 
                 <div className="customer-list">
-                  {filteredCompanies.map((company) => (
+                  {filteredCompanies.map((company, index) => (
                     <Card 
                       key={company.id} 
-                      className="cursor-pointer hover:shadow-md transition-all duration-200"
+                      className={`cursor-pointer hover:shadow-md transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                       onClick={() => setSelectedCompany(company)}
                     >
                       <CardContent className="p-3">
@@ -940,12 +940,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                 )}
                 
                 {/* Existing Products */}
-                {productCatalog.map((product) => {
+                {productCatalog.map((product, index) => {
                   const isEditing = editingProduct === product.id;
                   const margin = product.client_price - product.our_cost;
                   
                   return (
-                    <div key={product.id} className="border rounded-lg p-3 sm:p-4 w-full">
+                    <div key={product.id} className={`border rounded-lg p-3 sm:p-4 w-full ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 gap-3">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           {isEditing ? (

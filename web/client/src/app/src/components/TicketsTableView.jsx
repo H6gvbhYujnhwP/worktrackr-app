@@ -254,11 +254,11 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
                   </td>
                 </tr>
               ) : (
-                tickets.map((ticket) => (
+                tickets.map((ticket, index) => (
                   <tr
                     key={ticket.id}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      selectedTickets.has(ticket.id) ? 'bg-blue-50' : ''
+                    className={`hover:bg-gray-100 transition-colors ${
+                      selectedTickets.has(ticket.id) ? 'bg-blue-50' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                     }`}
                   >
                     <td className="p-3">

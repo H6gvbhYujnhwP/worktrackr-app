@@ -524,11 +524,11 @@ const ContactManager = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredContacts.map((contact) => (
+                      {filteredContacts.map((contact, index) => (
                         <tr 
                           key={contact.id}
-                          className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                            selectedContact?.id === contact.id ? 'bg-blue-50' : ''
+                          className={`cursor-pointer transition-colors hover:bg-gray-100 ${
+                            selectedContact?.id === contact.id ? 'bg-blue-50' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                           }`}
                           onClick={() => setSelectedContact(contact)}
                         >

@@ -332,11 +332,11 @@ export default function QuotesList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuotes.map((quote) => (
+                  {filteredQuotes.map((quote, index) => (
                     <tr 
                       key={quote.id}
                       onClick={() => navigate(`/app/crm/quotes/${quote.quote_number}`)}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className={`border-b border-gray-100 hover:bg-gray-100 cursor-pointer transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                     >
                       <td className="py-3 px-4 font-medium text-blue-600">
                         {quote.quote_number}
