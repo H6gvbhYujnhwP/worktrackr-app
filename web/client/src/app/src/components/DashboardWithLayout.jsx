@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 import AppLayout from './AppLayout.jsx';
 import Dashboard from './Dashboard.jsx';
@@ -19,6 +20,23 @@ export default function DashboardWithLayout() {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Handle navigation state from routes (e.g., coming back from quote editing)
+  const location = useLocation();
+  useEffect(() => {
+    if (location.state?.view) {
+      console.log('[DashboardWithLayout] Received navigation state:', location.state.view);
+      setCurrentView(location.state.view);
+      
+      // Clear viewing ticket when navigating via state
+      if (dashboardRef.current && dashboardRef.current.clearViewingTicket) {
+        dashboardRef.current.clearViewingTicket();
+      }
+      
+      // Clear the state to prevent re-triggering on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Handle navigation from sidebar OR from Dashboard child component
   // This is now the SINGLE SOURCE OF TRUTH for navigation state

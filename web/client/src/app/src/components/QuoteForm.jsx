@@ -180,12 +180,12 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             }
           } else {
             alert('Failed to load quote');
-            navigate('/app/crm');
+            navigate('/app/dashboard', { state: { view: 'quotes' } });
           }
         } catch (error) {
           console.error('Error fetching quote:', error);
           alert('Failed to load quote');
-          navigate('/app/crm');
+          navigate('/app/dashboard', { state: { view: 'quotes' } });
         } finally {
           setLoading(false);
         }
@@ -444,7 +444,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate('/app/crm/quotes')}
+          onClick={() => navigate('/app/dashboard', { state: { view: 'quotes' } })}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Quotes
