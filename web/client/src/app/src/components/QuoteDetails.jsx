@@ -115,8 +115,8 @@ export default function QuoteDetails() {
         throw new Error('Failed to delete quote');
       }
 
-      // Navigate back to quotes list
-      navigate('/app/crm/quotes');
+      // Navigate back to quotes list in dashboard
+      navigate('/app/dashboard', { state: { view: 'quotes' } });
     } catch (err) {
       console.error('Error deleting quote:', err);
       alert('Failed to delete quote. Please try again.');
@@ -208,7 +208,7 @@ export default function QuoteDetails() {
               {error || 'Quote not found'}
             </div>
             <div className="mt-4 text-center">
-            <Button onClick={() => navigate('/app/crm/quotes')} variant="outline">
+            <Button onClick={() => navigate('/app/dashboard', { state: { view: 'quotes' } })} variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Quotes
               </Button>
@@ -227,7 +227,7 @@ export default function QuoteDetails() {
           <Button 
             variant="outline" 
             size="sm"
-          onClick={() => navigate('/app/crm/quotes')}
+          onClick={() => navigate('/app/dashboard', { state: { view: 'quotes' } })}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Quotes

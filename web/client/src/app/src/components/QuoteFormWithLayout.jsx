@@ -12,25 +12,13 @@ export default function QuoteFormWithLayout({ mode = 'create' }) {
   // Check if user is admin
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
 
-  // Navigation handler that maps view names to routes
+  // Navigation handler - always navigate to dashboard with state
+  // This ensures consistent navigation behavior across the app
   const handleNavigate = (view) => {
-    const routeMap = {
-      'tickets': '/app/tickets',
-      'calendar': '/app/calendar',
-      'contacts': '/app/contacts',
-      'crm': '/app/crm',
-      'crm-calendar': '/app/crm/calendar',
-      'quotes': '/app/crm/quotes',
-      'users': '/app/users',
-      'billing': '/app/billing',
-      'security': '/app/security',
-      'email-intake': '/app/email-intake'
-    };
-
-    const route = routeMap[view];
-    if (route) {
-      navigate(route);
-    }
+    navigate('/app/dashboard', { 
+      state: { view: view },
+      replace: false
+    });
   };
 
   return (

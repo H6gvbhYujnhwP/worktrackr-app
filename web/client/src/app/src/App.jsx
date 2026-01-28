@@ -558,14 +558,16 @@ export default function App() {
               path="workflow-builder"
               element={<WorkflowBuilder />}
             />
+            {/* Redirect standalone quotes list to dashboard with quotes view */}
             <Route
               path="crm/quotes"
-              element={<QuotesListWithLayout />}
+              element={<Navigate to="/app/dashboard" state={{ view: 'quotes' }} replace />}
             />
             <Route
               path="crm/quotes/new"
               element={<QuoteFormWithLayout mode="create" />}
             />
+            {/* Quote details - redirect to edit for now, can implement modal later */}
             <Route
               path="crm/quotes/:id"
               element={<QuoteDetailsWithLayout />}
