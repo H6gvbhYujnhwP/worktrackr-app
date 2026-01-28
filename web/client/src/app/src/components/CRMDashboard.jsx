@@ -1132,11 +1132,11 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                           <td className="py-3 px-4 font-medium">{quote.quote_number}</td>
                           <td className="py-3 px-4">{quote.customer_name}</td>
                           <td className="py-3 px-4">
-                            {new Date(quote.quote_date).toLocaleDateString('en-GB', {
+                            {quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-GB', {
                               day: '2-digit',
                               month: 'short',
                               year: 'numeric'
-                            })}
+                            }) : 'N/A'}
                           </td>
                           <td className="py-3 px-4 text-right font-medium">
                             £{parseFloat(quote.total_amount).toFixed(2)}
