@@ -363,7 +363,12 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       return;
     }
 
-    if (lineItems.length === 0 || !lineItems[0].description) {
+    // Filter out empty line items (no description or zero quantity/price)
+    const validLineItems = lineItems.filter(item => 
+      item.description && item.description.trim().length > 0
+    );
+
+    if (validLineItems.length === 0) {
       alert('Please add at least one line item with a description');
       return;
     }
@@ -372,10 +377,11 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
 
     try {
       // Ensure line items have correct data types (convert strings to numbers)
-      const sanitizedLineItems = lineItems.map(item => ({
+      // Only include valid line items with descriptions
+      const sanitizedLineItems = validLineItems.map(item => ({
         product_id: item.product_id || undefined,
-        description: item.description,
-        quantity: parseFloat(item.quantity) || 0,
+        description: item.description.trim(),
+        quantity: parseFloat(item.quantity) || 1,
         unit_price: parseFloat(item.unit_price) || 0,
         discount_percent: parseFloat(item.discount_percent) || 0,
         tax_rate: parseFloat(item.tax_rate) || 20,
