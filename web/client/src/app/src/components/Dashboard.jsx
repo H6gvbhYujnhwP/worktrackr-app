@@ -57,7 +57,8 @@ import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
 import TicketDetailView from './TicketDetailViewTabbed.jsx';
 
-const Dashboard = forwardRef((props, ref) => {
+// Dashboard is now a CONTROLLED COMPONENT - receives currentView from parent
+const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
   const [activeTab, setActiveTab] = useState('all');
@@ -78,7 +79,8 @@ const Dashboard = forwardRef((props, ref) => {
   const [selectedTimezone, setSelectedTimezone] = useState(() => {
     return localStorage.getItem('worktrackr-timezone') || 'Europe/London';
   });
-  const [currentView, setCurrentView] = useState('tickets'); // tickets, calendar, billing
+  // REMOVED: const [currentView, setCurrentView] = useState('tickets'); 
+  // Now using props from parent (single source of truth)
   const [ticketViewMode, setTicketViewMode] = useState(() => {
     return localStorage.getItem('worktrackr-ticket-view-mode') || 'table'; // 'cards' or 'table'
   });
@@ -87,11 +89,9 @@ const Dashboard = forwardRef((props, ref) => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Expose setCurrentView and clearViewingTicket to parent via ref
+  // Expose only clearViewingTicket to parent via ref
+  // REMOVED setCurrentView - parent now controls view state directly
   useImperativeHandle(ref, () => ({
-    setCurrentView: (view) => {
-      setCurrentView(view);
-    },
     clearViewingTicket: () => {
       setViewingTicketId(null);
     }
@@ -350,7 +350,7 @@ const Dashboard = forwardRef((props, ref) => {
                     <div className="flex flex-wrap gap-2">
                       <Button 
                         variant={currentView === 'users' ? 'default' : 'outline'} 
-                        onClick={() => setCurrentView('users')}
+                        onClick={() => onViewChange('users')}
                         className="flex items-center space-x-2"
                       >
                         <Users className="w-4 h-4" />
@@ -359,7 +359,7 @@ const Dashboard = forwardRef((props, ref) => {
                       
                       <Button 
                         variant={currentView === 'billing' ? 'default' : 'outline'} 
-                        onClick={() => setCurrentView('billing')}
+                        onClick={() => onViewChange('billing')}
                         className="flex items-center space-x-2"
                       >
                         <Settings className="w-4 h-4" />
@@ -368,7 +368,7 @@ const Dashboard = forwardRef((props, ref) => {
                       
                       <Button 
                         variant={currentView === 'security' ? 'default' : 'outline'} 
-                        onClick={() => setCurrentView('security')}
+                        onClick={() => onViewChange('security')}
                         className="flex items-center space-x-2"
                       >
                         <Settings className="w-4 h-4" />
@@ -377,7 +377,7 @@ const Dashboard = forwardRef((props, ref) => {
                       
                       <Button 
                         variant={currentView === 'email-intake' ? 'default' : 'outline'} 
-                        onClick={() => setCurrentView('email-intake')}
+                        onClick={() => onViewChange('email-intake')}
                         className="flex items-center space-x-2"
                       >
                         <Mail className="w-4 h-4" />
@@ -410,7 +410,7 @@ const Dashboard = forwardRef((props, ref) => {
                   <div className="flex flex-wrap gap-2">
                     <Button 
                       variant={currentView === 'tickets' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('tickets')}
+                      onClick={() => onViewChange('tickets')}
                       className="flex items-center space-x-2"
                     >
                       <Ticket className="w-4 h-4" />
@@ -419,7 +419,7 @@ const Dashboard = forwardRef((props, ref) => {
                     
                     <Button 
                       variant={currentView === 'calendar' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('calendar')}
+                      onClick={() => onViewChange('calendar')}
                       className="flex items-center space-x-2"
                     >
                       <Clock className="w-4 h-4" />
@@ -434,7 +434,7 @@ const Dashboard = forwardRef((props, ref) => {
                   <div className="flex flex-wrap gap-2">
                     <Button 
                       variant={currentView === 'contacts' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('contacts')}
+                      onClick={() => onViewChange('contacts')}
                       className="flex items-center space-x-2"
                     >
                       <Users className="w-4 h-4" />
@@ -443,7 +443,7 @@ const Dashboard = forwardRef((props, ref) => {
                     
                     <Button 
                       variant={currentView === 'crm' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('crm')}
+                      onClick={() => onViewChange('crm')}
                       className="flex items-center space-x-2"
                     >
                       <Building2 className="w-4 h-4" />
@@ -452,7 +452,7 @@ const Dashboard = forwardRef((props, ref) => {
                     
                     <Button 
                       variant={currentView === 'product-catalog' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('product-catalog')}
+                      onClick={() => onViewChange('product-catalog')}
                       className="flex items-center space-x-2"
                     >
                       <Package className="w-4 h-4" />
@@ -461,7 +461,7 @@ const Dashboard = forwardRef((props, ref) => {
                     
                     <Button 
                       variant={currentView === 'crm-calendar' ? 'default' : 'outline'} 
-                      onClick={() => setCurrentView('crm-calendar')}
+                      onClick={() => onViewChange('crm-calendar')}
                       className="flex items-center space-x-2"
                     >
                       <Calendar className="w-4 h-4" />
@@ -656,7 +656,8 @@ const Dashboard = forwardRef((props, ref) => {
               timezone={selectedTimezone}
               onTicketClick={(ticket) => {
                 setViewingTicketId(ticket.id);
-                setCurrentView('tickets');
+                // FIXED: Use onViewChange callback instead of local setCurrentView
+                onViewChange('tickets');
               }}
             />
           )}

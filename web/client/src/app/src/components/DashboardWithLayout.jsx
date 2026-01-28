@@ -20,22 +20,17 @@ export default function DashboardWithLayout() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle navigation from sidebar
+  // Handle navigation from sidebar OR from Dashboard child component
+  // This is now the SINGLE SOURCE OF TRUTH for navigation state
   const handleSidebarNavigation = (view) => {
     console.log('[DashboardWithLayout] Navigation to:', view);
     
-    // Update local state
+    // Update the single source of truth
     setCurrentView(view);
     
-    // Call Dashboard's setCurrentView and clear any viewing ticket
-    if (dashboardRef.current) {
-      // ALWAYS clear viewing ticket when navigating (not just for calendar)
-      if (dashboardRef.current.clearViewingTicket) {
-        dashboardRef.current.clearViewingTicket();
-      }
-      if (dashboardRef.current.setCurrentView) {
-        dashboardRef.current.setCurrentView(view);
-      }
+    // Clear any viewing ticket when navigating
+    if (dashboardRef.current && dashboardRef.current.clearViewingTicket) {
+      dashboardRef.current.clearViewingTicket();
     }
   };
 
@@ -47,7 +42,13 @@ export default function DashboardWithLayout() {
       lastUpdate={lastUpdate}
       currentView={currentView}
     >
-      <Dashboard ref={dashboardRef} />
+      {/* Dashboard is now a CONTROLLED COMPONENT */}
+      {/* It receives currentView as a prop and calls onViewChange to request changes */}
+      <Dashboard 
+        ref={dashboardRef}
+        currentView={currentView}
+        onViewChange={handleSidebarNavigation}
+      />
     </AppLayout>
   );
 }
