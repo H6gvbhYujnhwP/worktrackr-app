@@ -226,6 +226,7 @@ const SimulationProvider = ({ children }) => {
   // Update ticket (persist to backend)
   const updateTicket = async (ticketId, updates) => {
     try {
+      console.log('[App] updateTicket called:', { ticketId, updates });
       const { ticket: updatedFromServer } = await TicketsAPI.update(ticketId, updates);
       // Transform API response: assignee_id → assignedTo for frontend compatibility
       const transformedTicket = {
@@ -233,7 +234,20 @@ const SimulationProvider = ({ children }) => {
         assignedTo: updatedFromServer.assignee_id,
         assignedUser: updatedFromServer.assignee_name
       };
-      setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, ...transformedTicket } : t)));
+      setTickets((prev) => prev.map((t) => {
+        if (t.id === ticketId) {
+          // Merge updates, ensuring scheduledWork is preserved from updates if provided
+          const merged = { 
+            ...t, 
+            ...transformedTicket,
+            // If updates contain scheduledWork, use it; otherwise keep existing
+            scheduledWork: updates.scheduledWork || transformedTicket.scheduledWork || t.scheduledWork
+          };
+          console.log('[App] Updated ticket in state:', merged);
+          return merged;
+        }
+        return t;
+      }));
       if (updatedFromServer?.scheduled_date) {
         updateBookingFromTicket(updatedFromServer);
       }

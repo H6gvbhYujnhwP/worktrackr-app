@@ -7,9 +7,22 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import { Switch } from '@/components/ui/switch.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 
 const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/London' }) => {
   const { tickets, users, updateTicket } = useSimulation();
+
+  // Generate time options in 15-minute intervals
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        times.push(time);
+      }
+    }
+    return times;
+  };
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('week'); // 'week', 'day', 'month'
   const [showAssignedOnly, setShowAssignedOnly] = useState(false);
@@ -919,21 +932,35 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Start Time</Label>
-                  <Input
-                    type="time"
-                    step="900"
-                    value={scheduleData.startTime}
-                    onChange={(e) => setScheduleData(prev => ({ ...prev, startTime: e.target.value }))}
-                  />
+                  <Select 
+                    value={scheduleData.startTime} 
+                    onValueChange={(value) => setScheduleData(prev => ({ ...prev, startTime: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select start time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {generateTimeOptions().map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>End Time</Label>
-                  <Input
-                    type="time"
-                    step="900"
-                    value={scheduleData.endTime}
-                    onChange={(e) => setScheduleData(prev => ({ ...prev, endTime: e.target.value }))}
-                  />
+                  <Select 
+                    value={scheduleData.endTime} 
+                    onValueChange={(value) => setScheduleData(prev => ({ ...prev, endTime: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select end time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {generateTimeOptions().map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               

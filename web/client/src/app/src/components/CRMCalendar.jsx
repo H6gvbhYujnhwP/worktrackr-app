@@ -32,6 +32,18 @@ const eventTypes = [
 ];
 
 export default function CRMCalendar({ timezone = 'Europe/London' }) {
+  // Generate time options in 15-minute intervals
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 15) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        times.push(time);
+      }
+    }
+    return times;
+  };
+
   // Load events from database API
   const loadEventsFromAPI = async () => {
     try {
@@ -1157,13 +1169,19 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                 </div>
                 <div>
                   <Label htmlFor="meeting-time">Time</Label>
-                  <Input
-                    id="meeting-time"
-                    type="time"
-                    step="900"
-                    value={newMeeting.time}
-                    onChange={(e) => setNewMeeting(prev => ({ ...prev, time: e.target.value }))}
-                  />
+                  <Select 
+                    value={newMeeting.time} 
+                    onValueChange={(value) => setNewMeeting(prev => ({ ...prev, time: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {generateTimeOptions().map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -1278,13 +1296,19 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                 </div>
                 <div>
                   <Label htmlFor="schedule-time">Time</Label>
-                  <Input
-                    id="schedule-time"
-                    type="time"
-                    step="900"
-                    value={scheduleMeeting.time}
-                    onChange={(e) => setScheduleMeeting(prev => ({ ...prev, time: e.target.value }))}
-                  />
+                  <Select 
+                    value={scheduleMeeting.time} 
+                    onValueChange={(value) => setScheduleMeeting(prev => ({ ...prev, time: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {generateTimeOptions().map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -1515,13 +1539,19 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                 </div>
                 <div>
                   <Label htmlFor="edit-time">Time *</Label>
-                  <Input
-                    id="edit-time"
-                    type="time"
-                    step="900"
-                    value={editingEvent.time}
-                    onChange={(e) => setEditingEvent(prev => ({ ...prev, time: e.target.value }))}
-                  />
+                  <Select 
+                    value={editingEvent.time} 
+                    onValueChange={(value) => setEditingEvent(prev => ({ ...prev, time: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {generateTimeOptions().map(time => (
+                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
