@@ -494,7 +494,12 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
             <Plus className="w-4 h-4" />
             <span>Add Activity</span>
           </Button>
-          <Button onClick={() => setShowMeetingModal(true)} className="flex items-center space-x-2" variant="outline">
+          <Button onClick={() => {
+            // Pre-populate the meeting date with the currently selected date
+            const dateStr = selectedDate.toISOString().split('T')[0];
+            setNewMeeting(prev => ({ ...prev, date: dateStr, time: '09:00' }));
+            setShowMeetingModal(true);
+          }} className="flex items-center space-x-2" variant="outline">
             <Calendar className="w-4 h-4" />
             <span>Book Meeting</span>
           </Button>

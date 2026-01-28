@@ -205,10 +205,19 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
   // Handle scheduling work for a ticket
   const handleScheduleWork = (ticket) => {
     setSelectedTicket(ticket);
+    
+    // Calculate start and end time based on clicked time slot
+    const clickedTime = ticket.clickedTime || '09:00';
+    const [hours, minutes] = clickedTime.split(':');
+    const startHour = parseInt(hours);
+    const endHour = Math.min(startHour + 1, 23); // Cap at 23:00
+    const defaultStartTime = `${hours}:${minutes}`;
+    const defaultEndTime = `${endHour.toString().padStart(2, '0')}:${minutes}`;
+    
     setScheduleData({
       date: ticket.dueDate || '',
-      startTime: '09:00',
-      endTime: '10:00',
+      startTime: defaultStartTime,
+      endTime: defaultEndTime,
       notes: ''
     });
     setShowScheduleModal(true);
@@ -629,12 +638,13 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                     <div 
                       className="col-span-10 p-2 cursor-pointer"
                       onClick={() => {
-                        // Click on time slot to create new event
+                        // Click on time slot to create new event at this time
                         const newTicket = {
                           id: Date.now(),
                           title: 'New Event',
                           dueDate: selectedDate.toISOString().split('T')[0],
-                          assignedTo: currentUser.id
+                          assignedTo: currentUser.id,
+                          clickedTime: time // Pass the clicked time slot
                         };
                         handleScheduleWork(newTicket);
                       }}
