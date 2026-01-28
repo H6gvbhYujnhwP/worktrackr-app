@@ -705,6 +705,18 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
           {currentView === 'email-intake' && (
             <EmailIntakeSettings />
           )}
+
+          {currentView === 'pricing-config' && (
+            <ErrorBoundary>
+              <div className="container mx-auto px-4 py-8">
+                <h1 className="text-3xl font-bold mb-6">Pricing Configuration</h1>
+                <p className="text-gray-600 mb-4">Configure your organization's pricing settings and tiers.</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <p className="text-blue-800">This feature is under development. Please use Settings → Pricing Configuration from the admin menu.</p>
+                </div>
+              </div>
+            </ErrorBoundary>
+          )}
         </div>
       </div>
 

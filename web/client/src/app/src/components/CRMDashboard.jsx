@@ -1127,7 +1127,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                         <tr 
                           key={quote.id} 
                           className="border-b hover:bg-gray-50 cursor-pointer"
-                          onClick={() => navigate(`/app/crm/quotes/${quote.id}`)}
+                          onClick={() => navigate(`/app/crm/quotes/${quote.id}/edit`)}
                         >
                           <td className="py-3 px-4 font-medium">{quote.quote_number}</td>
                           <td className="py-3 px-4">{quote.customer_name}</td>
