@@ -40,7 +40,17 @@ const updateTicketSchema = z.object({
   ]).transform(val => (val === '' || val === undefined) ? null : val).optional(),
   scheduled_duration_mins: z.number().int().positive().nullable().optional(),
   method_statement: z.any().nullable().optional(),
-  risk_assessment: z.any().nullable().optional()
+  risk_assessment: z.any().nullable().optional(),
+  scheduledWork: z.array(z.object({
+    date: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+    startDateTime: z.string().optional(),
+    endDateTime: z.string().optional(),
+    notes: z.string().optional(),
+    scheduledBy: z.string().uuid().optional(),
+    scheduledAt: z.string().optional()
+  })).optional()
 });
 
 const commentSchema = z.object({
@@ -97,8 +107,14 @@ router.get('/', async (req, res) => {
       ${whereClause}
     `, params);
 
+    // Transform snake_case to camelCase for frontend compatibility
+    const transformedTickets = ticketsResult.rows.map(ticket => ({
+      ...ticket,
+      scheduledWork: ticket.scheduled_work || []
+    }));
+
     res.json({
-      tickets: ticketsResult.rows,
+      tickets: transformedTickets,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -151,8 +167,14 @@ router.get('/:id', async (req, res) => {
       ORDER BY a.created_at ASC
     `, [id]);
 
+    // Transform snake_case to camelCase for frontend compatibility
+    const transformedTicket = {
+      ...ticketResult.rows[0],
+      scheduledWork: ticketResult.rows[0].scheduled_work || []
+    };
+
     res.json({
-      ticket: ticketResult.rows[0],
+      ticket: transformedTicket,
       comments: commentsResult.rows,
       attachments: attachmentsResult.rows
     });
@@ -309,8 +331,15 @@ router.put('/:id', async (req, res) => {
 
     Object.entries(updates).forEach(([key, value]) => {
       if (value !== undefined) {
-        updateFields.push(`${key} = $${++paramCount}`);
-        params.push(value);
+        // Transform scheduledWork (camelCase) to scheduled_work (snake_case) for database
+        const dbKey = key === 'scheduledWork' ? 'scheduled_work' : key;
+        updateFields.push(`${dbKey} = $${++paramCount}`);
+        // For JSONB fields, stringify the value
+        if (key === 'scheduledWork') {
+          params.push(JSON.stringify(value));
+        } else {
+          params.push(value);
+        }
       }
     });
 
@@ -331,7 +360,13 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    res.json({ ticket: ticketResult.rows[0] });
+    // Transform snake_case to camelCase for frontend compatibility
+    const transformedTicket = {
+      ...ticketResult.rows[0],
+      scheduledWork: ticketResult.rows[0].scheduled_work || []
+    };
+
+    res.json({ ticket: transformedTicket });
 
   } catch (error) {
     console.error('Update ticket error:', error);
