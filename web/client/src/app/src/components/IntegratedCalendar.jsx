@@ -11,6 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/London' }) => {
   const { tickets, users, updateTicket } = useSimulation();
+  
+  // State for standalone calendar events (not tied to tickets)
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Generate time options in 15-minute intervals
   const generateTimeOptions = () => {
@@ -32,8 +36,10 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
     date: '',
     startTime: '',
     endTime: '',
-    notes: ''
+    notes: '',
+    title: '' // For standalone events
   });
+  const [isStandaloneEvent, setIsStandaloneEvent] = useState(false);
 
   // Timezone-aware date formatting functions
   const formatDateInTimezone = (date, tz = timezone) => {
@@ -74,52 +80,56 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
     return (utc.getTime() - targetTime.getTime()) / 60000;
   };
 
+  // Fetch standalone calendar events
+  useEffect(() => {
+    const fetchCalendarEvents = async () => {
+      try {
+        const response = await fetch('/api/calendar/events', {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const { events } = await response.json();
+          console.log('[IntegratedCalendar] Fetched standalone calendar events:', events);
+          setCalendarEvents(events || []);
+        }
+      } catch (error) {
+        console.error('[IntegratedCalendar] Error fetching calendar events:', error);
+      }
+    };
+    
+    fetchCalendarEvents();
+  }, [refreshTrigger]);
+
   // Auto-refresh calendar every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       // Force re-render by updating a dummy state
       setSelectedDate(prev => new Date(prev));
+      setRefreshTrigger(prev => prev + 1); // Also refresh standalone events
     }, 30000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Get calendar events from tickets
+  // Get calendar events from tickets and standalone calendar events
   const getCalendarEvents = () => {
-    console.log('Getting calendar events for tickets:', tickets);
-    console.log('Current user:', currentUser);
-    console.log('Show assigned only:', showAssignedOnly);
-    
-    return tickets
+    // Get ticket-based events
+    const ticketEvents = tickets
       .filter(ticket => {
-        console.log('Filtering ticket:', ticket.id, 'assignedTo:', ticket.assignedTo, 'currentUser.id:', currentUser.id);
-        
         // Filter based on view preference
         if (showAssignedOnly && ticket.assignedTo !== currentUser.id) {
-          console.log('Filtering out ticket - not assigned to current user');
           return false;
         }
-        
         // Include tickets with due dates, scheduled dates, or scheduled work
-        const hasEvents = ticket.dueDate || ticket.scheduled_date || (ticket.scheduledWork && ticket.scheduledWork.length > 0);
-        console.log('Ticket has events:', hasEvents, 'dueDate:', ticket.dueDate, 'scheduled_date:', ticket.scheduled_date, 'scheduledWork:', ticket.scheduledWork);
-        return hasEvents;
+        return ticket.dueDate || ticket.scheduled_date || (ticket.scheduledWork && ticket.scheduledWork.length > 0);
       })
       .map(ticket => {
         const assignedUser = users.find(u => u.id === ticket.assignedTo);
-        console.log('Assigned user for ticket', ticket.id, ':', assignedUser);
-        
-        // Create events for due dates
         const events = [];
         
         if (ticket.dueDate) {
-          console.log('Processing due date for ticket:', ticket.id, 'dueDate:', ticket.dueDate);
-          // Handle both date-only and datetime formats
           let dueDateStr = ticket.dueDate;
-          if (dueDateStr.includes('T')) {
-            dueDateStr = dueDateStr.split('T')[0]; // Extract date part
-          }
-          
+          if (dueDateStr.includes('T')) dueDateStr = dueDateStr.split('T')[0];
           events.push({
             id: `due-${ticket.id}`,
             ticketId: ticket.id,
@@ -131,18 +141,11 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
             assignedUser: assignedUser,
             status: ticket.status
           });
-          console.log('Created due date event:', events[events.length - 1]);
         }
         
-        // Create events for scheduled dates
         if (ticket.scheduled_date) {
-          console.log('Processing scheduled date for ticket:', ticket.id, 'scheduled_date:', ticket.scheduled_date);
-          // Handle both date-only and datetime formats
           let scheduledDateStr = ticket.scheduled_date;
-          if (scheduledDateStr.includes('T')) {
-            scheduledDateStr = scheduledDateStr.split('T')[0]; // Extract date part
-          }
-          
+          if (scheduledDateStr.includes('T')) scheduledDateStr = scheduledDateStr.split('T')[0];
           events.push({
             id: `scheduled-${ticket.id}`,
             ticketId: ticket.id,
@@ -154,10 +157,8 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
             assignedUser: assignedUser,
             status: ticket.status
           });
-          console.log('Created scheduled date event:', events[events.length - 1]);
         }
         
-        // Create events for scheduled work
         if (ticket.scheduledWork && Array.isArray(ticket.scheduledWork)) {
           ticket.scheduledWork.forEach((work, index) => {
             events.push({
@@ -179,6 +180,40 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
         return events;
       })
       .flat();
+    
+    // Add standalone calendar events (not tied to tickets)
+    const standaloneEvents = calendarEvents.map(event => {
+      // Handle date formatting - eventDate might be a Date object or string
+      let dateStr = event.eventDate;
+      if (dateStr && typeof dateStr === 'object') {
+        dateStr = dateStr.toISOString().split('T')[0];
+      } else if (dateStr && dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+      
+      // Handle time formatting - might include seconds
+      let startTime = event.startTime || '09:00';
+      let endTime = event.endTime || '10:00';
+      if (startTime.length > 5) startTime = startTime.substring(0, 5);
+      if (endTime.length > 5) endTime = endTime.substring(0, 5);
+      
+      return {
+        id: `calendar-${event.id}`,
+        calendarEventId: event.id,
+        title: event.title,
+        type: 'calendar-work',
+        date: dateStr,
+        startTime: startTime,
+        endTime: endTime,
+        notes: event.notes,
+        description: event.description,
+        assignedUser: users.find(u => u.id === event.userId) || { name: event.userName || 'Unknown' },
+        status: 'scheduled',
+        isStandalone: true
+      };
+    });
+    
+    return [...ticketEvents, ...standaloneEvents];
   };
 
   // Generate time slots for a day
@@ -215,9 +250,10 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
     return weekDates;
   };
 
-  // Handle scheduling work for a ticket
-  const handleScheduleWork = (ticket) => {
+  // Handle scheduling work for a ticket or standalone event
+  const handleScheduleWork = (ticket, standalone = false) => {
     setSelectedTicket(ticket);
+    setIsStandaloneEvent(standalone);
     
     // Calculate start and end time based on clicked time slot
     const clickedTime = ticket.clickedTime || '09:00';
@@ -231,14 +267,62 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
       date: ticket.dueDate || '',
       startTime: defaultStartTime,
       endTime: defaultEndTime,
-      notes: ''
+      notes: '',
+      title: standalone ? '' : ticket.title
     });
     setShowScheduleModal(true);
   };
 
-  // Save scheduled work (handles both new and edited entries)
-  const handleSaveSchedule = () => {
-    if (!selectedTicket || !scheduleData.date || !scheduleData.startTime || !scheduleData.endTime) {
+  // Save scheduled work (handles both new and edited entries, and standalone events)
+  const handleSaveSchedule = async () => {
+    if (!scheduleData.date || !scheduleData.startTime || !scheduleData.endTime) {
+      return;
+    }
+    
+    // Handle standalone calendar events (not tied to tickets)
+    if (isStandaloneEvent) {
+      if (!scheduleData.title) {
+        alert('Please enter a title for the event');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/calendar/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            title: scheduleData.title,
+            eventDate: scheduleData.date,
+            startTime: scheduleData.startTime,
+            endTime: scheduleData.endTime,
+            notes: scheduleData.notes,
+            eventType: 'work'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('[IntegratedCalendar] Standalone event created successfully');
+          setRefreshTrigger(prev => prev + 1); // Refresh calendar events
+        } else {
+          const error = await response.json();
+          console.error('[IntegratedCalendar] Error creating event:', error);
+          alert('Failed to create event: ' + (error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('[IntegratedCalendar] Error creating standalone event:', error);
+        alert('Failed to create event');
+      }
+      
+      setShowScheduleModal(false);
+      setSelectedTicket(null);
+      setIsStandaloneEvent(false);
+      setScheduleData({ date: '', startTime: '', endTime: '', notes: '', title: '' });
+      return;
+    }
+    
+    // Handle ticket-based scheduled work
+    if (!selectedTicket) {
       return;
     }
 
@@ -291,7 +375,8 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
     
     setShowScheduleModal(false);
     setSelectedTicket(null);
-    setScheduleData({ date: '', startTime: '', endTime: '', notes: '' });
+    setIsStandaloneEvent(false);
+    setScheduleData({ date: '', startTime: '', endTime: '', notes: '', title: '' });
   };
 
   // Remove scheduled work
@@ -320,6 +405,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
         case 'closed': return 'bg-gray-100 text-gray-600 border-gray-200';
         default: return 'bg-purple-100 text-purple-800 border-purple-200';
       }
+    } else if (type === 'calendar-work') {
+      // Standalone calendar events - use teal/cyan color to distinguish from ticket work
+      return 'bg-teal-100 text-teal-800 border-teal-200';
     } else {
       switch (status) {
         case 'completed': return 'bg-green-100 text-green-800 border-green-200';
@@ -332,7 +420,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
 
   // Get event background color for inline styles
   const getEventColor = (event) => {
-    if (event.type === 'due') {
+    if (event.type === 'calendar-work') {
+      return '#ccfbf1'; // teal-100 for standalone calendar events
+    } else if (event.type === 'due') {
       switch (event.status) {
         case 'completed': return '#dcfce7'; // green-100
         case 'parked': return '#f3f4f6'; // gray-100
@@ -634,7 +724,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
               {timeSlots.map((time) => {
                 const dayEvents = getEventsForDate(selectedDate);
                 const workEvents = dayEvents.filter(event => {
-                  if (event.type === 'work') {
+                  if (event.type === 'work' || event.type === 'calendar-work') {
                     return event.startTime <= time && event.endTime > time;
                   }
                   return false;
@@ -651,15 +741,15 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                     <div 
                       className="col-span-10 p-2 cursor-pointer"
                       onClick={() => {
-                        // Click on time slot to create new event at this time
-                        const newTicket = {
+                        // Click on time slot to create new standalone event at this time
+                        const newEvent = {
                           id: Date.now(),
-                          title: 'New Event',
+                          title: '',
                           dueDate: selectedDate.toISOString().split('T')[0],
                           assignedTo: currentUser.id,
                           clickedTime: time // Pass the clicked time slot
                         };
-                        handleScheduleWork(newTicket);
+                        handleScheduleWork(newEvent, true); // true = standalone event
                       }}
                     >
                       {eventsToShow.map((event) => (
@@ -677,7 +767,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                           <div className="text-sm opacity-75">
                             {event.assignedUser?.name || 'Unassigned'}
                           </div>
-                          {event.type === 'work' && (
+                          {(event.type === 'work' || event.type === 'calendar-work') && (
                             <div className="text-sm opacity-60">
                               {event.startTime} - {event.endTime}
                             </div>
@@ -685,6 +775,11 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                           {event.type === 'due' && (
                             <div className="text-sm opacity-60">
                               Due: {event.time}
+                            </div>
+                          )}
+                          {event.type === 'calendar-work' && (
+                            <div className="text-xs opacity-50 italic">
+                              Calendar Event
                             </div>
                           )}
                         </div>
@@ -909,17 +1004,32 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Schedule Work: {selectedTicket.title}
+                {isStandaloneEvent ? 'Create Calendar Event' : `Schedule Work: ${selectedTicket.title}`}
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowScheduleModal(false)}
+                  onClick={() => {
+                    setShowScheduleModal(false);
+                    setIsStandaloneEvent(false);
+                  }}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Title field for standalone events */}
+              {isStandaloneEvent && (
+                <div>
+                  <Label>Event Title</Label>
+                  <Input
+                    value={scheduleData.title}
+                    onChange={(e) => setScheduleData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter event title"
+                  />
+                </div>
+              )}
+              
               <div>
                 <Label>Date</Label>
                 <Input
@@ -975,9 +1085,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
               
               <div className="flex space-x-2 pt-4">
                 <Button onClick={handleSaveSchedule} className="flex-1">
-                  {scheduleData.originalDate ? 'Update Work' : 'Schedule Work'}
+                  {isStandaloneEvent ? 'Create Event' : (scheduleData.originalDate ? 'Update Work' : 'Schedule Work')}
                 </Button>
-                {scheduleData.originalDate && (
+                {!isStandaloneEvent && scheduleData.originalDate && (
                   <Button
                     variant="destructive"
                     onClick={() => {
@@ -998,7 +1108,10 @@ const IntegratedCalendar = ({ currentUser, onTicketClick, timezone = 'Europe/Lon
                 )}
                 <Button
                   variant="outline"
-                  onClick={() => setShowScheduleModal(false)}
+                  onClick={() => {
+                    setShowScheduleModal(false);
+                    setIsStandaloneEvent(false);
+                  }}
                   className="flex-1"
                 >
                   Cancel

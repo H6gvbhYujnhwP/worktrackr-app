@@ -168,6 +168,7 @@ const quotesAIGenerateRoutes = require('./routes/quotes-ai-generate');
 const quotesWorkflowRoutes = require('./routes/quotes-workflow');
 const quoteTemplatesRoutes = require('./routes/quote-templates');
 const transcribeRoutes = require('./routes/transcribe');
+const calendarRoutes = require('./routes/calendar');
 app.use('/api/quotes', authenticateToken, quotesRoutes);
 app.use('/api/quotes', authenticateToken, quotesEmailRoutes);
 app.use('/api/quotes', authenticateToken, quotesAIRoutes);
@@ -176,6 +177,7 @@ app.use('/api/quotes', authenticateToken, quotesAIGenerateRoutes);
 app.use('/api/quotes', authenticateToken, quotesWorkflowRoutes);
 app.use('/api/quote-templates', authenticateToken, quoteTemplatesRoutes);
 app.use('/api/transcribe', authenticateToken, transcribeRoutes);
+app.use('/api/calendar', authenticateToken, calendarRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
