@@ -5,7 +5,7 @@ const { query } = require('@worktrackr/shared/db');
 // GET all calendar events for organization
 router.get('/events', async (req, res) => {
   try {
-    const { organizationId } = req.orgContext;
+    const organizationId = req.orgContext.organizationId;
     
     const result = await query(
       `SELECT e.*, u.name as user_name
@@ -36,15 +36,18 @@ router.get('/events', async (req, res) => {
     res.json({ events });
   } catch (error) {
     console.error('Error fetching calendar events:', error);
-    res.status(500).json({ error: 'Failed to fetch calendar events' });
+    res.status(500).json({ error: 'Failed to fetch calendar events', details: error.message });
   }
 });
 
 // POST create calendar event
 router.post('/events', async (req, res) => {
   try {
-    const { organizationId, userId } = req.orgContext;
+    const organizationId = req.orgContext.organizationId;
+    const userId = req.user.userId;
     const { title, description, eventDate, startTime, endTime, notes, eventType } = req.body;
+    
+    console.log('Creating calendar event:', { organizationId, userId, title, eventDate, startTime, endTime });
     
     // Validate required fields
     if (!title || !eventDate || !startTime || !endTime) {
@@ -60,6 +63,8 @@ router.post('/events', async (req, res) => {
     );
     
     const event = result.rows[0];
+    
+    console.log('Calendar event created successfully:', event.id);
     
     // Transform snake_case to camelCase for frontend
     res.status(201).json({ 
@@ -80,7 +85,7 @@ router.post('/events', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating calendar event:', error);
-    res.status(500).json({ error: 'Failed to create calendar event' });
+    res.status(500).json({ error: 'Failed to create calendar event', details: error.message });
   }
 });
 
@@ -88,7 +93,7 @@ router.post('/events', async (req, res) => {
 router.put('/events/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { organizationId } = req.orgContext;
+    const organizationId = req.orgContext.organizationId;
     const { title, description, eventDate, startTime, endTime, notes, eventType } = req.body;
     
     const result = await query(
@@ -130,7 +135,7 @@ router.put('/events/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating calendar event:', error);
-    res.status(500).json({ error: 'Failed to update calendar event' });
+    res.status(500).json({ error: 'Failed to update calendar event', details: error.message });
   }
 });
 
@@ -138,7 +143,7 @@ router.put('/events/:id', async (req, res) => {
 router.delete('/events/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { organizationId } = req.orgContext;
+    const organizationId = req.orgContext.organizationId;
     
     const result = await query(
       'DELETE FROM calendar_events WHERE id = $1 AND organisation_id = $2 RETURNING id',
@@ -152,7 +157,7 @@ router.delete('/events/:id', async (req, res) => {
     res.json({ success: true, deletedId: id });
   } catch (error) {
     console.error('Error deleting calendar event:', error);
-    res.status(500).json({ error: 'Failed to delete calendar event' });
+    res.status(500).json({ error: 'Failed to delete calendar event', details: error.message });
   }
 });
 
