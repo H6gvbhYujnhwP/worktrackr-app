@@ -178,6 +178,12 @@ app.use('/api/quotes', authenticateToken, quotesWorkflowRoutes);
 app.use('/api/quote-templates', authenticateToken, quoteTemplatesRoutes);
 app.use('/api/transcribe', authenticateToken, transcribeRoutes);
 app.use('/api/calendar', authenticateToken, calendarRoutes);
+const tenderRoutes = require('./routes/tender');
+app.use('/api/tender', authenticateToken, tenderRoutes);
+const estimatesRoutes = require('./routes/estimates');
+app.use('/api/estimates', authenticateToken, estimatesRoutes);
+const quotesTenderRoutes = require('./routes/quotes-ai-tender');
+app.use('/api/quotes', authenticateToken, quotesTenderRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
