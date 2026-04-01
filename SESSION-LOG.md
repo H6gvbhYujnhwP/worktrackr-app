@@ -13,13 +13,28 @@
 
 ---
 
+## Rules for Claude — must follow every session
+
+### Before making any code change, Claude must:
+1. **Read the file being changed in full** — never edit from memory or assumptions
+2. **Identify every other file that imports or depends on the file being changed** — routes, middleware, frontend components, hooks, services
+3. **Trace the full flow** — understand what calls this code, what this code calls, and what the user-facing impact is end to end
+4. **State the impact explicitly** before producing the fixed file, e.g.:
+   > "Changing X in adminUsers.js will affect: the admin dashboard UI in UserDetailPage.jsx, the audit log table in the DB, and the logAdminAction helper in adminAuth.js. I have checked all three and this change does not break them."
+5. **Never change function signatures, export shapes, or API response structures** without checking every consumer of that interface first
+6. **If a fix in one file requires a matching change in another file**, produce both files in the same session — never leave the codebase in a half-fixed state
+
+### The goal is: every pushed commit leaves the app fully working with no regressions
+
+---
+
 ## How to start a new session
 
 1. Upload the GitHub repo zip (exclude `node_modules`, `dist`, `.git`)
 2. Upload this SESSION-LOG.md and ROADMAP.md
 3. Paste this prompt:
 
-> "You are continuing development of WorkTrackr Cloud. Read the repo zip and SESSION-LOG.md before doing anything. The session log tells you what has already been fixed and what to work on next. The live site is https://worktrackr.cloud. We work by: you produce fixed files, I download them and copy into my local repo at C:\repos\worktrackr-app, then push via GitHub Desktop so Render auto-deploys."
+> "You are continuing development of WorkTrackr Cloud. Read the repo zip, SESSION-LOG.md, and ROADMAP.md before doing anything. The session log tells you what has already been fixed, the rules you must follow, and what to work on next. The live site is https://worktrackr.cloud. We work by: you produce fixed files, I download them and copy into my local repo at C:\repos\worktrackr-app, then push via GitHub Desktop so Render auto-deploys. Before making any change, state which other files and flows are affected."
 
 ---
 
@@ -84,3 +99,62 @@ Full audit of all 34 route files, frontend components, middleware, and schema.
 ### Credentials rotated this session
 - ⚠️ Production admin password was found in plaintext in `WorkTrackr Cloud - Master Admin System.md`
 - **Action required:** Rotate the admin password at https://worktrackr.cloud/admin87476463 if not already done
+
+---
+
+## Session 2 — 2025-04-01 (continuation)
+
+### Work completed: Ticket Calendar rewrite
+
+#### Files changed
+
+**1. `web/client/src/app/src/components/IntegratedCalendar.jsx` — full rewrite**
+
+This is the component actually mounted in the app (rendered in `Dashboard.jsx` at line 654). `BookingCalendar.jsx` is never mounted anywhere and was left untouched.
+
+What was fixed:
+- Removed all localStorage reads/writes. All events now load from and save to `/api/calendar/events`
+- Create event form now actually saves via POST to the API
+- Edit event saves via PUT to `/api/calendar/events/:id`
+- Delete event calls DELETE to `/api/calendar/events/:id`
+- Ticket scheduled_dates now appear on the calendar automatically — computed from the tickets already in React state (no localStorage bridge, no polling)
+- Day view: fully implemented with hourly slots, click any slot to create event
+- Week view: fully implemented with Mon–Sun columns, hourly rows
+- Month view: fully implemented, clicking a day opens day view for that date
+- Event detail modal: shows full event info, links back to ticket for ticket-sourced events
+- Events colour-coded: teal = calendar event, purple = scheduled ticket, blue = work
+- Upcoming events sidebar
+- No hardcoded sample data anywhere
+- No polling — loads once on mount, re-fetches after each create/edit/delete
+
+Props preserved (no breaking change to Dashboard.jsx): `currentUser`, `onTicketClick`, `timezone` (timezone prop accepted but not needed — dates handled in local time)
+
+**2. `web/client/src/app/src/App.jsx` — localStorage bridge removed**
+
+Removed:
+- `import('./utils/initializeBookingSync.js')` useEffect
+- `createBookingFromTicket()` function and its call in `createTicket()`
+- `updateBookingFromTicket()` function and its call in `updateTicket()`
+
+Everything else in App.jsx is identical. All other ticket operations, auth, routing, context providers are unchanged.
+
+Files NOT changed (intentionally):
+- `web/routes/calendar.js` — already correct
+- `web/client/src/app/src/components/BookingCalendar.jsx` — never mounted, left for cleanup in backlog
+- `web/client/src/app/src/utils/initializeBookingSync.js` — now dead code, left for cleanup in backlog
+- `web/client/src/app/src/utils/ticketToBookingConverter.js` — now dead code, left for cleanup in backlog
+- `web/client/src/app/src/components/Dashboard.jsx` — no changes needed, import and props unchanged
+
+#### How to test after deploying
+1. Open the app and navigate to Ticket Calendar
+2. Confirm no fake 2024 bookings appear
+3. Click "Add event" — fill in title, date, time — confirm it appears on the calendar after saving
+4. Switch between Day, Week, and Month views — confirm the event appears in all three
+5. Click an event — confirm the detail modal opens
+6. Edit the event — confirm changes persist after page reload
+7. Delete the event — confirm it disappears
+8. Create a ticket with a scheduled date — confirm it appears on the calendar as a purple entry
+9. Click the purple ticket entry — confirm "Open ticket" button navigates to the ticket
+
+#### Next: CRM Calendar
+Once Ticket Calendar is confirmed working on Render, start Session 3 with the CRM Calendar rewrite.
