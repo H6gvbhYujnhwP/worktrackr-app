@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../../shared/db');
+const { query, transaction } = require('../../shared/db');
 const { requireMasterAdmin, logAdminAction } = require('../middleware/adminAuth');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -354,7 +354,7 @@ router.patch('/:id', async (req, res) => {
       updates.push(`admin_notes = $${paramCount++}`);
       values.push(admin_notes);
     }
-    
+
     // Handle password update
     if (password && password.length >= 8) {
       const bcrypt = require('bcryptjs');
@@ -385,8 +385,6 @@ router.patch('/:id', async (req, res) => {
 });
 
 /**
- * GET /api/admin/users/export
- * Expo/**
  * POST /api/admin/users/:id/soft-delete
  * Soft delete user (disable login, keep data)
  */
@@ -404,8 +402,8 @@ router.post('/:id/soft-delete', async (req, res) => {
       [`[SOFT DELETED] ${new Date().toISOString()} - Reason: ${reason || 'No reason provided'}`, id]
     );
 
-    // Log the action
-    await logAdminAction(req.adminUser.id, 'USER_SOFT_DELETE', 'user', id, {
+    // FIX: corrected argument order (was swapped - targetId and targetType were reversed)
+    await logAdminAction(req.adminUser.id, 'USER_SOFT_DELETE', id, 'user', {
       reason,
       timestamp: new Date().toISOString()
     });
@@ -420,6 +418,7 @@ router.post('/:id/soft-delete', async (req, res) => {
 /**
  * POST /api/admin/users/:id/hard-delete
  * Hard delete user (permanently remove all data)
+ * FIX: wrapped in transaction so partial deletion cannot occur on server crash
  */
 router.post('/:id/hard-delete', async (req, res) => {
   try {
@@ -430,7 +429,7 @@ router.post('/:id/hard-delete', async (req, res) => {
       return res.status(400).json({ error: 'Confirmation required' });
     }
 
-    // Get user details before deletion for logging
+    // Get user details before deletion for logging (outside transaction - read only)
     const userResult = await query(
       'SELECT email, name FROM users WHERE id = $1',
       [id]
@@ -442,53 +441,51 @@ router.post('/:id/hard-delete', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Get organization IDs where user is a member
+    // Get organization IDs where user is a member (outside transaction - read only)
     const orgResult = await query(
       'SELECT organisation_id FROM memberships WHERE user_id = $1',
       [id]
     );
 
-    // Delete in order (respecting foreign key constraints):
-    
-    // 1. Handle tickets created by this user
-    // Option: Delete tickets created by this user
-    await query('DELETE FROM tickets WHERE created_by = $1', [id]);
-    
-    // Also handle tickets assigned to this user
-    await query('UPDATE tickets SET assigned_to = NULL WHERE assigned_to = $1', [id]);
-    
-    // 2. Memberships
-    await query('DELETE FROM memberships WHERE user_id = $1', [id]);
+    // Wrap all deletions in a transaction so they are atomic
+    await transaction(async (client) => {
+      // 1. Handle tickets created by this user
+      await client.query('DELETE FROM tickets WHERE created_by = $1', [id]);
 
-    // 3. Audit logs
-    await query('DELETE FROM audit_logs WHERE actor_id = $1', [id]);
+      // 2. Unassign tickets assigned to this user
+      await client.query('UPDATE tickets SET assignee_id = NULL WHERE assignee_id = $1', [id]);
 
-    // 4. User
-    await query('DELETE FROM users WHERE id = $1', [id]);
+      // 3. Memberships
+      await client.query('DELETE FROM memberships WHERE user_id = $1', [id]);
 
-    // 5. Organizations if user was the only member
-    for (const org of orgResult.rows) {
-      const memberCount = await query(
-        'SELECT COUNT(*) as count FROM memberships WHERE organisation_id = $1',
-        [org.organisation_id]
-      );
+      // 4. Audit logs
+      await client.query('DELETE FROM audit_logs WHERE actor_id = $1', [id]);
 
-      if (memberCount.rows[0].count === '0') {
-        // Delete organization if no members left
-        await query('DELETE FROM organisations WHERE id = $1', [org.organisation_id]);
+      // 5. User
+      await client.query('DELETE FROM users WHERE id = $1', [id]);
+
+      // 6. Delete organisations if user was the only member
+      for (const org of orgResult.rows) {
+        const memberCount = await client.query(
+          'SELECT COUNT(*) as count FROM memberships WHERE organisation_id = $1',
+          [org.organisation_id]
+        );
+        if (memberCount.rows[0].count === '0') {
+          await client.query('DELETE FROM organisations WHERE id = $1', [org.organisation_id]);
+        }
       }
-    }
+    });
 
-    // Log the action (before user is deleted)
-    await logAdminAction(req.adminUser.id, 'USER_HARD_DELETE', 'user', id, {
+    // FIX: corrected argument order (was swapped - targetId and targetType were reversed)
+    await logAdminAction(req.adminUser.id, 'USER_HARD_DELETE', id, 'user', {
       email: user.email,
       name: user.name,
       timestamp: new Date().toISOString()
     });
 
-    res.json({ 
-      success: true, 
-      message: 'User and all associated data permanently deleted' 
+    res.json({
+      success: true,
+      message: 'User and all associated data permanently deleted'
     });
   } catch (error) {
     console.error('Error hard deleting user:', error);
@@ -496,7 +493,10 @@ router.post('/:id/hard-delete', async (req, res) => {
   }
 });
 
-// Export users to CSV
+/**
+ * GET /api/admin/users/export
+ * Export all users to CSV
+ */
 router.get('/export', async (req, res) => {
   try {
     const usersResult = await query(
@@ -524,7 +524,7 @@ router.get('/export', async (req, res) => {
       row.role || 'N/A',
       row.org_name || 'N/A',
       row.plan || 'N/A',
-      row.status,
+      row.is_suspended ? 'suspended' : 'active',
       row.is_suspended ? 'Yes' : 'No',
       row.active_user_count || 0,
       row.included_seats || 0,

@@ -975,7 +975,7 @@ router.post('/signup/trial', async (req, res) => {
 
     // Create JWT and set cookie
     const token = signJwt({ userId: result.userId, email: result.userEmail });
-    res.cookie('token', token, getCookieOptions());
+    res.cookie('auth_token', token, getCookieOptions());
 
     console.log(`✅ Trial signup complete for ${email}`);
 
