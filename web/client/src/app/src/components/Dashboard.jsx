@@ -18,7 +18,7 @@ import {
   Trash2, UserPlus, Flag, GitMerge, ChevronDown, Package, LogOut,
   Building2
 } from 'lucide-react';
-import { priorities } from '../data/mockData.js';
+
 import AppVersion from './AppVersion.jsx';
 import TicketCard from './TicketCard.jsx';
 import TicketDetailModal from './TicketDetailModal.jsx';
@@ -291,8 +291,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {Object.entries(priorities).map(([key, p]) => (
-                    <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
+                  {[{value:'low',label:'Low'},{value:'medium',label:'Medium'},{value:'high',label:'High'},{value:'urgent',label:'Urgent'}].map((p) => (
+                    <DropdownMenuItem key={p.value} onClick={() => handleBulkSetPriority(p.value)}>
                       {p.label}
                     </DropdownMenuItem>
                   ))}

@@ -295,3 +295,21 @@ SecuritySettings.jsx, EmailIntakeSettings.jsx, IntegratedCalendar.jsx, CRMCalend
 - Calendar entries not saving — FIXED by adding 009_add_calendar_events.sql to web/migrations/
 - Verify calendar loads and saves after migration runs on next deploy
 - CRM Calendar still has the field name mismatch bugs (Session 1) — schedule for Push 3
+
+---
+
+## Session 4 — hotfix (same day)
+
+### Bug 1 fixed: Bulk priority update sends "0" instead of priority name
+**Root cause:** `priorities` in `mockData.js` is an **array**, not an object. `Object.entries(priorities)` on an array returns `[["0", {...}], ["1", {...}]]` — the keys are array indices (`"0"`, `"1"`, etc.) not the priority names. The DB check constraint `tickets_priority_check` only accepts `low/medium/high/urgent`, so `"0"` causes a 23514 constraint violation.
+
+**Fix in `Dashboard.jsx`:** Replaced `Object.entries(priorities).map(([key, p]) => ...)` with a hardcoded array `[{value:'low',...}, ...]` so the correct string values are always passed. Removed the `priorities` import from `mockData.js` since it's no longer needed.
+
+### Bug 2 fixed: Priority/Status/Sector fields buried below Description in ticket detail
+**Root cause:** The redesigned `TicketDetailViewTabbed.jsx` placed these fields after Title and Description, making them invisible without scrolling.
+
+**Fix:** Moved Priority, Status, and Sector into a prominent `3-column grid` at the **very top** of the Details tab, inside a `bg-[#fafafa]` box. Order is now: Priority/Status/Sector → Title → Description. These are the most-changed fields so they must be immediately visible.
+
+**Files changed in hotfix:**
+- `Dashboard.jsx` — priority dropdown fix
+- `TicketDetailViewTabbed.jsx` — field reorder

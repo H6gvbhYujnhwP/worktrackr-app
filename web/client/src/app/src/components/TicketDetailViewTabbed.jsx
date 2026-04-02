@@ -219,6 +219,45 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 <SectionHead>Ticket information</SectionHead>
 
                 <div className="space-y-4">
+                  {/* ── Priority / Status / Sector first — most important fields ── */}
+                  <div className="grid grid-cols-3 gap-3 p-4 bg-[#fafafa] rounded-xl border border-[#e5e7eb]">
+                    <div>
+                      <Label className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
+                        Priority
+                      </Label>
+                      <Select value={form.priority} onValueChange={onChange('priority')}>
+                        <SelectTrigger className="border-[#e5e7eb] h-9 text-[13px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PRIORITIES.map(p => <SelectItem key={p} value={p}>{cap(p)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
+                        Status
+                      </Label>
+                      <Select value={form.status} onValueChange={onChange('status')}>
+                        <SelectTrigger className="border-[#e5e7eb] h-9 text-[13px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {STATUSES.map(s => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
+                        Sector
+                      </Label>
+                      <Select value={form.sector || 'none'} onValueChange={v => onChange('sector')(v === 'none' ? '' : v)}>
+                        <SelectTrigger className="border-[#e5e7eb] h-9 text-[13px]"><SelectValue placeholder="None" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* ── Title ── */}
                   <div>
                     <Label className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
                       Title
@@ -229,6 +268,8 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                       className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
                     />
                   </div>
+
+                  {/* ── Description ── */}
                   <div>
                     <Label className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
                       Description
@@ -239,42 +280,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                       rows={6}
                       className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
-                        Priority
-                      </Label>
-                      <Select value={form.priority} onValueChange={onChange('priority')}>
-                        <SelectTrigger className="border-[#e5e7eb]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {PRIORITIES.map(p => <SelectItem key={p} value={p}>{cap(p)}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
-                        Status
-                      </Label>
-                      <Select value={form.status} onValueChange={onChange('status')}>
-                        <SelectTrigger className="border-[#e5e7eb]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {STATUSES.map(s => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5 block">
-                      Sector
-                    </Label>
-                    <Select value={form.sector || 'none'} onValueChange={v => onChange('sector')(v === 'none' ? '' : v)}>
-                      <SelectTrigger className="border-[#e5e7eb]"><SelectValue placeholder="None" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
 
