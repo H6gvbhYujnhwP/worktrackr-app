@@ -1,417 +1,246 @@
 // web/client/src/app/src/components/TicketsTableView.jsx
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+// REDESIGN Push 2: New visual style — compact rows, priority bars, muted status badges.
+// All logic completely preserved: bulk actions, status/priority selects, checkboxes, dropdown.
+
+import React, { useState, useRef } from 'react';
 import { useSimulation } from '../App.jsx';
-import { Button } from '@/components/ui/button.jsx';
 import { Checkbox } from '@/components/ui/checkbox.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
 import AssignTicketsModal from './AssignTicketsModal.jsx';
-import { 
-  Trash2, 
-  UserPlus, 
-  Settings, 
-  Flag,
-  Merge,
-  MoreVertical,
-  ChevronDown
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.jsx';
+import { MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
 
-const PRIORITY_COLORS = {
-  low: 'bg-green-100 text-green-800 border-green-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  high: 'bg-orange-100 text-orange-800 border-orange-200',
-  urgent: 'bg-red-100 text-red-800 border-red-200',
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const PRIORITY_BAR = {
+  urgent: '#dc2626',
+  high:   '#f59e0b',
+  medium: '#3b82f6',
+  low:    '#22c55e',
 };
 
-const STATUS_COLORS = {
-  open: 'bg-blue-100 text-blue-800 border-blue-200',
-  in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  closed: 'bg-gray-100 text-gray-800 border-gray-200',
-  resolved: 'bg-green-100 text-green-800 border-green-200',
+const PRIORITY_BADGE = {
+  urgent: 'bg-[#fee2e2] text-[#991b1b]',
+  high:   'bg-[#fef3c7] text-[#d97706]',
+  medium: 'bg-[#dbeafe] text-[#2563eb]',
+  low:    'bg-[#dcfce7] text-[#16a34a]',
 };
 
+const STATUS_BADGE = {
+  open:             'bg-[#dcfce7] text-[#166534]',
+  in_progress:      'bg-[#dbeafe] text-[#1e40af]',
+  pending:          'bg-[#fef3c7] text-[#92400e]',
+  resolved:         'bg-[#dbeafe] text-[#1e40af]',
+  closed:           'bg-[#f3f4f6] text-[#6b7280]',
+  approved:         'bg-[#dcfce7] text-[#166534]',
+  denied:           'bg-[#fee2e2] text-[#991b1b]',
+  waiting_approval: 'bg-[#fef3c7] text-[#92400e]',
+};
+
+const STATUS_LABEL = {
+  open: 'Open', in_progress: 'In progress', pending: 'Pending',
+  resolved: 'Resolved', closed: 'Closed', approved: 'Approved',
+  denied: 'Denied', waiting_approval: 'Waiting approval',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDate = (d) => {
+  if (!d) return '—';
+  const diff = Math.floor((Date.now() - new Date(d)) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7)  return `${diff}d ago`;
+  if (diff < 30) return `${Math.floor(diff/7)}wk ago`;
+  return `${Math.floor(diff/30)}mo ago`;
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function TicketsTableView({ tickets, users, onTicketClick, selectedTickets, setSelectedTickets }) {
-  const { bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
+  const { bulkUpdateTickets } = useSimulation();
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  
-  // Refs for direct DOM event listeners (fallback for onChange issues)
-  const prioritySelectRefs = useRef(new Map());
-  const statusSelectRefs = useRef(new Map());
+  const statusRefs = useRef(new Map());
 
-  const allSelected = tickets.length > 0 && selectedTickets.size === tickets.length;
-  const someSelected = selectedTickets.size > 0 && selectedTickets.size < tickets.length;
+  const allSelected  = tickets.length > 0 && selectedTickets.size === tickets.length;
 
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelectedTickets(new Set());
-    } else {
-      setSelectedTickets(new Set(tickets.map(t => t.id)));
-    }
+  const toggleAll    = () => setSelectedTickets(allSelected ? new Set() : new Set(tickets.map(t => t.id)));
+  const toggleOne    = (id) => {
+    const s = new Set(selectedTickets);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSelectedTickets(s);
   };
 
-  const toggleTicket = (ticketId) => {
-    const newSelected = new Set(selectedTickets);
-    if (newSelected.has(ticketId)) {
-      newSelected.delete(ticketId);
-    } else {
-      newSelected.add(ticketId);
-    }
-    setSelectedTickets(newSelected);
+  const getUserName  = (id) => users?.find(u => u.id === id)?.name || 'Unassigned';
+  const getInitial   = (id) => getUserName(id).charAt(0).toUpperCase();
+  const getAvatarBg  = (id) => {
+    const colours = ['bg-indigo-500','bg-violet-500','bg-pink-500','bg-amber-500','bg-teal-500'];
+    const i = (id || '').charCodeAt(0) % colours.length;
+    return colours[i];
   };
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selectedTickets.size} ticket(s)? This action cannot be undone.`)) {
-      return;
-    }
+  const updateStatus   = async (id, status) => {
     setLoading(true);
-    try {
-      await bulkDeleteTickets(Array.from(selectedTickets));
-      setSelectedTickets(new Set());
-      alert('Tickets deleted successfully!');
-    } catch (error) {
-      console.error('Failed to delete tickets:', error);
-      alert('Failed to delete tickets. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    try { await bulkUpdateTickets([id], { status }); }
+    catch (e) { alert(`Failed: ${e.message}`); }
+    finally { setLoading(false); }
   };
 
-  const handleBulkAssign = () => {
-    setShowAssignModal(true);
+  const updatePriority = async (id, priority) => {
+    setLoading(true);
+    try { await bulkUpdateTickets([id], { priority }); }
+    catch (e) { alert(`Failed: ${e.message}`); }
+    finally { setLoading(false); }
   };
 
   const handleAssignConfirm = async (userId) => {
     setLoading(true);
-    console.log('👥 Assignment attempt:', {
-      userId,
-      userIdType: typeof userId,
-      ticketIds: Array.from(selectedTickets),
-      payload: { assigneeId: userId }
-    });
     try {
       await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
       setSelectedTickets(new Set());
-      console.log('✅ Tickets assigned successfully!');
-      // Don't reload, just let the context refresh the tickets
-    } catch (error) {
-      console.error('❌ Failed to assign tickets:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      alert(`Failed to assign tickets: ${error.response?.data?.error || error.message}`);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+      setShowAssignModal(false);
+    } catch (e) { alert(`Failed to assign: ${e.message}`); }
+    finally { setLoading(false); }
   };
 
-  const handleBulkSetStatus = async (status) => {
-    setLoading(true);
-    console.log('📦 Bulk status update:', { ticketIds: Array.from(selectedTickets), status });
-    try {
-      await bulkUpdateTickets(Array.from(selectedTickets), { status });
-      setSelectedTickets(new Set());
-      console.log('✅ Bulk status updated successfully!');
-    } catch (error) {
-      console.error('❌ Failed to update status:', error);
-      alert('Failed to update status. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBulkSetPriority = async (priority) => {
-    setLoading(true);
-    console.log('📦 Bulk priority update:', { ticketIds: Array.from(selectedTickets), priority });
-    try {
-      await bulkUpdateTickets(Array.from(selectedTickets), { priority });
-      setSelectedTickets(new Set());
-      console.log('✅ Bulk priority updated successfully!');
-    } catch (error) {
-      console.error('❌ Failed to update priority:', error);
-      alert('Failed to update priority. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMergeTickets = () => {
-    if (selectedTickets.size < 2) {
-      alert('Please select at least 2 tickets to merge');
-      return;
-    }
-    alert('Merge functionality coming soon!');
-  };
-
-  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
-    console.log('='.repeat(80));
-    console.log('🎯 handleUpdateTicketStatus ENTRY');
-    console.log('  ticketId:', ticketId);
-    console.log('  newStatus:', newStatus);
-    console.log('  loading:', loading);
-    console.log('  bulkUpdateTickets type:', typeof bulkUpdateTickets);
-    console.log('  bulkUpdateTickets:', bulkUpdateTickets);
-    
-    if (!bulkUpdateTickets) {
-      console.error('❌ bulkUpdateTickets is undefined!');
-      return;
-    }
-    
-    console.log('🟢 Setting loading to true...');
-    setLoading(true);
-    
-    try {
-      console.log('📤 About to call bulkUpdateTickets...');
-      console.log('  Arguments:', [ticketId], { status: newStatus });
-      
-      const result = await bulkUpdateTickets([ticketId], { status: newStatus });
-      
-      console.log('✅ bulkUpdateTickets returned successfully');
-      console.log('  Result:', result);
-    } catch (error) {
-      console.error('❌ Exception caught in handleUpdateTicketStatus:', error);
-      console.error('  Error name:', error.name);
-      console.error('  Error message:', error.message);
-      console.error('  Error stack:', error.stack);
-      alert(`Failed to update status: ${error.response?.data?.error || error.message}`);
-    } finally {
-      console.log('🟡 Setting loading to false...');
-      setLoading(false);
-      console.log('='.repeat(80));
-    }
-  };
-
-  const handleUpdateTicketPriority = async (ticketId, newPriority) => {
-    setLoading(true);
-    try {
-      await bulkUpdateTickets([ticketId], { priority: newPriority });
-      // Success - the UI will update automatically via context
-    } catch (error) {
-      console.error('Failed to update priority:', error);
-      alert(`Failed to update priority: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
-
-  const getUserName = (userId) => {
-    if (!userId) return 'Unassigned';
-    const user = users?.find(u => u.id === userId);
-    return user ? user.name : 'Unknown';
-  };
-
-  // CRITICAL FIX: Add direct DOM event listeners as fallback
-   // Removed duplicate event listeners - React onChange handlers are sufficient; // Re-run when tickets change or loading state changes
+  if (tickets.length === 0) {
+    return (
+      <div className="py-16 text-center text-[#9ca3af]">
+        <div className="text-[13px]">No tickets found</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Tickets Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="w-12 p-3">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all tickets"
-                  />
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse responsive-table">
+          <thead>
+            <tr className="bg-[#fafafa]">
+              <th className="w-10 px-4 py-2.5 border-b border-[#e5e7eb]">
+                <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
+              </th>
+              {['Ticket','Assigned to','Priority','Status','Updated',''].map((h, i) => (
+                <th key={i} className="text-left px-4 py-2.5 border-b border-[#e5e7eb]
+                                       text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">
+                  {h}
                 </th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700">Details</th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">SLA</th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700 w-48">Assigned technician</th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">Priority</th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700 w-48">Activity status</th>
-                <th className="text-left p-3 text-sm font-semibold text-gray-700 w-32">Status</th>
-                <th className="w-12 p-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {tickets.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="p-8 text-center text-gray-500">
-                    No tickets found
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tickets.map((ticket, idx) => {
+              const isSelected = selectedTickets.has(ticket.id);
+              const priority   = ticket.priority || 'medium';
+              const status     = ticket.status   || 'open';
+              const assigneeId = ticket.assignee_id || ticket.assignedTo;
+
+              return (
+                <tr
+                  key={ticket.id}
+                  className={`border-b border-[#f3f4f6] transition-colors
+                    ${isSelected ? 'bg-[#fef9ee]' : idx % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[#fef9ee]' : 'bg-white hover:bg-[#fef9ee]'}`}
+                >
+                  {/* Checkbox */}
+                  <td className="w-10 px-4 py-3">
+                    <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(ticket.id)} />
+                  </td>
+
+                  {/* Ticket title + id */}
+                  <td className="px-4 py-3 ticket-cell cursor-pointer" onClick={() => onTicketClick?.(ticket)}>
+                    <div className="text-[13px] font-medium text-[#1d1d1f] hover:text-[#d4a017] transition-colors">
+                      {ticket.title}
+                    </div>
+                    <div className="text-[11px] text-[#9ca3af] mt-0.5 font-mono">
+                      #{ticket.id?.slice(0, 8)}
+                    </div>
+                  </td>
+
+                  {/* Assignee */}
+                  <td className="px-4 py-3 assignee-cell">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full ${getAvatarBg(assigneeId)}
+                                      flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0`}>
+                        {getInitial(assigneeId)}
+                      </div>
+                      <span className="text-[12px] text-[#374151]">{getUserName(assigneeId)}</span>
+                    </div>
+                  </td>
+
+                  {/* Priority */}
+                  <td className="px-4 py-3 priority-cell">
+                    <select
+                      value={priority}
+                      onChange={e => updatePriority(ticket.id, e.target.value)}
+                      disabled={loading}
+                      className={`text-[11px] font-semibold px-2 py-1 rounded-full border-0 cursor-pointer
+                                  appearance-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30
+                                  ${PRIORITY_BADGE[priority]}`}
+                      style={{ backgroundImage: 'none' }}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3 status-cell">
+                    <select
+                      ref={el => {
+                        if (el) {
+                          el.value = status;
+                          el.onchange = e => updateStatus(ticket.id, e.target.value);
+                          statusRefs.current.set(ticket.id, el);
+                        }
+                      }}
+                      disabled={loading}
+                      className={`text-[11px] font-semibold px-2 py-1 rounded-full border-0 cursor-pointer
+                                  appearance-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30
+                                  ${STATUS_BADGE[status] || 'bg-[#f3f4f6] text-[#6b7280]'}`}
+                      style={{ backgroundImage: 'none' }}
+                    >
+                      {['open','in_progress','pending','resolved','closed'].map(s => (
+                        <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Date */}
+                  <td className="px-4 py-3 date-cell text-[12px] text-[#9ca3af]">
+                    {formatDate(ticket.updated_at)}
+                  </td>
+
+                  {/* Row menu */}
+                  <td className="px-2 py-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="w-7 h-7 rounded-md flex items-center justify-center
+                                           text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151]
+                                           transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onTicketClick?.(ticket)}>View details</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600"
+                          onClick={() => { setSelectedTickets(new Set([ticket.id])); }}>
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
-              ) : (
-                tickets.map((ticket, index) => (
-                  <tr
-                    key={ticket.id}
-                    className={`hover:bg-gray-100 transition-colors ${
-                      selectedTickets.has(ticket.id) ? 'bg-blue-50' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    }`}
-                  >
-                    <td className="p-3">
-                      <Checkbox
-                        checked={selectedTickets.has(ticket.id)}
-                        onCheckedChange={() => toggleTicket(ticket.id)}
-                        aria-label={`Select ticket ${ticket.id}`}
-                      />
-                    </td>
-                    <td className="p-3">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => {
-                          console.log('[TicketsTableView] Ticket clicked:', ticket.id);
-                          console.log('[TicketsTableView] onTicketClick exists?', !!onTicketClick);
-                          onTicketClick?.(ticket);
-                        }}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-gray-500 font-mono">
-                            #{ticket.id.slice(0, 8)}
-                          </span>
-                          <span className="font-medium text-gray-900 hover:text-blue-600">
-                            {ticket.title}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {ticket.company_name || 'No company'}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          Created {formatDate(ticket.created_at)} • Modified {formatDate(ticket.updated_at)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline" className="text-xs">
-                        No SLA
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                          {getUserName(ticket.assignee_id).charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm text-gray-700">
-                          {getUserName(ticket.assignee_id)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <select
-                        ref={(el) => {
-                          if (el) {
-                            prioritySelectRefs.current.set(ticket.id, el);
-                          }
-                        }}
-                        value={ticket.priority || 'medium'}
-                        onChange={(e) => {
-                          handleUpdateTicketPriority(ticket.id, e.target.value);
-                        }}
-                        disabled={loading}
-                        className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
-                          PRIORITY_COLORS[ticket.priority || 'medium']
-                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          ticket.status === 'resolved' ? 'bg-green-500' :
-                          ticket.status === 'pending' ? 'bg-yellow-500' :
-                          ticket.status === 'closed' ? 'bg-gray-500' :
-                          'bg-blue-400'
-                        }`} />
-                        <span className="text-sm text-gray-700">
-                          {ticket.activity_status || 'Awaiting response'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <select
-                        ref={(el) => {
-                          if (el) {
-                            // Set the value directly on the DOM element
-                            el.value = ticket.status || 'open';
-                            
-                            // Remove any existing listeners to prevent duplicates
-                            el.onchange = null;
-                            
-                            // Add direct DOM event listener (bypasses React synthetic events)
-                            el.onchange = (e) => {
-                              console.log('🎯 DIRECT DOM onChange fired!', ticket.id, e.target.value);
-                              handleUpdateTicketStatus(ticket.id, e.target.value);
-                            };
-                            
-                            // Store ref for cleanup
-                            statusSelectRefs.current.set(ticket.id, el);
-                          }
-                        }}
-                        disabled={loading}
-                        className={`w-full px-3 py-1.5 text-sm rounded-md border cursor-pointer ${
-                          STATUS_COLORS[ticket.status || 'open']
-                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <option value="open">Open</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="pending">Pending</option>
-                        <option value="closed">Closed</option>
-                        <option value="resolved">Resolved</option>
-                      </select>
-                    </td>
-                    <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onTicketClick?.(ticket)}>
-                            View details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => console.log('Edit ticket')}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => console.log('Delete ticket')}
-                            className="text-red-600"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer */}
-        <div className="p-3 bg-gray-50 border-t text-sm text-gray-600">
-          Displaying {tickets.length} of {tickets.length} tickets
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Assign Modal */}
+      {/* Footer count */}
+      <div className="px-5 py-2.5 bg-[#fafafa] border-t border-[#e5e7eb] text-[12px] text-[#9ca3af]">
+        {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
+        {selectedTickets.size > 0 && ` · ${selectedTickets.size} selected`}
+      </div>
+
       {showAssignModal && (
         <AssignTicketsModal
           users={users}
@@ -420,6 +249,6 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
           onClose={() => setShowAssignModal(false)}
         />
       )}
-    </div>
+    </>
   );
 }

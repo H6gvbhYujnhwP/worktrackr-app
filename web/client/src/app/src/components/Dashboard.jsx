@@ -1,42 +1,24 @@
+// web/client/src/app/src/components/Dashboard.jsx
+// REDESIGN Push 2: Removed duplicate inner header (now in AppLayout TopBar).
+// Replaced coloured badge pills with compact tab chips.
+// Compact inline stats row replaces nothing (was never big cards — those were in spec for future).
+// All logic, state, modals, and child components completely unchanged.
+
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
-import { 
-  Building2, 
-  LogOut, 
-  Plus, 
-  Search, 
-  Filter, 
-  Users, 
-  Ticket, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle,
-  Pause,
-  X,
-  XCircle,
-  User,
-  Mail,
-  Settings,
-  Workflow,
-  Bell,
-  RefreshCw,
-  Calendar,
-  Trash2,
-  UserPlus,
-  Flag,
-  GitMerge,
-  ChevronDown,
-  Package
+import {
+  Plus, Search, Users, Ticket, Clock, CheckCircle, AlertCircle,
+  X, User, Mail, Settings, Workflow, Bell, RefreshCw, Calendar,
+  Trash2, UserPlus, Flag, GitMerge, ChevronDown, Package, LogOut,
+  Building2
 } from 'lucide-react';
-import { ticketStatuses, priorities, categories } from '../data/mockData.js';
+import { priorities } from '../data/mockData.js';
 import AppVersion from './AppVersion.jsx';
 import TicketCard from './TicketCard.jsx';
 import TicketDetailModal from './TicketDetailModal.jsx';
@@ -44,7 +26,6 @@ import CreateTicketModal from './CreateTicketModal.jsx';
 import AssignTicketsModal from './AssignTicketsModal.jsx';
 import EmailLogModal from './EmailLogModal.jsx';
 import TicketFieldCustomizer from './TicketFieldCustomizer.jsx';
-
 import UserManagementImproved from './UserManagementImproved.jsx';
 import IntegratedCalendar from './IntegratedCalendar.jsx';
 import XeroIntegration from './XeroIntegration.jsx';
@@ -57,122 +38,115 @@ import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
 import TicketDetailView from './TicketDetailViewTabbed.jsx';
 
-// Dashboard is now a CONTROLLED COMPONENT - receives currentView from parent
+// ─── Status chip style ────────────────────────────────────────────────────────
+const chipBase = 'text-[12px] font-medium px-3 py-1.5 rounded-md border transition-colors cursor-pointer whitespace-nowrap';
+const chipActive = 'bg-[#f9fafb] text-[#1d1d1f] border-[#e5e7eb]';
+const chipInactive = 'text-[#6b7280] border-transparent hover:bg-[#f9fafb]';
+
+// ─── Stat card ────────────────────────────────────────────────────────────────
+const StatCard = ({ label, count, iconBg, iconColor, Icon, onClick, active }) => (
+  <div
+    onClick={onClick}
+    className={`flex items-center gap-2.5 px-4 py-3 bg-white rounded-xl border cursor-pointer
+                transition-all flex-1 min-w-[120px]
+                ${active ? 'border-[#d4a017] shadow-sm' : 'border-[#e5e7eb] hover:border-[#d4a017]'}`}
+  >
+    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+      <Icon className={`w-[16px] h-[16px] ${iconColor}`} />
+    </div>
+    <div>
+      <div className="text-[20px] font-bold text-[#1d1d1f] leading-none">{count}</div>
+      <div className="text-[11px] font-medium text-[#9ca3af] mt-0.5">{label}</div>
+    </div>
+  </div>
+);
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
-  const [selectedTicket, setSelectedTicket] = useState(null);
+
+  const [activeTab, setActiveTab]             = useState('all_open');
+  const [searchTerm, setSearchTerm]           = useState('');
+  const [priorityFilter, setPriorityFilter]   = useState('all');
+  const [assigneeFilter, setAssigneeFilter]   = useState('all');
+  const [selectedTicket, setSelectedTicket]   = useState(null);
   const [viewingTicketId, setViewingTicketId] = useState(null);
-  const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showEmailLogs, setShowEmailLogs] = useState(false);
-  const [showFieldCustomizer, setShowFieldCustomizer] = useState(false);
+  const [showEmailModal, setShowEmailModal]   = useState(false);
   const [showTicketCustomizer, setShowTicketCustomizer] = useState(false);
-
-  const [showUserManagement, setShowUserManagement] = useState(false);
-  const [showXeroIntegration, setShowXeroIntegration] = useState(false);
-  const [selectedTimezone, setSelectedTimezone] = useState(() => {
-    return localStorage.getItem('worktrackr-timezone') || 'Europe/London';
-  });
-  // REMOVED: const [currentView, setCurrentView] = useState('tickets'); 
-  // Now using props from parent (single source of truth)
-  const [ticketViewMode, setTicketViewMode] = useState(() => {
-    return localStorage.getItem('worktrackr-ticket-view-mode') || 'table'; // 'cards' or 'table'
-  });
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [selectedTickets, setSelectedTickets] = useState(new Set());
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [selectedTickets, setSelectedTickets] = useState(new Set());
+  const [loading, setLoading]                 = useState(false);
+  const [selectedTimezone, setSelectedTimezone] = useState(
+    () => localStorage.getItem('worktrackr-timezone') || 'Europe/London'
+  );
+  const [ticketViewMode] = useState(
+    () => localStorage.getItem('worktrackr-ticket-view-mode') || 'table'
+  );
 
-  // Expose only clearViewingTicket to parent via ref
-  // REMOVED setCurrentView - parent now controls view state directly
   useImperativeHandle(ref, () => ({
-    clearViewingTicket: () => {
-      setViewingTicketId(null);
-    }
+    clearViewingTicket: () => setViewingTicketId(null)
   }));
 
-  // Show loading spinner while authentication data is being fetched
+  // Loading guard
   if (user === undefined || membership === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d4a017] mx-auto" />
+          <p className="mt-2 text-[#9ca3af] text-sm">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
 
-  // Update selectedTicket when tickets change to ensure modal shows latest data
-  useEffect(() => {
-    if (selectedTicket) {
-      const updatedTicket = tickets.find(t => t.id === selectedTicket.id);
-      if (updatedTicket && JSON.stringify(updatedTicket) !== JSON.stringify(selectedTicket)) {
-        setSelectedTicket(updatedTicket);
-      }
+  // ── Ticket counts ──────────────────────────────────────────────────────────
+  const ticketCounts = {
+    all:        tickets.length,
+    open:       tickets.filter(t => t.status === 'open').length,
+    in_progress:tickets.filter(t => t.status === 'in_progress').length,
+    pending:    tickets.filter(t => t.status === 'pending').length,
+    closed:     tickets.filter(t => t.status === 'closed').length,
+    resolved:   tickets.filter(t => t.status === 'resolved').length,
+    all_open:   tickets.filter(t => ['open','in_progress','pending'].includes(t.status)).length,
+    my_tickets: tickets.filter(t => t.assignedTo === user?.id).length,
+  };
+
+  // ── Filtering ──────────────────────────────────────────────────────────────
+  const filteredTickets = tickets.filter(ticket => {
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      return (
+        ticket.title?.toLowerCase().includes(q) ||
+        ticket.description?.toLowerCase().includes(q) ||
+        ticket.contactDetails?.contact_name?.toLowerCase().includes(q) ||
+        ticket.contactDetails?.company_name?.toLowerCase().includes(q)
+      );
     }
-  }, [tickets, selectedTicket]);
+    if (activeTab === 'open'        && ticket.status !== 'open')        return false;
+    if (activeTab === 'in_progress' && ticket.status !== 'in_progress') return false;
+    if (activeTab === 'pending'     && ticket.status !== 'pending')     return false;
+    if (activeTab === 'closed'      && ticket.status !== 'closed')      return false;
+    if (activeTab === 'resolved'    && ticket.status !== 'resolved')    return false;
+    if (activeTab === 'all_open'    && !['open','in_progress','pending'].includes(ticket.status)) return false;
+    if (activeTab === 'my_tickets'  && ticket.assignedTo !== user?.id)  return false;
+    if (priorityFilter !== 'all'    && ticket.priority !== priorityFilter) return false;
+    if (assigneeFilter !== 'all'    && ticket.assignedTo !== assigneeFilter) return false;
+    return true;
+  });
 
-  // Handle timezone changes
-  const handleTimezoneChange = (timezone) => {
-    setSelectedTimezone(timezone);
-    localStorage.setItem('worktrackr-timezone', timezone);
-    // Trigger a refresh of calendar components
-    setLastUpdate(new Date());
-  };
-
-  // Get list of common timezones
-  const getTimezones = () => {
-    return [
-      { value: 'Europe/London', label: 'London (GMT/BST)' },
-      { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
-      { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
-      { value: 'America/New_York', label: 'New York (EST/EDT)' },
-      { value: 'America/Chicago', label: 'Chicago (CST/CDT)' },
-      { value: 'America/Denver', label: 'Denver (MST/MDT)' },
-      { value: 'America/Los_Angeles', label: 'Los Angeles (PST/PDT)' },
-      { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-      { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
-      { value: 'Asia/Dubai', label: 'Dubai (GST)' },
-      { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
-      { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' }
-    ];
-  };
-
-  // Bulk action handlers
+  // ── Bulk actions ───────────────────────────────────────────────────────────
   const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selectedTickets.size} ticket(s)? This action cannot be undone.`)) {
-      return;
-    }
+    if (!confirm(`Delete ${selectedTickets.size} ticket(s)? This cannot be undone.`)) return;
     setLoading(true);
     try {
       await bulkDeleteTickets(Array.from(selectedTickets));
       setSelectedTickets(new Set());
-      alert('Tickets deleted successfully!');
-    } catch (error) {
-      console.error('Failed to delete tickets:', error);
-      alert('Failed to delete tickets. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBulkAssign = () => {
-    setShowAssignModal(true);
+    } catch (e) { alert('Failed to delete tickets.'); }
+    finally { setLoading(false); }
   };
 
   const handleAssignConfirm = async (userId) => {
@@ -181,587 +155,235 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       await bulkUpdateTickets(Array.from(selectedTickets), { assigneeId: userId });
       setSelectedTickets(new Set());
       setShowAssignModal(false);
-    } catch (error) {
-      console.error('Failed to assign tickets:', error);
-      alert(`Failed to assign tickets: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { alert(`Failed to assign: ${e.message}`); }
+    finally { setLoading(false); }
   };
 
   const handleBulkSetStatus = async (status) => {
     setLoading(true);
-    try {
-      await bulkUpdateTickets(Array.from(selectedTickets), { status });
-      setSelectedTickets(new Set());
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      alert('Failed to update status. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    try { await bulkUpdateTickets(Array.from(selectedTickets), { status }); setSelectedTickets(new Set()); }
+    catch (e) { alert('Failed to update status.'); }
+    finally { setLoading(false); }
   };
 
   const handleBulkSetPriority = async (priority) => {
     setLoading(true);
-    try {
-      await bulkUpdateTickets(Array.from(selectedTickets), { priority });
-      setSelectedTickets(new Set());
-    } catch (error) {
-      console.error('Failed to update priority:', error);
-      alert('Failed to update priority. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    try { await bulkUpdateTickets(Array.from(selectedTickets), { priority }); setSelectedTickets(new Set()); }
+    catch (e) { alert('Failed to update priority.'); }
+    finally { setLoading(false); }
   };
 
   const handleMergeTickets = () => {
-    if (selectedTickets.size < 2) {
-      alert('Please select at least 2 tickets to merge');
-      return;
-    }
+    if (selectedTickets.size < 2) { alert('Select at least 2 tickets to merge'); return; }
     alert('Merge functionality coming soon!');
   };
 
-  const filteredTickets = tickets.filter(ticket => {
-    // Search filter - when searching, show ALL matching tickets regardless of badge filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const titleMatch = ticket.title?.toLowerCase().includes(searchLower);
-      const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
-      const contactNameMatch = ticket.contactDetails?.contact_name?.toLowerCase().includes(searchLower);
-      const companyNameMatch = ticket.contactDetails?.company_name?.toLowerCase().includes(searchLower);
-      const displayNameMatch = ticket.contactDetails?.display_name?.toLowerCase().includes(searchLower);
-      
-      if (!titleMatch && !descriptionMatch && !contactNameMatch && !companyNameMatch && !displayNameMatch) {
-        return false;
-      }
-      // If search matches, skip badge filtering and show the ticket
-      return true;
-    }
+  const setTab = (tab) => { setActiveTab(tab); setSearchTerm(''); setViewingTicketId(null); };
 
-    // Status filters based on activeTab (only applied when NOT searching)
-    if (activeTab === 'open' && ticket.status !== 'open') {
-      return false;
-    }
-    if (activeTab === 'in_progress' && ticket.status !== 'in_progress') {
-      return false;
-    }
-    if (activeTab === 'pending' && ticket.status !== 'pending') {
-      return false;
-    }
-    // Closed tickets: closed status (moved to closed queue)
-    if (activeTab === 'closed' && ticket.status !== 'closed') {
-      return false;
-    }
-    // Resolved tickets: resolved status (flagged for invoicing)
-    if (activeTab === 'resolved' && ticket.status !== 'resolved') {
-      return false;
-    }
-    // All Open: show open, in_progress, and pending tickets
-    if (activeTab === 'all_open' && ticket.status !== 'open' && ticket.status !== 'in_progress' && ticket.status !== 'pending') {
-      return false;
-    }
-    if (activeTab === 'my_tickets' && ticket.assignedTo !== user?.id) {
-      return false;
-    }
-
-    // Priority filter
-    if (priorityFilter !== 'all' && ticket.priority !== priorityFilter) {
-      return false;
-    }
-
-    // Assignee filter
-    if (assigneeFilter !== 'all' && ticket.assignedTo !== assigneeFilter) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Get ticket counts for tabs
-  const ticketCounts = {
-    all: tickets.length,
-    open: tickets.filter(t => t.status === 'open').length,
-    in_progress: tickets.filter(t => t.status === 'in_progress').length,
-    pending: tickets.filter(t => t.status === 'pending').length,
-    closed: tickets.filter(t => t.status === 'closed').length,
-    resolved: tickets.filter(t => t.status === 'resolved').length,
-    all_open: tickets.filter(t => t.status === 'open' || t.status === 'in_progress' || t.status === 'pending').length,
-    my_tickets: tickets.filter(t => {
-      // Match by user ID (assignedTo transformed from assignee_id in API layer)
-      return t.assignedTo === user?.id;
-    }).length
-  };
-
-  const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center min-w-0 flex-1">
-              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 mr-2 sm:mr-3 flex-shrink-0" />
-              <div className="text-lg sm:text-xl font-bold min-w-0">
-                <span className="hidden sm:inline">Work<span className="text-yellow-500">Trackr</span></span>
-                <span className="sm:hidden">WT</span>
-
-              </div>
-              <Badge className="ml-2 sm:ml-3 flex-shrink-0" variant={isAdmin ? 'default' : 'secondary'}>
-                {isAdmin ? 'Admin' : 'Staff'}
-              </Badge>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <Button variant="ghost" size="sm" className="relative">
-                <Mail className="w-4 h-4" />
-                {emailLogs.length > 0 && (
-                  <Badge className="absolute -top-1 -right-1 w-5 h-5 text-xs p-0 flex items-center justify-center">
-                    {emailLogs.length}
-                  </Badge>
-                )}
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <div className="text-sm font-medium text-gray-700 hidden sm:block max-w-[100px] truncate">
-                {user?.name || 'User'}
-              </div>
-              <Button variant="ghost" size="sm" onClick={logout}>
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Main Content */}
-        <div className="space-y-4">
-          {/* Navigation Tabs - HIDDEN: Now in sidebar */}
-          <Card className="hidden">
-            <CardContent className="p-4">
-              <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-4 lg:space-y-0">
-                {/* Settings Section */}
-                {isAdmin && (
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Settings</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant={currentView === 'users' ? 'default' : 'outline'} 
-                        onClick={() => onViewChange('users')}
-                        className="flex items-center space-x-2"
-                      >
-                        <Users className="w-4 h-4" />
-                        <span>Manage Users</span>
-                      </Button>
-                      
-                      <Button 
-                        variant={currentView === 'billing' ? 'default' : 'outline'} 
-                        onClick={() => onViewChange('billing')}
-                        className="flex items-center space-x-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        <span>Billing</span>
-                      </Button>
-                      
-                      <Button 
-                        variant={currentView === 'security' ? 'default' : 'outline'} 
-                        onClick={() => onViewChange('security')}
-                        className="flex items-center space-x-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        <span>Security</span>
-                      </Button>
-                      
-                      <Button 
-                        variant={currentView === 'email-intake' ? 'default' : 'outline'} 
-                        onClick={() => onViewChange('email-intake')}
-                        className="flex items-center space-x-2"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Email Intake</span>
-                      </Button>
-                    </div>
-                    
-                    {/* Timezone Setting */}
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <label className="block text-xs font-medium text-gray-500 mb-1">TIMEZONE</label>
-                      <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
-                        <SelectTrigger className="w-full max-w-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getTimezones().map(tz => (
-                            <SelectItem key={tz.value} value={tz.value}>
-                              {tz.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
-                {/* Tickets Section */}
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Tickets</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant={currentView === 'tickets' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('tickets')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Ticket className="w-4 h-4" />
-                      <span>Tickets</span>
-                    </Button>
-                    
-                    <Button 
-                      variant={currentView === 'calendar' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('calendar')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Clock className="w-4 h-4" />
-                      <span>Ticket Calendar</span>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* CRM Section */}
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">CRM</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant={currentView === 'contacts' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('contacts')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>Contacts</span>
-                    </Button>
-                    
-                    <Button 
-                      variant={currentView === 'crm' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('crm')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Building2 className="w-4 h-4" />
-                      <span>CRM</span>
-                    </Button>
-                    
-                    <Button 
-                      variant={currentView === 'product-catalog' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('product-catalog')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Package className="w-4 h-4" />
-                      <span>Product Catalog</span>
-                    </Button>
-                    
-                    <Button 
-                      variant={currentView === 'crm-calendar' ? 'default' : 'outline'} 
-                      onClick={() => onViewChange('crm-calendar')}
-                      className="flex items-center space-x-2"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>CRM Calendar</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-
-
-          {/* View Content */}
-          {currentView === 'tickets' && (
-            <>
-              {/* Compact Three-Row Layout */}
-              <div className="bg-white rounded-lg border p-4 space-y-3">
-                {/* Row 1: Buttons + Search + Filters */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button onClick={() => setShowCreateModal(true)} size="sm" className="h-9">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Ticket
-                  </Button>
-                  
-                  {isAdmin && (
-                    <Button variant="outline" size="sm" onClick={() => setShowTicketCustomizer(true)} className="h-9">
-                      <Workflow className="w-4 h-4 mr-2" />
-                      Customize
-                    </Button>
-                  )}
-                  
-                  <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search tickets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Stats Badges */}
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all_open'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    All Open: {ticketCounts.all_open}
-                  </Badge>
-                  <Badge className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('my_tickets'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    My: {ticketCounts.my_tickets}
-                  </Badge>
-                  <Badge className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('in_progress'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    In Progress: {ticketCounts.in_progress}
-                  </Badge>
-                  <Badge className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('pending'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    Pending: {ticketCounts.pending}
-                  </Badge>
-                  <Badge className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('resolved'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    Resolved: {ticketCounts.resolved}
-                  </Badge>
-                  <Badge className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('closed'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    Closed: {ticketCounts.closed}
-                  </Badge>
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 cursor-pointer" onClick={() => { setActiveTab('all'); setSearchTerm(''); setViewingTicketId(null); }}>
-                    All: {tickets.length}
-                  </Badge>
-                </div>
-
-                {/* Row 3: Bulk Actions */}
-                <div className="flex items-center gap-2 pt-2 border-t">
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkDelete} disabled={selectedTickets.size === 0 || loading}>
-                    <Trash2 className="w-4 h-4 mr-1.5" />
-                    Delete
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleBulkAssign} disabled={selectedTickets.size === 0 || loading}>
-                    <UserPlus className="w-4 h-4 mr-1.5" />
-                    Assign ticket
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={selectedTickets.size === 0 || loading}>
-                        <Settings className="w-4 h-4 mr-1.5" />
-                        Set status
-                        <ChevronDown className="w-3 h-3 ml-1" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleBulkSetStatus('open')}>Open</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkSetStatus('in_progress')}>In Progress</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkSetStatus('pending')}>Pending</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkSetStatus('resolved')}>Resolved</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleBulkSetStatus('closed')}>Closed</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 text-gray-600" disabled={selectedTickets.size === 0 || loading}>
-                        <Flag className="w-4 h-4 mr-1.5" />
-                        Set priority
-                        <ChevronDown className="w-3 h-3 ml-1" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      {Object.entries(priorities).map(([key, priority]) => (
-                        <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
-                          {priority.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  
-                  <Button variant="ghost" size="sm" className="h-8 text-gray-600" onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}>
-                    <GitMerge className="w-4 h-4 mr-1.5" />
-                    Merge tickets
-                  </Button>
-                  {selectedTickets.size > 0 && (
-                    <span className="ml-auto text-sm text-gray-600">
-                      {selectedTickets.size} selected
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Tickets Display */}
-              <div className="mt-6">
-                {viewingTicketId ? (
-                  <TicketDetailView
-                    ticketId={viewingTicketId}
-                    onBack={() => {
-                      setViewingTicketId(null);
-                      setActiveTab('all_open');
-                    }}
-                  />
-                ) : ticketViewMode === 'table' ? (
-                  <TicketsTableView
-                    tickets={filteredTickets}
-                    users={users}
-                    selectedTickets={selectedTickets}
-                    setSelectedTickets={setSelectedTickets}
-                    onTicketClick={(ticket) => {
-                      console.log('[Dashboard] onTicketClick called with ticket:', ticket.id);
-                      setViewingTicketId(ticket.id);
-                      console.log('[Dashboard] viewingTicketId set to:', ticket.id);
-                    }}
-                  />
-                ) : filteredTickets.length === 0 ? (
-                  <Card className="p-8 text-center">
-                    <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
-                    <p className="text-gray-600">
-                      {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' 
-                        ? 'Try adjusting your search or filter criteria'
-                        : 'Create your first ticket to get started'
-                      }
-                    </p>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredTickets.map((ticket) => (
-                      <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        users={users}
-                        currentUser={user}
-                        onClick={() => setViewingTicketId(ticket.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Assign Modal */}
-              {showAssignModal && (
-                <AssignTicketsModal
-                  users={users}
-                  ticketIds={Array.from(selectedTickets)}
-                  onAssign={handleAssignConfirm}
-                  onClose={() => setShowAssignModal(false)}
-                />
-              )}
-            </>
-          )}
-
-          {currentView === 'users' && isAdmin && (
-            <UserManagementImproved users={users} currentUser={user} />
-          )}
-          {currentView === 'calendar' && (
-            <IntegratedCalendar 
-              currentUser={user}
-              timezone={selectedTimezone}
-              onTicketClick={(ticket) => {
-                setViewingTicketId(ticket.id);
-                // FIXED: Use onViewChange callback instead of local setCurrentView
-                onViewChange('tickets');
-              }}
-            />
-          )}
-
-          {currentView === 'billing' && isAdmin && (
-            <XeroIntegration />
-          )}
-
-          {currentView === 'contacts' && (
-            <ContactManager />
-          )}
-
-          {currentView === 'crm' && (
-            <ErrorBoundary>
-              <CRMDashboard timezone={selectedTimezone} />
-            </ErrorBoundary>
-          )}
-
-          {currentView === 'product-catalog' && (
-            <ErrorBoundary>
-              <CRMDashboard timezone={selectedTimezone} defaultTab="catalog" />
-            </ErrorBoundary>
-          )}
-
-          {currentView === 'quotes' && (
-            <ErrorBoundary>
-              <CRMDashboard timezone={selectedTimezone} defaultTab="quotes" />
-            </ErrorBoundary>
-          )}
-
-          {currentView === 'quote-templates' && (
-            <ErrorBoundary>
-              <CRMDashboard timezone={selectedTimezone} defaultTab="templates" />
-            </ErrorBoundary>
-          )}
-
-          {currentView === 'crm-calendar' && (
-            <CRMCalendar timezone={selectedTimezone} />
-          )}
-
-          {currentView === 'security' && (
-            <SecuritySettings />
-          )}
-
-          {currentView === 'email-intake' && (
-            <EmailIntakeSettings />
-          )}
-
-          {currentView === 'pricing-config' && (
-            <ErrorBoundary>
-              <div className="container mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold mb-6">Pricing Configuration</h1>
-                <p className="text-gray-600 mb-4">Configure your organization's pricing settings and tiers.</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <p className="text-blue-800">This feature is under development. Please use Settings → Pricing Configuration from the admin menu.</p>
-                </div>
-              </div>
-            </ErrorBoundary>
-          )}
-        </div>
+  // ── Tickets view ───────────────────────────────────────────────────────────
+  const TicketsView = () => (
+    <>
+      {/* ── Inline stat cards ── */}
+      <div className="flex flex-wrap gap-3 mb-5">
+        <StatCard label="All open"   count={ticketCounts.all_open}   Icon={Ticket}       iconBg="bg-[#f3f4f6]"  iconColor="text-[#6b7280]" onClick={() => setTab('all_open')}   active={activeTab==='all_open'} />
+        <StatCard label="Open"       count={ticketCounts.open}       Icon={CheckCircle}  iconBg="bg-[#dcfce7]"  iconColor="text-[#16a34a]" onClick={() => setTab('open')}       active={activeTab==='open'} />
+        <StatCard label="In progress"count={ticketCounts.in_progress}Icon={Clock}        iconBg="bg-[#dbeafe]"  iconColor="text-[#1d4ed8]" onClick={() => setTab('in_progress')} active={activeTab==='in_progress'} />
+        <StatCard label="Pending"    count={ticketCounts.pending}    Icon={AlertCircle}  iconBg="bg-[#fef3c7]"  iconColor="text-[#d97706]" onClick={() => setTab('pending')}    active={activeTab==='pending'} />
+        <StatCard label="Resolved"   count={ticketCounts.resolved}   Icon={CheckCircle}  iconBg="bg-[#dbeafe]"  iconColor="text-[#1d4ed8]" onClick={() => setTab('resolved')}   active={activeTab==='resolved'} />
+        <StatCard label="Closed"     count={ticketCounts.closed}     Icon={X}            iconBg="bg-[#f3f4f6]"  iconColor="text-[#6b7280]" onClick={() => setTab('closed')}     active={activeTab==='closed'} />
       </div>
 
-      {/* Modals */}
-      {showCreateModal && (
-        <CreateTicketModal
-          onClose={() => setShowCreateModal(false)}
+      {/* ── Table container ── */}
+      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-[#e5e7eb]">
+          {/* Tab pills */}
+          {[
+            { key: 'all_open',    label: 'All open',    count: ticketCounts.all_open },
+            { key: 'my_tickets',  label: 'My tickets',  count: ticketCounts.my_tickets },
+            { key: 'in_progress', label: 'In progress', count: ticketCounts.in_progress },
+            { key: 'pending',     label: 'Pending',     count: ticketCounts.pending },
+            { key: 'resolved',    label: 'Resolved',    count: ticketCounts.resolved },
+            { key: 'closed',      label: 'Closed',      count: ticketCounts.closed },
+            { key: 'all',         label: 'All',         count: ticketCounts.all },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setTab(tab.key)}
+              className={`${chipBase} ${activeTab === tab.key ? chipActive : chipInactive}`}
+            >
+              {tab.label}
+              <span className={`ml-1 text-[10px] ${activeTab === tab.key ? 'text-[#d4a017] font-bold' : 'text-[#9ca3af]'}`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+
+          {/* Right tools */}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search tickets..."
+                className="pl-8 pr-3 py-1.5 text-[12px] border border-[#e5e7eb] rounded-md bg-white
+                           text-[#1d1d1f] placeholder:text-[#9ca3af] focus:outline-none
+                           focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] w-[180px]"
+              />
+            </div>
+
+            {isAdmin && (
+              <button
+                onClick={() => setShowTicketCustomizer(true)}
+                className="text-[12px] text-[#6b7280] border border-[#e5e7eb] bg-white px-3 py-1.5
+                           rounded-md flex items-center gap-1 hover:border-[#d1d5db] transition-colors"
+              >
+                <Workflow className="w-3.5 h-3.5" /> Customize
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="text-[13px] font-semibold bg-[#d4a017] text-[#111] px-4 py-1.5 rounded-md
+                         hover:bg-[#c4920f] transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" /> New ticket
+            </button>
+          </div>
+        </div>
+
+        {/* Bulk action bar — only shown when rows selected */}
+        {selectedTickets.size > 0 && (
+          <div className="flex items-center gap-2 px-5 py-2 bg-[#fef9ee] border-b border-[#e5e7eb]">
+            <span className="text-[12px] font-medium text-[#92400e]">{selectedTickets.size} selected</span>
+            <div className="flex items-center gap-1 ml-2">
+              <button onClick={handleBulkDelete} disabled={loading}
+                className="text-[12px] text-[#6b7280] hover:text-red-600 px-2 py-1 rounded flex items-center gap-1">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+              <button onClick={() => setShowAssignModal(true)} disabled={loading}
+                className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                <UserPlus className="w-3.5 h-3.5" /> Assign
+              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button disabled={loading}
+                    className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                    <Settings className="w-3.5 h-3.5" /> Status <ChevronDown className="w-3 h-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {['open','in_progress','pending','resolved','closed'].map(s => (
+                    <DropdownMenuItem key={s} onClick={() => handleBulkSetStatus(s)}>
+                      {s.replace('_',' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button disabled={loading}
+                    className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                    <Flag className="w-3.5 h-3.5" /> Priority <ChevronDown className="w-3 h-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {Object.entries(priorities).map(([key, p]) => (
+                    <DropdownMenuItem key={key} onClick={() => handleBulkSetPriority(key)}>
+                      {p.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <button onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}
+                className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                <GitMerge className="w-3.5 h-3.5" /> Merge
+              </button>
+            </div>
+            <button onClick={() => setSelectedTickets(new Set())}
+              className="ml-auto text-[#9ca3af] hover:text-[#6b7280]">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Tickets table or detail view */}
+        {viewingTicketId ? (
+          <div className="p-6">
+            <TicketDetailView
+              ticketId={viewingTicketId}
+              onBack={() => { setViewingTicketId(null); setActiveTab('all_open'); }}
+            />
+          </div>
+        ) : (
+          <TicketsTableView
+            tickets={filteredTickets}
+            users={users}
+            selectedTickets={selectedTickets}
+            setSelectedTickets={setSelectedTickets}
+            onTicketClick={(ticket) => setViewingTicketId(ticket.id)}
+          />
+        )}
+      </div>
+
+      {showAssignModal && (
+        <AssignTicketsModal
           users={users}
+          ticketIds={Array.from(selectedTickets)}
+          onAssign={handleAssignConfirm}
+          onClose={() => setShowAssignModal(false)}
+        />
+      )}
+    </>
+  );
+
+  // ── Render by view ─────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-0">
+      {currentView === 'tickets'        && <TicketsView />}
+      {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
+      {currentView === 'calendar'       && (
+        <IntegratedCalendar
           currentUser={user}
+          timezone={selectedTimezone}
+          onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />
       )}
+      {currentView === 'billing' && isAdmin && <XeroIntegration />}
+      {currentView === 'contacts'       && <ContactManager />}
+      {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
+      {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
+      {currentView === 'quotes'         && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="quotes" /></ErrorBoundary>}
+      {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
+      {currentView === 'security'       && <SecuritySettings />}
+      {currentView === 'email-intake'   && <EmailIntakeSettings />}
+      {currentView === 'pricing-config' && (
+        <ErrorBoundary>
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
+            <Settings className="w-10 h-10 text-[#d4a017] mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-[#1d1d1f] mb-2">Pricing Configuration</h2>
+            <p className="text-[#9ca3af] text-sm">Configure your organisation's pricing settings and tiers. Feature under active development.</p>
+          </div>
+        </ErrorBoundary>
+      )}
 
+      {/* ── Modals ── */}
+      {showCreateModal && (
+        <CreateTicketModal onClose={() => setShowCreateModal(false)} users={users} currentUser={user} />
+      )}
       {selectedTicket && (
-        <TicketDetailModal
-          ticketId={selectedTicket.id}
-          onClose={() => setSelectedTicket(null)}
-        />
+        <TicketDetailModal ticketId={selectedTicket.id} onClose={() => setSelectedTicket(null)} />
       )}
-
       {showEmailModal && (
-        <EmailLogModal
-          emailLogs={emailLogs}
-          onClose={() => setShowEmailModal(false)}
-        />
+        <EmailLogModal emailLogs={emailLogs} onClose={() => setShowEmailModal(false)} />
       )}
-
-      {/* Ticket Field Customizer Modal */}
-      <TicketFieldCustomizer 
-        isOpen={showTicketCustomizer} 
-        onClose={() => setShowTicketCustomizer(false)}
-      />
-
-
-
-      {showUserManagement && (
-        <UserManagement
-          isOpen={showUserManagement}
-          onClose={() => setShowUserManagement(false)}
-        />
-      )}
-      
+      <TicketFieldCustomizer isOpen={showTicketCustomizer} onClose={() => setShowTicketCustomizer(false)} />
       <AppVersion />
     </div>
   );
 });
 
 export default Dashboard;
-

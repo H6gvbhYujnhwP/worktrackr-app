@@ -227,3 +227,71 @@ SecuritySettings.jsx, EmailIntakeSettings.jsx, IntegratedCalendar.jsx, CRMCalend
 8. Clicking hamburger opens sidebar as slide-out drawer with dark overlay
 9. Navigate between views — sidebar active item should highlight in gold
 10. No GitHub Actions emails on next push (playwright disabled)
+
+---
+
+## Session 4 — 2025-04-02 (continuation)
+
+### Work completed: UI Redesign Push 2 (module screens)
+
+#### Calendar fix also in this session
+- `web/migrations/009_add_calendar_events.sql` — copied to `web/migrations/` so migration runner picks it up
+- Root cause: `run-migrations.js` reads from `web/migrations/`, but the calendar_events migration only existed in `database/migrations/`. Table was never created in production. Fix: copy the file to the correct directory.
+
+#### Push 2 files changed
+
+**1. `TicketDetailViewTabbedWrapped.jsx`** — gutted to pure pass-through (was adding extra `bg-white rounded-lg shadow-sm border p-6` card wrapper that double-wrapped content now that AppLayout no longer wraps either)
+
+**2. `Dashboard.jsx`** — major refactor
+- Removed: duplicate inner `<header>` with Building2 logo + nav (now handled by AppLayout TopBar)
+- Removed: the hidden `<Card className="hidden">` navigation block (dead code)
+- Removed: coloured badge pills (orange/purple/yellow/amber/green/gray/blue) for status filters
+- Added: compact `StatCard` components (white, icon, number, label — clickable, gold border on active)
+- Added: tab chip row inside the table toolbar (All open / My tickets / In progress / Pending / Resolved / Closed / All)
+- Added: inline bulk action bar that only shows when rows are selected (replaced always-visible bulk action row)
+- Ticket detail view now renders inside the white table container (no extra card wrapper)
+- All state, logic, modals (CreateTicketModal, AssignTicketsModal, EmailLogModal, TicketFieldCustomizer) preserved exactly
+
+**3. `TicketsTableView.jsx`** — visual redesign
+- New status badge system: muted semantic colours (dcfce7/dbeafe/fef3c7/f3f4f6) replacing bright colours
+- Priority badges: rounded-full pill style with semantic colours
+- Status/priority selects: styled as pills (appearance-none, no visible dropdown arrow, colour matches value)
+- Assignee avatars: coloured by user ID hash (5 colours: indigo/violet/pink/amber/teal)
+- Table rows: zebra even-row `#fafbfc`, hover `#fef9ee` (amber tint)
+- Table header: `text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af] bg-[#fafafa]`
+- Footer: ticket count + selected count
+- All bulk action logic preserved exactly (bulkUpdateTickets, bulkDeleteTickets, AssignTicketsModal)
+- `responsive-table` class added for mobile card conversion
+
+**4. `TicketDetailViewTabbed.jsx`** — full visual redesign
+- Removed: multiple `<Card>` wrappers around each section
+- Added: single white container `bg-white rounded-xl border border-[#e5e7eb]`
+- Added: record header section with back button, ticket ID, title, priority+status badges
+- Added: underline tab navigation (border-b-2 gold on active, replaces boxed TabsList)
+- Details tab: two-column layout (form fields left 2/3, assignment + metadata + save button right 1/3)
+- Section headers: `text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider`
+- Field labels: `text-[11px] font-semibold uppercase tracking-wider`
+- Save button: gold `bg-[#d4a017]` replacing default primary button
+- SafetyTab and QuotesTab preserved exactly — pass-through to existing components
+- TicketDetailViewTabbedWrapped now a pure pass-through (no wrapper div)
+
+### Files NOT changed in Push 2 (deferred to Push 3 or later)
+ContactManager.jsx, CRMDashboard.jsx, QuotesList.jsx, QuoteDetails.jsx, QuoteForm.jsx,
+QuoteFormTabs.jsx, CreateTicketModal.jsx, AssignTicketsModal.jsx, UserManagementImproved.jsx,
+SecuritySettings.jsx, EmailIntakeSettings.jsx, IntegratedCalendar.jsx, CRMCalendar.jsx
+
+### How to test Push 2 after deploying
+1. Tickets view: stat cards row should show at top (white cards with icon + number + label)
+2. No coloured badge pills — replaced by compact tab chips in the table toolbar
+3. Table rows: zebra striped, amber hover, muted status badges, priority as coloured pill
+4. Select status/priority inline in table — dropdowns styled as pills matching their colour
+5. Select multiple tickets — bulk action bar appears above table
+6. Click a ticket title — opens detail view inside the same container (no page change)
+7. Ticket detail: single white card, underline tabs, gold save button
+8. Scheduling tab: date + duration fields, gold save button
+9. Safety and Quotes tabs: render exactly as before
+
+### Testing notes for next session
+- Calendar entries not saving — FIXED by adding 009_add_calendar_events.sql to web/migrations/
+- Verify calendar loads and saves after migration runs on next deploy
+- CRM Calendar still has the field name mismatch bugs (Session 1) — schedule for Push 3

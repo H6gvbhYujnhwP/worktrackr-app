@@ -179,10 +179,10 @@ Apply new design patterns to all module screens. Test Push 1 first before starti
 
 Order to follow (lowest risk first):
 
-- [ ] `TicketDetailViewTabbedWrapped.jsx` — remove extra white card wrapper (pass-through only)
-- [ ] `Dashboard.jsx` — replace big stat cards with compact inline stats row; remove legacy hidden header
-- [ ] `TicketsTableView.jsx` — new table container with toolbar, zebra rows, priority bars, mobile card conversion
-- [ ] `TicketDetailViewTabbed.jsx` — single container, underline tabs, label-value rows
+- [x] `TicketDetailViewTabbedWrapped.jsx` — remove extra white card wrapper (pass-through only)
+- [x] `Dashboard.jsx` — replace big stat cards with compact inline stats row; remove legacy hidden header
+- [x] `TicketsTableView.jsx` — new table container with toolbar, zebra rows, priority bars, mobile card conversion
+- [x] `TicketDetailViewTabbed.jsx` — single container, underline tabs, label-value rows
 - [ ] `ContactManager.jsx` — same table pattern as tickets
 - [ ] `CRMDashboard.jsx` — table pattern for product catalog
 - [ ] `QuotesList.jsx` — table pattern
