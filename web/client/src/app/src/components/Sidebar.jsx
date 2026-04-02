@@ -1,228 +1,175 @@
-import React, { useState } from 'react';
-import { 
-  Home, 
-  Ticket, 
-  Users, 
-  Calendar, 
-  Package, 
-  FileText, 
-  Settings, 
-  UserCog, 
-  CreditCard, 
-  Shield, 
-  Mail,
-  DollarSign,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  List,
-  UserCircle
+// web/client/src/app/src/components/Sidebar.jsx
+// REDESIGN: Flat navigation, dark sidebar, gold accent, no nested accordions.
+// Props unchanged: { currentPage, onNavigate, user, isAdmin, isCollapsed }
+// isCollapsed is now controlled by AppLayout (passed as prop, not internal state).
+
+import React from 'react';
+import {
+  Home, Ticket, Calendar, UserCircle, Package,
+  FileText, UserCog, CreditCard, Shield, Mail,
+  DollarSign, LogOut
 } from 'lucide-react';
 
-const Sidebar = ({ currentPage, onNavigate, user, isAdmin }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({
-    tickets: true,
-    crm: true,
-    settings: true
-  });
+// ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
+const MAIN_ITEMS = [
+  { id: 'all-tickets',     label: 'Tickets',      icon: Ticket,     view: 'tickets'  },
+  { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,   view: 'calendar' },
+];
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+const CRM_ITEMS = [
+  { id: 'contacts',        label: 'Contacts',     icon: UserCircle, view: 'contacts'       },
+  { id: 'product-catalog', label: 'Products',     icon: Package,    view: 'product-catalog' },
+  { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'          },
+  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'    },
+];
 
-  const navigationItems = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: Home,
-      view: 'tickets'
-    },
-    {
-      id: 'tickets',
-      label: 'Tickets',
-      icon: Ticket,
-      view: 'tickets',
-      subItems: [
-        { id: 'all-tickets', label: 'All Tickets', view: 'tickets', icon: List },
-        { id: 'ticket-calendar', label: 'Ticket Calendar', view: 'calendar', icon: Calendar }
-      ]
-    },
-    {
-      id: 'crm',
-      label: 'CRM',
-      icon: Users,
-      view: 'crm',
-      subItems: [
-        { id: 'contacts', label: 'Contacts', view: 'contacts', icon: UserCircle },
-        { id: 'product-catalog', label: 'Product Catalog', view: 'product-catalog', icon: Package },
-        { id: 'crm-calendar', label: 'CRM Calendar', view: 'crm-calendar', icon: Calendar },
-        { id: 'quotes', label: 'Quotes', view: 'quotes', icon: FileText },
-        { id: 'quote-templates', label: 'Quote Templates', view: 'quote-templates', icon: FileText }
-      ]
-    }
-  ];
+const ACCOUNT_ITEMS = [
+  { id: 'manage-users',   label: 'Users',    icon: UserCog,    view: 'users'          },
+  { id: 'billing',        label: 'Billing',  icon: CreditCard, view: 'billing'        },
+  { id: 'pricing-config', label: 'Pricing',  icon: DollarSign, view: 'pricing-config' },
+  { id: 'security',       label: 'Security', icon: Shield,     view: 'security'       },
+  { id: 'email-intake',   label: 'Email Intake', icon: Mail,   view: 'email-intake'   },
+];
 
-  if (isAdmin) {
-    navigationItems.push({
-      id: 'settings',
-      label: 'Settings',
-      icon: Settings,
-      view: 'users',
-      subItems: [
-        { id: 'manage-users', label: 'Manage Users', view: 'users', icon: UserCog },
-        { id: 'pricing-config', label: 'Pricing Configuration', view: 'pricing-config', icon: DollarSign },
-        { id: 'billing', label: 'Billing', view: 'billing', icon: CreditCard },
-        { id: 'security', label: 'Security', view: 'security', icon: Shield },
-        { id: 'email-intake', label: 'Email Intake', view: 'email-intake', icon: Mail }
-      ]
-    });
+// ─── NavItem ─────────────────────────────────────────────────────────────────
+const NavItem = ({ item, isActive, isCollapsed, onClick, badge }) => {
+  const Icon = item.icon;
+  return (
+    <button
+      onClick={() => onClick(item.view)}
+      title={isCollapsed ? item.label : ''}
+      className={`
+        w-full flex items-center gap-2.5 rounded-lg text-[13px] mb-0.5
+        transition-colors duration-150 outline-none
+        ${isCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2'}
+        ${isActive
+          ? 'bg-[rgba(212,160,23,0.12)] text-[#d4a017]'
+          : 'text-[#999] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#ccc]'}
+      `}
+    >
+      <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.8} />
+      {!isCollapsed && (
+        <>
+          <span className="flex-1 text-left">{item.label}</span>
+          {badge > 0 && (
+            <span className="text-[10px] font-semibold bg-[#d4a017] text-[#111] px-1.5 py-0.5 rounded-full leading-none">
+              {badge}
+            </span>
+          )}
+        </>
+      )}
+    </button>
+  );
+};
+
+// ─── SectionLabel ────────────────────────────────────────────────────────────
+const SectionLabel = ({ label, isCollapsed }) => {
+  if (isCollapsed) {
+    return <div className="w-5 h-px bg-[#222228] mx-auto my-2" />;
   }
+  return (
+    <div className="text-[10px] font-semibold text-[#555] uppercase tracking-[1px] px-3 pt-4 pb-1.5">
+      {label}
+    </div>
+  );
+};
 
-  const handleNavigation = (view) => {
-    if (onNavigate) {
-      onNavigate(view);
-    }
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isCollapsed = false }) => {
+
+  const handleNav = (view) => {
+    if (onNavigate) onNavigate(view);
   };
+
+  // Open ticket count badge — read from DOM-accessible data if needed, 
+  // kept simple here (badge is optional enhancement, not breaking).
+  const openBadge = 0; // wired up in Push 2 when Dashboard passes count down
 
   return (
-    <div 
-      className={`h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-60'
-      }`}
-    >
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+    <div className="h-full bg-[#111113] border-r border-[#222228] flex flex-col select-none">
+
+      {/* ── Logo ── */}
+      <div className={`flex items-center gap-2.5 border-b border-[#222228] flex-shrink-0
+        ${isCollapsed ? 'justify-center px-0 py-[18px]' : 'px-5 py-[18px]'}`}>
+        <div className="w-[30px] h-[30px] bg-[#d4a017] rounded-[7px] flex items-center justify-center flex-shrink-0">
+          <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+            <rect x="3" y="5"  width="14" height="1.8" rx="0.9" fill="#111"/>
+            <rect x="3" y="9"  width="14" height="1.8" rx="0.9" fill="#111"/>
+            <rect x="3" y="13" width="8"  height="1.8" rx="0.9" fill="#111"/>
+          </svg>
+        </div>
         {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="4" width="16" height="16" rx="2" fill="#1a1a1a" />
-              <rect x="7" y="7" width="10" height="2" fill="#fbbf24" />
-              <rect x="7" y="11" width="10" height="2" fill="#fbbf24" />
-              <rect x="7" y="15" width="6" height="2" fill="#fbbf24" />
-            </svg>
-            <span className="font-bold text-lg">
-              Work<span className="text-yellow-500">Trackr</span>
-            </span>
-          </div>
+          <span className="text-[15px] font-bold text-white leading-none">
+            Work<span className="text-[#d4a017]">Trackr</span>
+          </span>
         )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-5 h-5 text-gray-600" />
-          ) : (
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
-          )}
-        </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.id;
-          const isExpanded = expandedSections[item.id];
+      {/* ── Navigation ── */}
+      <nav className={`flex-1 overflow-y-auto py-3 ${isCollapsed ? 'px-2' : 'px-3'}`}>
 
-          return (
-            <div key={item.id} className="mb-1">
-              <button
-                onClick={() => {
-                  if (item.subItems) {
-                    toggleSection(item.id);
-                  } else {
-                    handleNavigation(item.view);
-                  }
-                }}
-                className={`w-full flex items-center px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
-                } ${isCollapsed ? 'justify-center' : 'justify-start'}`}
-                title={isCollapsed ? item.label : ''}
-              >
-                <Icon className={`w-5 h-5 ${isCollapsed ? '' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 text-left">{item.label}</span>
-                    {item.subItems && (
-                      <ChevronRight
-                        className={`w-4 h-4 transition-transform ${
-                          isExpanded ? 'rotate-90' : ''
-                        }`}
-                      />
-                    )}
-                  </>
-                )}
-              </button>
+        <SectionLabel label="Main" isCollapsed={isCollapsed} />
+        {MAIN_ITEMS.map(item => (
+          <NavItem
+            key={item.id}
+            item={item}
+            isActive={currentPage === item.id}
+            isCollapsed={isCollapsed}
+            onClick={handleNav}
+            badge={item.id === 'all-tickets' ? openBadge : 0}
+          />
+        ))}
 
-              {/* Sub-items */}
-              {item.subItems && !isCollapsed && isExpanded && (
-                <div className="ml-4 mt-1 space-y-1">
-                  {item.subItems.map((subItem) => {
-                    const SubIcon = subItem.icon;
-                    const isSubActive = currentPage === subItem.id;
+        <SectionLabel label="CRM" isCollapsed={isCollapsed} />
+        {CRM_ITEMS.map(item => (
+          <NavItem
+            key={item.id}
+            item={item}
+            isActive={currentPage === item.id}
+            isCollapsed={isCollapsed}
+            onClick={handleNav}
+          />
+        ))}
 
-                    return (
-                      <button
-                        key={subItem.id}
-                        onClick={() => handleNavigation(subItem.view)}
-                        className={`w-full flex items-center px-4 py-2 text-sm transition-colors rounded-lg ${
-                          isSubActive
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        {SubIcon && <SubIcon className="w-4 h-4 mr-2" />}
-                        <span>{subItem.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {isAdmin && (
+          <>
+            <SectionLabel label="Account" isCollapsed={isCollapsed} />
+            {ACCOUNT_ITEMS.map(item => (
+              <NavItem
+                key={item.id}
+                item={item}
+                isActive={currentPage === item.id}
+                isCollapsed={isCollapsed}
+                onClick={handleNav}
+              />
+            ))}
+          </>
+        )}
       </nav>
 
-      {/* User Profile */}
-      <div className="border-t border-gray-200 p-4">
-        {!isCollapsed ? (
-          <div className="space-y-2">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-                {user?.name?.charAt(0) || 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.name || 'User'}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {user?.email || ''}
-                </p>
-              </div>
+      {/* ── User footer ── */}
+      <div className={`border-t border-[#222228] flex-shrink-0
+        ${isCollapsed ? 'p-3 flex justify-center' : 'p-4 flex items-center gap-2.5'}`}>
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600
+                        flex items-center justify-center text-[12px] font-semibold text-white flex-shrink-0">
+          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+        </div>
+        {!isCollapsed && (
+          <>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-medium text-[#eee] truncate">{user?.name || 'User'}</div>
+              <div className="text-[11px] text-[#666] truncate">{user?.email || ''}</div>
             </div>
             <button
-              onClick={() => handleNavigation('/logout')}
-              className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+              onClick={() => handleNav('/logout')}
+              title="Log out"
+              className="w-7 h-7 rounded-md flex items-center justify-center
+                         text-[#666] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#999]
+                         transition-colors flex-shrink-0"
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              <span>Logout</span>
+              <LogOut className="w-4 h-4" strokeWidth={1.8} />
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => handleNavigation('/logout')}
-            className="w-full flex items-center justify-center p-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          </>
         )}
       </div>
     </div>

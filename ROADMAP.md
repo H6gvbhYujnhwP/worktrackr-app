@@ -161,3 +161,44 @@ _Last updated: 2025-04-01 (Session 1)_
 - [ ] Add CSRF protection
 - [ ] Database query performance audit
 - [ ] Caching layer for frequently read data
+
+---
+
+## UI Redesign — Concept 3 "Modern Enterprise"
+
+### Push 1 — DONE (Session 3, 2025-04-02)
+Shell layer complete:
+- [x] App.css — new colour tokens, gold accent, dark sidebar vars, removed legacy hacks
+- [x] Sidebar.jsx — flat nav, dark background, section headers, no nesting
+- [x] AppLayout.jsx — no double wrapper, dark mobile header, clean top bar, tablet collapse
+- [x] playwright.yml — disabled CI emails
+
+### Push 2 — TODO (next session, after Push 1 tested on Render)
+
+Apply new design patterns to all module screens. Test Push 1 first before starting Push 2.
+
+Order to follow (lowest risk first):
+
+- [ ] `TicketDetailViewTabbedWrapped.jsx` — remove extra white card wrapper (pass-through only)
+- [ ] `Dashboard.jsx` — replace big stat cards with compact inline stats row; remove legacy hidden header
+- [ ] `TicketsTableView.jsx` — new table container with toolbar, zebra rows, priority bars, mobile card conversion
+- [ ] `TicketDetailViewTabbed.jsx` — single container, underline tabs, label-value rows
+- [ ] `ContactManager.jsx` — same table pattern as tickets
+- [ ] `CRMDashboard.jsx` — table pattern for product catalog
+- [ ] `QuotesList.jsx` — table pattern
+- [ ] `QuoteDetails.jsx` — single container detail pattern
+- [ ] `QuoteForm.jsx` / `QuoteFormTabs.jsx` — section headers, no nested card wrappers
+- [ ] `CreateTicketModal.jsx`, `AssignTicketsModal.jsx`, `SendQuoteModal.jsx` — modal header/body/footer pattern with gold primary button
+- [ ] `UserManagementImproved.jsx`, `SecuritySettings.jsx`, `EmailIntakeSettings.jsx` — settings page pattern
+- [ ] `IntegratedCalendar.jsx`, `CRMCalendar.jsx` — wrap in `bg-white rounded-xl border border-[#e5e7eb]`
+
+**Design rules for Push 2 (must follow for every component):**
+- Single white container: `bg-white rounded-xl border border-[#e5e7eb] overflow-hidden`
+- Table headers: `text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]`
+- Table rows: `text-[13px]`, zebra even rows `#fafbfc`, hover `#fef9ee`
+- Status badges: small pills, muted semantic colours (see badge map in ROADMAP)
+- Priority bars: 3px vertical coloured bar (red/amber/blue/green)
+- Buttons: gold primary `bg-[#d4a017] text-[#111113]`, secondary `border border-[#e5e7eb]`
+- Inputs: `border border-[#e5e7eb] rounded-lg focus:ring-[#d4a017]/30 focus:border-[#d4a017]`
+- No nested `<Card>` wrappers inside already-white containers
+- No `bg-gray-100` backgrounds inside content areas

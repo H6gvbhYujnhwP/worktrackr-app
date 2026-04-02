@@ -158,3 +158,72 @@ Files NOT changed (intentionally):
 
 #### Next: CRM Calendar
 Once Ticket Calendar is confirmed working on Render, start Session 3 with the CRM Calendar rewrite.
+
+---
+
+## Session 3 — 2025-04-02
+
+### Work completed: UI Redesign Push 1 (shell layer)
+
+**Design direction selected:** Concept 3 "Modern Enterprise"
+- Dark sidebar `#111113` with gold `#d4a017` accent
+- Clean white top bar with page title + search hint + notification bell + context action button
+- No double content wrapper — children render directly on `#f5f5f7` background
+- Flat navigation — no nested accordions, no sub-items, no expandedSections state
+
+**Impact check performed before changes:**
+- `AppLayout.jsx` — only consumed by `DashboardWithLayout`, `QuotesListWithLayout`, `QuoteDetailsWithLayout`, `QuoteFormWithLayout`, `PricingConfigWithLayout`. Props interface unchanged: `{ children, user, isAdmin, onNavigate, lastUpdate, currentView }`. All wrappers verified compatible.
+- `Sidebar.jsx` — only consumed by `AppLayout.jsx`. Props interface updated: added `isCollapsed` (was internal state, now controlled by AppLayout for tablet auto-collapse). All call sites updated in AppLayout.
+- `App.css` — global styles only. No component imports this file directly; Vite loads it globally. Changes are CSS variable replacements and removing legacy mobile hack blocks.
+
+#### Fix 1 — `web/client/src/app/src/App.css`
+- Replaced all 62 `oklch()` `:root` variable values with explicit hex values
+- Brand primary changed from near-black to gold `#d4a017`
+- Sidebar variables changed to dark `#111113` background system
+- App background changed from white to `#f5f5f7` (light Apple-grey)
+- Removed legacy mobile hack blocks (`.mobile-card`, `.mobile-ticket-card`, `.mobile-tab`, `.ticket-customizer-modal` overrides with `!important` overrides — replaced by proper Tailwind classes in components)
+- Added `.responsive-table` mobile card conversion utility
+- Added `.table-zebra` and `.table-row-hover` utilities
+- Kept `.mobile-container` and `.force-wrap` utilities
+
+#### Fix 2 — `web/client/src/app/src/components/Sidebar.jsx` — full rewrite
+- Removed: `expandedSections` state, `toggleSection()`, all `subItems` arrays, nested accordion rendering
+- Added: flat section-grouped nav (MAIN / CRM / ACCOUNT), dark background, gold active state
+- `isCollapsed` moved from internal state to prop (controlled by AppLayout)
+- Removed: Quote Templates item (no longer needed)
+- Navigation items: Tickets, Calendar | Contacts, Products, Quotes, CRM Calendar | Users, Billing, Pricing, Security, Email Intake
+- User footer: avatar + name + email + logout icon
+
+#### Fix 3 — `web/client/src/app/src/components/AppLayout.jsx` — full rewrite
+- Removed: double content wrapper (`bg-gray-100 > p-4 > bg-white rounded-lg shadow-sm border p-4`)
+- Removed: calendar special-case exception (no longer needed)
+- Removed: verbose desktop top bar (welcome message, large search, help button, user profile card)
+- Removed: white mobile header
+- Added: dark `MobileHeader` component (matches sidebar colour)
+- Added: clean `TopBar` component (page title + search hint + notification + context button)
+- Added: tablet auto-collapse logic (768–1023px → 64px icon-only sidebar)
+- Added: `isCollapsed` prop passed to Sidebar
+- Added: context-aware primary action button (changes label per view)
+- Content: now renders directly with `p-4 md:p-6 lg:p-7 max-w-[1600px]` — no inner card
+
+#### Fix 4 — `.github/workflows/playwright.yml`
+- Changed `on: push / pull_request` to `on: workflow_dispatch`
+- GitHub Actions emails will stop on every push
+
+### Files NOT changed in Push 1 (pushed separately in Push 2)
+Dashboard.jsx, TicketsTableView.jsx, TicketDetailViewTabbed.jsx, TicketDetailViewTabbedWrapped.jsx,
+ContactManager.jsx, CRMDashboard.jsx, QuotesList.jsx, QuoteDetails.jsx, QuoteForm.jsx,
+QuoteFormTabs.jsx, CreateTicketModal.jsx, AssignTicketsModal.jsx, UserManagementImproved.jsx,
+SecuritySettings.jsx, EmailIntakeSettings.jsx, IntegratedCalendar.jsx, CRMCalendar.jsx
+
+### How to test Push 1 after deploying
+1. Hard-refresh the app (`Ctrl+Shift+R`) after Render deploys
+2. Sidebar should be dark (`#111113`) with gold `WorkTrackr` logo
+3. Navigation should be flat — no expand/collapse accordions, just clean sections: MAIN / CRM / ACCOUNT
+4. Top bar should show page title on left, search box + bell + gold button on right
+5. Content should sit directly on light grey background — NO white card wrapper around everything
+6. On tablet (resize browser to ~900px): sidebar should shrink to 64px icon-only mode, labels hidden
+7. On mobile (resize to <768px): sidebar should disappear, dark mobile header appears with hamburger
+8. Clicking hamburger opens sidebar as slide-out drawer with dark overlay
+9. Navigate between views — sidebar active item should highlight in gold
+10. No GitHub Actions emails on next push (playwright disabled)

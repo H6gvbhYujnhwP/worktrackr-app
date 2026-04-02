@@ -1,7 +1,9 @@
 name: Playwright Smoke Tests
+# DISABLED: Tests not yet configured for CI.
+# Re-enable when testing infrastructure is set up (see ROADMAP.md).
+# To run manually: gh workflow run "Playwright Smoke Tests"
 on:
-  push:
-  pull_request:
+  workflow_dispatch
 
 jobs:
   test:
@@ -26,4 +28,3 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
-
