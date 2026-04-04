@@ -117,8 +117,8 @@ const ContactManager = () => {
   // ── Data loading ─────────────────────────────────────────────────────────────
   useEffect(() => {
     loadContacts();
-    const intervalId = setInterval(() => { loadContacts(); }, 10000);
-    return () => clearInterval(intervalId);
+    // Polling removed — interval re-renders caused input focus loss in edit modal.
+    // Contacts reload automatically after create/update/delete operations.
   }, []);
 
   useEffect(() => {

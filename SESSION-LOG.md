@@ -3,13 +3,44 @@
 ---
 
 ## Current State
-- **Last session:** 2025-04-03 (Session 5)
+- **Last session:** 2025-04-04 (Session 6 — hotfix)
 - **Live URL:** https://worktrackr.cloud
 - **Admin panel:** https://worktrackr.cloud/admin87476463/dashboard
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** See Session 5 below
-- **Known broken:** CRM Calendar events (fixed in Burst 2, verify after next deploy)
-- **Next priority:** See ROADMAP.md — AI Phase 2 (audio transcription classification)
+- **Last fixes applied:** Input focus loss bug — Dashboard.jsx (tickets search) + ContactManager.jsx (edit modal)
+- **Known broken:** CRM Calendar events (fixed in Session 5 Burst 2, verify after deploy)
+- **Next priority:** See ROADMAP.md — Push 3 remaining components, then AI Phase 2
+
+---
+
+## Session 6 — 2025-04-04 (hotfix)
+
+### Bug fixed: Input focus loss on every keystroke — affects tickets search and contact edit modal
+
+Two separate instances of the same class of bug, both fixed.
+
+#### Bug 1 — `Dashboard.jsx` (tickets search input loses focus on every keystroke)
+
+**Root cause:** `const TicketsView = () => (...)` was defined *inside* the `Dashboard` function body. Every time `Dashboard` re-renders (which happens on every keystroke as `searchTerm` state updates), React creates a brand new function reference for `TicketsView`. React sees a different component type each render and fully unmounts/remounts the entire subtree — destroying focus on the search input after every character typed.
+
+**Fix:** Converted `const TicketsView = () => (...)` to a plain JSX variable `const ticketsViewJSX = (...)` and rendered it as `{currentView === 'tickets' && ticketsViewJSX}`. React reconciles JSX variables correctly without unmounting.
+
+**File changed:** `Dashboard.jsx`
+
+---
+
+#### Bug 2 — `ContactManager.jsx` (edit modal inputs lose focus mid-typing)
+
+**Root cause:** A `setInterval(() => loadContacts(), 10000)` was polling every 10 seconds. Each poll called `setContacts()` which triggered a full component re-render — including the edit modal — causing focused inputs to lose focus. Also manifested as only the first character appearing before focus was lost.
+
+**Fix:** Removed the polling interval entirely. Contacts still reload automatically after every create, update, and delete operation so the list stays current without background polling.
+
+**File changed:** `ContactManager.jsx`
+
+---
+
+#### Rule added for future sessions
+Never define sub-components (`const Foo = () => ...`) inside another component's function body. This is a React anti-pattern that causes full unmount/remount on every parent render. Always define them outside the parent function, or use inline JSX variables if they need to close over parent state.
 
 ---
 

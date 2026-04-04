@@ -180,8 +180,11 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   const setTab = (tab) => { setActiveTab(tab); setSearchTerm(''); setViewingTicketId(null); };
 
-  // ── Tickets view ───────────────────────────────────────────────────────────
-  const TicketsView = () => (
+  // ── Tickets view — rendered as inline JSX, NOT as a sub-component, to prevent
+  // focus loss on search input. Defining `const TicketsView = () => ...` inside
+  // the render function creates a new component type every render, causing React
+  // to unmount/remount the entire subtree and losing input focus on every keystroke.
+  const ticketsViewJSX = (
     <>
       {/* ── Inline stat cards ── */}
       <div className="flex flex-wrap gap-3 mb-5">
@@ -343,7 +346,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   // ── Render by view ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-0">
-      {currentView === 'tickets'        && <TicketsView />}
+      {currentView === 'tickets'        && ticketsViewJSX}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
       {currentView === 'calendar'       && (
         <IntegratedCalendar
