@@ -247,7 +247,11 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const StageNav = () => (
+  // Plain JSX variable — NOT a React component (no const StageNav = () => ...).
+  // Defining it as a component inside this function body would give it a new
+  // reference on every render, causing React to unmount/remount the stage nav
+  // every time any form field changes.
+  const stageNavJSX = (
     <div className="flex items-center gap-2 mb-6">
       {TICKET_FIELD_STAGES.map((s, idx) => {
         const Icon = s.icon;
@@ -284,7 +288,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4">
-          <StageNav />
+          {stageNavJSX}
 
           {/* Details */}
           <Card className="mb-4">

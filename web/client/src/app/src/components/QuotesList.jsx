@@ -87,7 +87,11 @@ export default function QuotesList() {
     else { setSortBy(field); setSortOrder('desc'); }
   };
 
-  const SortTh = ({ field, children }) => (
+  // Plain render helper — NOT a React component (no capital, returns JSX directly).
+  // Using a const SortTh = () => ... inside this function body would cause React
+  // to see a new component type on every render and unmount/remount the whole
+  // table header on every keystroke in the search box.
+  const renderSortTh = (field, children) => (
     <th
       className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa] cursor-pointer hover:text-[#374151] select-none"
       onClick={() => toggleSort(field)}
@@ -211,13 +215,13 @@ export default function QuotesList() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#e5e7eb]">
-                    <SortTh field="quote_number">Quote #</SortTh>
-                    <SortTh field="customer_name">Customer</SortTh>
+                    {renderSortTh('quote_number', 'Quote #')}
+                    {renderSortTh('customer_name', 'Customer')}
                     <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Title</th>
                     <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Status</th>
-                    <SortTh field="total_amount">Total</SortTh>
-                    <SortTh field="valid_until">Valid Until</SortTh>
-                    <SortTh field="created_at">Created</SortTh>
+                    {renderSortTh('total_amount', 'Total')}
+                    {renderSortTh('valid_until', 'Valid Until')}
+                    {renderSortTh('created_at', 'Created')}
                   </tr>
                 </thead>
                 <tbody>

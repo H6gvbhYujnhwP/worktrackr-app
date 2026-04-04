@@ -41,6 +41,38 @@ const contactSchema = z.object({
   customFields: z.object({}).optional().default({})
 }).strict(false);
 
+// ─── Response normaliser ───────────────────────────────────────────────────────
+// DB columns are snake_case; the frontend expects camelCase throughout.
+// Every row returned from the DB must pass through this before being sent to
+// the client, otherwise:
+//   1. Edit forms open with blank fields (contact.primaryContact = undefined)
+//   2. contactPersons gets silently wiped to [] on every save because
+//      JSON.stringify omits undefined, Zod's default([]) fills it, and the
+//      UPDATE then writes contact_persons = '[]' to the DB.
+function mapContact(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    name: row.name,
+    displayName: row.display_name || '',
+    primaryContact: row.primary_contact || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    website: row.website || '',
+    addresses: row.addresses || [],
+    accounting: row.accounting || {},
+    crm: row.crm || {},
+    contactPersons: row.contact_persons || [],
+    tags: row.tags || [],
+    notes: row.notes || '',
+    customFields: row.custom_fields || {},
+    organisationId: row.organisation_id,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // GET /api/contacts - Get all contacts for the organization
 router.get('/', async (req, res) => {
   try {
@@ -52,7 +84,7 @@ router.get('/', async (req, res) => {
       [organizationId]
     );
 
-    res.json(result.rows);
+    res.json(result.rows.map(mapContact));
   } catch (error) {
     console.error('Error fetching contacts:', error);
     res.status(500).json({ error: 'Failed to fetch contacts' });
@@ -103,7 +135,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(mapContact(result.rows[0]));
   } catch (error) {
     console.error('Error fetching contact:', error);
     res.status(500).json({ error: 'Failed to fetch contact' });
@@ -144,7 +176,7 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(mapContact(result.rows[0]));
   } catch (error) {
     console.error('Error creating contact:', error);
     if (error instanceof z.ZodError) {
@@ -171,7 +203,16 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Contact not found' });
     }
 
-    const validatedData = contactSchema.partial().parse(req.body);
+    // Parse with Zod, then strip any keys absent from the request body.
+    // Without this, Zod's .default([]) / .default({}) silently fills absent
+    // array/object fields, causing the UPDATE to overwrite real DB data
+    // (e.g. contactPersons → [] wipes all contact people on every save).
+    const presentKeys = new Set(Object.keys(req.body));
+    const parsedFull = contactSchema.partial().parse(req.body);
+    const validatedData = {};
+    for (const key of Object.keys(parsedFull)) {
+      if (presentKeys.has(key)) validatedData[key] = parsedFull[key];
+    }
 
     const updateFields = [];
     const updateValues = [];
@@ -247,7 +288,7 @@ router.put('/:id', async (req, res) => {
       updateValues
     );
 
-    res.json(result.rows[0]);
+    res.json(mapContact(result.rows[0]));
   } catch (error) {
     console.error('Error updating contact:', error);
     if (error instanceof z.ZodError) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -20,6 +20,79 @@ const getRiskLevel = (score) => {
   if (score <= 9) return { level: 'Medium', color: 'bg-yellow-100 text-yellow-800' };
   if (score <= 15) return { level: 'High', color: 'bg-orange-100 text-orange-800' };
   return { level: 'Critical', color: 'bg-red-100 text-red-800' };
+};
+
+// ─── Context + module-level helpers ──────────────────────────────────────────
+// FormSection and FormField MUST be defined here at module level, NOT inside
+// SafetyTabComprehensive's function body. Defining them inside the component
+// creates a new function reference on every render, which makes React unmount
+// and remount every form field on every keystroke — destroying input focus.
+// The context pattern lets them read formData/updateFormData from the parent
+// without any prop-drilling changes to the ~100 existing call sites.
+const SafetyFormContext = createContext(null);
+
+const FormSection = ({ title, children }) => (
+  <div className="border-b pb-6">
+    <h4 className="text-lg font-semibold mb-4">{title}</h4>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
+);
+
+const FormField = ({ label, name, type = 'text', placeholder = '', options = [], required = false }) => {
+  const { formData, updateFormData } = useContext(SafetyFormContext);
+  const value = formData?.[name] || '';
+
+  if (type === 'textarea') {
+    return (
+      <div>
+        <Label>{label}</Label>
+        <Textarea
+          value={value}
+          onChange={(e) => updateFormData(name, e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          required={required}
+        />
+      </div>
+    );
+  }
+
+  if (type === 'radio') {
+    return (
+      <div>
+        <Label>{label}</Label>
+        <div className="flex gap-4 mt-2">
+          {options.map(opt => (
+            <label key={opt} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name={name}
+                value={opt}
+                checked={value === opt}
+                onChange={(e) => updateFormData(name, e.target.value)}
+              />
+              {opt}
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => updateFormData(name, e.target.value)}
+        placeholder={placeholder}
+        required={required}
+      />
+    </div>
+  );
 };
 
 export default function SafetyTabComprehensive({ ticket, onUpdate }) {
@@ -946,70 +1019,6 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
     </>
   );
 
-  // Helper components
-  const FormSection = ({ title, children }) => (
-    <div className="border-b pb-6">
-      <h4 className="text-lg font-semibold mb-4">{title}</h4>
-      <div className="space-y-4">
-        {children}
-      </div>
-    </div>
-  );
-
-  const FormField = ({ label, name, type = 'text', placeholder = '', options = [], required = false }) => {
-    const value = formData[name] || '';
-    
-    if (type === 'textarea') {
-      return (
-        <div>
-          <Label>{label}</Label>
-          <Textarea
-            value={value}
-            onChange={(e) => updateFormData(name, e.target.value)}
-            placeholder={placeholder}
-            rows={3}
-            required={required}
-          />
-        </div>
-      );
-    }
-    
-    if (type === 'radio') {
-      return (
-        <div>
-          <Label>{label}</Label>
-          <div className="flex gap-4 mt-2">
-            {options.map(opt => (
-              <label key={opt} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={name}
-                  value={opt}
-                  checked={value === opt}
-                  onChange={(e) => updateFormData(name, e.target.value)}
-                />
-                {opt}
-              </label>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div>
-        <Label>{label}</Label>
-        <Input
-          type={type}
-          value={value}
-          onChange={(e) => updateFormData(name, e.target.value)}
-          placeholder={placeholder}
-          required={required}
-        />
-      </div>
-    );
-  };
-
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -1054,6 +1063,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
   };
 
   return (
+    <SafetyFormContext.Provider value={{ formData, updateFormData }}>
     <div className="space-y-6">
       {/* Method Statements */}
       <Card>
@@ -1173,5 +1183,6 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
         </DialogContent>
       </Dialog>
     </div>
+    </SafetyFormContext.Provider>
   );
 }

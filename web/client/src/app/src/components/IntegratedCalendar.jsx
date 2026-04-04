@@ -310,8 +310,13 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   };
 
   // ── render helpers ─────────────────────────────────────────────────────────
-  const EventPill = ({ event, compact = false }) => (
+  // These are plain functions that return JSX, NOT React components.
+  // Defining them as const Foo = () => ... inside this function body would
+  // give each a new reference every render, causing React to unmount/remount
+  // everything inside them on every state change (destroying input focus etc.).
+  const renderEventPill = (event, compact = false) => (
     <div
+      key={event.id}
       className={`text-xs px-1 py-0.5 rounded border cursor-pointer hover:opacity-80 truncate ${eventTypeStyle(event.eventType)}`}
       title={`${event.title} ${event.startTime}–${event.endTime}`}
       onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
@@ -324,7 +329,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   const isToday = (date) => toDateStr(date) === toDateStr(new Date());
 
   // ── day view ──────────────────────────────────────────────────────────────
-  const DayView = () => (
+  const renderDayView = () => (
     <div className="border rounded-lg overflow-hidden">
       {HOUR_SLOTS.map(slot => {
         const events = getEventsForDate(selectedDate).filter(
@@ -361,7 +366,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   );
 
   // ── week view ─────────────────────────────────────────────────────────────
-  const WeekView = () => {
+  const renderWeekView = () => {
     const days = getWeekDays();
     return (
       <div className="border rounded-lg overflow-hidden overflow-x-auto">
@@ -395,7 +400,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
                   className="p-0.5 border-r space-y-0.5 cursor-pointer hover:bg-gray-50"
                   onClick={() => openNew(d, slot)}
                 >
-                  {events.map(ev => <EventPill key={ev.id} event={ev} />)}
+                  {events.map(ev => renderEventPill(ev))}
                 </div>
               );
             })}
@@ -406,7 +411,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   };
 
   // ── month view ────────────────────────────────────────────────────────────
-  const MonthView = () => {
+  const renderMonthView = () => {
     const days = getMonthDays();
     return (
       <div className="border rounded-lg overflow-hidden">
@@ -420,21 +425,21 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
         <div className="grid grid-cols-7">
           {days.map(({ date, inMonth }, idx) => {
             const events = getEventsForDate(date);
-            const today = isToday(date);
+            const todayCell = isToday(date);
             return (
               <div
                 key={idx}
                 className={`min-h-[100px] p-1 border-r border-b cursor-pointer hover:bg-gray-50
                   ${!inMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
-                  ${today ? 'bg-blue-50' : ''}`}
+                  ${todayCell ? 'bg-blue-50' : ''}`}
                 onClick={() => { setSelectedDate(date); setViewMode('day'); }}
               >
                 <div className={`text-sm font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                  ${today ? 'bg-blue-600 text-white' : inMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                  ${todayCell ? 'bg-blue-600 text-white' : inMonth ? 'text-gray-900' : 'text-gray-400'}`}>
                   {date.getDate()}
                 </div>
                 <div className="space-y-0.5">
-                  {events.slice(0, 3).map(ev => <EventPill key={ev.id} event={ev} compact />)}
+                  {events.slice(0, 3).map(ev => renderEventPill(ev, true))}
                   {events.length > 3 && (
                     <div className="text-xs text-gray-400 pl-1">+{events.length - 3} more</div>
                   )}
@@ -448,7 +453,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   };
 
   // ── modal ─────────────────────────────────────────────────────────────────
-  const Modal = () => (
+  const renderModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b">
@@ -533,7 +538,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   );
 
   // ── event detail modal ────────────────────────────────────────────────────
-  const DetailModal = ({ ev }) => (
+  const renderDetailModal = (ev) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b">
@@ -662,9 +667,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* calendar */}
           <div className="lg:col-span-3">
-            {viewMode === 'day'   && <DayView />}
-            {viewMode === 'week'  && <WeekView />}
-            {viewMode === 'month' && <MonthView />}
+            {viewMode === 'day'   && renderDayView()}
+            {viewMode === 'week'  && renderWeekView()}
+            {viewMode === 'month' && renderMonthView()}
           </div>
 
           {/* sidebar */}
@@ -718,8 +723,8 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
       )}
 
       {/* modals */}
-      {showModal     && <Modal />}
-      {selectedEvent && <DetailModal ev={selectedEvent} />}
+      {showModal     && renderModal()}
+      {selectedEvent && renderDetailModal(selectedEvent)}
     </div>
   );
 };
