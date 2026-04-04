@@ -173,26 +173,33 @@ Shell layer complete:
 - [x] AppLayout.jsx — no double wrapper, dark mobile header, clean top bar, tablet collapse
 - [x] playwright.yml — disabled CI emails
 
-### Push 2 — TODO (next session, after Push 1 tested on Render)
-
-Apply new design patterns to all module screens. Test Push 1 first before starting Push 2.
-
-Order to follow (lowest risk first):
+### Push 2 — DONE (Sessions 4–5, 2025-04-02/03)
 
 - [x] `TicketDetailViewTabbedWrapped.jsx` — remove extra white card wrapper (pass-through only)
 - [x] `Dashboard.jsx` — replace big stat cards with compact inline stats row; remove legacy hidden header
 - [x] `TicketsTableView.jsx` — new table container with toolbar, zebra rows, priority bars, mobile card conversion
 - [x] `TicketDetailViewTabbed.jsx` — single container, underline tabs, label-value rows
-- [ ] `ContactManager.jsx` — same table pattern as tickets
-- [ ] `CRMDashboard.jsx` — table pattern for product catalog
-- [ ] `QuotesList.jsx` — table pattern
-- [ ] `QuoteDetails.jsx` — single container detail pattern
-- [ ] `QuoteForm.jsx` / `QuoteFormTabs.jsx` — section headers, no nested card wrappers
-- [ ] `CreateTicketModal.jsx`, `AssignTicketsModal.jsx`, `SendQuoteModal.jsx` — modal header/body/footer pattern with gold primary button
-- [ ] `UserManagementImproved.jsx`, `SecuritySettings.jsx`, `EmailIntakeSettings.jsx` — settings page pattern
-- [ ] `IntegratedCalendar.jsx`, `CRMCalendar.jsx` — wrap in `bg-white rounded-xl border border-[#e5e7eb]`
+- [x] `ContactManager.jsx` — same table pattern as tickets
+- [x] `CRMDashboard.jsx` — table pattern for product catalog
+- [x] `QuotesList.jsx` — table pattern
+- [x] `QuoteDetails.jsx` — single container detail pattern
+- [x] `QuoteForm.jsx` — section headers, no nested card wrappers
+- [x] `AssignTicketsModal.jsx`, `SendQuoteModal.jsx` — modal pattern with gold primary button
+- [x] `UserManagementImproved.jsx`, `SecuritySettings.jsx`, `EmailIntakeSettings.jsx` — settings page pattern
+- [x] `CRMCalendar.jsx` — white container + 6 bug fixes
 
-**Design rules for Push 2 (must follow for every component):**
+### Push 3 — DONE (Session 8, 2025-04-04)
+
+- [x] `QuoteFormTabs.jsx` — tab nav gold underline active state
+- [x] `CreateTicketModal.jsx` — white container, gold button, fafafa sidebar, design token labels
+- [x] `IntegratedCalendar.jsx` — white container, gold view toggle + buttons, gold today circle, fef9ee today cell
+- [x] `BookingCalendar.jsx` — white container, gold tokens (never mounted — dead code, deferred cleanup)
+
+### Modern Enterprise design system — ALL screens complete ✅
+
+Every component in the active codebase now uses the Modern Enterprise design system. Next UI work is new feature builds only.
+
+**Design rules (must follow for all new components):**
 - Single white container: `bg-white rounded-xl border border-[#e5e7eb] overflow-hidden`
 - Table headers: `text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]`
 - Table rows: `text-[13px]`, zebra even rows `#fafbfc`, hover `#fef9ee`
@@ -217,8 +224,8 @@ _Added: Session 5, 2025-04-03_
 - Email intake webhook — fires correctly, AI classification stub exists in route but needs real Claude call
 - `ai_generated` versioning + parent quotes — editable AI output, not locked
 
-### AI Phase 1 — Email Intake Intelligence (DO FIRST)
-**Status:** Backend webhook fires. AI classification is a stub. Needs real Claude call.
+### AI Phase 1 — Email Intake Intelligence — DONE (Session 5, 2025-04-03)
+**Status:** ✅ Complete. Real Claude API call replaces stub. `ai_extractions` table populated. Keyword fallback retained.
 
 - [ ] Replace stub classification in `web/routes/email-intake.js` with Claude API call
 - [ ] Extract from incoming email: title, description, priority, category, contact, issue type
@@ -231,8 +238,8 @@ _Added: Session 5, 2025-04-03_
 
 ---
 
-### AI Phase 2 — AI Quote Generation from Ticket
-**Status:** Schema ready (`ai_generated`, `ai_context`, parent quote versioning). UI not built.
+### AI Phase 2 — AI Quote Generation from Ticket ⬅ NEXT
+**Status:** Schema ready (`ai_generated`, `ai_context`, parent quote versioning). UI not built. **Do this next.**
 
 - [ ] "Generate Quote" button inside ticket detail view (Quotes tab)
 - [ ] Claude prompt receives: ticket title, description, notes, sector, org's product catalog
