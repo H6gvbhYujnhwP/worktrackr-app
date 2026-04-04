@@ -2,20 +2,32 @@ const express = require('express');
 const router = express.Router();
 const { z } = require('zod');
 const db = require('../../shared/db');
-const OpenAI = require('openai');
 
-// Lazy-load OpenAI client to avoid startup errors if API key not set
-let openai = null;
-function getOpenAIClient() {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+// Call Anthropic Claude API (uses same key already set for email intake)
+async function callAnthropic(systemPrompt, userMessage) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not set');
   }
-  return openai;
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} ${err}`);
+  }
+  const data = await response.json();
+  return data.content[0].text;
 }
 
 // Validation schemas
@@ -140,25 +152,13 @@ router.post('/generate-ai', async (req, res) => {
     // 4. Generate prompt
     const prompt = generateQuotePrompt(ticket, customer, products, transcript);
 
-    console.log('[AI Quote] Calling OpenAI API...');
+    console.log('[AI Quote] Calling Anthropic API...');
 
-    // 5. Call OpenAI API
-    const openaiClient = getOpenAIClient();
-    const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [
-        { 
-          role: 'system', 
-          content: 'You are a professional quote writer. Always respond with valid JSON only, no markdown or explanations.' 
-        },
-        { role: 'user', content: prompt }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 2000
-    });
-
-    const aiResponse = completion.choices[0].message.content;
+    // 5. Call Anthropic API
+    const aiResponse = await callAnthropic(
+      'You are a professional quote writer. Always respond with valid JSON only, no markdown or explanations.',
+      prompt
+    );
     console.log('[AI Quote] Raw AI response:', aiResponse);
 
     let draft;
@@ -186,13 +186,12 @@ router.post('/generate-ai', async (req, res) => {
 
     // 7. Return draft with context
     const aiContext = {
-      model: 'gpt-4-turbo',
+      model: 'claude-haiku-4-5-20251001',
       generated_at: new Date().toISOString(),
       sources: ['ticket', 'customer', 'products'],
       ticket_id,
       template_id: template_id || null,
-      transcript_provided: !!transcript,
-      tokens_used: completion.usage.total_tokens
+      transcript_provided: !!transcript
     };
 
     if (transcript) {

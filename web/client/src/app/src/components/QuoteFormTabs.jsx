@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import QuoteForm from './QuoteForm';
 import AIQuoteGenerator from './AIQuoteGenerator';
@@ -7,8 +7,14 @@ import AIQuoteGenerator from './AIQuoteGenerator';
 export default function QuoteFormTabs() {
   const navigate = useNavigate();
   const { id: quoteId } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditMode = !!quoteId;
-  const [activeTab, setActiveTab] = useState('manual');
+
+  // Read URL params — ?tab=ai&ticket_id=UUID navigates here from QuotesTab
+  const urlTicketId = searchParams.get('ticket_id') || null;
+  const urlTab      = searchParams.get('tab');
+
+  const [activeTab, setActiveTab] = useState(urlTab === 'ai' ? 'ai' : 'manual');
   const [aiDraftData, setAiDraftData] = useState(null);
 
   // Handle AI draft generation complete
@@ -50,14 +56,17 @@ export default function QuoteFormTabs() {
 
       {/* Tab Content */}
       {activeTab === 'manual' && (
-        <QuoteForm 
-          mode="create" 
+        <QuoteForm
+          mode="create"
           initialData={aiDraftData}
           onClearDraft={() => setAiDraftData(null)}
         />
       )}
       {activeTab === 'ai' && (
-        <AIQuoteGenerator onDraftComplete={handleAIDraftComplete} />
+        <AIQuoteGenerator
+          ticketId={urlTicketId}
+          onDraftComplete={handleAIDraftComplete}
+        />
       )}
     </div>
   );

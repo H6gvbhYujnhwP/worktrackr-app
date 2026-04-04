@@ -15,6 +15,9 @@ const createQuoteSchema = z.object({
   terms_conditions: z.string().optional(),
   notes: z.string().optional(),
   internal_notes: z.string().optional(),
+  ticket_id: z.string().uuid().optional(),
+  ai_generated: z.boolean().optional(),
+  ai_context: z.any().optional(),
   line_items: z.array(z.object({
     product_id: z.string().uuid().optional(),
     description: z.string().min(1),
@@ -292,8 +295,9 @@ router.post('/', async (req, res) => {
         INSERT INTO quotes (
           organisation_id, contact_id, quote_number, title, description,
           subtotal, discount_amount, discount_percent, tax_amount, total_amount,
-          valid_until, terms_conditions, notes, internal_notes, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          valid_until, terms_conditions, notes, internal_notes,
+          ticket_id, ai_generated, ai_context, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING *
       `;
 
@@ -312,6 +316,9 @@ router.post('/', async (req, res) => {
         validatedData.terms_conditions || null,
         validatedData.notes || null,
         validatedData.internal_notes || null,
+        validatedData.ticket_id || null,
+        validatedData.ai_generated || false,
+        validatedData.ai_context ? JSON.stringify(validatedData.ai_context) : null,
         userId
       ];
 

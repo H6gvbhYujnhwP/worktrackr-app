@@ -285,6 +285,9 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         terms_conditions: formData.terms_conditions || undefined,
         notes: formData.notes || undefined,
         internal_notes: formData.internal_notes || undefined,
+        ticket_id: initialData?.ticket_id || undefined,
+        ai_generated: initialData?.created_via === 'ai' ? true : undefined,
+        ai_context: initialData?.ai_context_used || undefined,
         line_items: sanitizedLineItems
       };
       console.log('API payload:', JSON.stringify(payload, null, 2));

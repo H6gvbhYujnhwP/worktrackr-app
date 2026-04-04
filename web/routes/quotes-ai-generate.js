@@ -5,7 +5,6 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const fs = require('fs').promises;
 const path = require('path');
-const OpenAI = require('openai');
 const db = require('../../shared/db');
 const pdf = require('pdf-parse');
 
@@ -25,10 +24,32 @@ const upload = multer({
   }
 });
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Call Anthropic Claude API
+async function callAnthropic(systemPrompt, userMessage) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+  }
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} ${err}`);
+  }
+  const data = await response.json();
+  return data.content[0].text;
+}
 
 // Extract text from PDF
 async function extractPDFText(filePath) {
@@ -258,19 +279,9 @@ router.post('/ai-generate-draft', upload.array('files', 5), async (req, res) => 
     // Build AI prompt
     const { systemPrompt, userMessage } = buildAIPrompt(prompt, fileContents, context, pricing);
 
-    // Call OpenAI API
-    console.log('Calling OpenAI API for quote generation...');
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
-    });
-
-    const aiResponse = completion.choices[0].message.content;
+    // Call Anthropic API
+    console.log('Calling Anthropic API for quote generation...');
+    const aiResponse = await callAnthropic(systemPrompt, userMessage);
     console.log('AI Response:', aiResponse);
 
     // Parse AI response
