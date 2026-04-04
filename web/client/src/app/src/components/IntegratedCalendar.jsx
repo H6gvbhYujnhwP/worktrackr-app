@@ -2,6 +2,7 @@
 // REWRITTEN: Now uses /api/calendar/events for all persistence.
 // localStorage bridge removed. All three views (day/week/month) fully functional.
 // Ticket scheduled_date entries appear automatically as calendar events.
+// Push 3: Restyled to Modern Enterprise design system.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSimulation } from '../App.jsx';
@@ -9,7 +10,6 @@ import {
   Calendar, Clock, Plus, Edit, Trash2, X, ChevronLeft, ChevronRight,
   CheckCircle, AlertCircle, User
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -330,18 +330,18 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
   // ── day view ──────────────────────────────────────────────────────────────
   const renderDayView = () => (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-[#e5e7eb] rounded-lg overflow-hidden">
       {HOUR_SLOTS.map(slot => {
         const events = getEventsForDate(selectedDate).filter(
           e => e.startTime <= slot && e.endTime > slot
         );
         return (
-          <div key={slot} className="grid grid-cols-12 border-b min-h-[56px]">
-            <div className="col-span-2 p-2 bg-gray-50 text-xs text-gray-500 font-medium border-r flex items-start pt-2">
+          <div key={slot} className="grid grid-cols-12 border-b border-[#e5e7eb] min-h-[56px]">
+            <div className="col-span-2 p-2 bg-[#fafafa] text-xs text-[#9ca3af] font-medium border-r border-[#e5e7eb] flex items-start pt-2">
               {slot}
             </div>
             <div
-              className="col-span-10 p-1 space-y-1 cursor-pointer hover:bg-gray-50"
+              className="col-span-10 p-1 space-y-1 cursor-pointer hover:bg-[#fef9ee] transition-colors"
               onClick={() => openNew(selectedDate, slot)}
             >
               {events.map(ev => (
@@ -356,7 +356,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
                 </div>
               ))}
               {events.length === 0 && (
-                <div className="text-gray-300 text-xs p-1">+ add event</div>
+                <div className="text-[#d1d5db] text-xs p-1">+ add event</div>
               )}
             </div>
           </div>
@@ -369,18 +369,19 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   const renderWeekView = () => {
     const days = getWeekDays();
     return (
-      <div className="border rounded-lg overflow-hidden overflow-x-auto">
+      <div className="border border-[#e5e7eb] rounded-lg overflow-hidden overflow-x-auto">
         {/* header row */}
-        <div className="grid border-b bg-gray-50" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-          <div className="p-2 border-r" />
+        <div className="grid border-b border-[#e5e7eb] bg-[#fafafa]" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div className="p-2 border-r border-[#e5e7eb]" />
           {days.map((d, i) => (
             <div
               key={i}
-              className={`p-2 text-center border-r text-sm font-medium cursor-pointer hover:bg-gray-100 ${isToday(d) ? 'text-blue-600' : 'text-gray-700'}`}
+              className={`p-2 text-center border-r border-[#e5e7eb] text-sm font-medium cursor-pointer hover:bg-[#fef9ee] transition-colors ${isToday(d) ? 'text-[#d4a017]' : 'text-[#374151]'}`}
               onClick={() => { setSelectedDate(d); setViewMode('day'); }}
             >
-              <div>{d.toLocaleDateString('en-GB', { weekday: 'short' })}</div>
-              <div className={`text-lg ${isToday(d) ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
+              <div className="text-[11px] uppercase tracking-wider">{d.toLocaleDateString('en-GB', { weekday: 'short' })}</div>
+              <div className={`text-lg font-semibold mt-0.5 w-8 h-8 flex items-center justify-center rounded-full mx-auto
+                ${isToday(d) ? 'bg-[#d4a017] text-[#111113]' : ''}`}>
                 {d.getDate()}
               </div>
             </div>
@@ -388,8 +389,8 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
         </div>
         {/* time rows */}
         {HOUR_SLOTS.map(slot => (
-          <div key={slot} className="grid border-b min-h-[52px]" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-            <div className="p-1 bg-gray-50 text-xs text-gray-500 border-r flex items-start pt-1">{slot}</div>
+          <div key={slot} className="grid border-b border-[#e5e7eb] min-h-[52px]" style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+            <div className="p-1 bg-[#fafafa] text-xs text-[#9ca3af] border-r border-[#e5e7eb] flex items-start pt-1">{slot}</div>
             {days.map((d, i) => {
               const events = getEventsForDate(d).filter(
                 e => e.startTime <= slot && e.endTime > slot
@@ -397,7 +398,7 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
               return (
                 <div
                   key={i}
-                  className="p-0.5 border-r space-y-0.5 cursor-pointer hover:bg-gray-50"
+                  className="p-0.5 border-r border-[#e5e7eb] space-y-0.5 cursor-pointer hover:bg-[#fef9ee] transition-colors"
                   onClick={() => openNew(d, slot)}
                 >
                   {events.map(ev => renderEventPill(ev))}
@@ -414,11 +415,11 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
   const renderMonthView = () => {
     const days = getMonthDays();
     return (
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border border-[#e5e7eb] rounded-lg overflow-hidden">
         {/* header */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b">
+        <div className="grid grid-cols-7 bg-[#fafafa] border-b border-[#e5e7eb]">
           {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => (
-            <div key={d} className="p-2 text-center text-xs font-medium text-gray-500 border-r last:border-r-0">{d}</div>
+            <div key={d} className="p-2 text-center text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider border-r border-[#e5e7eb] last:border-r-0">{d}</div>
           ))}
         </div>
         {/* days */}
@@ -429,19 +430,19 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
             return (
               <div
                 key={idx}
-                className={`min-h-[100px] p-1 border-r border-b cursor-pointer hover:bg-gray-50
-                  ${!inMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
-                  ${todayCell ? 'bg-blue-50' : ''}`}
+                className={`min-h-[100px] p-1 border-r border-b border-[#e5e7eb] cursor-pointer transition-colors
+                  ${!inMonth ? 'bg-[#fafafa] text-[#9ca3af]' : 'bg-white hover:bg-[#fef9ee]'}
+                  ${todayCell ? 'bg-[#fef9ee]' : ''}`}
                 onClick={() => { setSelectedDate(date); setViewMode('day'); }}
               >
                 <div className={`text-sm font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                  ${todayCell ? 'bg-blue-600 text-white' : inMonth ? 'text-gray-900' : 'text-gray-400'}`}>
+                  ${todayCell ? 'bg-[#d4a017] text-[#111113]' : inMonth ? 'text-[#111113]' : 'text-[#9ca3af]'}`}>
                   {date.getDate()}
                 </div>
                 <div className="space-y-0.5">
                   {events.slice(0, 3).map(ev => renderEventPill(ev, true))}
                   {events.length > 3 && (
-                    <div className="text-xs text-gray-400 pl-1">+{events.length - 3} more</div>
+                    <div className="text-xs text-[#9ca3af] pl-1">+{events.length - 3} more</div>
                   )}
                 </div>
               </div>
@@ -454,51 +455,58 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
   // ── modal ─────────────────────────────────────────────────────────────────
   const renderModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <h3 className="text-[15px] font-semibold text-[#111113]">
             {editingEvent ? 'Edit Event' : 'New Calendar Event'}
           </h3>
-          <Button variant="ghost" size="sm" onClick={closeModal}><X className="w-4 h-4" /></Button>
+          <button
+            onClick={closeModal}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#111113] hover:bg-[#f3f4f6] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-4">
           {formError && (
-            <div className="bg-red-50 text-red-700 text-sm p-2 rounded border border-red-200">{formError}</div>
+            <div className="bg-red-50 text-red-700 text-sm p-2.5 rounded-lg border border-red-200">{formError}</div>
           )}
           <div>
-            <Label htmlFor="ev-title">Title *</Label>
+            <Label htmlFor="ev-title" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Title *</Label>
             <Input
               id="ev-title"
               value={formData.title}
               onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
               placeholder="Event title"
               autoFocus
+              className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
             />
           </div>
           <div>
-            <Label htmlFor="ev-date">Date *</Label>
+            <Label htmlFor="ev-date" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Date *</Label>
             <Input
               id="ev-date"
               type="date"
               value={formData.eventDate}
               onChange={e => setFormData(p => ({ ...p, eventDate: e.target.value }))}
+              className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Start time *</Label>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Start time *</Label>
               <Select value={formData.startTime} onValueChange={v => setFormData(p => ({ ...p, startTime: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
                 <SelectContent className="max-h-52">
                   {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>End time *</Label>
+              <Label className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">End time *</Label>
               <Select value={formData.endTime} onValueChange={v => setFormData(p => ({ ...p, endTime: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
                 <SelectContent className="max-h-52">
                   {TIME_OPTIONS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
@@ -506,9 +514,9 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
             </div>
           </div>
           <div>
-            <Label>Event type</Label>
+            <Label className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Event type</Label>
             <Select value={formData.eventType} onValueChange={v => setFormData(p => ({ ...p, eventType: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="work">Work</SelectItem>
                 <SelectItem value="meeting">Meeting</SelectItem>
@@ -517,21 +525,32 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
             </Select>
           </div>
           <div>
-            <Label htmlFor="ev-notes">Notes</Label>
+            <Label htmlFor="ev-notes" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Notes</Label>
             <Textarea
               id="ev-notes"
               value={formData.notes}
               onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
               placeholder="Optional notes"
               rows={2}
+              className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
             />
           </div>
         </div>
-        <div className="flex justify-end gap-2 p-4 border-t">
-          <Button variant="outline" onClick={closeModal} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[#e5e7eb]">
+          <button
+            onClick={closeModal}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-[#374151] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors disabled:opacity-50"
+          >
             {saving ? 'Saving…' : editingEvent ? 'Save changes' : 'Create event'}
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -539,18 +558,23 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
   // ── event detail modal ────────────────────────────────────────────────────
   const renderDetailModal = (ev) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">Event details</h3>
-          <Button variant="ghost" size="sm" onClick={() => setSelectedEvent(null)}><X className="w-4 h-4" /></Button>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <h3 className="text-[15px] font-semibold text-[#111113]">Event details</h3>
+          <button
+            onClick={() => setSelectedEvent(null)}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#111113] hover:bg-[#f3f4f6] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-3">
           <div className="flex items-start gap-2">
             <Badge className={eventTypeStyle(ev.eventType)}>{ev.eventType}</Badge>
-            <span className="font-medium">{ev.title}</span>
+            <span className="font-medium text-[#111113]">{ev.title}</span>
           </div>
-          <div className="text-sm space-y-1 text-gray-600">
+          <div className="text-sm space-y-1.5 text-[#6b7280]">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{new Date(ev.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -567,37 +591,51 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
             )}
           </div>
           {ev.description && (
-            <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">{ev.description}</div>
+            <div className="text-sm text-[#6b7280] bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-3">{ev.description}</div>
           )}
           {ev.notes && (
-            <div className="text-sm text-gray-600">{ev.notes}</div>
+            <div className="text-sm text-[#6b7280]">{ev.notes}</div>
           )}
           {ev.source === 'ticket' && ev.ticket && (
-            <div className="bg-purple-50 border border-purple-200 rounded p-2 text-sm">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
               <p className="font-medium text-purple-800">Linked ticket</p>
-              <p className="text-purple-600">Status: {ev.ticket.status} | Priority: {ev.ticket.priority}</p>
+              <p className="text-purple-600 mt-0.5">Status: {ev.ticket.status} | Priority: {ev.ticket.priority}</p>
             </div>
           )}
         </div>
-        <div className="flex justify-between p-4 border-t">
+        <div className="flex justify-between px-5 py-4 border-t border-[#e5e7eb]">
           <div className="flex gap-2">
             {ev.source === 'ticket' && ev.ticket && onTicketClick && (
-              <Button size="sm" variant="outline" onClick={() => { setSelectedEvent(null); onTicketClick(ev.ticket); }}>
+              <button
+                onClick={() => { setSelectedEvent(null); onTicketClick(ev.ticket); }}
+                className="px-3 py-1.5 text-xs font-medium text-[#374151] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors"
+              >
                 Open ticket
-              </Button>
+              </button>
             )}
             {ev.source === 'calendar' && (
               <>
-                <Button size="sm" variant="outline" onClick={() => openEdit(ev)}>
-                  <Edit className="w-3 h-3 mr-1" />Edit
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleDelete(ev)}>
-                  <Trash2 className="w-3 h-3 mr-1" />Delete
-                </Button>
+                <button
+                  onClick={() => openEdit(ev)}
+                  className="px-3 py-1.5 text-xs font-medium text-[#374151] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors flex items-center gap-1"
+                >
+                  <Edit className="w-3 h-3" />Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(ev)}
+                  className="px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />Delete
+                </button>
               </>
             )}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setSelectedEvent(null)}>Close</Button>
+          <button
+            onClick={() => setSelectedEvent(null)}
+            className="px-3 py-1.5 text-xs font-medium text-[#6b7280] hover:text-[#374151] transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -611,56 +649,70 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
   // ── main render ───────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden p-4 md:p-6 space-y-5">
       {/* toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-gray-600" />
-          <h2 className="text-xl font-semibold">Ticket Calendar</h2>
+          <Calendar className="w-5 h-5 text-[#d4a017]" />
+          <h2 className="text-[15px] font-semibold text-[#111113]">Ticket Calendar</h2>
         </div>
         <div className="flex items-center gap-2">
           {/* view toggle */}
-          <div className="flex border rounded-lg overflow-hidden">
+          <div className="flex border border-[#e5e7eb] rounded-lg overflow-hidden">
             {['day','week','month'].map(v => (
               <button
                 key={v}
                 onClick={() => setViewMode(v)}
-                className={`px-3 py-1.5 text-sm font-medium capitalize transition-colors
-                  ${viewMode === v ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors
+                  ${viewMode === v
+                    ? 'bg-[#d4a017] text-[#111113]'
+                    : 'bg-white text-[#6b7280] hover:bg-[#f9fafb]'}`}
               >
                 {v}
               </button>
             ))}
           </div>
           {/* navigation */}
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 flex items-center justify-center border border-[#e5e7eb] rounded-lg bg-white text-[#6b7280] hover:bg-[#f9fafb] hover:text-[#111113] transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date())}>
+          </button>
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className="px-3 py-1.5 text-xs font-medium border border-[#e5e7eb] rounded-lg bg-white text-[#374151] hover:bg-[#f9fafb] transition-colors"
+          >
             Today
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(1)}>
+          </button>
+          <button
+            onClick={() => navigate(1)}
+            className="w-8 h-8 flex items-center justify-center border border-[#e5e7eb] rounded-lg bg-white text-[#6b7280] hover:bg-[#f9fafb] hover:text-[#111113] transition-colors"
+          >
             <ChevronRight className="w-4 h-4" />
-          </Button>
+          </button>
           {/* add button */}
-          <Button size="sm" onClick={() => openNew()}>
-            <Plus className="w-4 h-4 mr-1" />Add event
-          </Button>
+          <button
+            onClick={() => openNew()}
+            className="px-3 py-1.5 text-xs font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />Add event
+          </button>
         </div>
       </div>
 
       {/* current period label */}
-      <div className="text-base font-medium text-gray-700">{headerLabel()}</div>
+      <div className="text-sm font-medium text-[#374151]">{headerLabel()}</div>
 
       {/* error */}
       {error && (
-        <div className="bg-red-50 text-red-700 text-sm p-3 rounded border border-red-200">{error}</div>
+        <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg border border-red-200">{error}</div>
       )}
 
       {/* loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-gray-500">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3" />
+        <div className="flex items-center justify-center py-20 text-[#9ca3af]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d4a017] mr-3" />
           Loading calendar…
         </div>
       ) : (
@@ -674,15 +726,15 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
           {/* sidebar */}
           <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-blue-500" />Upcoming
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-2">
+            {/* Upcoming */}
+            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#e5e7eb] flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-[#d4a017]" />
+                <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">Upcoming</span>
+              </div>
+              <div className="p-3 space-y-2">
                 {upcomingEvents.length === 0 ? (
-                  <p className="text-xs text-gray-400">No upcoming events</p>
+                  <p className="text-xs text-[#9ca3af]">No upcoming events</p>
                 ) : upcomingEvents.map(ev => (
                   <div
                     key={ev.id}
@@ -690,34 +742,35 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
                     onClick={() => setSelectedEvent(ev)}
                   >
                     <div className="font-medium truncate">{ev.title}</div>
-                    <div className="opacity-70">
+                    <div className="opacity-70 mt-0.5">
                       {new Date(ev.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       {' '}{ev.startTime}
                     </div>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Legend</CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-1 text-xs">
+            {/* Legend */}
+            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[#e5e7eb]">
+                <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">Legend</span>
+              </div>
+              <div className="p-3 space-y-1.5 text-xs text-[#6b7280]">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded bg-teal-100 border border-teal-200 inline-block" />
+                  <span className="w-3 h-3 rounded bg-teal-100 border border-teal-200 inline-block flex-shrink-0" />
                   Calendar event
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded bg-purple-100 border border-purple-200 inline-block" />
+                  <span className="w-3 h-3 rounded bg-purple-100 border border-purple-200 inline-block flex-shrink-0" />
                   Scheduled ticket
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded bg-blue-100 border border-blue-200 inline-block" />
+                  <span className="w-3 h-3 rounded bg-blue-100 border border-blue-200 inline-block flex-shrink-0" />
                   Work event
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       )}

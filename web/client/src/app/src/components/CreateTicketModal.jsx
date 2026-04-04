@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useSimulation } from '../App.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import { Textarea } from '@/components/ui/textarea.jsx';
@@ -176,8 +175,8 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'title':
           return (
             <div key={fieldKey}>
-              <Label htmlFor="title" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+              <Label htmlFor="title" className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <FileText className="w-3.5 h-3.5" />
                 Title *
               </Label>
               <Input
@@ -185,17 +184,17 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder="Brief description of the issue"
-                className={errors.title ? 'border-red-500' : ''}
+                className={`border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017] ${errors.title ? 'border-red-400' : ''}`}
               />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
             </div>
           );
 
         case 'description':
           return (
             <div key={fieldKey}>
-              <Label htmlFor="description" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
+              <Label htmlFor="description" className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <FileText className="w-3.5 h-3.5" />
                 Description *
               </Label>
               <Textarea
@@ -203,34 +202,32 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="Describe the issue in detail..."
-                className={errors.description ? 'border-red-500' : ''}
+                className={`border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017] ${errors.description ? 'border-red-400' : ''}`}
                 rows={20}
               />
-              {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+              {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
             </div>
           );
 
         case 'contact':
           return (
             <div key={fieldKey} className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+                  <User className="w-3.5 h-3.5" />
                   Contact
                 </Label>
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() => {
                     setContactCreationInitialName('');
                     setShowContactCreationModal(true);
                   }}
-                  className="h-8 text-xs"
+                  className="text-[11px] font-medium text-[#d4a017] hover:text-[#b8860b] flex items-center gap-1"
                 >
-                  <Plus className="w-3 h-3 mr-1" />
+                  <Plus className="w-3 h-3" />
                   New Contact
-                </Button>
+                </button>
               </div>
               <ContactSelector
                 selectedContactId={formData.contact}
@@ -256,11 +253,11 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 placeholder="Select or search for a contact..."
               />
               {formData.contactDetails && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm mb-4">
-                  <div className="font-medium">{formData.contactDetails.companyName}</div>
-                  <div className="text-gray-600">{formData.contactDetails.fullAddress}</div>
-                  <div className="text-gray-600">{formData.contactDetails.email}</div>
-                  <div className="text-gray-600">{formData.contactDetails.phone}</div>
+                <div className="mt-2 p-3 bg-[#fafafa] border border-[#e5e7eb] rounded-lg text-[13px] mb-4">
+                  <div className="font-medium text-[#111113]">{formData.contactDetails.companyName}</div>
+                  <div className="text-[#6b7280] mt-0.5">{formData.contactDetails.fullAddress}</div>
+                  <div className="text-[#6b7280]">{formData.contactDetails.email}</div>
+                  <div className="text-[#6b7280]">{formData.contactDetails.phone}</div>
                 </div>
               )}
             </div>
@@ -269,12 +266,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'priority':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
                 Priority
               </Label>
               <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -290,12 +287,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'status':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Tag className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Tag className="w-3.5 h-3.5" />
                 Status
               </Label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -311,12 +308,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
           const categoryOptions = fieldConfigurations?.category || ['General', 'Technical', 'Maintenance', 'Support'];
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Tag className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Tag className="w-3.5 h-3.5" />
                 Category
               </Label>
               <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,8 +328,8 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'assignedUser':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <User className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <User className="w-3.5 h-3.5" />
                 Assigned User
               </Label>
               <Select value={formData.assignedUser} onValueChange={(value) => {
@@ -343,7 +340,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                   handleInputChange('assignedTo', selectedUser.id);
                 }
               }}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select user to assign ticket" />
                 </SelectTrigger>
                 <SelectContent>
@@ -359,12 +356,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
           const equipmentOptions = fieldConfigurations?.equipment_id || ['EQ-001', 'EQ-002', 'EQ-003'];
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Wrench className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Wrench className="w-3.5 h-3.5" />
                 Equipment ID
               </Label>
               <Select value={formData.equipment_id} onValueChange={(value) => handleInputChange('equipment_id', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
@@ -380,12 +377,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
           const workTypeOptions = fieldConfigurations?.work_type || ['Maintenance', 'Repair', 'Installation', 'Inspection'];
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Building className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Building className="w-3.5 h-3.5" />
                 Work Type
               </Label>
               <Select value={formData.work_type} onValueChange={(value) => handleInputChange('work_type', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select work type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -401,12 +398,12 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
           const serviceCategoryOptions = fieldConfigurations?.service_category || ['Standard', 'Premium', 'Emergency', 'Scheduled'];
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Star className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Star className="w-3.5 h-3.5" />
                 Service Category
               </Label>
               <Select value={formData.service_category} onValueChange={(value) => handleInputChange('service_category', value)}>
-                <SelectTrigger>
+                <SelectTrigger className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
                   <SelectValue placeholder="Select service category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -418,13 +415,11 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
             </div>
           );
 
-
-
         case 'scheduled_date':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Calendar className="w-3.5 h-3.5" />
                 Scheduled Date
               </Label>
               <Input 
@@ -433,6 +428,7 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 value={formData.scheduled_date}
                 onChange={(e) => handleInputChange('scheduled_date', e.target.value)}
                 placeholder="Select date and time"
+                className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
               />
             </div>
           );
@@ -440,8 +436,8 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'photos':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Image className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Image className="w-3.5 h-3.5" />
                 Photos/Images
               </Label>
               <Input 
@@ -449,10 +445,10 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 multiple
                 accept="image/*"
                 onChange={(e) => handleInputChange('photos', Array.from(e.target.files || []))}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="border-[#e5e7eb] file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[#fef9ee] file:text-[#b8860b] hover:file:bg-[#fef3c7]"
               />
               {formData.photos && formData.photos.length > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs text-[#6b7280] mt-1">
                   {formData.photos.length} file(s) selected
                 </p>
               )}
@@ -462,18 +458,18 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
         case 'attachments':
           return (
             <div key={fieldKey}>
-              <Label className="flex items-center gap-2">
-                <Paperclip className="w-4 h-4" />
+              <Label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5">
+                <Paperclip className="w-3.5 h-3.5" />
                 File Attachments
               </Label>
               <Input 
                 type="file"
                 multiple
                 onChange={(e) => handleInputChange('attachments', Array.from(e.target.files || []))}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="border-[#e5e7eb] file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[#fef9ee] file:text-[#b8860b] hover:file:bg-[#fef3c7]"
               />
               {formData.attachments && formData.attachments.length > 0 && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-xs text-[#6b7280] mt-1">
                   {formData.attachments.length} file(s) selected
                 </p>
               )}
@@ -498,18 +494,22 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
   const sidebarFields = fieldOrder.filter(field => !mainContentFields.includes(field) && savedTemplate[field]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-5xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      {/* Modal container — Modern Enterprise white card */}
+      <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-xl">
+
         {/* Header */}
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b flex-shrink-0">
-          <div>
-            <CardTitle className="text-xl">Create New Ticket</CardTitle>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb] flex-shrink-0">
+          <h2 className="text-[15px] font-semibold text-[#111113]">Create New Ticket</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6b7280] hover:text-[#111113] hover:bg-[#f3f4f6] transition-colors"
+          >
             <X className="w-4 h-4" />
-          </Button>
-        </CardHeader>
-        
+          </button>
+        </div>
+
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden">
           <form id="create-ticket-form" onSubmit={handleSubmit} className="h-full">
@@ -521,9 +521,9 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
               </Alert>
             )}
 
-            {/* Sidebar Layout: Main Content (70%) + Sidebar (30%) */}
+            {/* Two-column layout: Main (70%) + Sidebar (30%) */}
             <div className="flex flex-col lg:flex-row h-full overflow-hidden">
-              {/* Left Main Content Area */}
+              {/* Left — main fields */}
               <div className="flex-1 lg:w-[70%] p-6 overflow-y-auto">
                 <div className="space-y-6">
                   {mainContentFields.map(fieldKey => {
@@ -533,41 +533,46 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 </div>
               </div>
 
-              {/* Right Sidebar - Metadata Fields */}
-              <div className="lg:w-[30%] bg-gray-50 border-t lg:border-t-0 lg:border-l p-6 overflow-y-auto">
+              {/* Right — metadata sidebar */}
+              <div className="lg:w-[30%] bg-[#fafafa] border-t lg:border-t-0 lg:border-l border-[#e5e7eb] p-6 overflow-y-auto">
+                <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-4">Details</p>
                 <div className="space-y-4">
-                  {sidebarFields.map(fieldKey => {
-                    return renderField(fieldKey);
-                  })}
+                  {sidebarFields.map(fieldKey => renderField(fieldKey))}
                 </div>
               </div>
             </div>
           </form>
         </div>
-        
-        <div className="flex justify-end gap-2 p-4 border-t flex-shrink-0">
-          <Button type="button" variant="outline" onClick={onClose}>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb] flex-shrink-0 bg-white">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-[#374151] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors"
+          >
             Cancel
-          </Button>
-          <Button 
+          </button>
+          <button
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
+            className="px-4 py-2 text-sm font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-[#111113]" />
+                Creating…
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-3.5 h-3.5" />
                 Create Ticket
               </>
             )}
-          </Button>
+          </button>
         </div>
-      </Card>
+      </div>
 
       {/* Contact Creation Modal */}
       <ContactCreationModal

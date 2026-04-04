@@ -24,23 +24,23 @@ export default function QuoteFormTabs() {
 
   return (
     <div className="container mx-auto p-2 sm:p-4 md:p-6 max-w-7xl">
-      {/* Tab Navigation */}
-      <div className="flex border-b mb-4 sm:mb-6 overflow-x-auto">
+      {/* Tab Navigation — Modern Enterprise gold underline */}
+      <div className="flex border-b border-[#e5e7eb] mb-4 sm:mb-6 overflow-x-auto">
         <button
-          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors whitespace-nowrap ${
+          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap ${
             activeTab === 'manual'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'border-b-2 border-[#d4a017] text-[#111113]'
+              : 'text-[#6b7280] hover:text-[#374151]'
           }`}
           onClick={() => setActiveTab('manual')}
         >
           Manual Entry
         </button>
         <button
-          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors whitespace-nowrap ${
+          className={`px-3 sm:px-6 py-2 sm:py-3 font-medium text-sm transition-colors whitespace-nowrap ${
             activeTab === 'ai'
-              ? 'border-b-2 border-blue-500 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'border-b-2 border-[#d4a017] text-[#111113]'
+              : 'text-[#6b7280] hover:text-[#374151]'
           }`}
           onClick={() => setActiveTab('ai')}
         >
