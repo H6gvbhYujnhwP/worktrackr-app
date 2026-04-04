@@ -3,13 +3,13 @@
 ---
 
 ## Current State
-- **Last session:** 2025-04-04 (Session 6 — hotfix)
+- **Last session:** 2025-04-04 (Session 7)
 - **Live URL:** https://worktrackr.cloud
 - **Admin panel:** https://worktrackr.cloud/admin87476463/dashboard
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Input focus loss — ContactManager.jsx (inline sub-components), Dashboard.jsx (TicketsView), DashboardWithLayout.jsx (lastUpdate polling)
+- **Last fixes applied:** Inline sub-component anti-pattern sweep (IntegratedCalendar, QuotesList, SafetyTabComprehensive, CreateTicketModalFixed) + contacts camelCase/data-loss fix (contacts.js)
 - **Known broken:** CRM Calendar events (fixed in Session 5 Burst 2, verify after deploy)
-- **Next priority:** See ROADMAP.md — Push 3 remaining components, then AI Phase 2
+- **Next priority:** See ROADMAP.md — Push 3 remaining components (QuoteFormTabs, CreateTicketModal, IntegratedCalendar, BookingCalendar), then AI Phase 2
 
 ---
 
@@ -527,3 +527,143 @@ SecuritySettings.jsx, EmailIntakeSettings.jsx, IntegratedCalendar.jsx, CRMCalend
 **Files changed in hotfix:**
 - `Dashboard.jsx` — priority dropdown fix
 - `TicketDetailViewTabbed.jsx` — field reorder
+
+---
+
+## Session 7 — 2025-04-04
+
+### Overview
+Two workstreams completed: (1) full codebase scan and fix of the inline sub-component anti-pattern in all remaining affected files, (2) root-cause investigation and fix of CRM contacts fields not saving (Primary Contact and others).
+
+---
+
+### Workstream 1 — Inline sub-component anti-pattern sweep
+
+Full scan of all components for `const Foo = () => ...` definitions inside a parent function body. Four additional files found and fixed beyond those repaired in Session 6.
+
+#### Rule reminder
+Defining a component (`const Foo = () => ...`) inside a parent function body causes React to see a brand new component type on every parent render. React responds by fully unmounting and remounting the subtree — destroying any focused input. This happens on every state change including every keystroke.
+
+---
+
+#### Fix 1 — `IntegratedCalendar.jsx`
+
+**Sub-components removed from inside `IntegratedCalendar`:** `EventPill`, `DayView`, `WeekView`, `MonthView`, `Modal`, `DetailModal` — 6 in total.
+
+**Impact:** `Modal` contained the event title `<Input>` and notes `<Textarea>`. Every keystroke when creating or editing a calendar event destroyed focus. The three view components (`DayView`, `WeekView`, `MonthView`) also remounted on every state change, causing unnecessary DOM churn.
+
+**Fix:** All 6 converted to plain render helper functions (e.g. `renderModal()`, `renderDayView()`) called as `{renderDayView()}` instead of `<DayView />`. `renderEventPill(event, compact)` takes parameters directly instead of props. All logic, state references, and closures preserved exactly — only the definition pattern changed.
+
+**File changed:** `web/client/src/app/src/components/IntegratedCalendar.jsx`
+
+---
+
+#### Fix 2 — `QuotesList.jsx`
+
+**Sub-component removed:** `SortTh` defined inside `QuotesList`.
+
+**Impact:** No text inputs inside `SortTh` itself, but the table header row was remounting on every search keystroke and every sort click, causing unnecessary DOM churn.
+
+**Fix:** Converted to `renderSortTh(field, children)` plain function. All 5 call sites in the table header updated from `<SortTh field="x">Label</SortTh>` to `{renderSortTh('x', 'Label')}`.
+
+**File changed:** `web/client/src/app/src/components/QuotesList.jsx`
+
+---
+
+#### Fix 3 — `SafetyTabComprehensive.jsx`
+
+**Sub-components removed:** `FormSection` and `FormField` defined inside `SafetyTabComprehensive`.
+
+**Impact:** Critical. `FormField` renders `<Input>`, `<Textarea>`, and radio `<input>` elements. Every keystroke in any safety form field (Method Statements, Risk Assessments) destroyed focus — making the entire safety tab effectively unusable for typed input. There are ~100 `<FormField>` call sites across 8 sector-specific render functions.
+
+**Fix:** Used React context pattern to move both to module level without changing any call sites:
+- Added `const SafetyFormContext = createContext(null)` at module level
+- `FormSection` moved to module level (stateless — no changes needed)
+- `FormField` moved to module level, reads `formData` and `updateFormData` via `useContext(SafetyFormContext)` instead of closure
+- Wrapped the component's `return (...)` with `<SafetyFormContext.Provider value={{ formData, updateFormData }}>`
+- All ~100 existing `<FormField label="..." name="..." />` call sites unchanged
+
+**File changed:** `web/client/src/app/src/components/SafetyTabComprehensive.jsx`
+
+---
+
+#### Fix 4 — `CreateTicketModalFixed.jsx`
+
+**Sub-component removed:** `StageNav` defined inside `CreateTicketModal`.
+
+**Impact:** No inputs inside `StageNav` itself, but the stage navigation bar remounted on every form field change in the modal.
+
+**Fix:** Converted to `const stageNavJSX = (...)` inline JSX variable. Call site updated from `<StageNav />` to `{stageNavJSX}`.
+
+**File changed:** `web/client/src/app/src/components/CreateTicketModalFixed.jsx`
+
+---
+
+### Workstream 2 — CRM contacts field save bugs
+
+Two separate bugs identified and fixed in `web/routes/contacts.js`. Root cause in both cases: the DB returns snake_case column names but the frontend expects camelCase.
+
+---
+
+#### Bug 1 — Edit form fields show blank even when DB has values
+
+**Root cause:** `SELECT * FROM contacts` returns rows with `primary_contact`, `display_name`, `contact_persons`, `custom_fields` (snake_case). `handleEditContact(contact)` in `ContactManager.jsx` reads `contact.primaryContact`, `contact.displayName`, `contact.contactPersons` — all `undefined` from the raw DB row. Every edit form opens with those fields blank regardless of what the DB holds.
+
+**Fix:** Added `mapContact(row)` normaliser function in `contacts.js`. Converts all snake_case DB columns to their camelCase equivalents before the response is sent. Applied to all four response paths: GET list, GET single, POST (create), PUT (update). The frontend already expects camelCase throughout — this is a pure backend fix with no frontend changes needed.
+
+---
+
+#### Bug 2 — `contactPersons` silently wiped to `[]` on every contact save (data loss)
+
+**Root cause:** Because `contact.contactPersons` was `undefined` (snake_case mismatch above), `JSON.stringify(formData)` omitted it from the PUT request body entirely. The PUT route called `contactSchema.partial().parse(req.body)`. Zod's `contactPersons: z.array(z.any()).default([])` applied its default, producing `validatedData.contactPersons = []`. The `if (validatedData.contactPersons !== undefined)` check then included it in the UPDATE, writing `contact_persons = '[]'` to the DB — wiping every saved contact person on every edit save. Same risk applied to `customFields`.
+
+**Fix:** After `contactSchema.partial().parse(req.body)`, the parsed result is filtered through `presentKeys = new Set(Object.keys(req.body))`. Any key not explicitly present in the request body (i.e. filled by Zod default) is stripped before the field-update logic runs. This means absent fields are never included in the UPDATE, preserving their existing DB values.
+
+**File changed:** `web/routes/contacts.js`
+
+---
+
+### Files changed this session
+
+| File | Change |
+|---|---|
+| `web/routes/contacts.js` | Added `mapContact()` normaliser; fixed Zod-default data-loss in PUT route |
+| `web/client/src/app/src/components/IntegratedCalendar.jsx` | 6 inline sub-components → plain render functions |
+| `web/client/src/app/src/components/QuotesList.jsx` | `SortTh` sub-component → `renderSortTh()` function |
+| `web/client/src/app/src/components/SafetyTabComprehensive.jsx` | `FormSection`/`FormField` → module-level with React context |
+| `web/client/src/app/src/components/CreateTicketModalFixed.jsx` | `StageNav` sub-component → inline JSX variable |
+
+---
+
+### Testing checklist after deploy
+
+**Contacts (primary fix):**
+- [ ] Open any existing contact for edit — all fields (Primary Contact, Display Name, Contact Persons) should now pre-populate with current DB values
+- [ ] Edit Primary Contact field, save — value should persist after reload
+- [ ] Open the same contact again — Contact Persons list should still be there (not wiped)
+- [ ] Create a new contact — all fields save correctly and the returned contact has camelCase keys
+
+**Safety tab:**
+- [ ] Open a ticket → Safety tab → Add Method Statement → fill out a form field → typing should NOT lose focus
+
+**Ticket Calendar (IntegratedCalendar):**
+- [ ] Click Add Event → type in the Title field → focus should stay while typing
+- [ ] Type in Notes field → focus should stay
+
+**Quotes list:**
+- [ ] Type in the search box → results filter without focus loss
+
+---
+
+### Rules for Claude — updated
+
+**Never define sub-components (`const Foo = () => ...`) inside another component's function body.** This applies to ALL components in the codebase. Allowed patterns:
+
+1. **Inline JSX variable:** `const fooJSX = (<div>...</div>)` — used as `{fooJSX}`
+2. **Plain render function:** `const renderFoo = () => (<div>...</div>)` — called as `{renderFoo()}`
+3. **Parameterised render function:** `const renderFoo = (item) => (<div>{item}</div>)` — called as `{renderFoo(item)}`
+4. **Module-level component with props** (for genuinely reusable components): define `const Foo = ({ x }) => ...` above the parent export, pass all needed values as props
+5. **Module-level component with context** (for components used in many places): define context at module level, wrap return with Provider, consumer reads via `useContext`
+
+Pattern 5 was used for `SafetyTabComprehensive` because `FormField` has ~100 call sites that would all need prop changes otherwise.
+
