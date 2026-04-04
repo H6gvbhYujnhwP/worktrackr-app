@@ -262,139 +262,140 @@ const ContactManager = () => {
     new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(amount);
 
   // ── Form tab content renderers ────────────────────────────────────────────────
-  const BasicInfoContent = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className={LABEL_CLS}>Contact Type</label>
-        <Select value={formData.type} onValueChange={(v) => setFormData(p => ({ ...p, type: v }))}>
-          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value={CONTACT_TYPES.COMPANY}>Company</SelectItem>
-            <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individual</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Company Name *</label>
-        <input className={INPUT_CLS} value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="Enter company name" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Primary Contact</label>
-        <input className={INPUT_CLS} value={formData.primaryContact} onChange={(e) => setFormData(p => ({ ...p, primaryContact: e.target.value }))} placeholder="Main contact person" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Email</label>
-        <input type="email" className={INPUT_CLS} value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="contact@company.com" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Phone</label>
-        <input className={INPUT_CLS} value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+44 20 7123 4567" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Website</label>
-        <input className={INPUT_CLS} value={formData.website} onChange={(e) => setFormData(p => ({ ...p, website: e.target.value }))} placeholder="https://company.com" />
-      </div>
-    </div>
-  );
-
-  const AddressesContent = () => (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-semibold text-[#111113]">Addresses</span>
-        <button type="button" onClick={addAddress} className={GOLD_BTN}><Plus className="w-4 h-4" /> Add Address</button>
-      </div>
-      {formData.addresses.length === 0 && (
-        <p className="text-[13px] text-[#9ca3af] text-center py-6">No addresses added yet.</p>
-      )}
-      {formData.addresses.map((address, index) => (
-        <div key={index} className="border border-[#e5e7eb] rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
-            <Select value={address.type} onValueChange={(v) => updateAddress(index, 'type', v)}>
-              <SelectTrigger className="w-36 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
-                <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
-                <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
-                <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
-              </SelectContent>
-            </Select>
-            <button type="button" onClick={() => removeAddress(index)} className="text-[13px] font-medium text-red-500 hover:text-red-700">Remove</button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 1</label><input className={INPUT_CLS} value={address.line1} onChange={(e) => updateAddress(index, 'line1', e.target.value)} placeholder="123 Main Street" /></div>
-            <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 2</label><input className={INPUT_CLS} value={address.line2} onChange={(e) => updateAddress(index, 'line2', e.target.value)} placeholder="Suite 100" /></div>
-            <div><label className={LABEL_CLS}>City</label><input className={INPUT_CLS} value={address.city} onChange={(e) => updateAddress(index, 'city', e.target.value)} placeholder="London" /></div>
-            <div><label className={LABEL_CLS}>State/Region</label><input className={INPUT_CLS} value={address.state} onChange={(e) => updateAddress(index, 'state', e.target.value)} placeholder="England" /></div>
-            <div><label className={LABEL_CLS}>Postal Code</label><input className={INPUT_CLS} value={address.postcode} onChange={(e) => updateAddress(index, 'postcode', e.target.value)} placeholder="SW1A 1AA" /></div>
-            <div><label className={LABEL_CLS}>Country</label><input className={INPUT_CLS} value={address.country} onChange={(e) => updateAddress(index, 'country', e.target.value)} placeholder="United Kingdom" /></div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const AccountingContent = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className={LABEL_CLS}>Currency</label>
-        <Select value={formData.accounting.currency} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, currency: v } }))}>
-          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(CURRENCIES).map(([code, info]) => (
-              <SelectItem key={code} value={code}>{info.symbol} {info.name} ({code})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Payment Terms</label>
-        <Select value={formData.accounting.paymentTerms} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, paymentTerms: v } }))}>
-          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
-              <SelectItem key={key} value={value}>{value}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div><label className={LABEL_CLS}>Tax Number / VAT ID</label><input className={INPUT_CLS} value={formData.accounting.taxNumber} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, taxNumber: e.target.value } }))} placeholder="GB123456789" /></div>
-      <div><label className={LABEL_CLS}>Account Code</label><input className={INPUT_CLS} value={formData.accounting.accountCode} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, accountCode: e.target.value } }))} placeholder="4000" /></div>
-      <div><label className={LABEL_CLS}>Credit Limit</label><input type="number" className={INPUT_CLS} value={formData.accounting.creditLimit} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, creditLimit: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
-      <div><label className={LABEL_CLS}>Discount Rate (%)</label><input type="number" className={INPUT_CLS} value={formData.accounting.discountRate} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, discountRate: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
-    </div>
-  );
-
-  const CRMContent = () => (
-    <div className="space-y-4">
+  // ── Tab content rendered as inline JSX — NOT as sub-components ───────────────
+  // CRITICAL: Never define sub-components (const Foo = () => ...) inside another
+  // component's function body. Every re-render creates a new function reference,
+  // React treats it as a new component type, unmounts/remounts the subtree, and
+  // all focused inputs lose focus. renderTabContent returns plain JSX instead.
+  const renderTabContent = (activeTab) => {
+    if (activeTab === 'basic') return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className={LABEL_CLS}>Status</label>
-          <Select value={formData.crm.status} onValueChange={(v) => setFormData(p => ({ ...p, crm: { ...p.crm, status: v } }))}>
+          <label className={LABEL_CLS}>Contact Type</label>
+          <Select value={formData.type} onValueChange={(v) => setFormData(p => ({ ...p, type: v }))}>
             <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
-              <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
-              <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
-              <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
+              <SelectItem value={CONTACT_TYPES.COMPANY}>Company</SelectItem>
+              <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individual</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div><label className={LABEL_CLS}>Source</label><input className={INPUT_CLS} value={formData.crm.source} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, source: e.target.value } }))} placeholder="Website, Referral, etc." /></div>
-        <div><label className={LABEL_CLS}>Industry</label><input className={INPUT_CLS} value={formData.crm.industry} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, industry: e.target.value } }))} placeholder="Technology, Healthcare, etc." /></div>
-        <div><label className={LABEL_CLS}>Company Size</label><input className={INPUT_CLS} value={formData.crm.companySize} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, companySize: e.target.value } }))} placeholder="1-10, 11-50, 51-200, etc." /></div>
+        <div>
+          <label className={LABEL_CLS}>Company Name *</label>
+          <input className={INPUT_CLS} value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="Enter company name" />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Primary Contact</label>
+          <input className={INPUT_CLS} value={formData.primaryContact} onChange={(e) => setFormData(p => ({ ...p, primaryContact: e.target.value }))} placeholder="Main contact person" />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Email</label>
+          <input type="email" className={INPUT_CLS} value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="contact@company.com" />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Phone</label>
+          <input className={INPUT_CLS} value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+44 20 7123 4567" />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Website</label>
+          <input className={INPUT_CLS} value={formData.website} onChange={(e) => setFormData(p => ({ ...p, website: e.target.value }))} placeholder="https://company.com" />
+        </div>
       </div>
-      <div>
-        <label className={LABEL_CLS}>Notes</label>
-        <textarea className={`${INPUT_CLS} min-h-[100px] resize-y`} value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes about this contact..." rows={4} />
-      </div>
-    </div>
-  );
+    );
 
-  const renderTabContent = (activeTab) => {
-    if (activeTab === 'basic')      return <BasicInfoContent />;
-    if (activeTab === 'addresses')  return <AddressesContent />;
-    if (activeTab === 'accounting') return <AccountingContent />;
-    if (activeTab === 'crm')        return <CRMContent />;
+    if (activeTab === 'addresses') return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-[#111113]">Addresses</span>
+          <button type="button" onClick={addAddress} className={GOLD_BTN}><Plus className="w-4 h-4" /> Add Address</button>
+        </div>
+        {formData.addresses.length === 0 && (
+          <p className="text-[13px] text-[#9ca3af] text-center py-6">No addresses added yet.</p>
+        )}
+        {formData.addresses.map((address, index) => (
+          <div key={index} className="border border-[#e5e7eb] rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <Select value={address.type} onValueChange={(v) => updateAddress(index, 'type', v)}>
+                <SelectTrigger className="w-36 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
+                  <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
+                  <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
+                  <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
+                </SelectContent>
+              </Select>
+              <button type="button" onClick={() => removeAddress(index)} className="text-[13px] font-medium text-red-500 hover:text-red-700">Remove</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 1</label><input className={INPUT_CLS} value={address.line1} onChange={(e) => updateAddress(index, 'line1', e.target.value)} placeholder="123 Main Street" /></div>
+              <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 2</label><input className={INPUT_CLS} value={address.line2} onChange={(e) => updateAddress(index, 'line2', e.target.value)} placeholder="Suite 100" /></div>
+              <div><label className={LABEL_CLS}>City</label><input className={INPUT_CLS} value={address.city} onChange={(e) => updateAddress(index, 'city', e.target.value)} placeholder="London" /></div>
+              <div><label className={LABEL_CLS}>State/Region</label><input className={INPUT_CLS} value={address.state} onChange={(e) => updateAddress(index, 'state', e.target.value)} placeholder="England" /></div>
+              <div><label className={LABEL_CLS}>Postal Code</label><input className={INPUT_CLS} value={address.postcode} onChange={(e) => updateAddress(index, 'postcode', e.target.value)} placeholder="SW1A 1AA" /></div>
+              <div><label className={LABEL_CLS}>Country</label><input className={INPUT_CLS} value={address.country} onChange={(e) => updateAddress(index, 'country', e.target.value)} placeholder="United Kingdom" /></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+
+    if (activeTab === 'accounting') return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={LABEL_CLS}>Currency</label>
+          <Select value={formData.accounting.currency} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, currency: v } }))}>
+            <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(CURRENCIES).map(([code, info]) => (
+                <SelectItem key={code} value={code}>{info.symbol} {info.name} ({code})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Payment Terms</label>
+          <Select value={formData.accounting.paymentTerms} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, paymentTerms: v } }))}>
+            <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
+                <SelectItem key={key} value={value}>{value}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div><label className={LABEL_CLS}>Tax Number / VAT ID</label><input className={INPUT_CLS} value={formData.accounting.taxNumber} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, taxNumber: e.target.value } }))} placeholder="GB123456789" /></div>
+        <div><label className={LABEL_CLS}>Account Code</label><input className={INPUT_CLS} value={formData.accounting.accountCode} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, accountCode: e.target.value } }))} placeholder="4000" /></div>
+        <div><label className={LABEL_CLS}>Credit Limit</label><input type="number" className={INPUT_CLS} value={formData.accounting.creditLimit} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, creditLimit: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
+        <div><label className={LABEL_CLS}>Discount Rate (%)</label><input type="number" className={INPUT_CLS} value={formData.accounting.discountRate} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, discountRate: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
+      </div>
+    );
+
+    if (activeTab === 'crm') return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={LABEL_CLS}>Status</label>
+            <Select value={formData.crm.status} onValueChange={(v) => setFormData(p => ({ ...p, crm: { ...p.crm, status: v } }))}>
+              <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
+                <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
+                <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
+                <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><label className={LABEL_CLS}>Source</label><input className={INPUT_CLS} value={formData.crm.source} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, source: e.target.value } }))} placeholder="Website, Referral, etc." /></div>
+          <div><label className={LABEL_CLS}>Industry</label><input className={INPUT_CLS} value={formData.crm.industry} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, industry: e.target.value } }))} placeholder="Technology, Healthcare, etc." /></div>
+          <div><label className={LABEL_CLS}>Company Size</label><input className={INPUT_CLS} value={formData.crm.companySize} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, companySize: e.target.value } }))} placeholder="1-10, 11-50, 51-200, etc." /></div>
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Notes</label>
+          <textarea className={`${INPUT_CLS} min-h-[100px] resize-y`} value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes about this contact..." rows={4} />
+        </div>
+      </div>
+    );
+
     return null;
   };
 

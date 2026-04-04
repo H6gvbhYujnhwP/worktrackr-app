@@ -7,19 +7,13 @@ import Dashboard from './Dashboard.jsx';
 export default function DashboardWithLayout() {
   const { user, membership } = useAuth();
   const dashboardRef = useRef(null);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
   const [currentView, setCurrentView] = useState('tickets');
 
   // Check if user is admin
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
 
-  // Auto-refresh timestamp every 10 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  // lastUpdate removed — was triggering a full DashboardWithLayout re-render every
+  // 10 seconds for no visible purpose. Nothing in AppLayout uses it meaningfully.
 
   // Handle navigation state from routes (e.g., coming back from quote editing)
   const location = useLocation();
@@ -57,7 +51,6 @@ export default function DashboardWithLayout() {
       user={user}
       isAdmin={isAdmin}
       onNavigate={handleSidebarNavigation}
-      lastUpdate={lastUpdate}
       currentView={currentView}
     >
       {/* Dashboard is now a CONTROLLED COMPONENT */}
