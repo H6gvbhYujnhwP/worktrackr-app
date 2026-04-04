@@ -7,7 +7,7 @@
 - **Live URL:** https://worktrackr.cloud
 - **Admin panel:** https://worktrackr.cloud/admin87476463/dashboard
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Input focus loss bug — Dashboard.jsx (tickets search) + ContactManager.jsx (edit modal)
+- **Last fixes applied:** Input focus loss — ContactManager.jsx (inline sub-components), Dashboard.jsx (TicketsView), DashboardWithLayout.jsx (lastUpdate polling)
 - **Known broken:** CRM Calendar events (fixed in Session 5 Burst 2, verify after deploy)
 - **Next priority:** See ROADMAP.md — Push 3 remaining components, then AI Phase 2
 
@@ -17,7 +17,9 @@
 
 ### Bug fixed: Input focus loss on every keystroke — affects tickets search and contact edit modal
 
-Two separate instances of the same class of bug, both fixed.
+Two separate instances of the same class of bug, plus one cleanup. All fixed.
+
+---
 
 #### Bug 1 — `Dashboard.jsx` (tickets search input loses focus on every keystroke)
 
@@ -29,18 +31,32 @@ Two separate instances of the same class of bug, both fixed.
 
 ---
 
-#### Bug 2 — `ContactManager.jsx` (edit modal inputs lose focus mid-typing)
+#### Bug 2 — `ContactManager.jsx` (edit/create modal inputs lose focus on every keystroke)
 
-**Root cause:** A `setInterval(() => loadContacts(), 10000)` was polling every 10 seconds. Each poll called `setContacts()` which triggered a full component re-render — including the edit modal — causing focused inputs to lose focus. Also manifested as only the first character appearing before focus was lost.
+**First attempt (incorrect):** Removed the 10-second polling interval (`setInterval(loadContacts, 10000)`). This was a valid cleanup but did NOT fix the focus bug — polling fires every 10 seconds, not every keystroke.
 
-**Fix:** Removed the polling interval entirely. Contacts still reload automatically after every create, update, and delete operation so the list stays current without background polling.
+**Real root cause:** `BasicInfoContent`, `AddressesContent`, `AccountingContent`, and `CRMContent` were defined as sub-component functions **inside** `ContactManager`'s function body (lines 265–391). Every keystroke triggers `setFormData` → ContactManager re-renders → all four function references are recreated as brand new component types → React unmounts/remounts the tab content → focused input is destroyed. This happens on EVERY keystroke, not just every 10 seconds.
+
+**Fix:** Deleted all four sub-component definitions. Converted `renderTabContent` to return inline JSX directly for each tab case. React reconciles inline JSX in-place without unmounting, so focus is preserved throughout typing.
 
 **File changed:** `ContactManager.jsx`
 
 ---
 
+#### Cleanup — `DashboardWithLayout.jsx`
+
+`setLastUpdate(new Date())` was firing every 10 seconds via a `setInterval`, causing a full re-render of `DashboardWithLayout` → `AppLayout` → `Dashboard` → all children for no visible reason. `lastUpdate` was passed as a prop to `AppLayout` but never used meaningfully. Removed the state, interval, and prop entirely.
+
+**File changed:** `DashboardWithLayout.jsx`
+
+---
+
 #### Rule added for future sessions
-Never define sub-components (`const Foo = () => ...`) inside another component's function body. This is a React anti-pattern that causes full unmount/remount on every parent render. Always define them outside the parent function, or use inline JSX variables if they need to close over parent state.
+**Never define sub-components (`const Foo = () => ...`) inside another component's function body.** This is a React anti-pattern that causes full unmount/remount on every parent render, destroying input focus. Always either:
+- Return inline JSX directly from a render helper function
+- Define the sub-component outside the parent function (with props passed in)
+
+This applies to ALL components in the codebase — check any new component added for this pattern before deploying.
 
 ---
 
