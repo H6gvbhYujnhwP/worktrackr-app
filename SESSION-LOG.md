@@ -3,13 +3,180 @@
 ---
 
 ## Current State
-- **Last session:** 2025-04-01 (Session 1)
+- **Last session:** 2025-04-03 (Session 5)
 - **Live URL:** https://worktrackr.cloud
 - **Admin panel:** https://worktrackr.cloud/admin87476463/dashboard
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** See Session 1 below
-- **Known broken:** Nothing critical remaining after Session 1 fixes
-- **Next priority:** See ROADMAP.md
+- **Last fixes applied:** See Session 5 below
+- **Known broken:** CRM Calendar events (fixed in Burst 2, verify after next deploy)
+- **Next priority:** See ROADMAP.md — AI Phase 2 (audio transcription classification)
+
+---
+
+## Session 5 — 2025-04-03
+
+### Overview
+Three separate deploy bursts completing UI Push 2 (Modern Enterprise restyle) across all remaining components, plus AI Phase 1 (real Claude API email classification).
+
+---
+
+### Session 5 — Burst 1 (deployed, confirmed working)
+
+**Files changed:**
+
+**1. `AssignTicketsModal.jsx`** — restyled to Modern Enterprise
+- Single white container, gold buttons, proper table headers
+- Assignee avatars with colour-hashed initials
+- All bulk assign logic preserved
+
+**2. `SendQuoteModal.jsx`** — restyled
+- White modal container, gold Send button, outline Cancel
+- Email preview section with `bg-[#fafafa]` box
+- All send/preview logic preserved
+
+**3. `QuotesList.jsx`** — restyled
+- Stat strip (Total, Draft, Sent, Accepted, Declined, Total Value)
+- Single white table container, proper headers, zebra + amber hover rows
+- Status badges: muted semantic colours
+- All fetch/filter/sort logic preserved
+
+**4. `SecuritySettings.jsx`** — restyled
+- Section wrap pattern (`bg-white rounded-xl border border-[#e5e7eb]`)
+- Gold save buttons, proper label/input tokens
+- All password change + 2FA + session logic preserved
+
+**5. `EmailIntakeSettings.jsx`** — restyled
+- Stat strip (emails received, tickets created, quotes created, avg confidence)
+- DNS records displayed in `bg-[#f8fafc]` code-style boxes
+- Activity log table with proper headers and status badges
+- All settings save/activate/verify logic preserved
+
+---
+
+### Session 5 — Burst 2 (deployed, needs testing)
+
+**Files changed:**
+
+**1. `QuoteDetails.jsx`** — restyled
+- Single white container, underline tab nav (gold active), section wraps
+- Header with quote number, status badge, gold action buttons
+- All approve/decline/send/download logic preserved
+
+**2. `UserManagementImproved.jsx`** — restyled
+- Stat strip (Total Users, Active, Admins, Pending)
+- Single white table, proper headers, zebra rows
+- Role badges: muted semantic colours
+- All invite/edit/remove/role-change logic preserved
+
+**3. `CRMCalendar.jsx`** — restyled + 6 bug fixes
+- Redesigned: white container, underline month-nav tabs, event cards with type colour-coding
+- **Bug fix 1:** Event type `'call'` (lowercase) was not being accepted by Zod schema — fixed to match DB enum
+- **Bug fix 2:** `start_at` / `end_at` field names used in calendar grid (was `date`/`time`) — fixed field mapping
+- **Bug fix 3:** `sendMeetingInvitations()` called on non-existent function — removed call entirely
+- **Bug fix 4:** Mark Done button wired to real PATCH `/api/crm-calendar-events/:id` endpoint
+- **Bug fix 5:** Schedule Meeting modal now loads real contacts from `/api/contacts` instead of showing fake names
+- **Bug fix 6:** Polling interval removed (was causing unnecessary re-renders)
+
+**Testing checklist for Burst 2:**
+- Create a "Call" type event → should save without Zod error
+- Create event with date/time → should appear on correct calendar day
+- Click Mark Done → status updates without page reload
+- Open Schedule Meeting → dropdown shows real contact names
+- scheduleFromEvent → opens modal without crash
+
+---
+
+### Session 5 — Burst 3 (ready to deploy)
+
+**Design tokens — all Burst 3 files use these consistently:**
+- Single white container: `bg-white rounded-xl border border-[#e5e7eb] overflow-hidden`
+- Table headers: `text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]`
+- Zebra rows: odd=white, even=`bg-[#fafbfc]`, hover=`bg-[#fef9ee]`
+- Gold primary buttons: `bg-[#d4a017] text-[#111113] hover:bg-[#b8860b]`
+- Gold focus rings: `focus:ring-[#d4a017]/30 focus:border-[#d4a017]`
+
+**Files changed:**
+
+**1. `ContactManager.jsx`** — full restyle
+- Removed: Card, CardContent, CardDescription, CardHeader, CardTitle imports
+- Added: 6-stat strip (Total, Active, Prospects, At Risk, Companies, Total Value) with coloured icon tiles
+- Added: custom `FormTabs` component (gold underline, state-driven) replacing shadcn Tabs in modals
+- Contact list: single white container, proper table headers, zebra + amber hover, selected row = amber
+- Detail panel: right-side white container, section headers in uppercase tracking-wider
+- Modals: flex-column layout with sticky header/footer, scrollable body
+- All handlers preserved: handleCreateContact, handleUpdateContact, handleDeleteContact, handleEditContact
+- All address/contactPerson add/update/remove helpers preserved
+- All imports from `../data/contactDatabase.js` preserved (contactDB, CONTACT_TYPES, etc.)
+
+**2. `CRMDashboard.jsx`** — full restyle
+- Removed: Card wrappers
+- Added: 4-stat strip (Customers, Total Profit, Renewals Due, Open Opps)
+- Tabs: shadcn Tabs kept with className overrides for gold underline active state
+- Customers tab: alphabet nav with gold active buttons, customer list with status/renewal badges
+- Catalog tab: proper table headers (Product, Category, Our Cost, Client Price, Margin, Unit, Def. Qty)
+- Quotes tab: proper table with QUOTE_STATUS_BADGE tokens
+- Customer detail modal: white container, service rows with profit display, contact info panel
+- All API calls preserved: updateCustomerService, addNewProduct, removeProduct, exportCRMData, updateRenewalDate, saveNote
+
+**3. `QuoteForm.jsx`** — full restyle
+- Removed: Card imports (relative `./ui/card` path — not `@/components/ui/`)
+- Kept: Button, Input, Label, Textarea, Select imports (relative `./ui/` paths preserved)
+- Sections use SECTION_WRAP / SECTION_HEAD / SECTION_BODY pattern
+- Line items: each item in `border border-[#e5e7eb] rounded-xl p-4 bg-[#fafafa]` card
+- Pricing summary: right-aligned `bg-[#fafafa] rounded-xl border` box
+- All console.log debug statements preserved
+- handleSubmit, handleProductSelect, handleLoadTemplate, all useEffects preserved
+- QuickAddContactModal import and usage preserved
+
+---
+
+### Session 5 — AI Phase 1 (ready to deploy)
+
+**File changed: `web/routes/email-intake.js`**
+
+Replaced keyword-based `classifyEmailWithAI()` stub with real Claude API call.
+
+**What it does:**
+- Calls `https://api.anthropic.com/v1/messages` using `ANTHROPIC_API_KEY` env var
+- Model: `claude-haiku-4-5-20251001` (fast, low-cost, ideal for classification)
+- Prompt extracts: intent (ticket/quote), urgency (low/medium/high/urgent), title, description, category, issue_type, contact_name, company, confidence
+- Falls back to keyword-based classification if API key not set or call fails
+- After creating ticket/quote, inserts a row into `ai_extractions` table with the full structured extraction result
+
+**Impact analysis:**
+- `classifyEmailWithAI(subject, body)` return shape unchanged — webhook handler requires no changes
+- `aiResult.urgency` still maps to ticket priority (low/medium/high/urgent)
+- `aiResult.intent` and `aiResult.confidence` still used for routing decision
+- `ai_extractions` INSERT is wrapped in try/catch — failure does not block ticket/quote creation
+- Fallback ensures email intake continues working even if Anthropic API is unavailable
+
+**Env var needed on Render:**
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+---
+
+### Push 2 complete — full component checklist
+
+All components now use Modern Enterprise design system:
+✅ AppLayout, Sidebar, App.css (Push 1 — shell)
+✅ Dashboard (Push 2 Burst 1)
+✅ TicketsTableView (Push 2 Burst 1)
+✅ TicketDetailViewTabbed (Push 2 Burst 1)
+✅ AssignTicketsModal (Push 2 Burst 1 — Session 5)
+✅ SendQuoteModal (Push 2 Burst 1 — Session 5)
+✅ QuotesList (Push 2 Burst 1 — Session 5)
+✅ SecuritySettings (Push 2 Burst 1 — Session 5)
+✅ EmailIntakeSettings (Push 2 Burst 1 — Session 5)
+✅ QuoteDetails (Push 2 Burst 2 — Session 5)
+✅ UserManagementImproved (Push 2 Burst 2 — Session 5)
+✅ CRMCalendar (Push 2 Burst 2 — Session 5)
+✅ ContactManager (Push 2 Burst 3 — Session 5)
+✅ CRMDashboard (Push 2 Burst 3 — Session 5)
+✅ QuoteForm (Push 2 Burst 3 — Session 5)
+
+Deferred to Push 3: QuoteFormTabs, CreateTicketModal, IntegratedCalendar, BookingCalendar
 
 ---
 

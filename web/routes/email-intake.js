@@ -33,42 +33,147 @@ async function generateQuoteNumber(organisationId) {
   return `QT-${year}-${String(count).padStart(4, '0')}`;
 }
 
-// Helper: Classify email with AI (placeholder - will implement with OpenAI)
+// Helper: Classify email with AI using Claude API
 async function classifyEmailWithAI(subject, body) {
-  // For now, simple keyword-based classification
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  // ── Fallback: keyword-based if no API key ──────────────────────────────────
+  if (!apiKey) {
+    console.warn('⚠️  ANTHROPIC_API_KEY not set — using keyword fallback');
+    return keywordFallback(subject, body);
+  }
+
+  try {
+    const prompt = `You are an email classifier for a field service management platform called WorkTrackr.
+
+Analyse the following inbound email and return a JSON object with these exact fields:
+
+{
+  "intent": "ticket" | "quote" | "inquiry",
+  "confidence": 0.0–1.0,
+  "urgency": "low" | "medium" | "high" | "urgent",
+  "title": "A concise, action-oriented ticket or quote title (max 80 chars)",
+  "description": "A clean 1–3 sentence summary of what the sender needs",
+  "category": "billing" | "technical" | "installation" | "maintenance" | "general",
+  "issue_type": "A short label describing the specific issue or request type",
+  "contact_name": "Full name of the sender if found in the email, else null",
+  "company": "Company name if mentioned, else null",
+  "entities": {
+    "customer_name": "same as contact_name or null",
+    "company": "same as company above or null",
+    "services": ["list of services or products mentioned"],
+    "budget": "budget amount as string if mentioned, else null"
+  }
+}
+
+Rules:
+- intent = "ticket" if reporting a problem, fault, outage, or requesting support
+- intent = "quote" if asking for pricing, a proposal, or an estimate
+- intent = "inquiry" for everything else
+- urgency = "urgent" only for emergencies, outages, or safety issues
+- urgency = "high" for broken systems or time-sensitive issues
+- Respond with ONLY the JSON object — no markdown, no explanation, no backticks
+
+Email subject: ${subject}
+
+Email body:
+${body.slice(0, 3000)}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Anthropic API error ${response.status}: ${err}`);
+    }
+
+    const data = await response.json();
+    const rawText = data?.content?.[0]?.text?.trim() || '';
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      console.error('❌ Claude returned non-JSON:', rawText.slice(0, 200));
+      return keywordFallback(subject, body);
+    }
+
+    // Sanitise & enforce allowed enum values
+    const allowedIntents  = ['ticket', 'quote', 'inquiry'];
+    const allowedUrgency  = ['low', 'medium', 'high', 'urgent'];
+    const allowedCategory = ['billing', 'technical', 'installation', 'maintenance', 'general'];
+
+    const intent   = allowedIntents.includes(parsed.intent)   ? parsed.intent   : 'inquiry';
+    const urgency  = allowedUrgency.includes(parsed.urgency)  ? parsed.urgency  : 'medium';
+    const category = allowedCategory.includes(parsed.category)? parsed.category : 'general';
+    const confidence = typeof parsed.confidence === 'number'
+      ? Math.min(1, Math.max(0, parsed.confidence))
+      : 0.75;
+
+    console.log(`🤖 Claude classified: intent=${intent} urgency=${urgency} confidence=${confidence} category=${category}`);
+
+    return {
+      intent,
+      confidence,
+      urgency,
+      title:       parsed.title       || subject,
+      description: parsed.description || '',
+      category,
+      issue_type:  parsed.issue_type  || '',
+      contact_name: parsed.contact_name || null,
+      company:      parsed.company      || null,
+      entities: {
+        customer_name: parsed.entities?.customer_name || parsed.contact_name || null,
+        company:       parsed.entities?.company       || parsed.company       || null,
+        services:      Array.isArray(parsed.entities?.services) ? parsed.entities.services : [],
+        budget:        parsed.entities?.budget || null
+      },
+      reasoning: `Claude AI classification (model: claude-haiku-4-5-20251001)`
+    };
+
+  } catch (error) {
+    console.error('❌ Claude classification failed:', error.message);
+    return keywordFallback(subject, body);
+  }
+}
+
+// Keyword-based fallback (used when API key missing or Claude call fails)
+function keywordFallback(subject, body) {
   const text = `${subject} ${body}`.toLowerCase();
-  
   let intent = 'inquiry';
   let confidence = 0.5;
   let urgency = 'medium';
-  
-  // Detect ticket keywords
-  if (text.includes('urgent') || text.includes('emergency') || text.includes('broken') || 
+
+  if (text.includes('urgent') || text.includes('emergency') || text.includes('broken') ||
       text.includes('not working') || text.includes('help') || text.includes('problem')) {
     intent = 'ticket';
-    confidence = 0.85;
+    confidence = 0.75;
     urgency = text.includes('urgent') || text.includes('emergency') ? 'urgent' : 'high';
   }
-  
-  // Detect quote keywords
-  if (text.includes('quote') || text.includes('estimate') || text.includes('price') || 
+  if (text.includes('quote') || text.includes('estimate') || text.includes('price') ||
       text.includes('cost') || text.includes('how much')) {
     intent = 'quote';
-    confidence = 0.85;
+    confidence = 0.75;
     urgency = 'medium';
   }
-  
+
   return {
-    intent,
-    confidence,
-    urgency,
-    entities: {
-      customer_name: null,
-      company: null,
-      services: [],
-      budget: null
-    },
-    reasoning: `Keyword-based classification (AI integration pending)`
+    intent, confidence, urgency,
+    title: subject, description: '', category: 'general', issue_type: '',
+    contact_name: null, company: null,
+    entities: { customer_name: null, company: null, services: [], budget: null },
+    reasoning: 'Keyword-based fallback classification'
   };
 }
 
@@ -406,6 +511,40 @@ router.post('/webhook', async (req, res) => {
       workItemType = 'ticket';
       reference = ticket.id;
       console.log('✅ Created ticket:', reference, '(AI intent:', aiResult.intent + ')');
+
+      // Store AI extraction audit trail
+      try {
+        await db.query(
+          `INSERT INTO ai_extractions (
+            organisation_id, ticket_id, model, extraction_type, extracted_data, confidence_score
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            channel.organisation_id,
+            ticket.id,
+            'claude-haiku-4-5-20251001',
+            'email_classification',
+            JSON.stringify({
+              intent:       aiResult.intent,
+              urgency:      aiResult.urgency,
+              title:        aiResult.title        || subject,
+              description:  aiResult.description  || '',
+              category:     aiResult.category     || 'general',
+              issue_type:   aiResult.issue_type   || '',
+              contact_name: aiResult.contact_name || null,
+              company:      aiResult.company      || null,
+              entities:     aiResult.entities,
+              reasoning:    aiResult.reasoning,
+              from_email:   from,
+              original_subject: subject
+            }),
+            aiResult.confidence
+          ]
+        );
+        console.log('🧠 Saved AI extraction to ai_extractions');
+      } catch (extractionErr) {
+        // Non-fatal — log but continue
+        console.error('⚠️  Failed to save ai_extractions row:', extractionErr.message);
+      }
     } else {
       // Flag for review
       action = 'flagged_for_review';
@@ -423,7 +562,8 @@ router.post('/webhook', async (req, res) => {
       [
         channel.organisation_id, channel.id, from, toAddress, subject, body,
         aiResult.intent, aiResult.confidence, JSON.stringify(aiResult.entities),
-        'keyword-based', processingTime, action, workItemId, workItemType, requiresReview
+        process.env.ANTHROPIC_API_KEY ? 'claude-haiku-4-5-20251001' : 'keyword-fallback',
+        processingTime, action, workItemId, workItemType, requiresReview
       ]
     );
 

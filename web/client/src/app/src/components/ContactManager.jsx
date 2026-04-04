@@ -4,34 +4,18 @@ import {
   User, 
   Plus, 
   Search, 
-  Filter, 
   Edit, 
   Trash2, 
-  Eye, 
   Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  DollarSign,
+  Phone,
   Users,
-  FileText,
-  Settings,
-  Download,
-  Upload,
-  X,
+  DollarSign,
   Check,
   AlertCircle,
   Star,
-  Tag
+  X,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { Button } from '@/components/ui/button.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
-import { Textarea } from '@/components/ui/textarea.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { 
   contactDB, 
   CONTACT_TYPES, 
@@ -41,7 +25,52 @@ import {
   CURRENCIES 
 } from '../data/contactDatabase.js';
 
-// Contact Manager Component - Professional table layout for scalable contact management
+// ── Design tokens ──────────────────────────────────────────────────────────────
+const STATUS_BADGE = {
+  [CONTACT_STATUS.ACTIVE]:   'bg-[#dcfce7] text-[#166534]',
+  [CONTACT_STATUS.PROSPECT]: 'bg-[#dbeafe] text-[#1e40af]',
+  [CONTACT_STATUS.AT_RISK]:  'bg-[#fef3c7] text-[#92400e]',
+  [CONTACT_STATUS.INACTIVE]: 'bg-[#f3f4f6] text-[#6b7280]',
+  [CONTACT_STATUS.ARCHIVED]: 'bg-[#fee2e2] text-[#991b1b]',
+};
+
+const INPUT_CLS  = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
+const LABEL_CLS  = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
+const SECTION_H  = 'text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-2';
+const GOLD_BTN   = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const OUTLINE_BTN= 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors';
+const GHOST_BTN  = 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors';
+
+// ── Tab nav component ─────────────────────────────────────────────────────────
+function FormTabs({ tabs, active, onChange }) {
+  return (
+    <div className="flex border-b border-[#e5e7eb] overflow-x-auto">
+      {tabs.map(t => (
+        <button
+          key={t.value}
+          type="button"
+          onClick={() => onChange(t.value)}
+          className={`flex-shrink-0 px-5 py-3 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+            active === t.value
+              ? 'border-[#d4a017] text-[#111113]'
+              : 'border-transparent text-[#6b7280] hover:text-[#111113]'
+          }`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const FORM_TABS = [
+  { value: 'basic',      label: 'Basic Info'   },
+  { value: 'addresses',  label: 'Addresses'    },
+  { value: 'accounting', label: 'Accounting'   },
+  { value: 'crm',        label: 'CRM & Notes'  },
+];
+
+// ── Main component ─────────────────────────────────────────────────────────────
 const ContactManager = () => {
   const [contacts, setContacts] = useState([]);
   const [filteredContacts, setFilteredContacts] = useState([]);
@@ -52,7 +81,8 @@ const ContactManager = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [statistics, setStatistics] = useState({});
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeCreateTab, setActiveCreateTab] = useState('basic');
+  const [activeEditTab,   setActiveEditTab]   = useState('basic');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -84,37 +114,24 @@ const ContactManager = () => {
     notes: ''
   });
 
-  // Load contacts on component mount and set up auto-refresh
+  // ── Data loading ─────────────────────────────────────────────────────────────
   useEffect(() => {
     loadContacts();
-    
-    // Auto-refresh every 10 seconds
-    const intervalId = setInterval(() => {
-      loadContacts();
-    }, 10000);
-    
-    // Cleanup interval on component unmount
+    const intervalId = setInterval(() => { loadContacts(); }, 10000);
     return () => clearInterval(intervalId);
   }, []);
 
-  // Filter contacts when search term or filters change
   useEffect(() => {
     filterContacts();
   }, [contacts, searchTerm, statusFilter, typeFilter]);
 
   const loadContacts = async () => {
     try {
-      const response = await fetch('/api/contacts', {
-        credentials: 'include'
-      });
+      const response = await fetch('/api/contacts', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch contacts');
       const allContacts = await response.json();
-      
-      const statsResponse = await fetch('/api/contacts/statistics', {
-        credentials: 'include'
-      });
+      const statsResponse = await fetch('/api/contacts/statistics', { credentials: 'include' });
       const stats = statsResponse.ok ? await statsResponse.json() : {};
-      
       setContacts(allContacts);
       setStatistics(stats);
     } catch (error) {
@@ -124,62 +141,27 @@ const ContactManager = () => {
 
   const filterContacts = () => {
     let filtered = contacts;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = contactDB.searchContacts(searchTerm);
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(contact => contact.crm.status === statusFilter);
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(contact => contact.type === typeFilter);
-    }
-
+    if (searchTerm) { filtered = contactDB.searchContacts(searchTerm); }
+    if (statusFilter !== 'all') { filtered = filtered.filter(c => c.crm.status === statusFilter); }
+    if (typeFilter   !== 'all') { filtered = filtered.filter(c => c.type   === typeFilter);       }
     setFilteredContacts(filtered);
   };
 
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const resetForm = () => {
     setFormData({
-      type: CONTACT_TYPES.COMPANY,
-      name: '',
-      displayName: '',
-      primaryContact: '',
-      email: '',
-      phone: '',
-      website: '',
-      addresses: [],
-      accounting: {
-        taxNumber: '',
-        paymentTerms: PAYMENT_TERMS.NET_30,
-        currency: 'GBP',
-        accountCode: '',
-        creditLimit: 0,
-        discountRate: 0
-      },
-      crm: {
-        status: CONTACT_STATUS.PROSPECT,
-        source: '',
-        industry: '',
-        companySize: '',
-        assignedTo: null
-      },
-      contactPersons: [],
-      tags: [],
-      notes: ''
+      type: CONTACT_TYPES.COMPANY, name: '', displayName: '', primaryContact: '',
+      email: '', phone: '', website: '', addresses: [],
+      accounting: { taxNumber: '', paymentTerms: PAYMENT_TERMS.NET_30, currency: 'GBP', accountCode: '', creditLimit: 0, discountRate: 0 },
+      crm: { status: CONTACT_STATUS.PROSPECT, source: '', industry: '', companySize: '', assignedTo: null },
+      contactPersons: [], tags: [], notes: ''
     });
   };
 
   const handleCreateContact = async () => {
     try {
       const response = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to create contact');
@@ -197,9 +179,7 @@ const ContactManager = () => {
   const handleUpdateContact = async () => {
     try {
       const response = await fetch(`/api/contacts/${selectedContact.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify(formData)
       });
       if (!response.ok) throw new Error('Failed to update contact');
@@ -216,15 +196,10 @@ const ContactManager = () => {
   const handleDeleteContact = async (contactId) => {
     if (window.confirm('Are you sure you want to delete this contact? This action cannot be undone.')) {
       try {
-        const response = await fetch(`/api/contacts/${contactId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
+        const response = await fetch(`/api/contacts/${contactId}`, { method: 'DELETE', credentials: 'include' });
         if (!response.ok) throw new Error('Failed to delete contact');
         await loadContacts();
-        if (selectedContact && selectedContact.id === contactId) {
-          setSelectedContact(null);
-        }
+        if (selectedContact && selectedContact.id === contactId) { setSelectedContact(null); }
       } catch (error) {
         console.error('Error deleting contact:', error);
         alert('Failed to delete contact. Please try again.');
@@ -234,1310 +209,522 @@ const ContactManager = () => {
 
   const handleEditContact = (contact) => {
     setFormData({
-      type: contact.type,
-      name: contact.name,
-      displayName: contact.displayName,
-      primaryContact: contact.primaryContact,
-      email: contact.email,
-      phone: contact.phone,
-      website: contact.website,
-      addresses: contact.addresses,
-      accounting: contact.accounting,
-      crm: contact.crm,
-      contactPersons: contact.contactPersons,
-      tags: contact.tags,
-      notes: contact.notes
+      type: contact.type, name: contact.name, displayName: contact.displayName,
+      primaryContact: contact.primaryContact, email: contact.email, phone: contact.phone,
+      website: contact.website, addresses: contact.addresses, accounting: contact.accounting,
+      crm: contact.crm, contactPersons: contact.contactPersons, tags: contact.tags, notes: contact.notes
     });
     setSelectedContact(contact);
     setShowEditForm(true);
+    setActiveEditTab('basic');
   };
 
   const addAddress = () => {
     const newAddress = {
-      id: Date.now().toString(),
-      type: ADDRESS_TYPES.BILLING,
-      line1: '',
-      line2: '',
-      city: '',
-      state: '',
-      postcode: '',
-      country: 'United Kingdom',
+      id: Date.now().toString(), type: ADDRESS_TYPES.BILLING, line1: '', line2: '',
+      city: '', state: '', postcode: '', country: 'United Kingdom',
       isPrimary: formData.addresses.length === 0
     };
-    setFormData(prev => ({
-      ...prev,
-      addresses: [...prev.addresses, newAddress]
-    }));
+    setFormData(prev => ({ ...prev, addresses: [...prev.addresses, newAddress] }));
   };
 
   const updateAddress = (index, field, value) => {
     const updatedAddresses = [...formData.addresses];
-    updatedAddresses[index] = {
-      ...updatedAddresses[index],
-      [field]: value
-    };
-    setFormData(prev => ({
-      ...prev,
-      addresses: updatedAddresses
-    }));
+    updatedAddresses[index] = { ...updatedAddresses[index], [field]: value };
+    setFormData(prev => ({ ...prev, addresses: updatedAddresses }));
   };
 
   const removeAddress = (index) => {
-    const updatedAddresses = formData.addresses.filter((_, i) => i !== index);
-    setFormData(prev => ({
-      ...prev,
-      addresses: updatedAddresses
-    }));
+    setFormData(prev => ({ ...prev, addresses: formData.addresses.filter((_, i) => i !== index) }));
   };
 
   const addContactPerson = () => {
     const newPerson = {
-      id: Date.now().toString(),
-      name: '',
-      title: '',
-      email: '',
-      phone: '',
-      department: '',
-      isPrimary: formData.contactPersons.length === 0,
-      notes: ''
+      id: Date.now().toString(), name: '', title: '', email: '', phone: '',
+      department: '', isPrimary: formData.contactPersons.length === 0, notes: ''
     };
-    setFormData(prev => ({
-      ...prev,
-      contactPersons: [...prev.contactPersons, newPerson]
-    }));
+    setFormData(prev => ({ ...prev, contactPersons: [...prev.contactPersons, newPerson] }));
   };
 
   const updateContactPerson = (index, field, value) => {
     const updatedPersons = [...formData.contactPersons];
-    updatedPersons[index] = {
-      ...updatedPersons[index],
-      [field]: value
-    };
-    setFormData(prev => ({
-      ...prev,
-      contactPersons: updatedPersons
-    }));
+    updatedPersons[index] = { ...updatedPersons[index], [field]: value };
+    setFormData(prev => ({ ...prev, contactPersons: updatedPersons }));
   };
 
   const removeContactPerson = (index) => {
-    const updatedPersons = formData.contactPersons.filter((_, i) => i !== index);
-    setFormData(prev => ({
-      ...prev,
-      contactPersons: updatedPersons
-    }));
+    setFormData(prev => ({ ...prev, contactPersons: formData.contactPersons.filter((_, i) => i !== index) }));
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      [CONTACT_STATUS.ACTIVE]: 'bg-green-100 text-green-800 border-green-200',
-      [CONTACT_STATUS.PROSPECT]: 'bg-blue-100 text-blue-800 border-blue-200',
-      [CONTACT_STATUS.AT_RISK]: 'bg-orange-100 text-orange-800 border-orange-200',
-      [CONTACT_STATUS.INACTIVE]: 'bg-gray-100 text-gray-800 border-gray-200',
-      [CONTACT_STATUS.ARCHIVED]: 'bg-red-100 text-red-800 border-red-200'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  const getStatusBadge = (status) => STATUS_BADGE[status] || 'bg-[#f3f4f6] text-[#6b7280]';
+
+  const formatCurrency = (amount, currency = 'GBP') =>
+    new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(amount);
+
+  // ── Form tab content renderers ────────────────────────────────────────────────
+  const BasicInfoContent = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className={LABEL_CLS}>Contact Type</label>
+        <Select value={formData.type} onValueChange={(v) => setFormData(p => ({ ...p, type: v }))}>
+          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={CONTACT_TYPES.COMPANY}>Company</SelectItem>
+            <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individual</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Company Name *</label>
+        <input className={INPUT_CLS} value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} placeholder="Enter company name" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Primary Contact</label>
+        <input className={INPUT_CLS} value={formData.primaryContact} onChange={(e) => setFormData(p => ({ ...p, primaryContact: e.target.value }))} placeholder="Main contact person" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Email</label>
+        <input type="email" className={INPUT_CLS} value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="contact@company.com" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Phone</label>
+        <input className={INPUT_CLS} value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+44 20 7123 4567" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Website</label>
+        <input className={INPUT_CLS} value={formData.website} onChange={(e) => setFormData(p => ({ ...p, website: e.target.value }))} placeholder="https://company.com" />
+      </div>
+    </div>
+  );
+
+  const AddressesContent = () => (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-[#111113]">Addresses</span>
+        <button type="button" onClick={addAddress} className={GOLD_BTN}><Plus className="w-4 h-4" /> Add Address</button>
+      </div>
+      {formData.addresses.length === 0 && (
+        <p className="text-[13px] text-[#9ca3af] text-center py-6">No addresses added yet.</p>
+      )}
+      {formData.addresses.map((address, index) => (
+        <div key={index} className="border border-[#e5e7eb] rounded-lg p-4">
+          <div className="flex items-center justify-between mb-4">
+            <Select value={address.type} onValueChange={(v) => updateAddress(index, 'type', v)}>
+              <SelectTrigger className="w-36 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
+                <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
+                <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
+                <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
+              </SelectContent>
+            </Select>
+            <button type="button" onClick={() => removeAddress(index)} className="text-[13px] font-medium text-red-500 hover:text-red-700">Remove</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 1</label><input className={INPUT_CLS} value={address.line1} onChange={(e) => updateAddress(index, 'line1', e.target.value)} placeholder="123 Main Street" /></div>
+            <div className="md:col-span-2"><label className={LABEL_CLS}>Address Line 2</label><input className={INPUT_CLS} value={address.line2} onChange={(e) => updateAddress(index, 'line2', e.target.value)} placeholder="Suite 100" /></div>
+            <div><label className={LABEL_CLS}>City</label><input className={INPUT_CLS} value={address.city} onChange={(e) => updateAddress(index, 'city', e.target.value)} placeholder="London" /></div>
+            <div><label className={LABEL_CLS}>State/Region</label><input className={INPUT_CLS} value={address.state} onChange={(e) => updateAddress(index, 'state', e.target.value)} placeholder="England" /></div>
+            <div><label className={LABEL_CLS}>Postal Code</label><input className={INPUT_CLS} value={address.postcode} onChange={(e) => updateAddress(index, 'postcode', e.target.value)} placeholder="SW1A 1AA" /></div>
+            <div><label className={LABEL_CLS}>Country</label><input className={INPUT_CLS} value={address.country} onChange={(e) => updateAddress(index, 'country', e.target.value)} placeholder="United Kingdom" /></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const AccountingContent = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className={LABEL_CLS}>Currency</label>
+        <Select value={formData.accounting.currency} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, currency: v } }))}>
+          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(CURRENCIES).map(([code, info]) => (
+              <SelectItem key={code} value={code}>{info.symbol} {info.name} ({code})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Payment Terms</label>
+        <Select value={formData.accounting.paymentTerms} onValueChange={(v) => setFormData(p => ({ ...p, accounting: { ...p.accounting, paymentTerms: v } }))}>
+          <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
+              <SelectItem key={key} value={value}>{value}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div><label className={LABEL_CLS}>Tax Number / VAT ID</label><input className={INPUT_CLS} value={formData.accounting.taxNumber} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, taxNumber: e.target.value } }))} placeholder="GB123456789" /></div>
+      <div><label className={LABEL_CLS}>Account Code</label><input className={INPUT_CLS} value={formData.accounting.accountCode} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, accountCode: e.target.value } }))} placeholder="4000" /></div>
+      <div><label className={LABEL_CLS}>Credit Limit</label><input type="number" className={INPUT_CLS} value={formData.accounting.creditLimit} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, creditLimit: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
+      <div><label className={LABEL_CLS}>Discount Rate (%)</label><input type="number" className={INPUT_CLS} value={formData.accounting.discountRate} onChange={(e) => setFormData(p => ({ ...p, accounting: { ...p.accounting, discountRate: parseFloat(e.target.value) || 0 } }))} placeholder="0" /></div>
+    </div>
+  );
+
+  const CRMContent = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={LABEL_CLS}>Status</label>
+          <Select value={formData.crm.status} onValueChange={(v) => setFormData(p => ({ ...p, crm: { ...p.crm, status: v } }))}>
+            <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
+              <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
+              <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
+              <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div><label className={LABEL_CLS}>Source</label><input className={INPUT_CLS} value={formData.crm.source} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, source: e.target.value } }))} placeholder="Website, Referral, etc." /></div>
+        <div><label className={LABEL_CLS}>Industry</label><input className={INPUT_CLS} value={formData.crm.industry} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, industry: e.target.value } }))} placeholder="Technology, Healthcare, etc." /></div>
+        <div><label className={LABEL_CLS}>Company Size</label><input className={INPUT_CLS} value={formData.crm.companySize} onChange={(e) => setFormData(p => ({ ...p, crm: { ...p.crm, companySize: e.target.value } }))} placeholder="1-10, 11-50, 51-200, etc." /></div>
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Notes</label>
+        <textarea className={`${INPUT_CLS} min-h-[100px] resize-y`} value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes about this contact..." rows={4} />
+      </div>
+    </div>
+  );
+
+  const renderTabContent = (activeTab) => {
+    if (activeTab === 'basic')      return <BasicInfoContent />;
+    if (activeTab === 'addresses')  return <AddressesContent />;
+    if (activeTab === 'accounting') return <AccountingContent />;
+    if (activeTab === 'crm')        return <CRMContent />;
+    return null;
   };
 
-  const formatCurrency = (amount, currency = 'GBP') => {
-    const currencyInfo = CURRENCIES[currency] || CURRENCIES.GBP;
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  };
-
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl text-gray-900 flex items-center">
-                <Users className="w-8 h-8 mr-3 text-blue-600" />
-                Contact Management
-              </CardTitle>
-              <CardDescription className="text-lg mt-2">
-                Central database for all customer and contact information
-              </CardDescription>
+    <div className="space-y-5">
+
+      {/* ── Stat strip ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        {[
+          { icon: Users,       bg: 'bg-[#eef2ff]', color: 'text-[#6366f1]', val: statistics.total || 0,     label: 'Total'       },
+          { icon: Check,       bg: 'bg-[#dcfce7]', color: 'text-[#16a34a]', val: statistics.active || 0,    label: 'Active'      },
+          { icon: Star,        bg: 'bg-[#ede9fe]', color: 'text-[#7c3aed]', val: statistics.prospects || 0, label: 'Prospects'   },
+          { icon: AlertCircle, bg: 'bg-[#fef3c7]', color: 'text-[#d97706]', val: statistics.atRisk || 0,    label: 'At Risk'     },
+          { icon: Building2,   bg: 'bg-[#cffafe]', color: 'text-[#0891b2]', val: statistics.companies || 0, label: 'Companies'   },
+          { icon: DollarSign,  bg: 'bg-[#d1fae5]', color: 'text-[#059669]', val: new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(statistics.totalProfit || 0), label: 'Total Value' },
+        ].map(({ icon: Icon, bg, color, val, label }) => (
+          <div key={label} className="bg-white rounded-xl border border-[#e5e7eb] p-4 flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
+              <Icon className={`w-5 h-5 ${color}`} />
             </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                onClick={() => setShowCreateForm(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Contact
-              </Button>
+            <div className="min-w-0">
+              <p className="text-[20px] font-bold text-[#111113] leading-none truncate">{val}</p>
+              <p className="text-[11px] text-[#9ca3af] uppercase tracking-wider mt-0.5">{label}</p>
             </div>
           </div>
-        </CardHeader>
-      </Card>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-800">Total Contacts</p>
-                <p className="text-2xl font-bold text-blue-900">{statistics.total || 0}</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-800">Active</p>
-                <p className="text-2xl font-bold text-green-900">{statistics.active || 0}</p>
-              </div>
-              <Check className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-purple-200 bg-purple-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-800">Prospects</p>
-                <p className="text-2xl font-bold text-purple-900">{statistics.prospects || 0}</p>
-              </div>
-              <Star className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-800">At Risk</p>
-                <p className="text-2xl font-bold text-orange-900">{statistics.atRisk || 0}</p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-emerald-200 bg-emerald-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-emerald-800">Companies</p>
-                <p className="text-2xl font-bold text-emerald-900">{statistics.companies || 0}</p>
-              </div>
-              <Building2 className="w-8 h-8 text-emerald-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-gray-200 bg-gray-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Total Value</p>
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(statistics.totalProfit || 0)}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-gray-600" />
-            </div>
-          </CardContent>
-        </Card>
+        ))}
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Contact List */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                <CardTitle>Contacts ({filteredContacts.length})</CardTitle>
-                
-                <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search contacts..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full md:w-64"
-                    />
-                  </div>
-                  
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-40">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
-                      <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
-                      <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
-                      <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+      {/* ── Main grid ───────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-full md:w-40">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value={CONTACT_TYPES.COMPANY}>Companies</SelectItem>
-                      <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individuals</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        {/* ── Contact list ──────────────────────────────────────────────────── */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+          {/* Toolbar */}
+          <div className="px-5 py-4 border-b border-[#e5e7eb] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <h2 className="text-[15px] font-semibold text-[#111113]">
+              Contacts <span className="text-[#9ca3af] font-normal text-[14px]">({filteredContacts.length})</span>
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" />
+                <input
+                  className="pl-9 pr-3 py-2 text-[13px] rounded-lg border border-[#e5e7eb] bg-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] w-48 transition-colors"
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              {filteredContacts.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-medium text-gray-900 mb-2">No contacts found</h3>
-                  <p className="text-gray-600 mb-6">
-                    {contacts.length === 0 
-                      ? "Get started by adding your first contact."
-                      : "No contacts match your current search and filter criteria."
-                    }
-                  </p>
-                  <Button onClick={() => setShowCreateForm(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Contact
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredContacts.map((contact, index) => (
-                        <tr 
-                          key={contact.id}
-                          className={`cursor-pointer transition-colors hover:bg-gray-100 ${
-                            selectedContact?.id === contact.id ? 'bg-blue-50' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                          }`}
-                          onClick={() => setSelectedContact(contact)}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center space-x-3">
-                              <div className="flex-shrink-0">
-                                {contact.type === CONTACT_TYPES.COMPANY ? (
-                                  <Building2 className="w-5 h-5 text-gray-400" />
-                                ) : (
-                                  <User className="w-5 h-5 text-gray-400" />
-                                )}
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{contact.name}</div>
-                                {contact.primaryContact && (
-                                  <div className="text-xs text-gray-500">{contact.primaryContact}</div>
-                                )}
-                              </div>
+              {/* Status */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-36 text-[13px] h-9 focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
+                  <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
+                  <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
+                  <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Type */}
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-36 text-[13px] h-9 focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value={CONTACT_TYPES.COMPANY}>Companies</SelectItem>
+                  <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individuals</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Add */}
+              <button type="button" onClick={() => { setShowCreateForm(true); setActiveCreateTab('basic'); }} className={GOLD_BTN}>
+                <Plus className="w-4 h-4" /> Add Contact
+              </button>
+            </div>
+          </div>
+
+          {/* Table / empty */}
+          {filteredContacts.length === 0 ? (
+            <div className="py-16 text-center">
+              <Users className="w-12 h-12 mx-auto text-[#d1d5db] mb-3" />
+              <p className="text-[15px] font-medium text-[#374151] mb-1">No contacts found</p>
+              <p className="text-[13px] text-[#9ca3af] mb-5">
+                {contacts.length === 0 ? 'Get started by adding your first contact.' : 'No contacts match your current search and filter criteria.'}
+              </p>
+              <button type="button" onClick={() => setShowCreateForm(true)} className={GOLD_BTN}>
+                <Plus className="w-4 h-4" /> Add Contact
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
+                    {['Company', 'Status', 'Contact Info', 'Value', ''].map((h, i) => (
+                      <th key={i} className={`px-5 py-2.5 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider ${i === 4 ? 'text-right' : 'text-left'}`}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredContacts.map((contact, index) => (
+                    <tr
+                      key={contact.id}
+                      onClick={() => setSelectedContact(contact)}
+                      className={`border-b border-[#f3f4f6] cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id
+                          ? 'bg-[#fef9ee]'
+                          : index % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[#fef9ee]' : 'bg-white hover:bg-[#fef9ee]'
+                      }`}
+                    >
+                      {/* Company */}
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-[#f3f4f6] flex items-center justify-center flex-shrink-0">
+                            {contact.type === CONTACT_TYPES.COMPANY
+                              ? <Building2 className="w-4 h-4 text-[#6b7280]" />
+                              : <User      className="w-4 h-4 text-[#6b7280]" />}
+                          </div>
+                          <div>
+                            <p className="text-[13px] font-medium text-[#111113]">{contact.name}</p>
+                            {contact.primaryContact && <p className="text-[11px] text-[#9ca3af]">{contact.primaryContact}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      {/* Status */}
+                      <td className="px-5 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${getStatusBadge(contact.crm.status)}`}>
+                          {contact.crm.status}
+                        </span>
+                      </td>
+                      {/* Contact info */}
+                      <td className="px-5 py-3">
+                        <div className="space-y-0.5">
+                          {contact.email && (
+                            <div className="flex items-center gap-1.5 text-[12px] text-[#6b7280]">
+                              <Mail className="w-3 h-3 text-[#9ca3af] flex-shrink-0" />
+                              <span className="truncate max-w-[170px]">{contact.email}</span>
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge className={getStatusColor(contact.crm.status)}>
-                              {contact.crm.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm text-gray-600 space-y-1">
-                              {contact.email && (
-                                <div className="flex items-center">
-                                  <Mail className="w-3 h-3 mr-1.5 text-gray-400" />
-                                  <span className="truncate max-w-[200px]">{contact.email}</span>
-                                </div>
-                              )}
-                              {contact.phone && (
-                                <div className="flex items-center">
-                                  <Phone className="w-3 h-3 mr-1.5 text-gray-400" />
-                                  <span>{contact.phone}</span>
-                                </div>
-                              )}
+                          )}
+                          {contact.phone && (
+                            <div className="flex items-center gap-1.5 text-[12px] text-[#6b7280]">
+                              <Phone className="w-3 h-3 text-[#9ca3af] flex-shrink-0" />
+                              <span>{contact.phone}</span>
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            {contact.crm.totalProfit > 0 ? (
-                              <span className="text-sm font-medium text-green-600">
-                                {formatCurrency(contact.crm.totalProfit, contact.accounting.currency)}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-gray-400">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditContact(contact);
-                                }}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteContact(contact.id);
-                                }}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                          )}
+                        </div>
+                      </td>
+                      {/* Value */}
+                      <td className="px-5 py-3">
+                        {contact.crm.totalProfit > 0
+                          ? <span className="text-[13px] font-semibold text-[#059669]">{formatCurrency(contact.crm.totalProfit, contact.accounting.currency)}</span>
+                          : <span className="text-[13px] text-[#d1d5db]">—</span>
+                        }
+                      </td>
+                      {/* Actions */}
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleEditContact(contact); }} className={GHOST_BTN}>
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteContact(contact.id); }} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#9ca3af] hover:bg-[#fee2e2] hover:text-red-600 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="px-5 py-2.5 bg-[#fafafa] border-t border-[#e5e7eb] text-[12px] text-[#9ca3af]">
+            {contacts.length} contact{contacts.length !== 1 ? 's' : ''}
+            {filteredContacts.length !== contacts.length && ` · ${filteredContacts.length} shown`}
+          </div>
         </div>
 
-        {/* Contact Details */}
+        {/* ── Detail panel ──────────────────────────────────────────────────── */}
         <div className="lg:col-span-1">
           {selectedContact ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center">
-                    {selectedContact.type === CONTACT_TYPES.COMPANY ? (
-                      <Building2 className="w-5 h-5 mr-2" />
-                    ) : (
-                      <User className="w-5 h-5 mr-2" />
-                    )}
-                    Contact Details
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditContact(selectedContact)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Basic Information */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">{selectedContact.name}</h4>
-                  <div className="space-y-2 text-sm">
-                    <Badge className={getStatusColor(selectedContact.crm.status)}>
-                      {selectedContact.crm.status}
-                    </Badge>
-                    {selectedContact.primaryContact && (
-                      <p><strong>Contact:</strong> {selectedContact.primaryContact}</p>
-                    )}
-                    {selectedContact.email && (
-                      <p><strong>Email:</strong> {selectedContact.email}</p>
-                    )}
-                    {selectedContact.phone && (
-                      <p><strong>Phone:</strong> {selectedContact.phone}</p>
-                    )}
-                    {selectedContact.website && (
-                      <p><strong>Website:</strong> {selectedContact.website}</p>
-                    )}
+            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              {/* Panel header */}
+              <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#f3f4f6] flex items-center justify-center">
+                    {selectedContact.type === CONTACT_TYPES.COMPANY
+                      ? <Building2 className="w-4 h-4 text-[#6b7280]" />
+                      : <User      className="w-4 h-4 text-[#6b7280]" />}
                   </div>
+                  <span className="text-[15px] font-semibold text-[#111113]">Contact Details</span>
+                </div>
+                <button type="button" onClick={() => handleEditContact(selectedContact)} className={OUTLINE_BTN}>
+                  <Edit className="w-3.5 h-3.5" /> Edit
+                </button>
+              </div>
+
+              <div className="p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-280px)]">
+                {/* Name + status */}
+                <div>
+                  <h4 className="text-[16px] font-semibold text-[#111113] mb-2">{selectedContact.name}</h4>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${getStatusBadge(selectedContact.crm.status)}`}>
+                    {selectedContact.crm.status}
+                  </span>
+                </div>
+
+                {/* Contact info */}
+                <div className="space-y-1.5">
+                  <p className={SECTION_H}>Contact Info</p>
+                  {selectedContact.primaryContact && <div className="text-[13px] text-[#374151]"><span className="text-[#9ca3af]">Contact: </span>{selectedContact.primaryContact}</div>}
+                  {selectedContact.email && <div className="flex items-center gap-2 text-[13px] text-[#374151]"><Mail className="w-3.5 h-3.5 text-[#9ca3af]" />{selectedContact.email}</div>}
+                  {selectedContact.phone && <div className="flex items-center gap-2 text-[13px] text-[#374151]"><Phone className="w-3.5 h-3.5 text-[#9ca3af]" />{selectedContact.phone}</div>}
+                  {selectedContact.website && <div className="text-[13px] text-[#374151]"><span className="text-[#9ca3af]">Web: </span>{selectedContact.website}</div>}
                 </div>
 
                 {/* Addresses */}
                 {selectedContact.addresses.length > 0 && (
                   <div>
-                    <h5 className="font-medium text-gray-900 mb-2">Addresses</h5>
+                    <p className={SECTION_H}>Addresses</p>
                     <div className="space-y-2">
                       {selectedContact.addresses.map((address, index) => (
-                        <div key={index} className="text-sm p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="text-[12px] p-3 bg-[#fafafa] rounded-lg border border-[#e5e7eb]">
                           <div className="flex items-center justify-between mb-1">
-                            <Badge variant="outline">{address.type}</Badge>
-                            {address.isPrimary && (
-                              <Badge className="bg-blue-100 text-blue-800">Primary</Badge>
-                            )}
+                            <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">{address.type}</span>
+                            {address.isPrimary && <span className="text-[11px] font-semibold text-[#d4a017]">Primary</span>}
                           </div>
-                          <p>{address.line1}</p>
-                          {address.line2 && <p>{address.line2}</p>}
-                          <p>{address.city}, {address.state} {address.postcode}</p>
-                          <p>{address.country}</p>
+                          <p className="text-[#374151]">{address.line1}</p>
+                          {address.line2 && <p className="text-[#374151]">{address.line2}</p>}
+                          <p className="text-[#374151]">{address.city}, {address.state} {address.postcode}</p>
+                          <p className="text-[#374151]">{address.country}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* CRM Information */}
+                {/* CRM info */}
                 <div>
-                  <h5 className="font-medium text-gray-900 mb-2">CRM Information</h5>
-                  <div className="text-sm space-y-1">
-                    <p><strong>Total Profit:</strong> {formatCurrency(selectedContact.crm.totalProfit, selectedContact.accounting.currency)}</p>
-                    <p><strong>Renewals:</strong> {selectedContact.crm.renewalsCount}</p>
-                    <p><strong>Open Opportunities:</strong> {selectedContact.crm.openOppsCount}</p>
-                    {selectedContact.crm.industry && (
-                      <p><strong>Industry:</strong> {selectedContact.crm.industry}</p>
-                    )}
-                    {selectedContact.crm.source && (
-                      <p><strong>Source:</strong> {selectedContact.crm.source}</p>
-                    )}
+                  <p className={SECTION_H}>CRM Information</p>
+                  <div className="space-y-1.5 text-[13px]">
+                    <div className="flex justify-between"><span className="text-[#9ca3af]">Total Profit</span><span className="font-semibold text-[#059669]">{formatCurrency(selectedContact.crm.totalProfit, selectedContact.accounting.currency)}</span></div>
+                    <div className="flex justify-between"><span className="text-[#9ca3af]">Renewals</span><span className="text-[#374151]">{selectedContact.crm.renewalsCount}</span></div>
+                    <div className="flex justify-between"><span className="text-[#9ca3af]">Open Opportunities</span><span className="text-[#374151]">{selectedContact.crm.openOppsCount}</span></div>
+                    {selectedContact.crm.industry && <div className="flex justify-between"><span className="text-[#9ca3af]">Industry</span><span className="text-[#374151]">{selectedContact.crm.industry}</span></div>}
+                    {selectedContact.crm.source   && <div className="flex justify-between"><span className="text-[#9ca3af]">Source</span><span className="text-[#374151]">{selectedContact.crm.source}</span></div>}
                   </div>
                 </div>
 
-                {/* Accounting Information */}
+                {/* Accounting */}
                 <div>
-                  <h5 className="font-medium text-gray-900 mb-2">Accounting</h5>
-                  <div className="text-sm space-y-1">
-                    <p><strong>Currency:</strong> {selectedContact.accounting.currency}</p>
-                    <p><strong>Payment Terms:</strong> {selectedContact.accounting.paymentTerms}</p>
-                    {selectedContact.accounting.taxNumber && (
-                      <p><strong>Tax Number:</strong> {selectedContact.accounting.taxNumber}</p>
-                    )}
-                    {selectedContact.accounting.accountCode && (
-                      <p><strong>Account Code:</strong> {selectedContact.accounting.accountCode}</p>
-                    )}
+                  <p className={SECTION_H}>Accounting</p>
+                  <div className="space-y-1.5 text-[13px]">
+                    <div className="flex justify-between"><span className="text-[#9ca3af]">Currency</span><span className="text-[#374151]">{selectedContact.accounting.currency}</span></div>
+                    <div className="flex justify-between"><span className="text-[#9ca3af]">Payment Terms</span><span className="text-[#374151]">{selectedContact.accounting.paymentTerms}</span></div>
+                    {selectedContact.accounting.taxNumber   && <div className="flex justify-between"><span className="text-[#9ca3af]">Tax Number</span><span className="text-[#374151]">{selectedContact.accounting.taxNumber}</span></div>}
+                    {selectedContact.accounting.accountCode && <div className="flex justify-between"><span className="text-[#9ca3af]">Account Code</span><span className="text-[#374151]">{selectedContact.accounting.accountCode}</span></div>}
                   </div>
                 </div>
 
                 {/* Notes */}
                 {selectedContact.notes && (
                   <div>
-                    <h5 className="font-medium text-gray-900 mb-2">Notes</h5>
-                    <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded-lg">
-                      {selectedContact.notes}
-                    </p>
+                    <p className={SECTION_H}>Notes</p>
+                    <p className="text-[13px] text-[#374151] p-3 bg-[#fafafa] rounded-lg border border-[#e5e7eb]">{selectedContact.notes}</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Contact</h3>
-                <p className="text-gray-600">
-                  Choose a contact from the list to view details
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-xl border border-[#e5e7eb] py-16 text-center">
+              <Users className="w-12 h-12 mx-auto text-[#d1d5db] mb-3" />
+              <p className="text-[15px] font-medium text-[#374151] mb-1">Select a Contact</p>
+              <p className="text-[13px] text-[#9ca3af]">Choose a contact from the list to view details</p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Create Contact Modal */}
+      {/* ── Create Contact Modal ──────────────────────────────────────────────── */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Create New Contact</CardTitle>
-                <Button variant="outline" onClick={() => {
-                  setShowCreateForm(false);
-                  resetForm();
-                }}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="addresses">Addresses</TabsTrigger>
-                  <TabsTrigger value="accounting">Accounting</TabsTrigger>
-                  <TabsTrigger value="crm">CRM & Notes</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="basic" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">Contact Type</Label>
-                      <Select value={formData.type} onValueChange={(value) => 
-                        setFormData(prev => ({ ...prev, type: value }))
-                      }>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CONTACT_TYPES.COMPANY}>Company</SelectItem>
-                          <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individual</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="name">Company Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter company name"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="primaryContact">Primary Contact</Label>
-                      <Input
-                        id="primaryContact"
-                        value={formData.primaryContact}
-                        onChange={(e) => setFormData(prev => ({ ...prev, primaryContact: e.target.value }))}
-                        placeholder="Main contact person"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="contact@company.com"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="+44 20 7123 4567"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        value={formData.website}
-                        onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                        placeholder="https://company.com"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="addresses" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Addresses</h4>
-                    <Button onClick={addAddress} size="sm">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Address
-                    </Button>
-                  </div>
-
-                  {formData.addresses.map((address, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <Select 
-                          value={address.type} 
-                          onValueChange={(value) => updateAddress(index, 'type', value)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => removeAddress(index)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label>Address Line 1</Label>
-                          <Input
-                            value={address.line1}
-                            onChange={(e) => updateAddress(index, 'line1', e.target.value)}
-                            placeholder="123 Main Street"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label>Address Line 2</Label>
-                          <Input
-                            value={address.line2}
-                            onChange={(e) => updateAddress(index, 'line2', e.target.value)}
-                            placeholder="Suite 100"
-                          />
-                        </div>
-                        <div>
-                          <Label>City</Label>
-                          <Input
-                            value={address.city}
-                            onChange={(e) => updateAddress(index, 'city', e.target.value)}
-                            placeholder="London"
-                          />
-                        </div>
-                        <div>
-                          <Label>State/Region</Label>
-                          <Input
-                            value={address.state}
-                            onChange={(e) => updateAddress(index, 'state', e.target.value)}
-                            placeholder="England"
-                          />
-                        </div>
-                        <div>
-                          <Label>Postal Code</Label>
-                          <Input
-                            value={address.postcode}
-                            onChange={(e) => updateAddress(index, 'postcode', e.target.value)}
-                            placeholder="SW1A 1AA"
-                          />
-                        </div>
-                        <div>
-                          <Label>Country</Label>
-                          <Input
-                            value={address.country}
-                            onChange={(e) => updateAddress(index, 'country', e.target.value)}
-                            placeholder="United Kingdom"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="accounting" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select 
-                        value={formData.accounting.currency} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, currency: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(CURRENCIES).map(([code, info]) => (
-                            <SelectItem key={code} value={code}>
-                              {info.symbol} {info.name} ({code})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="paymentTerms">Payment Terms</Label>
-                      <Select 
-                        value={formData.accounting.paymentTerms} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, paymentTerms: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
-                            <SelectItem key={key} value={value}>
-                              {value}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="taxNumber">Tax Number/VAT ID</Label>
-                      <Input
-                        id="taxNumber"
-                        value={formData.accounting.taxNumber}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, taxNumber: e.target.value }
-                          }))
-                        }
-                        placeholder="GB123456789"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="accountCode">Account Code</Label>
-                      <Input
-                        id="accountCode"
-                        value={formData.accounting.accountCode}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, accountCode: e.target.value }
-                          }))
-                        }
-                        placeholder="4000"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="creditLimit">Credit Limit</Label>
-                      <Input
-                        id="creditLimit"
-                        type="number"
-                        value={formData.accounting.creditLimit}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, creditLimit: parseFloat(e.target.value) || 0 }
-                          }))
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="discountRate">Discount Rate (%)</Label>
-                      <Input
-                        id="discountRate"
-                        type="number"
-                        value={formData.accounting.discountRate}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, discountRate: parseFloat(e.target.value) || 0 }
-                          }))
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="crm" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select 
-                        value={formData.crm.status} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, status: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="source">Source</Label>
-                      <Input
-                        id="source"
-                        value={formData.crm.source}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, source: e.target.value }
-                          }))
-                        }
-                        placeholder="Website, Referral, etc."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="industry">Industry</Label>
-                      <Input
-                        id="industry"
-                        value={formData.crm.industry}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, industry: e.target.value }
-                          }))
-                        }
-                        placeholder="Technology, Healthcare, etc."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="companySize">Company Size</Label>
-                      <Input
-                        id="companySize"
-                        value={formData.crm.companySize}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, companySize: e.target.value }
-                          }))
-                        }
-                        placeholder="1-10, 11-50, 51-200, etc."
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Additional notes about this contact..."
-                      rows={4}
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex justify-end space-x-4 pt-4 border-t">
-                <Button variant="outline" onClick={() => {
-                  setShowCreateForm(false);
-                  resetForm();
-                }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateContact} disabled={!formData.name}>
-                  Create Contact
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-10 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-3xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            <div className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between flex-shrink-0">
+              <h3 className="text-[16px] font-semibold text-[#111113]">Create New Contact</h3>
+              <button type="button" onClick={() => { setShowCreateForm(false); resetForm(); }} className={GHOST_BTN}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-shrink-0">
+              <FormTabs tabs={FORM_TABS} active={activeCreateTab} onChange={setActiveCreateTab} />
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {renderTabContent(activeCreateTab)}
+            </div>
+            <div className="px-6 py-4 border-t border-[#e5e7eb] flex justify-end gap-3 flex-shrink-0">
+              <button type="button" onClick={() => { setShowCreateForm(false); resetForm(); }} className={OUTLINE_BTN}>Cancel</button>
+              <button type="button" onClick={handleCreateContact} disabled={!formData.name} className={GOLD_BTN}>Create Contact</button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Edit Contact Modal */}
+      {/* ── Edit Contact Modal ────────────────────────────────────────────────── */}
       {showEditForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Edit Contact</CardTitle>
-                <Button variant="outline" onClick={() => {
-                  setShowEditForm(false);
-                  resetForm();
-                }}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Same form structure as create, but with update handler */}
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="addresses">Addresses</TabsTrigger>
-                  <TabsTrigger value="accounting">Accounting</TabsTrigger>
-                  <TabsTrigger value="crm">CRM & Notes</TabsTrigger>
-                </TabsList>
-
-                {/* Same tab content as create form */}
-                <TabsContent value="basic" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">Contact Type</Label>
-                      <Select value={formData.type} onValueChange={(value) => 
-                        setFormData(prev => ({ ...prev, type: value }))
-                      }>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CONTACT_TYPES.COMPANY}>Company</SelectItem>
-                          <SelectItem value={CONTACT_TYPES.INDIVIDUAL}>Individual</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="name">Company Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Enter company name"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="primaryContact">Primary Contact</Label>
-                      <Input
-                        id="primaryContact"
-                        value={formData.primaryContact}
-                        onChange={(e) => setFormData(prev => ({ ...prev, primaryContact: e.target.value }))}
-                        placeholder="Main contact person"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="contact@company.com"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                        placeholder="+44 20 7123 4567"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        value={formData.website}
-                        onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
-                        placeholder="https://company.com"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="addresses" className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Addresses</h4>
-                    <Button onClick={addAddress} size="sm">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Address
-                    </Button>
-                  </div>
-
-                  {formData.addresses.map((address, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <Select 
-                          value={address.type} 
-                          onValueChange={(value) => updateAddress(index, 'type', value)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ADDRESS_TYPES.BILLING}>Billing</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.SHIPPING}>Shipping</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.SERVICE}>Service</SelectItem>
-                            <SelectItem value={ADDRESS_TYPES.OFFICE}>Office</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => removeAddress(index)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                          <Label>Address Line 1</Label>
-                          <Input
-                            value={address.line1}
-                            onChange={(e) => updateAddress(index, 'line1', e.target.value)}
-                            placeholder="123 Main Street"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label>Address Line 2</Label>
-                          <Input
-                            value={address.line2}
-                            onChange={(e) => updateAddress(index, 'line2', e.target.value)}
-                            placeholder="Suite 100"
-                          />
-                        </div>
-                        <div>
-                          <Label>City</Label>
-                          <Input
-                            value={address.city}
-                            onChange={(e) => updateAddress(index, 'city', e.target.value)}
-                            placeholder="London"
-                          />
-                        </div>
-                        <div>
-                          <Label>State/Region</Label>
-                          <Input
-                            value={address.state}
-                            onChange={(e) => updateAddress(index, 'state', e.target.value)}
-                            placeholder="England"
-                          />
-                        </div>
-                        <div>
-                          <Label>Postal Code</Label>
-                          <Input
-                            value={address.postcode}
-                            onChange={(e) => updateAddress(index, 'postcode', e.target.value)}
-                            placeholder="SW1A 1AA"
-                          />
-                        </div>
-                        <div>
-                          <Label>Country</Label>
-                          <Input
-                            value={address.country}
-                            onChange={(e) => updateAddress(index, 'country', e.target.value)}
-                            placeholder="United Kingdom"
-                          />
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="accounting" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="currency">Currency</Label>
-                      <Select 
-                        value={formData.accounting.currency} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, currency: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(CURRENCIES).map(([code, info]) => (
-                            <SelectItem key={code} value={code}>
-                              {info.symbol} {info.name} ({code})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="paymentTerms">Payment Terms</Label>
-                      <Select 
-                        value={formData.accounting.paymentTerms} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, paymentTerms: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(PAYMENT_TERMS).map(([key, value]) => (
-                            <SelectItem key={key} value={value}>
-                              {value}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="taxNumber">Tax Number/VAT ID</Label>
-                      <Input
-                        id="taxNumber"
-                        value={formData.accounting.taxNumber}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, taxNumber: e.target.value }
-                          }))
-                        }
-                        placeholder="GB123456789"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="accountCode">Account Code</Label>
-                      <Input
-                        id="accountCode"
-                        value={formData.accounting.accountCode}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, accountCode: e.target.value }
-                          }))
-                        }
-                        placeholder="4000"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="creditLimit">Credit Limit</Label>
-                      <Input
-                        id="creditLimit"
-                        type="number"
-                        value={formData.accounting.creditLimit}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, creditLimit: parseFloat(e.target.value) || 0 }
-                          }))
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="discountRate">Discount Rate (%)</Label>
-                      <Input
-                        id="discountRate"
-                        type="number"
-                        value={formData.accounting.discountRate}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            accounting: { ...prev.accounting, discountRate: parseFloat(e.target.value) || 0 }
-                          }))
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="crm" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select 
-                        value={formData.crm.status} 
-                        onValueChange={(value) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, status: value }
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={CONTACT_STATUS.PROSPECT}>Prospect</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.ACTIVE}>Active</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.AT_RISK}>At Risk</SelectItem>
-                          <SelectItem value={CONTACT_STATUS.INACTIVE}>Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="source">Source</Label>
-                      <Input
-                        id="source"
-                        value={formData.crm.source}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, source: e.target.value }
-                          }))
-                        }
-                        placeholder="Website, Referral, etc."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="industry">Industry</Label>
-                      <Input
-                        id="industry"
-                        value={formData.crm.industry}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, industry: e.target.value }
-                          }))
-                        }
-                        placeholder="Technology, Healthcare, etc."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="companySize">Company Size</Label>
-                      <Input
-                        id="companySize"
-                        value={formData.crm.companySize}
-                        onChange={(e) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            crm: { ...prev.crm, companySize: e.target.value }
-                          }))
-                        }
-                        placeholder="1-10, 11-50, 51-200, etc."
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Additional notes about this contact..."
-                      rows={4}
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              <div className="flex justify-end space-x-4 pt-4 border-t">
-                <Button variant="outline" onClick={() => {
-                  setShowEditForm(false);
-                  resetForm();
-                }}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateContact} disabled={!formData.name}>
-                  Update Contact
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-10 overflow-y-auto">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-3xl flex flex-col" style={{ maxHeight: '85vh' }}>
+            <div className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between flex-shrink-0">
+              <h3 className="text-[16px] font-semibold text-[#111113]">Edit Contact</h3>
+              <button type="button" onClick={() => { setShowEditForm(false); resetForm(); }} className={GHOST_BTN}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-shrink-0">
+              <FormTabs tabs={FORM_TABS} active={activeEditTab} onChange={setActiveEditTab} />
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {renderTabContent(activeEditTab)}
+            </div>
+            <div className="px-6 py-4 border-t border-[#e5e7eb] flex justify-end gap-3 flex-shrink-0">
+              <button type="button" onClick={() => { setShowEditForm(false); resetForm(); }} className={OUTLINE_BTN}>Cancel</button>
+              <button type="button" onClick={handleUpdateContact} disabled={!formData.name} className={GOLD_BTN}>Update Contact</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
