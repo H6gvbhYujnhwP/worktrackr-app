@@ -1,182 +1,184 @@
 # WorkTrackr Cloud: Master Development Roadmap v2.0
 
-**Version:** 2.0  
-**Date:** November 10, 2025  
-**Planning Horizon:** 6 months (Nov 2025 - Apr 2026)
+**Version:** 2.1
+**Date:** April 2026 (updated)
+**Planning Horizon:** Rolling
 
 ---
 
-## 1. Roadmap Overview
-
-### 1.1. Strategic Priorities
-
-The development roadmap focuses on **completing the Quote-to-Cash workflow** and **stabilizing the core platform** to deliver a fully functional SME business management platform. The priorities are:
-
-1. ✅ **Stabilize Core Platform** - Fix critical bugs in Tickets and User Management
-2. **Complete Quotes Module** - Finish quote actions (send, PDF, status)
-3. **Build Jobs Module** - Enable work scheduling and tracking
-4. **Implement Invoicing** - Generate invoices from completed jobs
-5. **Add Payment Tracking** - Record and track customer payments
-6. **Enhance Reporting** - Provide business insights and analytics
-
-### 1.2. Timeline Overview
-
-```
-Nov 2025          Dec 2025          Jan 2026          Feb 2026
-├─────────────────┼─────────────────┼─────────────────┼─────────────────┤
-│ Ticket System ✅ │ Jobs Module     │ Invoices        │ Payments        │
-│ User Mgmt ✅    │ Job Scheduling  │ Invoice PDF     │ Analytics       │
-│ Quotes Actions  │ Calendar Integ. │ Email Invoices  │ Reporting       │
-└─────────────────┴─────────────────┴─────────────────┴─────────────────┘
-
-Mar 2026          Apr 2026
-├─────────────────┼─────────────────┤
-│ Reviews System  │ Customer Portal │
-│ Advanced Report │ Mobile App      │
-│ Testing Suite   │ Performance     │
-└─────────────────┴─────────────────┘
-```
+## AI Policy (confirmed Session 10)
+All AI features use **Anthropic Claude** exclusively (`claude-haiku-4-5-20251001` for speed/cost).
+Audio transcription uses **OpenAI Whisper** (`whisper-1`) — this is speech-to-text only, not a reasoning model. Whisper is ~$0.006/minute and has no viable Anthropic equivalent. All reasoning over transcripts goes through Claude.
+No other AI providers (OpenAI GPT, etc.) are used anywhere in the app.
 
 ---
 
-## 2. Completed Work (November 9-10, 2025)
+## Completed AI Phases
 
-### ✅ **Ticket System Stabilization (COMPLETE)**
+### ✅ AI Phase 1 — Email Classifier
+Real Anthropic Claude call in `email-intake.js`. Classifies inbound emails into ticket categories. Keyword fallback if API key absent. Results stored in `ai_extractions` table.
 
-**Status:** ✅ **Production Ready**
+### ✅ AI Phase 2 — AI Quote Generation
+`quotes-ai.js` and `quotes-ai-generate.js` — Claude generates quote line items from a job description or uploaded context files. Accessible from the Quotes tab via "Generate with AI" button. AI-generated quotes show a gold AI badge.
 
-- ✅ **Fixed 5 Critical Bugs:**
-  - Priority dropdown not saving
-  - Status dropdown not saving
-  - Ticket creation validation errors
-  - Assigned technician not displaying
-  - Missing favicon
-- ✅ **Core Functionality Verified:**
-  - Ticket creation, viewing, editing
-  - Queue system and filtering
-  - Bulk operations (status, priority, assignment)
-  - Assignment flow to real users
+### ✅ AI Phase 3 — Smart Summaries
+`summaries.js` — two endpoints:
+- `POST /api/summaries/ticket/:id` — summarises ticket thread (title, description, status, comments) into 3–5 sentences. Button in ticket detail right sidebar.
+- `POST /api/summaries/quote/:id` — summarises quote for a customer call. Button in Quote Quick Actions panel.
 
-### ✅ **User Management & Billing Foundation (PARTIALLY COMPLETE)**
+### ❌ AI Phase 4 — CRM Next-Action Suggestions
+**Removed.** Decided the feature was thin and didn't earn its complexity.
 
-**Status:** ⚠️ **Needs Final Fix**
-
-- ✅ **Subscription Plans Implemented:**
-  - Starter: 1 user
-  - Pro: 10 users
-  - Enterprise: 50 users
-- ✅ **Backend User Limits Enforced:** User invitation checks plan limits.
-- ✅ **Database Migrations Created:** Added `plan` and `included_seats` to `organisations` table.
-- ✅ **Admin Endpoint Created:** Allows manual plan updates.
-- ✅ **UI Updated:** Plan cards show correct user limits.
-- ❌ **"Add User" Button Still Disabled:** Frontend caching issue prevents button from being enabled.
+### ❌ AI Phase 5 — Natural Language Ticket Search
+**Removed.** Decided the feature was thin (existing filters solve the problem well enough) and the infrastructure cost (pgvector, embedding jobs) wasn't justified.
 
 ---
 
-## 3. Immediate Priorities (Next 2 Weeks)
+## Upcoming AI Features
 
-### 🔴 **CRITICAL BLOCKER (November 10, 2025)**
+### 🔲 Audio Feature — Two Modes
 
-**The "Add User" button is non-functional**, preventing the addition of new users. This is the top priority and must be resolved before any other work continues.
+#### Mode 1: Meeting Audio Upload to Ticket
+Upload an audio file (mp3, m4a, wav, mp4, webm) to an existing ticket. Whisper transcribes it; Claude reasons over the transcript and extracts structured notes. User also has the option to paste a Zoom/Teams transcript directly (skips Whisper entirely).
 
-- **Issue:** Frontend `useUserLimits` hook is not correctly reading subscription data from the API, causing it to think the user limit is 1.
-- **Status:** Under active investigation. Backend is correct, but frontend has a caching/data fetching issue.
-- **Impact:** **BLOCKER** for user management and testing "My Tickets" queue.
-- **Next Step:** Debug `useUserLimits` hook and fix frontend data fetching.
+**Lives in:** Ticket detail → Notes tab (no separate page).
 
-### 3.1. Sprint 1: Complete Core Platform Fixes
+**Flow:**
+1. User uploads file or pastes transcript text in the Notes tab
+2. Whisper transcribes (if audio) → raw text displayed
+3. Claude extracts structured items: summary, action items, key details, follow-ups
+4. **Mandatory review step** — user confirms, edits, or skips each extracted item
+5. On confirm → items saved as structured notes on the ticket
+6. Nothing auto-commits without user review
 
-**Target Dates:** November 10-18, 2025
+**Implementation notes:**
+- Reuse/replace existing `transcribe.js` backend (currently uses OpenAI GPT-4 for extraction — swap to Claude)
+- `OPENAI_API_KEY` required only for Whisper audio transcription step
+- Extraction reasoning (`extract-ticket` endpoint) → swap to `claude-haiku-4-5-20251001`
+- Frontend: new Notes tab in `TicketDetailViewTabbed.jsx`
+- DB: new `ticket_notes` table (or extend existing `comments` with a `type` column)
 
-**Day 1: User Management Fix**
-- [ ] **Fix "Add User" button:** Debug `useUserLimits` hook and ensure it correctly reads `included_seats` from the API.
-- [ ] **Test "My Tickets" queue:** Once new users can be added, verify that the "My Tickets" filter works correctly.
+#### Mode 2: Voice Dictation Assistant
+Hold-to-record button, max 60 seconds. User speaks naturally; Claude interprets intent and routes to the correct destination automatically.
 
-**Day 2-5: Quotes Module (from original roadmap)**
-- [ ] **Fix Quote Creation Blocker:** Investigate and resolve the original "Save as Draft" button blocker in `QuoteForm.jsx`.
-- [ ] **Quote Actions:** Implement Send Email, Generate PDF, and Status Changes.
-- [ ] **Quote Filtering & Search:** Add UI and backend logic for filtering and searching quotes.
+**Entry points:**
+- Floating action button (mobile, visible throughout the app)
+- Inside ticket Notes tab
+- Inside Create Ticket form
 
----
+**Context Claude receives:** current screen/location, list of open tickets (titles + IDs), CRM contacts, current user name, current date/time.
 
-## 4. Short-term Goals (1-2 Months)
+**Routes Claude can output:**
+- New ticket (+ optional calendar entry)
+- Note on existing ticket
+- CRM calendar entry
+- Ticket calendar entry
+- Personal note (private, under My Notes)
+- Personal reminder (private, with due date)
+- Company shared note (visible to all staff)
 
-**Target Dates:** November 19 - January 15, 2026
+**Examples:**
+- *"Company A needs a quote for telephone system next March"* → CRM calendar entry for Company A
+- *"Create a ticket to clean Agency Ltd toilet next Wednesday 3pm"* → new ticket + calendar entry
+- *"Idea to advertise in newspapers"* → personal note
+- *"Pay David his wages"* → personal reminder with due date
 
-### 4.1. Sprint 2: Jobs Module (3 weeks)
+**Mandatory review step:** same review UI as Mode 1 — Claude proposes the routed item, user confirms/edits/cancels before anything saves.
 
-- [ ] Review and finalize jobs database schema
-- [ ] Build Jobs API endpoints (CRUD)
-- [ ] Create Jobs list view and detail page
-- [ ] Build Job creation and edit forms
-
-### 4.2. Sprint 3: Calendar Integration (1 week)
-
-- [ ] Integrate jobs with existing calendar
-- [ ] Add drag-and-drop job scheduling
-
-### 4.3. Sprint 4: Quote-to-Job Conversion (1 week)
-
-- [ ] Implement "Convert to Job" button on accepted quotes
-- [ ] Auto-populate job from quote data
-
----
-
-## 5. Medium-term Goals (3-4 Months)
-
-**Target Dates:** January 16 - March 15, 2026
-
-### 5.1. Sprint 5: Invoices Module (3 weeks)
-
-- [ ] Build Invoices API and UI
-- [ ] Implement invoice calculations and payment tracking
-
-### 5.2. Sprint 6: Job-to-Invoice Conversion (1 week)
-
-- [ ] Implement "Create Invoice" button on completed jobs
-
-### 5.3. Sprint 7: Payments Module (2 weeks)
-
-- [ ] Build Payments API and UI
-- [ ] Implement payment allocation and reporting
-
-### 5.4. Sprint 8: Reporting & Analytics (2 weeks)
-
-- [ ] Build dashboard analytics widgets
-- [ ] Implement revenue and job completion reporting
+**Implementation notes:**
+- Whisper for audio → Claude for intent classification and field extraction
+- Single review component shared between Mode 1 and Mode 2
+- Floating action button: new shell-level component, sits above all routes
 
 ---
 
-## 6. Long-term Vision (5-6 Months)
+### 🔲 Notes — Two Types
 
-**Target Dates:** March 16 - April 30, 2026
+#### Personal Notes & Reminders
+Private per user — no other staff member can see them.
 
-- [ ] **Reviews & Testimonials Module**
-- [ ] **Customer Portal**
-- [ ] **Mobile App for Technicians**
-- [ ] **Advanced Features** (multi-language, integrations, etc.)
+**Features:**
+- Create, edit, delete notes
+- Pin notes to top
+- Due dates for reminders — shows as overdue when past
+- Mark reminder complete
+- Voice dictation (Mode 2) auto-creates entries here when intent is personal
+- Shown under **ACCOUNT** section in sidebar, label: **My Notes**
+
+**DB:** new `personal_notes` table (`id`, `user_id`, `organisation_id`, `body`, `due_date`, `pinned`, `completed`, `created_at`, `updated_at`)
+
+#### Company Shared Notes
+All staff can read and write. No admin-only restriction on writing. Shown under **MAIN** section in sidebar (daily-use feature), label: **Company Notes**.
+
+**Structure — three levels in one space:**
+- **Shared notepad** — general freeform notes any staff member can add to
+- **Knowledge base** — reference articles / how-to content
+- **Announcements** — admin-pinned, shown at top for all staff
+
+**Features:**
+- Any user can create notes and assign a category
+- Any user can create new categories
+- Filter by category
+- Admin users can pin notes as announcements — appear at top for everyone
+- Version history — "last edited by X at Y" on every note
+- Voice dictation feeds it — admin saying *"staff reminder..."* auto-pins as announcement
+
+**DB:** new `shared_notes` table (`id`, `organisation_id`, `author_id`, `title`, `body`, `category`, `pinned`, `is_announcement`, `created_at`, `updated_at`) + `shared_note_versions` table for history
 
 ---
 
-## 7. Technical Debt & Improvements
+## Core Platform Work (ongoing)
 
-- [ ] **Testing:** Set up Jest, Playwright, and CI/CD testing pipeline.
-- [ ] **Performance:** Optimize database queries, add caching, and lazy loading.
-- [ ] **Security:** Conduct security audit, add rate limiting, CSRF, and 2FA.
-- [ ] **Documentation:** Maintain API docs, user guides, and developer docs.
+### Jobs Module
+- [ ] Finalise jobs DB schema
+- [ ] Jobs API (CRUD)
+- [ ] Jobs list view + detail page
+- [ ] Job creation and edit forms
+- [ ] Calendar integration (drag-and-drop scheduling)
+- [ ] Quote → Job conversion ("Convert to Job" on accepted quote)
+
+### Invoices Module
+- [ ] Invoices API + UI
+- [ ] Invoice calculations and payment tracking
+- [ ] Job → Invoice conversion ("Create Invoice" on completed job)
+- [ ] Invoice PDF generation
+
+### Payments Module
+- [ ] Payments API + UI
+- [ ] Payment allocation and reporting
+
+### Reporting & Analytics
+- [ ] Dashboard analytics widgets
+- [ ] Revenue and job completion reporting
 
 ---
 
-## 8. Success Metrics
+## Long-term Vision
 
-- **Development Velocity:** Sprint completion rate > 90%
-- **System Performance:** API response < 200ms, page load < 2s
-- **User Adoption:** Track active organizations and feature usage
+- [ ] Reviews & Testimonials Module
+- [ ] Customer Portal
+- [ ] PWA / Google Play Store listing (Trusted Web Activity)
+- [ ] Splashtop integration — one-click remote session from ticket detail
+- [ ] Mobile App for Technicians
+- [ ] Advanced features (multi-language, integrations)
 
 ---
 
-## Summary
+## Technical Debt & Improvements
 
-This roadmap provides a clear, actionable plan for the next 6 months. The immediate focus is on **resolving the "Add User" button blocker** and then continuing with the original plan to complete the **Quote-to-Cash workflow**.
+- [ ] Testing: Jest + Playwright + CI/CD pipeline
+- [ ] Performance: query optimisation, caching, lazy loading
+- [ ] Security: audit, rate limiting, CSRF, 2FA
+- [ ] Documentation: API docs, user guides, developer docs
 
-**This roadmap is a living document and will be updated monthly based on progress and changing priorities.**
+---
+
+## Success Metrics
+
+- API response < 200ms, page load < 2s
+- Feature adoption tracked per organisation
+- Sprint completion rate > 90%
+
+---
+
+*This is a living document. Updated after each session.*

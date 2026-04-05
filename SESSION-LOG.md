@@ -20,20 +20,47 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2025-04-04 (Session 9)
+- **Last session:** 2026-04-05 (Session 10)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** AI Phase 3 complete — Smart Summaries on tickets and quotes
-- **Next priority:** AI Phase 4 — CRM Next-Action Suggestions (after CRM event marked Done)
+- **Last fixes applied:** Roadmap updated — AI Phases 4 & 5 removed, Audio Feature and Notes features added and fully specced
+- **Next priority:** Audio Feature (Mode 1 — Meeting audio upload to ticket) OR Notes (Personal Notes & Reminders) — to be decided next session
+
+---
+
+## AI Policy (confirmed Session 10)
+All AI features use **Anthropic Claude** exclusively (`claude-haiku-4-5-20251001`).
+Audio transcription uses **OpenAI Whisper** (`whisper-1`) — speech-to-text only, no viable Anthropic equivalent. Whisper costs ~$0.006/minute.
+The existing `transcribe.js` route uses OpenAI GPT-4 for extraction — this must be swapped to Claude before the Audio feature ships.
+No other AI providers should be introduced.
+
+---
+
+## Session 10 — 2026-04-05
+
+### Decisions made (no code written this session)
+
+- **AI Phase 4 (CRM Next-Action Suggestions)** — removed from roadmap. Feature deemed thin, not worth complexity.
+- **AI Phase 5 (Natural Language Ticket Search)** — removed from roadmap. Feature deemed thin; existing filters solve the problem; pgvector/embedding infrastructure cost not justified.
+- **Audio Feature** — fully specced (two modes). See roadmap for details.
+  - Mode 1: audio upload or transcript paste on ticket → Whisper → Claude extraction → review step → save to ticket Notes tab
+  - Mode 2: hold-to-record voice dictation assistant, AI routes intent to correct destination, mandatory review step, floating action button entry point
+  - Existing `transcribe.js` backend to be reused but extraction swapped from GPT-4 → Claude
+- **Notes feature** — fully specced (two types). See roadmap for details.
+  - Personal Notes & Reminders: private per user, pinning, due dates, sidebar under ACCOUNT → My Notes
+  - Company Shared Notes: all staff read/write, three levels (notepad / knowledge base / announcements), admin can pin announcements, version history, sidebar under MAIN → Company Notes
+
+### State of existing transcription backend
+- `web/routes/transcribe.js` exists and is registered in `server.js`
+- Uses Whisper (`whisper-1`) for audio → ✅ keep as-is (needs `OPENAI_API_KEY`)
+- Uses GPT-4 (`gpt-4-turbo`) for ticket extraction → ❌ must swap to `claude-haiku-4-5-20251001`
+- No frontend UI has ever been connected to it — the route exists but no component calls it
 
 ---
 
 ## Session 9 — 2025-04-04
 
 ### AI Phase 3 — Smart Summaries
-
-#### Overview
-Two new "Summarise" buttons — one in the ticket detail sidebar, one in the quote Quick Actions panel. Clicking either calls Claude with the relevant context and displays a plain-English summary inline. No page reload, no navigation. Results are ephemeral (in component state only — not persisted to DB, by design).
 
 #### Files changed
 
@@ -43,19 +70,6 @@ Two new "Summarise" buttons — one in the ticket detail sidebar, one in the quo
 | `server.js` | `web/` | Two lines added: `require('./routes/summaries')` + `app.use('/api/summaries', authenticateToken, summariesRoutes)`. Nothing else touched. |
 | `TicketDetailViewTabbed.jsx` | `web/client/.../components/` | Added `Sparkles` to lucide imports. Added `summary` + `summarising` state. Added `handleSummarise()` async function. Added **Summarise Ticket** button (gold outline) + amber summary box below the Metadata panel in the right sidebar. All existing save/form/tab logic untouched. |
 | `QuoteDetails.jsx` | `web/client/.../components/` | Added `Sparkles`, `Loader2` to lucide imports. Added `summary` + `summarising` state. Added `handleSummarise()` async function. Added **Summarise for Customer** button + amber summary box inside Quick Actions panel, below Duplicate Quote. All existing status/duplicate/workflow logic untouched. |
-
-#### Flow
-- Ticket: open ticket → Details tab → right sidebar → **Summarise Ticket** button → Claude reads title, description, status, priority, assignee, all comments → returns 3–5 sentence factual summary
-- Quote: open quote → Quick Actions panel → **Summarise for Customer** button → Claude reads title, line items, total, terms → returns 2–4 sentence friendly summary suitable for reading on a customer call
-
-#### Testing checklist after deploy
-- [ ] Open a ticket with some comments → Details tab → right sidebar → click **Summarise Ticket**
-- [ ] Spinner shows while loading, summary appears in amber box below button
-- [ ] Summary is accurate to the ticket content
-- [ ] Click again → new summary replaces old one
-- [ ] Open a quote → Quick Actions panel → click **Summarise for Customer**
-- [ ] Summary appears inline, mentions key work and total
-- [ ] All existing ticket save / quote status change / duplicate flows unaffected
 
 ---
 
@@ -126,5 +140,6 @@ Session 4: UI Push 2 — Dashboard, TicketsTableView, TicketDetailViewTabbed. Ho
 4. **Produce both files** if a fix in one requires a matching change in another
 5. **Sub-component rule:** Never define `const Foo = () => ...` inside a parent function body. Use inline JSX variables, plain render functions, or module-level components.
 6. **Delivery rule:** After each phase, deliver all changed code files + SESSION-LOG.md + ROADMAP.md together in one batch.
+7. **AI policy:** All AI reasoning uses Anthropic Claude (`claude-haiku-4-5-20251001`). Whisper (`whisper-1`) is permitted for audio transcription only (no Anthropic equivalent). No other AI providers.
 
 ### Goal: every pushed commit leaves the app fully working with no regressions.
