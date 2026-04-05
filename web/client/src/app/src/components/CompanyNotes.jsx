@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Pin, Trash2, Edit2, X, Tag, BookOpen,
   Megaphone, StickyNote, ChevronDown, History,
+  TicketIcon, CornerUpRight, Search, Loader2, CheckCircle,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 import DictationButton from './DictationButton.jsx';
@@ -23,6 +24,177 @@ const NOTE_TYPE_META = {
 function formatTime(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ── NewTicketFromNoteModal — module-level ─────────────────────────────────────
+function NewTicketFromNoteModal({ note, onClose }) {
+  const [title,   setTitle]   = useState(note.title || note.body?.slice(0, 80) || 'New ticket');
+  const [saving,  setSaving]  = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [error,   setError]   = useState('');
+
+  const handleCreate = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/tickets', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), description: note.body || '', priority: 'medium' }),
+      });
+      if (!res.ok) throw new Error('Failed to create ticket');
+      const data = await res.json();
+      setSuccess(data.ticket?.id?.slice(0, 8) || 'created');
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
+      <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e5e7eb]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <h3 className="text-[14px] font-bold text-[#111113] flex items-center gap-2">
+            <TicketIcon className="w-4 h-4 text-[#d4a017]" /> Create ticket from note
+          </h3>
+          <button onClick={onClose} className={GHOST_BTN}><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          {success ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+              <p className="text-[14px] font-medium text-[#111113]">Ticket created</p>
+              <p className="text-[12px] text-[#6b7280]">Reference #{success}</p>
+              <button className={GOLD_BTN} onClick={onClose}>Done</button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className={LABEL_CLS}>Ticket title</label>
+                <input className={INPUT_CLS} value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+              </div>
+              {note.body && (
+                <div>
+                  <label className={LABEL_CLS}>Description (from note)</label>
+                  <div className="rounded-md border border-[#e5e7eb] bg-[#fafafa] px-3 py-2 text-[13px] text-[#6b7280] max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                    {note.body}
+                  </div>
+                </div>
+              )}
+              {error && <p className="text-[12px] text-red-600">{error}</p>}
+              <div className="flex gap-2 pt-1">
+                <button className={GOLD_BTN} onClick={handleCreate} disabled={saving || !title.trim()}>
+                  {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating…</> : <><TicketIcon className="w-3.5 h-3.5" /> Create ticket</>}
+                </button>
+                <button className={OUTLINE_BTN} onClick={onClose}>Cancel</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AddNoteToTicketModal — module-level ───────────────────────────────────────
+function AddNoteToTicketModal({ note, onClose }) {
+  const [tickets,  setTickets]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
+  const [selected, setSelected] = useState(null);
+  const [saving,   setSaving]   = useState(false);
+  const [success,  setSuccess]  = useState(false);
+  const [error,    setError]    = useState('');
+
+  useEffect(() => {
+    fetch('/api/tickets?limit=50', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => { setTickets(d.tickets || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = tickets.filter(t =>
+    t.title?.toLowerCase().includes(search.toLowerCase()) ||
+    t.id?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleAdd = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const body = note.title
+      ? `**${note.title}**\n\n${note.body || ''}`
+      : (note.body || '');
+    try {
+      const res = await fetch(`/api/tickets/${selected}/comments`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, comment_type: 'internal' }),
+      });
+      if (!res.ok) throw new Error('Failed to add note');
+      setSuccess(true);
+    } catch (e) { setError(e.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
+      <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e5e7eb]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <h3 className="text-[14px] font-bold text-[#111113] flex items-center gap-2">
+            <CornerUpRight className="w-4 h-4 text-[#d4a017]" /> Add note to ticket
+          </h3>
+          <button onClick={onClose} className={GHOST_BTN}><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          {success ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+              <p className="text-[14px] font-medium text-[#111113]">Note added to ticket</p>
+              <p className="text-[12px] text-[#6b7280]">Posted as an internal note</p>
+              <button className={GOLD_BTN} onClick={onClose}>Done</button>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+                <input
+                  className={`${INPUT_CLS} pl-8`}
+                  placeholder="Search tickets…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="border border-[#e5e7eb] rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                {loading && <p className="text-[13px] text-[#9ca3af] text-center py-6">Loading tickets…</p>}
+                {!loading && filtered.length === 0 && (
+                  <p className="text-[13px] text-[#9ca3af] text-center py-6">No tickets found</p>
+                )}
+                {filtered.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelected(t.id)}
+                    className={`w-full text-left px-4 py-3 border-b border-[#f3f4f6] last:border-0 transition-colors ${
+                      selected === t.id ? 'bg-[#fef9ec] border-l-2 border-l-[#d4a017]' : 'hover:bg-[#fafafa]'
+                    }`}
+                  >
+                    <p className="text-[13px] font-medium text-[#111113] truncate">{t.title}</p>
+                    <p className="text-[11px] text-[#9ca3af] mt-0.5">#{t.id?.slice(0,8)} · {t.status}</p>
+                  </button>
+                ))}
+              </div>
+              {error && <p className="text-[12px] text-red-600">{error}</p>}
+              <div className="flex gap-2 pt-1">
+                <button className={GOLD_BTN} onClick={handleAdd} disabled={saving || !selected}>
+                  {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Adding…</> : <><CornerUpRight className="w-3.5 h-3.5" /> Add to ticket</>}
+                </button>
+                <button className={OUTLINE_BTN} onClick={onClose}>Cancel</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── VersionsPanel — module-level ─────────────────────────────────────────────
@@ -181,7 +353,7 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
 }
 
 // ── SharedNoteRow — module-level ─────────────────────────────────────────────
-function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, onExpand, onSave, onDelete, onTogglePin, onViewHistory, saving }) {
+function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, onExpand, onSave, onDelete, onTogglePin, onViewHistory, onCreateTicket, onAddToTicket, saving }) {
   const meta = NOTE_TYPE_META[note.note_type] || NOTE_TYPE_META.note;
   const TypeIcon = meta.icon;
   const canDelete = isAdmin || note.author_id === currentUserId;
@@ -231,8 +403,14 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
         </td>
 
         {/* Actions */}
-        <td className="py-2.5 pr-3 w-28">
+        <td className="py-2.5 pr-3 w-36">
           <div className="flex items-center justify-end gap-0.5">
+            <button onClick={() => onCreateTicket(note)} className={GHOST_BTN} title="Create ticket from note">
+              <TicketIcon className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onAddToTicket(note)} className={GHOST_BTN} title="Add to existing ticket">
+              <CornerUpRight className="w-3.5 h-3.5" />
+            </button>
             <button onClick={() => onViewHistory(note.id)} className={GHOST_BTN} title="Version history">
               <History className="w-3.5 h-3.5" />
             </button>
@@ -288,6 +466,8 @@ const CompanyNotes = () => {
   const [filterType,     setFilterType]     = useState('all');
   const [filterCategory, setFilterCategory] = useState('');
   const [historyNoteId,  setHistoryNoteId]  = useState(null);
+  const [newTicketNote,  setNewTicketNote]  = useState(null);
+  const [addToTicketNote,setAddToTicketNote]= useState(null);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -385,6 +565,14 @@ const CompanyNotes = () => {
         <VersionsPanel noteId={historyNoteId} onClose={() => setHistoryNoteId(null)} />
       )}
 
+      {/* Ticket modals */}
+      {newTicketNote && (
+        <NewTicketFromNoteModal note={newTicketNote} onClose={() => setNewTicketNote(null)} />
+      )}
+      {addToTicketNote && (
+        <AddNoteToTicketModal note={addToTicketNote} onClose={() => setAddToTicketNote(null)} />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -465,7 +653,7 @@ const CompanyNotes = () => {
                 <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Note</th>
                 <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-32">Category</th>
                 <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-40">Author</th>
-                <th className="w-28 pr-3" />
+                <th className="w-36 pr-3" />
               </tr>
             </thead>
             <tbody>
@@ -482,6 +670,8 @@ const CompanyNotes = () => {
                   onDelete={handleDelete}
                   onTogglePin={handleTogglePin}
                   onViewHistory={setHistoryNoteId}
+                  onCreateTicket={setNewTicketNote}
+                  onAddToTicket={setAddToTicketNote}
                   saving={saving}
                 />
               ))}

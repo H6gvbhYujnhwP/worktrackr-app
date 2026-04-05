@@ -409,3 +409,47 @@ Behaviour after fix:
 
 ### Next priority
 Audio Stage 2 — "Audio" compose option in the ticket thread. Upload audio OR paste transcript → Whisper → Claude extraction → review screen → posts one combined note to thread.
+
+## Session 13 — Part 2 — Notes Enhancements
+
+### Files modified
+| File | Change |
+|---|---|
+| `web/client/.../PersonalNotes.jsx` | Added `NewTicketFromNoteModal`, `AddNoteToTicketModal` (module-level). Two new ghost buttons on every `NoteRow`. Modal state in `PersonalNotes`. |
+| `web/client/.../CompanyNotes.jsx` | Same additions. Two new ghost buttons on every `SharedNoteRow`. Modal state in `CompanyNotes`. |
+
+### New module-level components (both files)
+- `NewTicketFromNoteModal` — shows editable title pre-filled from note, note body shown as read-only description preview. POSTs to `POST /api/tickets` with `{ title, description: note.body, priority: 'medium' }`. Success state shows ticket reference. Sub-component rule ✓
+- `AddNoteToTicketModal` — fetches open tickets via `GET /api/tickets?limit=50`, searchable list, selected ticket highlighted gold. POSTs note content to `POST /api/tickets/:id/comments` with `comment_type: 'internal'`. If note has a title, body is posted as `**Title**\n\nBody`. Success state shown before close. Sub-component rule ✓
+
+### New row actions
+Both `NoteRow` (PersonalNotes) and `SharedNoteRow` (CompanyNotes) gain two new ghost buttons in the actions cell:
+- `TicketIcon` button — opens `NewTicketFromNoteModal`
+- `CornerUpRight` button — opens `AddNoteToTicketModal`
+Actions column widened from `w-24`/`w-28` to `w-32`/`w-36` to fit the extra buttons.
+
+### No backend changes required
+Both actions use existing endpoints: `POST /api/tickets` and `POST /api/tickets/:id/comments`. No migrations. No new routes.
+
+### Testing checklist after deploy
+- [ ] My Notes: two new icon buttons visible on each row (ticket icon + corner arrow)
+- [ ] My Notes: click ticket icon → modal opens with note title pre-filled as ticket title
+- [ ] My Notes: edit title in modal before confirming
+- [ ] My Notes: confirm → ticket created, success screen shows reference
+- [ ] My Notes: click corner arrow → ticket picker modal opens, tickets load
+- [ ] My Notes: type in search → list filters in real time
+- [ ] My Notes: select ticket (gold highlight) → "Add to ticket" button enables
+- [ ] My Notes: confirm → success screen, comment posted as internal note
+- [ ] My Notes: open ticket in ticket view → internal note appears in thread with note title bolded
+- [ ] Company Notes: same flow works for shared notes
+- [ ] Company Notes: any staff member can use both actions (not admin-only)
+- [ ] No regression to existing note actions (pin, edit, delete, version history)
+
+### Sub-component rule — confirmed compliant
+All new components defined at module level ✓
+
+### Next session priorities
+1. Ticket Redesign Option A (fresh session — large file, needs full context budget)
+2. Quote Line Items Redesign
+3. AI Quote Generation from Ticket
+4. Notes → Ticket already done ✓
