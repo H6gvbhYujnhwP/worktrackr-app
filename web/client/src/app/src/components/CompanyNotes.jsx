@@ -102,21 +102,43 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
 
   return (
     <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4 space-y-3">
+
+      {/* Type pill selector — prominent so it can't be missed */}
+      {isAdmin && (
+        <div>
+          <label className={LABEL_CLS}>Type</label>
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { value: 'note',         label: 'General note',   icon: StickyNote },
+              { value: 'knowledge',    label: 'Knowledge base',  icon: BookOpen   },
+              { value: 'announcement', label: 'Announcement',    icon: Megaphone  },
+            ].map(opt => {
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setNoteType(opt.value)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors ${
+                    noteType === opt.value
+                      ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
+                      : 'bg-white border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db] hover:text-[#374151]'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <div className="flex-1">
           <label className={LABEL_CLS}>Title</label>
           <input className={INPUT_CLS} placeholder="Note title" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
         </div>
-        {isAdmin && (
-          <div className="w-44">
-            <label className={LABEL_CLS}>Type</label>
-            <select className={INPUT_CLS} value={noteType} onChange={e => setNoteType(e.target.value)}>
-              <option value="note">Note</option>
-              <option value="knowledge">Knowledge base</option>
-              <option value="announcement">Announcement</option>
-            </select>
-          </div>
-        )}
       </div>
       <div>
         <label className={LABEL_CLS}>Content</label>
@@ -395,7 +417,7 @@ const CompanyNotes = () => {
         <div className="flex border-b border-[#e5e7eb]">
           {[
             { value: 'all',          label: 'All' },
-            { value: 'note',         label: 'Notes' },
+            { value: 'note',         label: 'General' },
             { value: 'knowledge',    label: 'Knowledge' },
             { value: 'announcement', label: 'Announcements' },
           ].map(tab => (

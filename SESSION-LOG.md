@@ -127,3 +127,20 @@ Auth, calendar rewrite, UI Pushes 1–2, bulk ops hotfix.
 7. **AI policy:** All AI reasoning uses Anthropic Claude (`claude-haiku-4-5-20251001`). Whisper (`whisper-1`) for audio only. No other AI providers.
 
 ### Goal: every pushed commit leaves the app fully working with no regressions.
+
+---
+
+### Hotfix — Company Notes UX bugs (Session 10, Part 4)
+
+**Root cause of both issues:**
+The session endpoint returns `membership.role = 'admin'` for the first org user, so the admin check was working correctly. The type dropdown WAS showing in the form. The user named a note "knowledge 1" but didn't change the type selector from the default "Note" — the small dropdown was easy to overlook.
+
+**Fix 1 — Type selector redesign (CompanyNotes.jsx)**
+Replaced the small `<select>` dropdown with a visible three-button pill group (General note / Knowledge base / Announcement), each with an icon. The selected type is highlighted in gold. Impossible to miss or accidentally leave on the wrong value.
+
+**Fix 2 — Tab rename (CompanyNotes.jsx)**
+"Notes" tab renamed to "General". "Notes" implied "all notes", but it actually filtered to `note_type = 'note'` (i.e. general notes only). Renaming to "General" makes the distinction clear: All / General / Knowledge / Announcements.
+
+**File changed:** `CompanyNotes.jsx` only. No backend, migration, or other file changes.
+
+**Note for user:** The existing "knowledge 1" note was saved with type "note" and will continue to appear under "General", not "Knowledge". Edit it → change the pill to "Knowledge base" → save to reclassify it.
