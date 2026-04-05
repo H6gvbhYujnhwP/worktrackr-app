@@ -34,6 +34,15 @@ Real Anthropic Claude call in `email-intake.js`. Keyword fallback if API key abs
 
 ## Upcoming — Audio Feature
 
+### ✅ Stage 1 — Inline Dictation in Notes (COMPLETE)
+`DictationButton.jsx` component added to both `PersonalNotes.jsx` and `CompanyNotes.jsx`.
+- Web Speech API (browser-native, free, no server)
+- Tap to start / tap to stop
+- Live preview box with interim text as user speaks
+- Final text appended to note body on stop
+- Graceful fallback — renders nothing if browser unsupported
+- `lang: en-GB`
+
 ### Mode 1: Meeting Audio Upload to Ticket
 Upload audio (mp3, m4a, wav, webm) to an existing ticket OR paste Zoom/Teams transcript text. Whisper transcribes; Claude extracts structured notes. Mandatory review step before anything saves. Lives in ticket Notes tab.
 

@@ -5,6 +5,7 @@ import {
   Megaphone, StickyNote, ChevronDown, History,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
+import DictationButton from './DictationButton.jsx';
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
@@ -143,6 +144,10 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
       <div>
         <label className={LABEL_CLS}>Content</label>
         <textarea className={`${INPUT_CLS} resize-none`} rows={3} placeholder="Write your note…" value={body} onChange={e => setBody(e.target.value)} />
+        <DictationButton
+          className="mt-2"
+          onResult={text => setBody(prev => prev ? prev.trimEnd() + ' ' + text : text)}
+        />
       </div>
       <div className="flex gap-3 items-end">
         <div className="flex-1">

@@ -4,6 +4,7 @@ import {
   Plus, Pin, Trash2, Edit2, X,
   StickyNote, Bell, CheckCircle2, Circle,
 } from 'lucide-react';
+import DictationButton from './DictationButton.jsx';
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
@@ -65,6 +66,10 @@ function NoteForm({ initial, onSave, onCancel, saving }) {
           placeholder="Write your note…"
           value={body}
           onChange={e => setBody(e.target.value)}
+        />
+        <DictationButton
+          className="mt-2"
+          onResult={text => setBody(prev => prev ? prev.trimEnd() + ' ' + text : text)}
         />
       </div>
       <div className="flex items-center gap-3">

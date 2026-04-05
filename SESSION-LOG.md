@@ -36,7 +36,47 @@ No other AI providers.
 
 ---
 
-## Session 10 — 2026-04-05
+## Session 11 — 2026-04-05
+
+### Stage 1 — Inline Dictation in Notes
+
+**Approach agreed before coding:**
+- Audio Feature broken into 3 stages: (1) inline dictation in Notes, (2) Audio tab on tickets (Whisper + Claude), (3) floating dictation assistant (Mode 2)
+- Stage 1 uses Web Speech API — browser-native, free, no server
+- `DictationButton.jsx` designed as a reusable module so Stage 3 can build on it
+
+**Files created**
+| File | Purpose |
+|---|---|
+| `DictationButton.jsx` | Reusable mic button with live preview box. Web Speech API. `onResult(text)` callback. |
+
+**Files modified**
+| File | Change |
+|---|---|
+| `PersonalNotes.jsx` | Import `DictationButton`. Added below body textarea in `NoteForm`. |
+| `CompanyNotes.jsx` | Import `DictationButton`. Added below body textarea in `SharedNoteForm`. |
+
+**DictationButton behaviour**
+- Tap once → starts recording, button turns red + pulses, "Listening…" indicator appears
+- Live preview box appears below: interim text shown in grey italic as user speaks, committed text in solid black
+- Tap again → stops, text appended to note body (`prev + ' ' + text`)
+- X button on preview clears the current session without saving
+- `onerror` handles `not-allowed` (mic permission denied) with a user-friendly message
+- `no-speech` and `aborted` errors silently ignored
+- If `window.SpeechRecognition` / `window.webkitSpeechRecognition` unavailable → component returns null
+- `lang: 'en-GB'` set
+
+**Next: Stage 2 — Audio tab on tickets (Mode 1)**
+- New "Audio" tab in `TicketDetailViewTabbed.jsx`
+- Upload audio file OR paste transcript text
+- Whisper (`whisper-1`) transcribes audio
+- Claude (`claude-haiku-4-5-20251001`) extracts structured notes: summary, action items, key details, follow-ups
+- Mandatory review step before saving
+- Saves to ticket notes
+
+---
+
+
 
 ### Part 1 — Roadmap decisions (no code)
 - AI Phase 4 and Phase 5 removed
