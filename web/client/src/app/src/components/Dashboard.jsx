@@ -37,6 +37,8 @@ import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
 import TicketDetailView from './TicketDetailViewTabbed.jsx';
+import PersonalNotes from './PersonalNotes.jsx';
+import CompanyNotes from './CompanyNotes.jsx';
 
 // ─── Status chip style ────────────────────────────────────────────────────────
 const chipBase = 'text-[12px] font-medium px-3 py-1.5 rounded-md border transition-colors cursor-pointer whitespace-nowrap';
@@ -363,6 +365,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}
       {currentView === 'email-intake'   && <EmailIntakeSettings />}
+      {currentView === 'my-notes'       && <PersonalNotes />}
+      {currentView === 'company-notes'  && <CompanyNotes />}
       {currentView === 'pricing-config' && (
         <ErrorBoundary>
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">

@@ -21,6 +21,8 @@ const PAGE_TITLES = {
   'pricing-config': 'Pricing Configuration',
   security:         'Security',
   'email-intake':   'Email Intake',
+  'company-notes':  'Company Notes',
+  'my-notes':       'My Notes',
 };
 
 // Context-aware primary action per view
@@ -46,6 +48,8 @@ const VIEW_TO_PAGE = {
   billing:          'billing',
   security:         'security',
   'email-intake':   'email-intake',
+  'company-notes':  'company-notes',
+  'my-notes':       'my-notes',
 };
 
 // ─── TopBar ───────────────────────────────────────────────────────────────────

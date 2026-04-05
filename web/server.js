@@ -189,6 +189,10 @@ app.use('/api/quotes', authenticateToken, quotesTenderRoutes);
 const summariesRoutes = require('./routes/summaries');
 app.use('/api/summaries', authenticateToken, summariesRoutes);
 
+// Notes (personal + shared)
+const notesRoutes = require('./routes/notes');
+app.use('/api/notes', authenticateToken, notesRoutes);
+
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
 // Mount routes directly (webhook route is public, settings routes require auth)
