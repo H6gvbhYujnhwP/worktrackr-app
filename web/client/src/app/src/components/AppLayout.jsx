@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Bell, Search, Plus } from 'lucide-react';
 import Sidebar from './Sidebar';
+import VoiceAssistant from './VoiceAssistant';
 
 // ─── Page title map ───────────────────────────────────────────────────────────
 const PAGE_TITLES = {
@@ -194,6 +195,9 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentVie
           </div>
         </main>
       </div>
+
+      {/* ── Global Voice Assistant FAB — floats above all content ─────────── */}
+      <VoiceAssistant currentView={currentView} user={user} />
     </div>
   );
 };

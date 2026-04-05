@@ -266,6 +266,98 @@ router.post('/extract-ticket', async (req, res) => {
   }
 });
 
+// ─── Voice intent prompt ──────────────────────────────────────────────────────
+function buildVoiceIntentPrompt(transcript, context) {
+  return `You are an AI assistant embedded in WorkTrackr, a field service management and CRM platform.
+A user has spoken a voice command. Determine their intent and extract the relevant data.
+
+USER SAID: "${transcript}"
+
+CONTEXT:
+${context}
+
+AVAILABLE INTENTS:
+- ticket_note      → Add a note/comment to an existing ticket
+- new_ticket       → Create a brand-new support ticket
+- personal_note    → Save a private note to My Notes
+- personal_reminder → Save a private note with a due date/reminder
+- company_note     → Share a note with the whole team (Company Notes)
+- crm_calendar     → Schedule a CRM event (call, meeting, follow-up)
+- ticket_calendar  → Book a calendar entry for a job/ticket
+- unknown          → Cannot determine intent
+
+Return ONLY valid JSON — no markdown, no explanation:
+{
+  "intent": "ticket_note",
+  "confidence": 0.92,
+  "ticket_id": "uuid-of-ticket-or-null",
+  "confirmation_message": "Short spoken summary e.g. I'll add a note to ticket #1234 saying the router has been replaced — is that right?",
+  "data": {
+    "for ticket_note":      { "ticket_id": "uuid", "body": "note text", "comment_type": "internal" },
+    "for new_ticket":       { "title": "brief title", "description": "full description", "priority": "low|medium|high|urgent" },
+    "for personal_note":    { "title": "note title", "body": "note body" },
+    "for personal_reminder":{ "title": "reminder title", "body": "details", "due_date": "ISO 8601 datetime or null" },
+    "for company_note":     { "title": "title", "body": "body", "note_type": "note|knowledge|announcement" },
+    "for crm_calendar":     { "title": "event title", "type": "call|meeting|follow_up|other", "start_at": "ISO 8601", "end_at": "ISO 8601", "notes": "optional notes" },
+    "for ticket_calendar":  { "title": "event title", "eventDate": "YYYY-MM-DD", "startTime": "HH:MM", "endTime": "HH:MM", "description": "optional" }
+  }
+}
+
+Rules:
+- Only include the data fields relevant to the chosen intent
+- If no ticket is identifiable for ticket_note, set ticket_id to null and include it in data
+- Due dates should be ISO 8601 (e.g. 2026-04-10T09:00:00.000Z); infer from phrases like "tomorrow", "next Monday" relative to today's date in the context
+- For CRM/calendar times, default to 1-hour duration if end time not mentioned
+- confidence is 0-1; below 0.5 use intent "unknown"
+- confirmation_message must be a natural spoken sentence, concise (under 25 words)`;
+}
+
+// ─── POST /api/transcribe/voice-intent ────────────────────────────────────────
+router.post('/voice-intent', async (req, res) => {
+  try {
+    const { transcript, context } = req.body;
+    if (!transcript || transcript.trim().length < 2) {
+      return res.status(400).json({ error: 'No transcript provided' });
+    }
+
+    const contextStr = [
+      context.currentView   ? `Current screen: ${context.currentView}` : '',
+      context.userName      ? `Current user: ${context.userName}` : '',
+      context.dateTime      ? `Date/time: ${context.dateTime}` : '',
+      context.currentTicketId ? `Currently viewing ticket ID: ${context.currentTicketId}` : '',
+      context.openTickets?.length
+        ? `Recent open tickets:\n${context.openTickets.map(t => `  - ID: ${t.id} | #${t.ref || t.id.slice(0,8)} "${t.title}" (${t.status})`).join('\n')}`
+        : 'No open tickets loaded',
+    ].filter(Boolean).join('\n');
+
+    console.log('[VoiceIntent] Transcript:', transcript.slice(0, 100));
+    const raw = await callClaude(
+      'You are a voice intent router for a field service CRM application. Always respond with valid JSON only.',
+      buildVoiceIntentPrompt(transcript.trim(), contextStr),
+    );
+
+    let result;
+    try {
+      result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      console.error('[VoiceIntent] Parse failed, raw:', raw);
+      result = {
+        intent: 'unknown',
+        confidence: 0,
+        ticket_id: null,
+        confirmation_message: "I couldn't understand that — please try again.",
+        data: {},
+      };
+    }
+
+    console.log('[VoiceIntent] Intent:', result.intent, 'confidence:', result.confidence);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('[VoiceIntent] Error:', error);
+    res.status(500).json({ error: 'Failed to process voice command', message: error.message });
+  }
+});
+
 // ─── GET /api/transcribe/:id ──────────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {

@@ -614,6 +614,12 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       .finally(() => setCommentsLoading(false));
   }, [ticketId]);
 
+  // Expose current ticket ID to VoiceAssistant (global signal — safe, ephemeral)
+  useEffect(() => {
+    if (ticketId) window.__worktrackr_current_ticket = ticketId;
+    return () => { window.__worktrackr_current_ticket = null; };
+  }, [ticketId]);
+
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments.length]);

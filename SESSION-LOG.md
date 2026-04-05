@@ -205,7 +205,103 @@ User reviewed the initial card-based design and requested a more compact layout 
 
 **Next priority:** Audio Stage 3 — Voice Dictation Assistant (Mode 2): floating hold-to-record button, Claude routes intent, mandatory review, TTS confirmation loop.
 
-## Session 9 — 2025-04-04
+## Session 13 — 2026-04-05
+
+### Audio Stage 3 — Voice Dictation Assistant (Mode 2)
+
+**Approach:**
+- Floating gold mic FAB rendered globally inside `AppLayout`, visible on every screen
+- Tap to open panel → tap to record (Web Speech API, max 60s auto-stop) → Claude routes intent → mandatory review with TTS confirmation → save to correct API
+- `window.__worktrackr_current_ticket` global signal set/cleared by `TicketDetailViewTabbed` so the assistant knows which ticket is open
+
+**Files created**
+| File | Purpose |
+|---|---|
+| `web/client/.../VoiceAssistant.jsx` | Floating voice dictation assistant — all sub-components at module level |
+
+**Files modified**
+| File | Change |
+|---|---|
+| `web/routes/transcribe.js` | Added `POST /voice-intent` endpoint — Claude intent routing with context |
+| `web/client/.../AppLayout.jsx` | Import + render `<VoiceAssistant currentView user />` at layout level |
+| `web/client/.../TicketDetailViewTabbed.jsx` | `useEffect` sets/clears `window.__worktrackr_current_ticket` |
+
+**Backend — `POST /api/transcribe/voice-intent`**
+- Accepts: `{ transcript, context: { currentView, userName, dateTime, currentTicketId, openTickets[] } }`
+- Builds a rich context string, sends to Claude (`claude-haiku-4-5-20251001`)
+- Returns: `{ intent, confidence, ticket_id, confirmation_message, data }`
+- Intents: `ticket_note | new_ticket | personal_note | personal_reminder | company_note | crm_calendar | ticket_calendar | unknown`
+- Graceful fallback if JSON parse fails → `intent: 'unknown'`
+
+**Frontend — VoiceAssistant (module-level architecture)**
+
+All sub-components are module-level (sub-component rule ✓):
+- `RecordingPanel` — live waveform timer, elapsed arc, live transcript preview
+- `ProcessingPanel` — Claude spinner
+- `ReviewPanel` — intent badge, editable fields, TTS confirm, save/retry/cancel
+- `SuccessToast` — brief success flash
+- Field components: `TicketNoteFields`, `NewTicketFields`, `PersonalNoteFields`, `CompanyNoteFields`, `CrmCalendarFields`, `TicketCalendarFields`
+- `IntentBadge` — coloured badge per intent type
+- `FieldLabel` — shared label style
+
+**State machine:**
+`idle → recording → processing → review → saving → success → idle`
+
+**TTS confirmation loop:**
+- `ReviewPanel` calls `speak(confirmation_message)` on mount (browser-native `speechSynthesis`, `en-GB`)
+- "🔊 Hear again" button re-speaks on demand
+- `stopSpeaking()` called on cancel, retry, and success
+
+**Context sent to Claude:**
+- Current screen name
+- Current user name
+- Date/time (formatted, BST-aware)
+- Current ticket ID (from `window.__worktrackr_current_ticket` if on ticket detail)
+- Up to 15 recent open tickets (id, title, status)
+
+**Save routing:**
+| Intent | API call |
+|---|---|
+| `ticket_note` | `POST /api/tickets/:id/comments` |
+| `new_ticket` | `POST /api/tickets` |
+| `personal_note` | `POST /api/notes/personal` |
+| `personal_reminder` | `POST /api/notes/personal` (with due_date) |
+| `company_note` | `POST /api/notes/shared` |
+| `crm_calendar` | `POST /api/crm-events` |
+| `ticket_calendar` | `POST /api/calendar` |
+
+**Testing checklist after deploy**
+- [ ] Gold mic FAB appears bottom-right on all screens
+- [ ] FAB hidden on unsupported browsers (non-Chrome/Edge) — VoiceAssistant renders null
+- [ ] Tap FAB → panel slides open, idle state shown with examples
+- [ ] Tap "Start recording" → timer arc counts up, live transcript preview updates
+- [ ] Speak "Add a note to the printer ticket saying the router has been replaced"
+- [ ] Tap "Stop recording" → "Understanding your request…" spinner shows
+- [ ] Review panel: intent badge shows "Note on ticket", confirmation_message shown
+- [ ] Browser speaks the confirmation message automatically (Chrome)
+- [ ] "🔊 Hear again" button re-speaks
+- [ ] Ticket selector pre-populated with matched ticket
+- [ ] Note text field pre-populated with extracted body
+- [ ] Edit a field → change persists on confirm
+- [ ] "Confirm & save" → saving spinner → success tick, panel auto-closes
+- [ ] Comment appears in ticket thread immediately (on refresh)
+- [ ] "Try again" from review → back to idle
+- [ ] Cancel at any stage → panel closes cleanly
+- [ ] "Create an urgent ticket for the server room overheating"
+- [ ] Review: new_ticket intent, title + description + priority=urgent pre-filled
+- [ ] "Remind me to call John Smith next Friday"
+- [ ] Review: personal_reminder intent, due_date pre-filled to next Friday
+- [ ] "Share a knowledge base note about the new VPN setup procedure"
+- [ ] Review: company_note intent, note_type=knowledge
+- [ ] Viewing a ticket → say "add a note to this ticket" → ticket_id pre-filled
+- [ ] Render logs: `[VoiceIntent] Intent: ticket_note confidence: 0.9`
+
+**Sub-component rule — confirmed compliant:**
+All components (`RecordingPanel`, `ProcessingPanel`, `ReviewPanel`, etc.) defined at module level ✓
+
+**Next priority:** Jobs Module (DB schema, API, list view, detail page, job creation)
+
+
 AI Phase 3 — Smart Summaries. `summaries.js`, `TicketDetailViewTabbed.jsx`, `QuoteDetails.jsx`.
 
 ## Session 8 — 2025-04-04

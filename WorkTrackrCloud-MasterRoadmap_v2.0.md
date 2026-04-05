@@ -139,6 +139,11 @@ Upload audio (mp3, m4a, wav, webm) to an existing ticket OR paste Zoom/Teams tra
 - Audio compose tab in the new ticket thread layout
 - Extracted notes post to the ticket thread as a single structured entry
 
+### ✅ Stage 3 — Voice Dictation Assistant (Mode 2) (COMPLETE)
+Floating gold mic FAB, global across all screens. Tap to record (Web Speech API, max 60s). Claude receives transcript + context (current screen, open tickets, user, date/time) and routes to the correct destination. Mandatory review step with editable fields. Browser TTS speaks confirmation: "I'll add a note to ticket #1234 — is that right?". User confirms or retries.
+
+**Routes supported:** ticket note, new ticket, personal note, personal reminder, company shared note, CRM calendar event, ticket calendar event.
+
 ### Stage 3 — Voice Dictation Assistant (Mode 2)
 Hold-to-record, max 60s. Claude interprets intent and routes automatically. Mandatory review before commit.
 
