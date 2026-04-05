@@ -55,7 +55,7 @@ const updateTicketSchema = z.object({
 
 const commentSchema = z.object({
   body: z.string().min(1),
-  comment_type: z.enum(['update', 'internal', 'system', 'approval_request']).default('update'),
+  comment_type: z.enum(['update', 'internal', 'system', 'approval_request', 'audio_note']).default('update'),
 });
 
 // -------------------- ROUTES --------------------

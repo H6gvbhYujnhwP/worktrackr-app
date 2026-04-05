@@ -5,379 +5,297 @@ const { z } = require('zod');
 const db = require('../../shared/db');
 const OpenAI = require('openai');
 const fs = require('fs');
-const path = require('path');
 
-// Lazy-load OpenAI client to avoid startup errors if API key not set
+// ─── OpenAI client (Whisper only — speech-to-text, no viable Anthropic equivalent) ──
 let openai = null;
 function getOpenAIClient() {
   if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
   return openai;
 }
 
-// Configure multer for file uploads
+// ─── Anthropic Claude helper (all AI reasoning) ───────────────────────────────
+async function callClaude(systemPrompt, userContent) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Anthropic API error ${response.status}: ${err}`);
+  }
+  const data = await response.json();
+  return data.content?.[0]?.text || '';
+}
+
+// ─── Multer config ─────────────────────────────────────────────────────────────
 const upload = multer({
   dest: '/tmp/uploads/',
-  limits: {
-    fileSize: 25 * 1024 * 1024 // 25MB limit (Whisper API limit)
-  },
+  limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedMimes = [
-      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 
-      'audio/webm', 'audio/ogg', 'video/mp4', 'video/webm'
-    ];
-    
-    if (allowedMimes.includes(file.mimetype) || file.originalname.match(/\.(mp3|wav|m4a|webm|ogg|mp4)$/i)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Supported: MP3, WAV, M4A, WEBM, OGG, MP4'));
-    }
-  }
+    const ok =
+      ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/webm', 'audio/ogg',
+       'video/mp4', 'video/webm'].includes(file.mimetype) ||
+      /\.(mp3|wav|m4a|webm|ogg|mp4)$/i.test(file.originalname);
+    ok ? cb(null, true) : cb(new Error('Invalid file type. Supported: MP3, WAV, M4A, WEBM, OGG, MP4'));
+  },
 });
 
-// Validation schemas
+// ─── Schemas ───────────────────────────────────────────────────────────────────
 const extractTicketSchema = z.object({
-  transcript_id: z.string().uuid().optional(),
-  transcript_text: z.string().min(10)
+  transcript_id:   z.string().uuid().optional(),
+  transcript_text: z.string().min(10),
 });
 
-// Helper: Generate prompt for ticket extraction
-function generateTicketExtractionPrompt(transcript) {
+// ─── Prompt helpers ───────────────────────────────────────────────────────────
+function meetingNoteExtractionPrompt(transcript) {
+  return `You are extracting structured meeting notes from a transcript.
+
+TRANSCRIPT:
+${transcript}
+
+Return ONLY valid JSON — no markdown, no explanations:
+{
+  "summary":      "2-3 sentence overview of what was discussed",
+  "action_items": ["action item with owner if mentioned"],
+  "key_details":  ["important technical or factual detail"],
+  "follow_ups":   ["thing that needs to happen next"],
+  "decisions":    ["decision made during the meeting"]
+}
+
+Rules: If a section has no content return []. Be concise — one sentence max per bullet.`;
+}
+
+function ticketExtractionPrompt(transcript) {
   return `You are analyzing a customer service call or meeting transcript.
 
 TRANSCRIPT:
 ${transcript}
 
-TASK:
-Extract structured ticket information from this conversation.
-
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
-  "title": "Brief descriptive title (max 100 chars)",
-  "description": "Detailed description of the issue or request",
-  "category": "One of: IT Support, Maintenance, Installation, Consultation, Emergency, Other",
-  "priority": "One of: low, medium, high, urgent",
-  "customer_name": "Customer or company name if mentioned, else null",
-  "contact_email": "Email address if mentioned, else null",
-  "contact_phone": "Phone number if mentioned, else null",
-  "scheduled_date": "ISO date (YYYY-MM-DD) if specific date mentioned, else null",
-  "estimated_duration": "Duration in minutes if discussed, else null",
-  "key_requirements": ["requirement 1", "requirement 2"],
-  "parts_needed": ["part 1", "part 2"],
-  "budget_mentioned": "Amount in GBP if discussed (e.g., 500.00), else null",
-  "urgency_indicators": ["reason 1", "reason 2"],
-  "follow_up_actions": ["action 1", "action 2"],
-  "confidence_score": 0.85
+  "title":                "Brief descriptive title (max 100 chars)",
+  "description":          "Detailed description of the issue or request",
+  "category":             "One of: IT Support, Maintenance, Installation, Consultation, Emergency, Other",
+  "priority":             "One of: low, medium, high, urgent",
+  "customer_name":        "Customer or company name if mentioned, else null",
+  "contact_email":        "Email address if mentioned, else null",
+  "contact_phone":        "Phone number if mentioned, else null",
+  "scheduled_date":       "ISO date (YYYY-MM-DD) if specific date mentioned, else null",
+  "estimated_duration":   "Duration in minutes if discussed, else null",
+  "key_requirements":     ["requirement 1"],
+  "parts_needed":         ["part 1"],
+  "budget_mentioned":     "Amount in GBP if discussed, else null",
+  "urgency_indicators":   ["reason 1"],
+  "follow_up_actions":    ["action 1"],
+  "confidence_score":     0.85
+}`;
 }
 
-IMPORTANT:
-- Be conservative - if information isn't clearly stated, use null or empty array
-- confidence_score should be 0.0-1.0 based on how clear the information is
-- Extract only what is explicitly mentioned
-- For dates, use ISO format (YYYY-MM-DD)
-- For budget, extract number only (no currency symbols)`;
+// ─── Format extraction as readable note body ──────────────────────────────────
+function formatAudioNote(extraction, filename) {
+  const lines = [`\uD83C\uDF99\uFE0F Meeting Note${filename ? ` \u2014 ${filename}` : ''}`];
+  lines.push('', '**Summary**', extraction.summary || '(none)');
+  if (extraction.action_items?.length) {
+    lines.push('', '**Action Items**');
+    extraction.action_items.forEach(i => lines.push(`\u2022 ${i}`));
+  }
+  if (extraction.key_details?.length) {
+    lines.push('', '**Key Details**');
+    extraction.key_details.forEach(i => lines.push(`\u2022 ${i}`));
+  }
+  if (extraction.decisions?.length) {
+    lines.push('', '**Decisions**');
+    extraction.decisions.forEach(i => lines.push(`\u2022 ${i}`));
+  }
+  if (extraction.follow_ups?.length) {
+    lines.push('', '**Follow-ups**');
+    extraction.follow_ups.forEach(i => lines.push(`\u2022 ${i}`));
+  }
+  return lines.join('\n');
 }
 
-// POST /api/transcribe/audio - Transcribe audio file
-router.post('/audio', upload.single('audio'), async (req, res) => {
+// ─── POST /api/transcribe/ticket-note ─────────────────────────────────────────
+router.post('/ticket-note', upload.single('audio'), async (req, res) => {
   let tempFilePath = null;
-
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No audio file provided' });
+    let transcriptText = req.body.transcript_text || '';
+    const filename     = req.file ? req.file.originalname : null;
+
+    if (req.file) {
+      tempFilePath = req.file.path;
+      console.log('[TicketNote] Transcribing:', filename, 'size:', req.file.size);
+      const openaiClient = getOpenAIClient();
+      const transcription = await openaiClient.audio.transcriptions.create({
+        file:            fs.createReadStream(tempFilePath),
+        model:           'whisper-1',
+        language:        'en',
+        response_format: 'text',
+      });
+      transcriptText = transcription;
+      console.log('[TicketNote] Whisper done, chars:', transcriptText.length);
     }
 
-    const audioFile = req.file;
-    tempFilePath = audioFile.path;
-    const orgId = req.orgContext.organizationId;
-    const userId = req.user.userId;
-
-    console.log('[Transcribe] Processing file:', audioFile.originalname, 'Size:', audioFile.size);
-
-    // Validate file size
-    if (audioFile.size > 25 * 1024 * 1024) {
-      return res.status(400).json({ error: 'File too large. Maximum size is 25MB.' });
+    if (!transcriptText || transcriptText.trim().length < 10) {
+      return res.status(400).json({ error: 'No usable transcript. Upload an audio file or paste a transcript.' });
     }
 
-    // Transcribe with Whisper
-    console.log('[Transcribe] Calling Whisper API...');
-    
-    const openaiClient = getOpenAIClient();
-    const transcription = await openaiClient.audio.transcriptions.create({
-      file: fs.createReadStream(tempFilePath),
-      model: 'whisper-1',
-      language: 'en',
-      response_format: 'verbose_json',
-      timestamp_granularities: ['segment']
-    });
-
-    console.log('[Transcribe] Transcription complete. Duration:', transcription.duration, 'seconds');
-
-    // Store transcription in database
-    const result = await db.query(
-      `INSERT INTO transcripts (
-        organisation_id, user_id, filename, duration, text, segments, language
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *`,
-      [
-        orgId,
-        userId,
-        audioFile.originalname,
-        Math.round(transcription.duration),
-        transcription.text,
-        JSON.stringify(transcription.segments || []),
-        transcription.language || 'en'
-      ]
+    console.log('[TicketNote] Extracting with Claude…');
+    const raw = await callClaude(
+      'You extract structured meeting notes from transcripts. Always respond with valid JSON only.',
+      meetingNoteExtractionPrompt(transcriptText.trim()),
     );
 
-    const transcript = result.rows[0];
+    let extraction;
+    try {
+      extraction = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      console.error('[TicketNote] Claude JSON parse failed, raw:', raw);
+      extraction = { summary: raw.slice(0, 500), action_items: [], key_details: [], follow_ups: [], decisions: [] };
+    }
 
-    // Clean up temp file
-    fs.unlinkSync(tempFilePath);
-
-    console.log('[Transcribe] Saved transcript:', transcript.id);
+    if (tempFilePath && fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
 
     res.json({
-      success: true,
-      transcript_id: transcript.id,
-      text: transcript.text,
-      duration: transcript.duration,
-      segments: transcription.segments || [],
-      language: transcript.language
+      success:        true,
+      transcript:     transcriptText.trim(),
+      extraction,
+      formatted_body: formatAudioNote(extraction, filename),
+      filename,
     });
-
   } catch (error) {
-    console.error('[Transcribe] Error:', error);
-
-    // Clean up temp file on error
-    if (tempFilePath && fs.existsSync(tempFilePath)) {
-      try {
-        fs.unlinkSync(tempFilePath);
-      } catch (cleanupError) {
-        console.error('[Transcribe] Failed to clean up temp file:', cleanupError);
-      }
-    }
-
-    if (error.code === 'insufficient_quota') {
-      return res.status(503).json({ error: 'Transcription service temporarily unavailable' });
-    }
-
-    res.status(500).json({ 
-      error: 'Failed to transcribe audio', 
-      message: error.message 
-    });
+    console.error('[TicketNote] Error:', error);
+    if (tempFilePath && fs.existsSync(tempFilePath)) { try { fs.unlinkSync(tempFilePath); } catch {} }
+    if (error.code === 'insufficient_quota') return res.status(503).json({ error: 'Transcription service temporarily unavailable.' });
+    res.status(500).json({ error: 'Failed to process audio note.', message: error.message });
   }
 });
 
-// POST /api/transcribe/extract-ticket - Extract ticket data from transcript
+// ─── POST /api/transcribe/audio ───────────────────────────────────────────────
+router.post('/audio', upload.single('audio'), async (req, res) => {
+  let tempFilePath = null;
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No audio file provided' });
+    const audioFile = req.file;
+    tempFilePath = audioFile.path;
+    const orgId  = req.orgContext.organizationId;
+    const userId = req.user.userId;
+    console.log('[Transcribe] Processing:', audioFile.originalname, 'size:', audioFile.size);
+
+    const openaiClient = getOpenAIClient();
+    const transcription = await openaiClient.audio.transcriptions.create({
+      file:     fs.createReadStream(tempFilePath),
+      model:    'whisper-1',
+      language: 'en',
+      response_format: 'verbose_json',
+      timestamp_granularities: ['segment'],
+    });
+
+    const result = await db.query(
+      `INSERT INTO transcripts (organisation_id, user_id, filename, duration, text, segments, language)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [orgId, userId, audioFile.originalname, Math.round(transcription.duration),
+       transcription.text, JSON.stringify(transcription.segments || []), transcription.language || 'en'],
+    );
+    fs.unlinkSync(tempFilePath);
+    const transcript = result.rows[0];
+    res.json({ success: true, transcript_id: transcript.id, text: transcript.text,
+               duration: transcript.duration, segments: transcription.segments || [], language: transcript.language });
+  } catch (error) {
+    console.error('[Transcribe] Error:', error);
+    if (tempFilePath && fs.existsSync(tempFilePath)) { try { fs.unlinkSync(tempFilePath); } catch {} }
+    if (error.code === 'insufficient_quota') return res.status(503).json({ error: 'Transcription service temporarily unavailable' });
+    res.status(500).json({ error: 'Failed to transcribe audio', message: error.message });
+  }
+});
+
+// ─── POST /api/transcribe/extract-ticket (Claude — was GPT-4) ─────────────────
 router.post('/extract-ticket', async (req, res) => {
   try {
     const { transcript_id, transcript_text } = extractTicketSchema.parse(req.body);
     const orgId = req.orgContext.organizationId;
-
-    console.log('[Extract Ticket] Processing transcript...');
-
-    // If transcript_id provided, fetch from database
     let transcriptText = transcript_text;
     if (transcript_id) {
-      const transcriptResult = await db.query(
-        `SELECT text FROM transcripts WHERE id = $1 AND organisation_id = $2`,
-        [transcript_id, orgId]
-      );
-
-      if (transcriptResult.rows.length === 0) {
-        return res.status(404).json({ error: 'Transcript not found' });
-      }
-
-      transcriptText = transcriptResult.rows[0].text;
+      const r = await db.query(`SELECT text FROM transcripts WHERE id = $1 AND organisation_id = $2`, [transcript_id, orgId]);
+      if (r.rows.length === 0) return res.status(404).json({ error: 'Transcript not found' });
+      transcriptText = r.rows[0].text;
     }
-
-    // Generate prompt
-    const prompt = generateTicketExtractionPrompt(transcriptText);
-
-    console.log('[Extract Ticket] Calling OpenAI API...');
-
-    // Call GPT-4 for extraction
-    const openaiClient = getOpenAIClient();
-    const completion = await openaiClient.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [
-        { 
-          role: 'system', 
-          content: 'You are a ticket extraction assistant. Always respond with valid JSON only, no markdown or explanations.' 
-        },
-        { role: 'user', content: prompt }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.3, // Lower temperature for more consistent extraction
-      max_tokens: 1500
-    });
-
-    const aiResponse = completion.choices[0].message.content;
-    console.log('[Extract Ticket] Raw AI response:', aiResponse);
-
+    const raw = await callClaude(
+      'You are a ticket extraction assistant. Always respond with valid JSON only.',
+      ticketExtractionPrompt(transcriptText),
+    );
     let extracted;
-    try {
-      extracted = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.error('[Extract Ticket] Failed to parse AI response:', parseError);
-      return res.status(500).json({ 
-        error: 'Failed to parse AI response', 
-        raw_response: aiResponse 
-      });
-    }
+    try { extracted = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { return res.status(500).json({ error: 'Failed to parse AI response', raw_response: raw }); }
 
-    // Try to match customer if name or email provided
-    let matched_contact_id = null;
-    let matched_contact = null;
-
+    let matched_contact_id = null, matched_contact = null;
     if (extracted.customer_name || extracted.contact_email) {
-      const contactQuery = `
-        SELECT id, company_name, name, email, phone
-        FROM contacts
-        WHERE organisation_id = $1
-        AND (
-          company_name ILIKE $2
-          OR name ILIKE $2
-          OR email ILIKE $3
-        )
-        LIMIT 1
-      `;
-
-      const contactResult = await db.query(contactQuery, [
-        orgId,
-        `%${extracted.customer_name || ''}%`,
-        `%${extracted.contact_email || ''}%`
-      ]);
-
-      if (contactResult.rows.length > 0) {
-        matched_contact = contactResult.rows[0];
-        matched_contact_id = matched_contact.id;
-        console.log('[Extract Ticket] Matched contact:', matched_contact_id);
-      }
+      const cr = await db.query(
+        `SELECT id, company_name, name, email, phone FROM contacts
+         WHERE organisation_id = $1 AND (company_name ILIKE $2 OR name ILIKE $2 OR email ILIKE $3) LIMIT 1`,
+        [orgId, `%${extracted.customer_name || ''}%`, `%${extracted.contact_email || ''}%`],
+      );
+      if (cr.rows.length > 0) { matched_contact = cr.rows[0]; matched_contact_id = matched_contact.id; }
     }
-
-    // Store extraction in audit table
     if (transcript_id) {
       await db.query(
-        `INSERT INTO ai_extractions (
-          organisation_id, transcript_id, model, extraction_type,
-          extracted_data, confidence_score
-        ) VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          orgId,
-          transcript_id,
-          'gpt-4-turbo',
-          'ticket',
-          JSON.stringify(extracted),
-          extracted.confidence_score || 0.5
-        ]
+        `INSERT INTO ai_extractions (organisation_id, transcript_id, model, extraction_type, extracted_data, confidence_score)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [orgId, transcript_id, 'claude-haiku-4-5-20251001', 'ticket', JSON.stringify(extracted), extracted.confidence_score || 0.5],
       );
     }
-
-    console.log('[Extract Ticket] Successfully extracted ticket data');
-
-    res.json({
-      success: true,
-      extracted_data: extracted,
-      matched_contact_id,
-      matched_contact,
-      transcript_id: transcript_id || null,
-      ready_for_review: true
-    });
-
+    res.json({ success: true, extracted_data: extracted, matched_contact_id, matched_contact, transcript_id: transcript_id || null, ready_for_review: true });
   } catch (error) {
     console.error('[Extract Ticket] Error:', error);
-    
-    if (error.name === 'ZodError') {
-      return res.status(400).json({ error: 'Invalid request data', details: error.errors });
-    }
-
-    if (error.code === 'insufficient_quota') {
-      return res.status(503).json({ error: 'AI service temporarily unavailable' });
-    }
-
-    res.status(500).json({ 
-      error: 'Failed to extract ticket data', 
-      message: error.message 
-    });
+    if (error.name === 'ZodError') return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    res.status(500).json({ error: 'Failed to extract ticket data', message: error.message });
   }
 });
 
-// GET /api/transcribe/:id - Get transcript by ID
+// ─── GET /api/transcribe/:id ──────────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const orgId = req.orgContext.organizationId;
-
+    const orgId  = req.orgContext.organizationId;
     const result = await db.query(
-      `SELECT t.*, u.email as created_by_email
-       FROM transcripts t
-       LEFT JOIN users u ON t.user_id = u.id
-       WHERE t.id = $1 AND t.organisation_id = $2`,
-      [id, orgId]
+      `SELECT t.*, u.email as created_by_email FROM transcripts t LEFT JOIN users u ON t.user_id = u.id WHERE t.id = $1 AND t.organisation_id = $2`,
+      [id, orgId],
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Transcript not found' });
-    }
-
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Transcript not found' });
     res.json(result.rows[0]);
-
   } catch (error) {
-    console.error('[Transcribe] Get error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch transcript', 
-      message: error.message 
-    });
+    res.status(500).json({ error: 'Failed to fetch transcript', message: error.message });
   }
 });
 
-// GET /api/transcribe - List transcripts
+// ─── GET /api/transcribe ──────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
   try {
     const orgId = req.orgContext.organizationId;
     const { ticket_id, limit = 50, offset = 0 } = req.query;
-
-    let query = `
-      SELECT t.*, u.email as created_by_email
-      FROM transcripts t
-      LEFT JOIN users u ON t.user_id = u.id
-      WHERE t.organisation_id = $1
-    `;
-    const params = [orgId];
-    let paramIndex = 2;
-
-    if (ticket_id) {
-      query += ` AND t.ticket_id = $${paramIndex}`;
-      params.push(ticket_id);
-      paramIndex++;
-    }
-
-    query += ` ORDER BY t.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    let query = `SELECT t.*, u.email as created_by_email FROM transcripts t LEFT JOIN users u ON t.user_id = u.id WHERE t.organisation_id = $1`;
+    const params = [orgId]; let pi = 2;
+    if (ticket_id) { query += ` AND t.ticket_id = $${pi++}`; params.push(ticket_id); }
+    query += ` ORDER BY t.created_at DESC LIMIT $${pi} OFFSET $${pi + 1}`;
     params.push(parseInt(limit), parseInt(offset));
-
     const result = await db.query(query, params);
-
-    res.json({
-      transcripts: result.rows,
-      total: result.rows.length,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
+    res.json({ transcripts: result.rows, total: result.rows.length, limit: parseInt(limit), offset: parseInt(offset) });
   } catch (error) {
-    console.error('[Transcribe] List error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch transcripts', 
-      message: error.message 
-    });
+    res.status(500).json({ error: 'Failed to fetch transcripts', message: error.message });
   }
 });
 

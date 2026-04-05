@@ -34,7 +34,7 @@ Real Anthropic Claude call in `email-intake.js`. Keyword fallback if API key abs
 
 ## In Progress
 
-### 🔄 Ticket Redesign — Option B (conversation-first)
+### ✅ Ticket Redesign — Option B (COMPLETE — deployed) (conversation-first)
 
 The current ticket view has disconnected tab-based sections and wastes horizontal space. Agreed redesign direction:
 
@@ -130,7 +130,7 @@ Every step is recorded in the ticket's conversation thread. The invoice is pre-p
 - Graceful fallback — renders nothing if browser unsupported
 - `lang: en-GB`
 
-### Stage 2 — Meeting Audio Upload to Ticket (next after ticket redesign)
+### ✅ Stage 2 — Meeting Audio Upload to Ticket (COMPLETE)
 Upload audio (mp3, m4a, wav, webm) to an existing ticket OR paste Zoom/Teams transcript text. Whisper transcribes; Claude extracts structured notes. Mandatory review step before anything saves. Posts result into the ticket conversation thread.
 
 **Implementation notes:**

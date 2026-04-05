@@ -1,11 +1,12 @@
 // web/client/src/app/src/components/TicketDetailViewTabbed.jsx
 // Option B redesign — job description pinned, conversation thread, right sidebar workflow.
-// All save/updateTicket logic, SafetyTab, QuotesTab, summarise fully preserved.
+// Audio Stage 2: Audio compose tab with Whisper + Claude extraction → review → post.
 
 import React, { useEffect, useState, useRef } from 'react';
 import {
   ArrowLeft, Save, Loader2, MessageSquare, DollarSign, Sparkles,
-  Paperclip, Shield, Edit3, Send, Lock,
+  Paperclip, Shield, Edit3, Send, Lock, Mic, Upload, FileText,
+  ChevronDown, ChevronUp, CheckCircle2, X,
 } from 'lucide-react';
 import { useSimulation, useAuth } from '../App.jsx';
 import {
@@ -123,6 +124,10 @@ function ThreadEntry({ comment, isCurrentUser }) {
     );
   }
 
+  if (type === 'audio_note') {
+    return <AudioNoteEntry comment={comment} avatarBg={avatarBg} initials={initials} />;
+  }
+
   const isInternal = type === 'internal';
   return (
     <div className="flex gap-3">
@@ -151,6 +156,371 @@ function ThreadEntry({ comment, isCurrentUser }) {
   );
 }
 
+// ─── Audio note renderer — module-level ───────────────────────────────────────
+function AudioNoteEntry({ comment, avatarBg, initials }) {
+  const [showTranscript, setShowTranscript] = useState(false);
+  const body = comment.body || '';
+
+  // Parse sections from the formatted body text
+  const sections = [];
+  let transcript = '';
+  const lines = body.split('\n');
+  let currentSection = null;
+  let title = '';
+
+  lines.forEach(line => {
+    if (line.startsWith('🎙️')) { title = line; return; }
+    if (line.startsWith('**') && line.endsWith('**')) {
+      const heading = line.replace(/\*\*/g, '');
+      currentSection = { heading, items: [] };
+      sections.push(currentSection);
+      return;
+    }
+    if (line.startsWith('• ') && currentSection) {
+      currentSection.items.push(line.slice(2));
+      return;
+    }
+    if (line === '---') { currentSection = null; return; }
+    if (currentSection === null && line.trim() && !line.startsWith('🎙️')) {
+      transcript += line + '\n';
+    } else if (currentSection && !line.startsWith('•') && !line.startsWith('**') && line.trim()) {
+      // Plain text under a section (e.g. summary)
+      if (currentSection.items.length === 0) currentSection.summary = line;
+    }
+  });
+
+  const sectionBadgeColor = { 'Action Items': 'text-[#dc2626]', 'Follow-ups': 'text-[#d97706]', 'Decisions': 'text-[#7c3aed]' };
+
+  return (
+    <div className="flex gap-3">
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0 mt-0.5 ${avatarBg}`}>
+        {initials}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+          <span className="text-[12px] font-semibold text-[#1d1d1f]">{comment.author_name}</span>
+          <span className="text-[10px] bg-[#ede9fe] text-[#6d28d9] px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+            <Mic size={9} /> Meeting note
+          </span>
+          <span className="text-[11px] text-[#9ca3af]">
+            {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <div className="rounded-lg border border-[#ddd6fe] bg-[#faf5ff] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#ddd6fe] bg-[#ede9fe]/40">
+            <Mic className="w-3.5 h-3.5 text-[#7c3aed]" />
+            <span className="text-[12px] font-semibold text-[#6d28d9]">{title || '🎙️ Meeting Note'}</span>
+          </div>
+          {/* Sections */}
+          <div className="px-3 py-3 space-y-3">
+            {sections.map((sec, i) => (
+              <div key={i}>
+                <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${sectionBadgeColor[sec.heading] || 'text-[#6b7280]'}`}>
+                  {sec.heading}
+                </div>
+                {sec.summary && <p className="text-[12px] text-[#374151] leading-relaxed">{sec.summary}</p>}
+                {sec.items.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {sec.items.map((item, j) => (
+                      <li key={j} className="flex items-start gap-1.5 text-[12px] text-[#374151]">
+                        <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Transcript toggle */}
+          <button
+            onClick={() => setShowTranscript(v => !v)}
+            className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] text-[#9ca3af] hover:text-[#6b7280] border-t border-[#ddd6fe] transition-colors bg-white/50"
+          >
+            <FileText className="w-3 h-3" />
+            {showTranscript ? 'Hide transcript' : 'Show full transcript'}
+            {showTranscript ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+          </button>
+          {showTranscript && transcript.trim() && (
+            <div className="px-3 py-3 border-t border-[#ddd6fe] bg-white/50">
+              <p className="text-[11px] text-[#6b7280] leading-relaxed whitespace-pre-wrap">{transcript.trim()}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Audio compose panel — module-level ───────────────────────────────────────
+function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
+  const [inputMode,      setInputMode]      = useState('upload'); // 'upload' | 'paste'
+  const [audioFile,      setAudioFile]      = useState(null);
+  const [pasteText,      setPasteText]      = useState('');
+  const [audioState,     setAudioState]     = useState('idle'); // 'idle' | 'processing' | 'review'
+  const [extraction,     setExtraction]     = useState(null);
+  const [transcript,     setTranscript]     = useState('');
+  const [formattedBody,  setFormattedBody]  = useState('');
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [posting,        setPosting]        = useState(false);
+  const [localError,     setLocalError]     = useState('');
+  const [dragOver,       setDragOver]       = useState(false);
+  const fileInputRef = useRef(null);
+
+  const ACCEPTED_TYPES = '.mp3,.m4a,.wav,.webm';
+
+  function handleFile(file) {
+    if (!file) return;
+    const ok = /\.(mp3|m4a|wav|webm)$/i.test(file.name);
+    if (!ok) { setLocalError('Unsupported file type. Use MP3, M4A, WAV, or WEBM.'); return; }
+    if (file.size > 25 * 1024 * 1024) { setLocalError('File too large. Maximum is 25 MB.'); return; }
+    setAudioFile(file);
+    setLocalError('');
+  }
+
+  async function handleProcess() {
+    setLocalError('');
+    setAudioState('processing');
+    try {
+      const fd = new FormData();
+      if (inputMode === 'upload' && audioFile) {
+        fd.append('audio', audioFile);
+      } else if (inputMode === 'paste' && pasteText.trim()) {
+        fd.append('transcript_text', pasteText.trim());
+      } else {
+        setLocalError('Please upload a file or paste a transcript first.');
+        setAudioState('idle');
+        return;
+      }
+
+      const res  = await fetch(`/api/transcribe/ticket-note`, { method: 'POST', credentials: 'include', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Processing failed');
+
+      setExtraction(data.extraction);
+      setTranscript(data.transcript);
+      setFormattedBody(data.formatted_body);
+      setAudioState('review');
+    } catch (err) {
+      setLocalError(err.message || 'Failed to process. Please try again.');
+      setAudioState('idle');
+    }
+  }
+
+  async function handlePost() {
+    setPosting(true);
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}/comments`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: formattedBody, comment_type: 'audio_note' }),
+      });
+      if (!res.ok) throw new Error('Failed to post');
+      const data = await res.json();
+      onPost(data.comment);
+      // Reset
+      setAudioFile(null);
+      setPasteText('');
+      setAudioState('idle');
+      setExtraction(null);
+      setTranscript('');
+      setFormattedBody('');
+    } catch (err) {
+      setGlobalError('Failed to post audio note — please try again.');
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  function handleReset() {
+    setAudioState('idle');
+    setExtraction(null);
+    setTranscript('');
+    setFormattedBody('');
+    setLocalError('');
+  }
+
+  // ── Review screen ─────────────────────────────────────────────────────────
+  if (audioState === 'review' && extraction) {
+    const sections = [
+      { label: 'Summary',      items: extraction.summary ? [extraction.summary] : [],  color: 'text-[#1d1d1f]', single: true },
+      { label: 'Action Items', items: extraction.action_items || [],                   color: 'text-[#dc2626]'  },
+      { label: 'Key Details',  items: extraction.key_details  || [],                   color: 'text-[#2563eb]'  },
+      { label: 'Decisions',    items: extraction.decisions    || [],                   color: 'text-[#7c3aed]'  },
+      { label: 'Follow-ups',   items: extraction.follow_ups   || [],                   color: 'text-[#d97706]'  },
+    ].filter(s => s.items.length > 0);
+
+    return (
+      <div className="p-4 bg-[#faf5ff] border-t border-[#e5e7eb] space-y-4">
+        {/* Review header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-[#7c3aed]" />
+            <span className="text-[13px] font-semibold text-[#6d28d9]">Review before posting</span>
+          </div>
+          <button onClick={handleReset} className="text-[12px] text-[#9ca3af] hover:text-[#6b7280] flex items-center gap-1">
+            <X className="w-3.5 h-3.5" /> Start over
+          </button>
+        </div>
+
+        {/* Extracted sections */}
+        <div className="bg-white rounded-lg border border-[#ddd6fe] divide-y divide-[#f3f4f6]">
+          {sections.map((sec, i) => (
+            <div key={i} className="px-4 py-3">
+              <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${sec.color}`}>{sec.label}</div>
+              {sec.single
+                ? <p className="text-[12px] text-[#374151] leading-relaxed">{sec.items[0]}</p>
+                : <ul className="space-y-0.5">
+                    {sec.items.map((item, j) => (
+                      <li key={j} className="flex items-start gap-1.5 text-[12px] text-[#374151]">
+                        <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+              }
+            </div>
+          ))}
+        </div>
+
+        {/* Transcript accordion */}
+        <button
+          onClick={() => setShowTranscript(v => !v)}
+          className="w-full flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-[#6b7280] transition-colors"
+        >
+          <FileText className="w-3.5 h-3.5" />
+          {showTranscript ? 'Hide transcript' : 'Show full transcript'}
+          {showTranscript ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
+        </button>
+        {showTranscript && (
+          <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 max-h-40 overflow-y-auto">
+            <p className="text-[11px] text-[#6b7280] leading-relaxed whitespace-pre-wrap">{transcript}</p>
+          </div>
+        )}
+
+        {/* Post button */}
+        <div className="flex justify-end">
+          <button
+            onClick={handlePost}
+            disabled={posting}
+            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-5 py-2 rounded-md
+                       hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            Post meeting note
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Processing screen ─────────────────────────────────────────────────────
+  if (audioState === 'processing') {
+    return (
+      <div className="p-6 border-t border-[#e5e7eb] flex flex-col items-center gap-3">
+        <Loader2 className="w-6 h-6 animate-spin text-[#7c3aed]" />
+        <p className="text-[13px] text-[#6b7280]">
+          {inputMode === 'upload' ? 'Transcribing audio with Whisper, then extracting notes with Claude…'
+                                  : 'Extracting notes with Claude…'}
+        </p>
+      </div>
+    );
+  }
+
+  // ── Idle / upload screen ──────────────────────────────────────────────────
+  return (
+    <div className="border-t border-[#e5e7eb] bg-white">
+      {/* Mode toggle */}
+      <div className="flex border-b border-[#e5e7eb]">
+        {[
+          { id: 'upload', label: 'Upload audio', Icon: Upload   },
+          { id: 'paste',  label: 'Paste transcript', Icon: FileText },
+        ].map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => { setInputMode(id); setLocalError(''); }}
+            className={`flex items-center gap-1.5 px-5 py-2.5 text-[12px] font-medium border-b-2 transition-colors
+              ${inputMode === id
+                ? 'border-[#7c3aed] text-[#6d28d9] bg-white'
+                : 'border-transparent text-[#9ca3af] hover:text-[#6b7280] bg-[#fafafa]'}`}
+          >
+            <Icon className="w-3.5 h-3.5" />{label}
+          </button>
+        ))}
+      </div>
+
+      <div className="px-6 py-4 space-y-3">
+        {localError && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-[12px]">{localError}</div>
+        )}
+
+        {inputMode === 'upload' ? (
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+              ${dragOver ? 'border-[#7c3aed] bg-[#faf5ff]' : 'border-[#e5e7eb] hover:border-[#c4b5fd] hover:bg-[#faf5ff]'}`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED_TYPES}
+              onChange={e => handleFile(e.target.files[0])}
+              className="hidden"
+            />
+            {audioFile ? (
+              <div className="flex items-center justify-center gap-2">
+                <Mic className="w-5 h-5 text-[#7c3aed]" />
+                <div className="text-left">
+                  <p className="text-[13px] font-medium text-[#6d28d9]">{audioFile.name}</p>
+                  <p className="text-[11px] text-[#9ca3af]">{(audioFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); setAudioFile(null); }}
+                  className="ml-2 text-[#9ca3af] hover:text-[#6b7280]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Upload className="w-7 h-7 text-[#c4b5fd] mx-auto mb-2" />
+                <p className="text-[13px] text-[#6b7280]">Drop audio file here or <span className="text-[#7c3aed] font-medium">browse</span></p>
+                <p className="text-[11px] text-[#9ca3af] mt-1">MP3 · M4A · WAV · WEBM · up to 25 MB</p>
+              </>
+            )}
+          </div>
+        ) : (
+          <textarea
+            value={pasteText}
+            onChange={e => setPasteText(e.target.value)}
+            placeholder="Paste your meeting transcript here…"
+            rows={6}
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[13px] text-[#374151] placeholder-[#9ca3af]
+                       resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/40 focus:border-[#7c3aed]"
+          />
+        )}
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleProcess}
+            disabled={(inputMode === 'upload' ? !audioFile : !pasteText.trim())}
+            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-5 py-2 rounded-md
+                       hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {inputMode === 'upload' ? 'Transcribe & extract' : 'Extract notes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Date divider — module-level ──────────────────────────────────────────────
 function DateDivider({ label }) {
   return (
@@ -167,6 +537,7 @@ const COMPOSE_TABS = [
   { id: 'update',           label: 'Update',           placeholder: 'Add an update visible to the whole team…'           },
   { id: 'internal',         label: 'Internal note',    placeholder: 'Add an internal note — not shown outside the team…' },
   { id: 'approval_request', label: 'Request approval', placeholder: 'Describe what approval is needed and why…'          },
+  { id: 'audio',            label: 'Audio',            placeholder: null                                                  },
 ];
 
 // ─── Group comments by calendar date ─────────────────────────────────────────
@@ -193,18 +564,18 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const [summary, setSummary]           = useState('');
   const [summarising, setSummarising]   = useState(false);
 
-  const [mainView, setMainView]         = useState('thread'); // 'thread' | 'quotes' | 'safety'
+  const [mainView, setMainView]         = useState('thread');
 
   const [editingDesc, setEditingDesc]   = useState(false);
   const [descEdited,  setDescEdited]    = useState(false);
   const originalDesc                    = useRef('');
 
-  const [comments, setComments]                   = useState([]);
-  const [commentsLoading, setCommentsLoading]     = useState(false);
-  const [composeTab, setComposeTab]               = useState('update');
-  const [composeBody, setComposeBody]             = useState('');
-  const [posting, setPosting]                     = useState(false);
-  const threadEndRef                              = useRef(null);
+  const [comments, setComments]               = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [composeTab, setComposeTab]           = useState('update');
+  const [composeBody, setComposeBody]         = useState('');
+  const [posting, setPosting]                 = useState(false);
+  const threadEndRef                          = useRef(null);
 
   const [form, setForm] = useState({
     title: '', description: '', priority: 'medium', status: 'open',
@@ -294,7 +665,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       setSummary(data.summary);
     } catch (err) {
       setSummary('Could not generate summary. Please try again.');
-      console.error('[Summarise]', err);
     } finally {
       setSummarising(false);
     }
@@ -321,6 +691,11 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
     }
   };
 
+  // Called by AudioComposePanel when note is posted
+  const handleAudioPost = (comment) => {
+    setComments(prev => [...prev, comment]);
+  };
+
   if (!ticket) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -333,6 +708,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const stageIndex         = statusToStageIndex(form.status);
   const dateGroups         = groupByDate(comments);
   const currentComposeTab  = COMPOSE_TABS.find(t => t.id === composeTab);
+  const isAudioTab         = composeTab === 'audio';
 
   return (
     <div className="w-full bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
@@ -371,7 +747,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         {/* ── Main column ── */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-[#e5e7eb]">
 
-          {/* Job description — always pinned, editable inline */}
+          {/* Job description — always pinned */}
           <div className="bg-[#fffbeb] border-b-2 border-[#fcd34d] px-6 py-3">
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
@@ -411,7 +787,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             </div>
           </div>
 
-          {/* View toggle: Conversation / Quotes / Safety */}
+          {/* View toggle */}
           <div className="flex border-b border-[#e5e7eb] bg-[#fafafa]">
             {[
               { id: 'thread', label: 'Conversation', Icon: MessageSquare },
@@ -435,10 +811,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
           {/* Conversation thread */}
           {mainView === 'thread' && (
             <div className="flex flex-col flex-1">
-              <div
-                className="flex-1 px-6 py-5 space-y-4 overflow-y-auto"
-                style={{ maxHeight: '480px' }}
-              >
+              <div className="flex-1 px-6 py-5 space-y-4 overflow-y-auto" style={{ maxHeight: '480px' }}>
                 {commentsLoading && (
                   <div className="flex justify-center py-10">
                     <Loader2 className="w-5 h-5 animate-spin text-[#d4a017]" />
@@ -465,54 +838,63 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 <div ref={threadEndRef} />
               </div>
 
-              {/* Compose */}
-              <div className="border-t border-[#e5e7eb] bg-white px-6 py-4">
-                <div className="flex border border-[#e5e7eb] rounded-t-lg overflow-hidden">
+              {/* Compose area */}
+              <div className="border-t border-[#e5e7eb] bg-white">
+                {/* Compose tabs */}
+                <div className="flex border-b border-[#e5e7eb]">
                   {COMPOSE_TABS.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setComposeTab(tab.id)}
-                      className={`flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#e5e7eb] transition-colors
+                      className={`flex items-center gap-1.5 flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#e5e7eb] transition-colors
                         ${composeTab === tab.id
-                          ? 'bg-white text-[#1d1d1f] border-b-2 border-b-[#d4a017]'
-                          : 'bg-[#fafafa] text-[#9ca3af] hover:text-[#6b7280]'}`}
+                          ? `bg-white text-[#1d1d1f] border-b-2 ${tab.id === 'audio' ? 'border-b-[#7c3aed]' : 'border-b-[#d4a017]'}`
+                          : 'bg-[#fafafa] text-[#9ca3af] hover:text-[#6b7280] border-b-0'}`}
                     >
-                      {tab.label}
+                      <span className="mx-auto flex items-center gap-1">
+                        {tab.id === 'audio' && <Mic className="w-3 h-3" />}
+                        {tab.label}
+                      </span>
                     </button>
                   ))}
                 </div>
-                <div className={`border border-t-0 border-[#e5e7eb] rounded-b-lg overflow-hidden ${
-                  composeTab === 'internal'         ? 'bg-[#fffbeb]' :
-                  composeTab === 'approval_request' ? 'bg-[#fefce8]' : 'bg-white'
-                }`}>
-                  <textarea
-                    value={composeBody}
-                    onChange={e => setComposeBody(e.target.value)}
-                    placeholder={currentComposeTab?.placeholder}
-                    rows={3}
-                    className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-[#374151] placeholder-[#9ca3af]"
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postComment(); }}
+
+                {/* Audio panel or text compose */}
+                {isAudioTab ? (
+                  <AudioComposePanel
+                    ticketId={ticketId}
+                    onPost={handleAudioPost}
+                    setGlobalError={setError}
                   />
-                  <div className="flex items-center justify-between px-4 pb-3">
-                    <button className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded-md px-3 py-1.5 transition-colors bg-white">
-                      <Paperclip className="w-3.5 h-3.5" /> Attach
-                    </button>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] text-[#9ca3af]">Ctrl+Enter to post</span>
-                      <button
-                        onClick={postComment}
-                        disabled={posting || !composeBody.trim()}
-                        className="flex items-center gap-2 bg-[#d4a017] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md
-                                   hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {posting
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <Send className="w-3.5 h-3.5" />}
-                        {composeTab === 'approval_request' ? 'Send request' : 'Post update'}
+                ) : (
+                  <div className={`${ composeTab === 'internal' ? 'bg-[#fffbeb]' : composeTab === 'approval_request' ? 'bg-[#fefce8]' : 'bg-white' }`}>
+                    <textarea
+                      value={composeBody}
+                      onChange={e => setComposeBody(e.target.value)}
+                      placeholder={currentComposeTab?.placeholder}
+                      rows={3}
+                      className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-[#374151] placeholder-[#9ca3af]"
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postComment(); }}
+                    />
+                    <div className="flex items-center justify-between px-4 pb-3">
+                      <button className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded-md px-3 py-1.5 transition-colors bg-white">
+                        <Paperclip className="w-3.5 h-3.5" /> Attach
                       </button>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] text-[#9ca3af]">Ctrl+Enter to post</span>
+                        <button
+                          onClick={postComment}
+                          disabled={posting || !composeBody.trim()}
+                          className="flex items-center gap-2 bg-[#d4a017] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md
+                                     hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {composeTab === 'approval_request' ? 'Send request' : 'Post update'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}

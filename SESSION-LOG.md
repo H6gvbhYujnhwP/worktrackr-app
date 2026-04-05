@@ -136,6 +136,75 @@ User reviewed the initial card-based design and requested a more compact layout 
 
 ---
 
+---
+
+## Session 12 — 2026-04-05
+
+### Audio Stage 2 — Meeting Audio Upload to Ticket Thread
+
+**Approach:**
+- New "Audio" compose tab added to the ticket conversation thread (4th tab alongside Update / Internal note / Request approval)
+- Two input modes: upload audio file (drag-and-drop or browse) OR paste transcript text
+- Backend: new `POST /api/transcribe/ticket-note` endpoint — Whisper for audio, Claude for extraction
+- Mandatory review step before posting — user sees extracted sections before committing
+- Posts to thread as `comment_type: 'audio_note'` — rendered as a distinct purple card
+
+**Files changed**
+
+| File | Change |
+|---|---|
+| `web/routes/transcribe.js` | New `POST /ticket-note` endpoint; `/extract-ticket` swapped from GPT-4 to Claude (AI policy compliance) |
+| `web/routes/tickets.js` | `audio_note` added to `comment_type` enum |
+| `web/client/.../TicketDetailViewTabbed.jsx` | Audio tab, `AudioComposePanel`, `AudioNoteEntry` — all module-level |
+
+**Backend — `POST /api/transcribe/ticket-note`**
+- Accepts multipart FormData: optional `audio` file (mp3/m4a/wav/webm, ≤25 MB) OR `transcript_text` field
+- If audio present → Whisper (`whisper-1`, response_format: text)
+- Either way → Claude (`claude-haiku-4-5-20251001`) extracts: summary, action_items, key_details, decisions, follow_ups as JSON
+- If Claude JSON parse fails → graceful fallback (raw text as summary, empty arrays)
+- Returns `{ transcript, extraction, formatted_body, filename }`
+- `formatted_body` is the pre-formatted text that gets stored in `comments.body`
+
+**Frontend — AudioComposePanel (module-level)**
+- State machine: `idle` → `processing` → `review`
+- Idle: mode toggle (Upload / Paste), file drag-and-drop zone with validation, or textarea
+- Processing: spinner with context-appropriate message
+- Review: extracted sections in labelled cards, collapsible full transcript, "Post meeting note" button (purple)
+- On post: calls `POST /api/tickets/:id/comments` with `comment_type: 'audio_note'`, calls `onPost(comment)` to append to thread, resets to idle
+
+**Frontend — AudioNoteEntry (module-level)**
+- Renders `audio_note` thread entries as a purple/indigo card
+- Parses the stored `formatted_body` text into sections (Summary, Action Items, Key Details, Decisions, Follow-ups)
+- Each section has colour-coded label
+- Collapsible "Show full transcript" section at the bottom
+- "Meeting note" badge (purple, mic icon) in the thread header
+
+**Sub-component rule — confirmed compliant:**
+- `ThreadEntry` — module-level ✓
+- `AudioNoteEntry` — module-level ✓  
+- `AudioComposePanel` — module-level ✓
+- `DateDivider` — module-level ✓
+
+**No migration needed** — `audio_note` is a new enum value on the existing `comment_type` column (VARCHAR, no constraint at DB level). The Zod schema on the server is the only gatekeeper.
+
+**Testing checklist after deploy**
+- [ ] Click "Audio" tab in ticket compose area — upload/paste modes appear
+- [ ] Upload mode: drag-and-drop an MP3 — filename and size shown, X to remove
+- [ ] Upload mode: non-audio file rejected with error message
+- [ ] File >25 MB rejected with error message
+- [ ] Click "Transcribe & extract" — spinner shows, both Whisper and Claude called
+- [ ] Review screen: Summary, Action Items, Key Details, Decisions, Follow-ups shown (empty sections hidden)
+- [ ] "Show full transcript" expands the raw transcript
+- [ ] "Start over" resets to upload screen
+- [ ] "Post meeting note" — purple card appears in thread immediately
+- [ ] Audio note card: purple badge "Meeting note", sections rendered correctly
+- [ ] "Show full transcript" toggle works in thread card
+- [ ] Paste mode: paste text, click "Extract notes" — no Whisper call, Claude only
+- [ ] Existing Update / Internal note / Request approval tabs unaffected
+- [ ] `extract-ticket` endpoint now uses Claude (check Render logs for `[Extract Ticket] Calling Claude…`)
+
+**Next priority:** Audio Stage 3 — Voice Dictation Assistant (Mode 2): floating hold-to-record button, Claude routes intent, mandatory review, TTS confirmation loop.
+
 ## Session 9 — 2025-04-04
 AI Phase 3 — Smart Summaries. `summaries.js`, `TicketDetailViewTabbed.jsx`, `QuoteDetails.jsx`.
 
