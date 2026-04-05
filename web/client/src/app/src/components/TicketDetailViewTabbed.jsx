@@ -5,7 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Save, Loader2, Calendar as CalIcon, FileText, User,
-  Shield, MessageSquare, Paperclip, DollarSign
+  Shield, MessageSquare, Paperclip, DollarSign, Sparkles
 } from 'lucide-react';
 import { useSimulation } from '../App.jsx';
 import { Input }    from '@/components/ui/input.jsx';
@@ -81,7 +81,9 @@ const SectionHead = ({ children }) => (
 export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const { tickets, users, updateTicket } = useSimulation();
   const [ticket, setTicket]   = useState(null);
-  const [saving, setSaving]   = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [summary, setSummary]       = useState('');
+  const [summarising, setSummarising] = useState(false);
   const [error,  setError]    = useState('');
   const [activeTab, setActiveTab] = useState('details');
 
@@ -154,6 +156,25 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   }
 
   const assignedUser = users?.find(u => u.id === (ticket.assignee_id || ticket.assignedTo));
+
+  const handleSummarise = async () => {
+    setSummarising(true);
+    setSummary('');
+    try {
+      const res = await fetch(`/api/summaries/ticket/${ticketId}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to summarise');
+      setSummary(data.summary);
+    } catch (err) {
+      setSummary('Could not generate summary. Please try again.');
+      console.error('[Summarise] Error:', err);
+    } finally {
+      setSummarising(false);
+    }
+  };
 
   return (
     <div className="space-y-5 max-w-5xl">
@@ -330,6 +351,25 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                     {new Date(ticket.updated_at).toLocaleString('en-GB')}
                   </FieldRow>
                 </div>
+
+                {/* AI Summary */}
+                <button
+                  onClick={handleSummarise}
+                  disabled={summarising}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-medium rounded-lg border border-[#d4a017] text-[#b8860b] hover:bg-[#fef9ee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {summarising
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Summarising…</>
+                    : <><Sparkles className="w-4 h-4" /> Summarise Ticket</>}
+                </button>
+                {summary && (
+                  <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-xl p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#b8860b] mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3" /> AI Summary
+                    </p>
+                    <p className="text-[13px] text-[#374151] leading-relaxed">{summary}</p>
+                  </div>
+                )}
 
                 <button
                   onClick={onSave}

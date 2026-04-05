@@ -185,6 +185,10 @@ app.use('/api/estimates', authenticateToken, estimatesRoutes);
 const quotesTenderRoutes = require('./routes/quotes-ai-tender');
 app.use('/api/quotes', authenticateToken, quotesTenderRoutes);
 
+// AI Summaries
+const summariesRoutes = require('./routes/summaries');
+app.use('/api/summaries', authenticateToken, summariesRoutes);
+
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
 // Mount routes directly (webhook route is public, settings routes require auth)

@@ -7,61 +7,54 @@
 ## Completed
 
 ### UI Pushes
-- ✅ **Push 1** — Shell layer (AppLayout, Sidebar, App.css — dark sidebar, gold accent, Modern Enterprise)
-- ✅ **Push 2** — All module screens (Dashboard, Tickets, Ticket Detail, CRM, Quotes, User Management, Settings)
+- ✅ **Push 1** — Shell layer (AppLayout, Sidebar, App.css)
+- ✅ **Push 2** — All module screens (Dashboard, Tickets, CRM, Quotes, Users, Settings)
 - ✅ **Push 3** — Remaining components (QuoteFormTabs, CreateTicketModal, IntegratedCalendar, BookingCalendar)
 
 ### AI Phases
-- ✅ **AI Phase 1** — Email intake classifier (real Anthropic Claude call, `claude-haiku-4-5-20251001`, keyword fallback)
-- ✅ **AI Phase 2** — Generate Quote with AI (OpenAI → Anthropic swap; Generate with AI button in Quotes tab; full flow ticket → AI draft → review → save with `ai_generated` flag)
+- ✅ **AI Phase 1** — Email intake classifier (Anthropic Claude, keyword fallback)
+- ✅ **AI Phase 2** — Generate Quote with AI (ticket → AI draft → review → save with ai_generated flag)
+- ✅ **AI Phase 3** — Smart Summaries (Summarise Ticket + Summarise for Customer buttons, inline amber display)
 
-### Core fixes (Sessions 1–7)
-- ✅ Auth cookie name fix (trial signup broken)
-- ✅ Dangerous in-memory public auth stub replaced
-- ✅ Admin audit log args fix + transaction wrap
-- ✅ Ticket Calendar full rewrite (localStorage removed, DB-backed)
+### Core fixes
+- ✅ Auth cookie name fix, dangerous public-auth stub replaced, admin audit log fix
+- ✅ Ticket Calendar full rewrite (DB-backed, no localStorage)
 - ✅ Inline sub-component anti-pattern sweep (all components fixed)
-- ✅ CRM contacts snake_case → camelCase normaliser
-- ✅ contactPersons Zod-default data-loss bug fixed
+- ✅ CRM contacts snake_case normaliser + Zod data-loss fix
 
 ---
 
-## Next — AI Phase 3: Smart Summaries
+## Next — AI Phase 4: CRM Next-Action Suggestions
 
-**What:** A "Summarise" button in the ticket detail sidebar and in quote detail. Clicking it calls Claude, which reads the ticket thread (all updates/comments) or quote line items, and returns a clean human-readable summary shown inline. Results stored in `ai_extractions`.
+**What:** After a CRM calendar event is marked Done, Claude reads the event details (type, notes, contact) and suggests the next logical action — e.g. "Send a follow-up quote", "Schedule a review call in 30 days", "Log this in the contact notes". Displayed as a dismissable suggestion card that appears inline after the Done action.
 
 **Files to touch:**
-- `web/routes/summaries.js` — new file, `POST /api/summaries/ticket/:id` and `POST /api/summaries/quote/:id`
-- `web/server.js` — one line to mount summaries route
-- `TicketDetailViewTabbed.jsx` — Summarise button in metadata sidebar, summary shown inline
-- `QuoteDetails.jsx` — Customer Summary button in Quick Actions, summary shown inline
+- `CRMCalendar.jsx` — after `handleMarkDone()` succeeds, call `POST /api/summaries/crm-next-action` and show suggestion card inline
+- `summaries.js` — add `POST /api/summaries/crm-next-action` endpoint (fetches event + contact history, calls Claude)
 
-**No logic changes to existing save flows.**
+**No new files needed beyond `summaries.js` addition.**
 
 ---
 
-## Backlog (after AI phases)
-
-### AI Phase 4 — CRM Next-Action Suggestions
-After a CRM calendar event is marked Done, Claude suggests the next logical action (follow-up call, send quote, schedule visit). Shown as a dismissable suggestion card.
+## Backlog
 
 ### AI Phase 5 — Natural Language Ticket Search
-Replace text search with semantic search — type "network issues last month" and get relevant tickets back. Requires embedding storage (pgvector or similar).
+Type "network issues at Acme last month" and get relevant tickets back. Requires embedding storage (pgvector or similar) — larger uplift, defer until after Phase 4.
 
 ### Jobs Module
-Full job scheduling and tracking — convert accepted quotes to jobs, assign technicians, track completion.
+Convert accepted quotes to jobs. Assign technicians, track completion.
 
 ### Invoicing
-Generate invoices from completed jobs, PDF output, email delivery.
+Generate invoices from completed jobs. PDF output, email delivery.
 
 ### Payments
 Record and allocate payments against invoices.
 
 ### PWA / Mobile
-Trusted Web Activity for Google Play Store listing — deferred until after AI phases.
+Trusted Web Activity for Google Play Store listing — defer until after AI phases.
 
 ### Splashtop Integration
-One-click remote session from ticket detail via Splashtop Business API — deferred until after AI phases.
+One-click remote session from ticket detail via Splashtop Business API — defer until after AI phases.
 
 ---
 
@@ -72,4 +65,4 @@ One-click remote session from ticket detail via Splashtop Business API — defer
 - Gold primary button: `bg-[#d4a017] text-[#111113] hover:bg-[#b8860b]`
 - Gold outline button: `border border-[#d4a017] text-[#b8860b] hover:bg-[#fef9ee]`
 - Gold focus rings: `focus:ring-[#d4a017]/30 focus:border-[#d4a017]`
-- Section labels: `text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]`
+- AI accent box: `bg-[#fef9ee] border border-[#d4a017]/30 rounded-xl`

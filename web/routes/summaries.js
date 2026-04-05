@@ -1,0 +1,167 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../../shared/db');
+
+// Call Anthropic Claude API
+async function callAnthropic(systemPrompt, userMessage) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+  }
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} ${err}`);
+  }
+  const data = await response.json();
+  return data.content[0].text;
+}
+
+// POST /api/summaries/ticket/:id
+// Returns a plain-English summary of the ticket thread
+router.post('/ticket/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = req.orgContext.organizationId;
+
+    // Fetch ticket
+    const ticketResult = await db.query(
+      `SELECT t.title, t.description, t.status, t.priority, t.category,
+              t.created_at, t.updated_at,
+              c.name as contact_name, c.company_name,
+              u.name as assignee_name
+       FROM tickets t
+       LEFT JOIN contacts c ON t.contact_id = c.id
+       LEFT JOIN users u ON t.assignee_id = u.id
+       WHERE t.id = $1 AND t.organisation_id = $2`,
+      [id, orgId]
+    );
+
+    if (ticketResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const ticket = ticketResult.rows[0];
+
+    // Fetch comments
+    const commentsResult = await db.query(
+      `SELECT c.body, c.created_at, u.name as author_name
+       FROM comments c
+       JOIN users u ON c.author_id = u.id
+       WHERE c.ticket_id = $1
+       ORDER BY c.created_at ASC`,
+      [id]
+    );
+
+    const comments = commentsResult.rows;
+
+    // Build prompt
+    const threadText = comments.length > 0
+      ? comments.map(c =>
+          `[${new Date(c.created_at).toLocaleDateString('en-GB')} — ${c.author_name}]: ${c.body}`
+        ).join('\n')
+      : 'No comments yet.';
+
+    const userMessage =
+      `TICKET: ${ticket.title}
+STATUS: ${ticket.status} | PRIORITY: ${ticket.priority} | CATEGORY: ${ticket.category || 'N/A'}
+CUSTOMER: ${ticket.company_name || ticket.contact_name || 'Unknown'}
+ASSIGNED TO: ${ticket.assignee_name || 'Unassigned'}
+OPENED: ${new Date(ticket.created_at).toLocaleDateString('en-GB')}
+DESCRIPTION: ${ticket.description || 'No description provided.'}
+
+THREAD:
+${threadText}
+
+Write a concise summary (3–5 sentences) of this ticket: what the issue is, what has been done so far, and what the current status is. Be factual and direct. No bullet points.`;
+
+    const summary = await callAnthropic(
+      'You are a helpful assistant that summarises IT support tickets. Write in plain English, be concise and factual.',
+      userMessage
+    );
+
+    res.json({ summary });
+
+  } catch (error) {
+    console.error('[Summaries] Ticket error:', error);
+    res.status(500).json({ error: 'Failed to generate summary', message: error.message });
+  }
+});
+
+// POST /api/summaries/quote/:id
+// Returns a customer-friendly summary of what the quote covers
+router.post('/quote/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = req.orgContext.organizationId;
+
+    // Fetch quote + line items
+    const quoteResult = await db.query(
+      `SELECT q.title, q.description, q.status, q.total_amount, q.valid_until,
+              q.terms_conditions, q.notes,
+              c.name as contact_name, c.company_name
+       FROM quotes q
+       LEFT JOIN contacts c ON q.contact_id = c.id
+       WHERE q.id = $1 AND q.organisation_id = $2`,
+      [id, orgId]
+    );
+
+    if (quoteResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Quote not found' });
+    }
+
+    const quote = quoteResult.rows[0];
+
+    const lineItemsResult = await db.query(
+      `SELECT description, quantity, unit_price, item_type, unit
+       FROM quote_lines
+       WHERE quote_id = $1
+       ORDER BY sort_order`,
+      [id]
+    );
+
+    const lineItems = lineItemsResult.rows;
+    const lineItemsText = lineItems.map(item =>
+      `- ${item.description} (qty: ${item.quantity}, unit price: £${parseFloat(item.unit_price).toFixed(2)})`
+    ).join('\n');
+
+    const userMessage =
+      `QUOTE: ${quote.title}
+CUSTOMER: ${quote.company_name || quote.contact_name || 'Unknown'}
+TOTAL: £${parseFloat(quote.total_amount || 0).toFixed(2)}
+VALID UNTIL: ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-GB') : 'Not set'}
+DESCRIPTION: ${quote.description || 'No description.'}
+
+LINE ITEMS:
+${lineItemsText || 'No line items.'}
+
+${quote.terms_conditions ? `TERMS: ${quote.terms_conditions}` : ''}
+
+Write a short, friendly summary (2–4 sentences) of what this quote covers — suitable to say to a customer on a call. Mention the key work being done and the total cost. No bullet points, no jargon.`;
+
+    const summary = await callAnthropic(
+      'You are a helpful assistant that summarises quotes for IT and field service businesses. Write in plain, friendly English as if speaking to a customer.',
+      userMessage
+    );
+
+    res.json({ summary });
+
+  } catch (error) {
+    console.error('[Summaries] Quote error:', error);
+    res.status(500).json({ error: 'Failed to generate summary', message: error.message });
+  }
+});
+
+module.exports = router;
