@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Pin, Trash2, Edit2, X, Tag, BookOpen,
-  Megaphone, StickyNote, ChevronDown, Clock, History,
+  Megaphone, StickyNote, ChevronDown, History,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
 
@@ -11,23 +11,20 @@ const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-
 const LABEL_CLS   = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
 const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors';
-const GHOST_BTN   = 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors';
+const GHOST_BTN   = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors';
 
 const NOTE_TYPE_META = {
-  note:         { label: 'Note',         icon: StickyNote, bg: 'bg-[#f9fafb]',  badge: 'bg-[#f3f4f6] text-[#374151]'  },
-  knowledge:    { label: 'Knowledge',    icon: BookOpen,   bg: 'bg-[#eff6ff]',  badge: 'bg-[#dbeafe] text-[#1e40af]'  },
-  announcement: { label: 'Announcement', icon: Megaphone,  bg: 'bg-[#fef9ec]',  badge: 'bg-[#fef3c7] text-[#92400e]'  },
+  note:         { label: 'Note',         icon: StickyNote, badge: 'bg-[#f3f4f6] text-[#374151]'  },
+  knowledge:    { label: 'Knowledge',    icon: BookOpen,   badge: 'bg-[#dbeafe] text-[#1e40af]'  },
+  announcement: { label: 'Announcement', icon: Megaphone,  badge: 'bg-[#fef3c7] text-[#92400e]'  },
 };
 
 function formatTime(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// ── VersionsPanel ────────────────────────────────────────────────────────────
+// ── VersionsPanel — module-level ─────────────────────────────────────────────
 function VersionsPanel({ noteId, onClose }) {
   const [versions, setVersions] = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -83,7 +80,7 @@ function VersionsPanel({ noteId, onClose }) {
   );
 }
 
-// ── SharedNoteForm ────────────────────────────────────────────────────────────
+// ── SharedNoteForm — module-level ─────────────────────────────────────────────
 function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving }) {
   const [title,    setTitle]    = useState(initial?.title    ?? '');
   const [body,     setBody]     = useState(initial?.body     ?? '');
@@ -92,96 +89,61 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
   const [newCat,   setNewCat]   = useState('');
   const [pinned,   setPinned]   = useState(initial?.pinned   ?? false);
 
-  const effectiveCategory = newCat.trim() || category;
-
   const handleSubmit = () => {
     if (!title.trim() && !body.trim()) return;
     onSave({
       title:     title.trim(),
       body:      body.trim(),
       note_type: isAdmin ? noteType : 'note',
-      category:  effectiveCategory || null,
+      category:  (newCat.trim() || category) || null,
       pinned:    isAdmin ? pinned : false,
     });
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#e5e7eb] p-5 shadow-sm space-y-4">
-      <div>
-        <label className={LABEL_CLS}>Title</label>
-        <input
-          className={INPUT_CLS}
-          placeholder="Note title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          autoFocus
-        />
-      </div>
-
-      <div>
-        <label className={LABEL_CLS}>Content</label>
-        <textarea
-          className={`${INPUT_CLS} resize-none`}
-          rows={5}
-          placeholder="Write your note…"
-          value={body}
-          onChange={e => setBody(e.target.value)}
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-4">
-        {/* Type — admin only */}
+    <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4 space-y-3">
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <label className={LABEL_CLS}>Title</label>
+          <input className={INPUT_CLS} placeholder="Note title" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+        </div>
         {isAdmin && (
-          <div className="flex-1 min-w-[160px]">
+          <div className="w-44">
             <label className={LABEL_CLS}>Type</label>
-            <select
-              className={INPUT_CLS}
-              value={noteType}
-              onChange={e => setNoteType(e.target.value)}
-            >
+            <select className={INPUT_CLS} value={noteType} onChange={e => setNoteType(e.target.value)}>
               <option value="note">Note</option>
               <option value="knowledge">Knowledge base</option>
               <option value="announcement">Announcement</option>
             </select>
           </div>
         )}
-
-        {/* Category */}
-        <div className="flex-1 min-w-[160px]">
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Content</label>
+        <textarea className={`${INPUT_CLS} resize-none`} rows={3} placeholder="Write your note…" value={body} onChange={e => setBody(e.target.value)} />
+      </div>
+      <div className="flex gap-3 items-end">
+        <div className="flex-1">
           <label className={LABEL_CLS}>Category</label>
-          {categories.length > 0 && !newCat ? (
-            <select
-              className={INPUT_CLS}
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-            >
-              <option value="">— Select or type new —</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          ) : null}
           <input
-            className={`${INPUT_CLS} ${categories.length > 0 && !newCat ? 'mt-1.5' : ''}`}
-            placeholder={categories.length > 0 ? 'Or type a new category…' : 'Category (optional)'}
-            value={newCat}
-            onChange={e => setNewCat(e.target.value)}
+            className={INPUT_CLS}
+            placeholder={categories.length > 0 ? 'Type or pick a category…' : 'Category (optional)'}
+            value={newCat || category}
+            onChange={e => { setNewCat(e.target.value); setCategory(''); }}
+            list="category-suggestions"
           />
+          <datalist id="category-suggestions">
+            {categories.map(c => <option key={c} value={c} />)}
+          </datalist>
         </div>
-
-        {/* Pin — admin only */}
         {isAdmin && (
-          <label className="flex items-center gap-2 cursor-pointer self-end pb-2">
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded accent-[#d4a017]"
-              checked={pinned}
-              onChange={e => setPinned(e.target.checked)}
-            />
+          <label className="flex items-center gap-2 cursor-pointer pb-2 whitespace-nowrap">
+            <input type="checkbox" className="w-4 h-4 rounded accent-[#d4a017]" checked={pinned} onChange={e => setPinned(e.target.checked)} />
             <span className="text-[13px] text-[#374151]">Pin as announcement</span>
           </label>
         )}
       </div>
-
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2">
         <button className={GOLD_BTN} onClick={handleSubmit} disabled={saving || (!title.trim() && !body.trim())}>
           {saving ? 'Saving…' : initial ? 'Save changes' : 'Add note'}
         </button>
@@ -191,73 +153,95 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
   );
 }
 
-// ── SharedNoteCard ────────────────────────────────────────────────────────────
-function SharedNoteCard({ note, isAdmin, currentUserId, onEdit, onDelete, onTogglePin, onViewHistory }) {
+// ── SharedNoteRow — module-level ─────────────────────────────────────────────
+function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, onExpand, onSave, onDelete, onTogglePin, onViewHistory, saving }) {
   const meta = NOTE_TYPE_META[note.note_type] || NOTE_TYPE_META.note;
   const TypeIcon = meta.icon;
   const canDelete = isAdmin || note.author_id === currentUserId;
 
   return (
-    <div className={`rounded-xl border p-4 shadow-sm ${note.pinned ? 'border-[#d4a017]/50' : 'border-[#e5e7eb]'} ${meta.bg}`}>
-      {/* Pinned banner */}
-      {note.pinned && (
-        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold text-[#92400e] uppercase tracking-wider">
-          <Pin className="w-3 h-3" /> Pinned announcement
-        </div>
-      )}
+    <>
+      <tr className={`border-b border-[#f3f4f6] transition-colors ${note.pinned ? 'bg-[#fffdf5]' : 'hover:bg-[#fafafa]'}`}>
 
-      {/* Type + category badges */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-2">
-        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
-          <TypeIcon className="w-3 h-3" />
-          {meta.label}
-        </span>
-        {note.category && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white border border-[#e5e7eb] text-[#6b7280]">
-            <Tag className="w-3 h-3" />
-            {note.category}
+        {/* Type badge */}
+        <td className="pl-3 py-2.5 w-28">
+          <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${meta.badge}`}>
+            <TypeIcon className="w-3 h-3 flex-shrink-0" />
+            {meta.label}
           </span>
-        )}
-      </div>
+        </td>
 
-      {/* Title + body */}
-      {note.title && (
-        <h3 className="text-[14px] font-semibold text-[#111113] mb-1">{note.title}</h3>
-      )}
-      {note.body && (
-        <p className="text-[13px] text-[#374151] whitespace-pre-wrap leading-relaxed">{note.body}</p>
-      )}
+        {/* Title + body preview */}
+        <td className="py-2.5 px-3 min-w-0 max-w-0">
+          <div className="flex items-center gap-2 overflow-hidden">
+            {note.pinned && <Pin className="w-3 h-3 text-[#d4a017] flex-shrink-0" />}
+            <span className="text-[13px] font-medium text-[#111113] truncate">
+              {note.title || <span className="font-normal italic text-[#9ca3af]">Untitled</span>}
+            </span>
+            {note.body && (
+              <span className="text-[12px] text-[#9ca3af] truncate hidden sm:block flex-shrink min-w-0">
+                — {note.body}
+              </span>
+            )}
+          </div>
+        </td>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-2 border-t border-black/5">
-        <div className="text-[11px] text-[#9ca3af]">
-          <span className="font-medium text-[#6b7280]">{note.author_name}</span>
-          {note.last_edited_by && note.last_edited_by !== note.author_id && (
-            <> · edited by <span className="font-medium text-[#6b7280]">{note.last_edited_by_name}</span></>
+        {/* Category */}
+        <td className="py-2.5 px-3 w-32 whitespace-nowrap">
+          {note.category ? (
+            <span className="inline-flex items-center gap-1 text-[11px] text-[#6b7280] font-medium px-2 py-0.5 rounded-full bg-white border border-[#e5e7eb]">
+              <Tag className="w-3 h-3" />{note.category}
+            </span>
+          ) : (
+            <span className="text-[12px] text-[#d1d5db]">—</span>
           )}
-          <> · {formatTime(note.updated_at)}</>
-        </div>
+        </td>
 
-        <div className="flex items-center gap-0.5">
-          <button onClick={() => onViewHistory(note.id)} className={GHOST_BTN} title="Version history">
-            <History className="w-4 h-4" />
-          </button>
-          {isAdmin && (
-            <button onClick={() => onTogglePin(note)} className={GHOST_BTN} title={note.pinned ? 'Unpin' : 'Pin'}>
-              <Pin className={`w-4 h-4 ${note.pinned ? 'text-[#d4a017]' : ''}`} />
+        {/* Author + date */}
+        <td className="py-2.5 px-3 w-40 whitespace-nowrap">
+          <p className="text-[12px] text-[#6b7280] truncate">{note.author_name}</p>
+          <p className="text-[11px] text-[#9ca3af]">{formatTime(note.updated_at)}</p>
+        </td>
+
+        {/* Actions */}
+        <td className="py-2.5 pr-3 w-28">
+          <div className="flex items-center justify-end gap-0.5">
+            <button onClick={() => onViewHistory(note.id)} className={GHOST_BTN} title="Version history">
+              <History className="w-3.5 h-3.5" />
             </button>
-          )}
-          <button onClick={() => onEdit(note)} className={GHOST_BTN} title="Edit">
-            <Edit2 className="w-4 h-4" />
-          </button>
-          {canDelete && (
-            <button onClick={() => onDelete(note.id)} className={`${GHOST_BTN} hover:text-red-500`} title="Delete">
-              <Trash2 className="w-4 h-4" />
+            {isAdmin && (
+              <button onClick={() => onTogglePin(note)} className={GHOST_BTN} title={note.pinned ? 'Unpin' : 'Pin'}>
+                <Pin className={`w-3.5 h-3.5 ${note.pinned ? 'text-[#d4a017]' : ''}`} />
+              </button>
+            )}
+            <button onClick={() => onExpand(note)} className={GHOST_BTN} title="Edit">
+              <Edit2 className="w-3.5 h-3.5" />
             </button>
-          )}
-        </div>
-      </div>
-    </div>
+            {canDelete && (
+              <button onClick={() => onDelete(note.id)} className={`${GHOST_BTN} hover:text-red-500`} title="Delete">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Inline expanded edit form */}
+      {isExpanded && (
+        <tr className="border-b border-[#e5e7eb]">
+          <td colSpan={5} className="px-3 py-3 bg-white">
+            <SharedNoteForm
+              initial={note}
+              isAdmin={isAdmin}
+              categories={categories}
+              onSave={onSave}
+              onCancel={() => onExpand(null)}
+              saving={saving}
+            />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -267,16 +251,16 @@ const CompanyNotes = () => {
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
   const currentUserId = user?.id;
 
-  const [notes,      setNotes]      = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
-  const [showForm,      setShowForm]      = useState(false);
-  const [editingNote,   setEditingNote]   = useState(null);
-  const [saving,        setSaving]        = useState(false);
-  const [filterType,    setFilterType]    = useState('all');
-  const [filterCategory,setFilterCategory]= useState('');
-  const [historyNoteId, setHistoryNoteId] = useState(null);
+  const [notes,          setNotes]          = useState([]);
+  const [categories,     setCategories]     = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [showForm,       setShowForm]       = useState(false);
+  const [expandedId,     setExpandedId]     = useState(null);
+  const [saving,         setSaving]         = useState(false);
+  const [filterType,     setFilterType]     = useState('all');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [historyNoteId,  setHistoryNoteId]  = useState(null);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -302,8 +286,7 @@ const CompanyNotes = () => {
     setSaving(true);
     try {
       const res = await fetch('/api/notes/shared', {
-        method: 'POST',
-        credentials: 'include',
+        method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -319,19 +302,18 @@ const CompanyNotes = () => {
   };
 
   const handleUpdate = async (payload) => {
-    if (!editingNote) return;
+    if (!expandedId) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/notes/shared/${editingNote.id}`, {
-        method: 'PATCH',
-        credentials: 'include',
+      const res = await fetch(`/api/notes/shared/${expandedId}`, {
+        method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to update note');
       const data = await res.json();
       setNotes(prev => prev.map(n => n.id === data.note.id ? data.note : n));
-      setEditingNote(null);
+      setExpandedId(null);
     } catch (e) { setError(e.message); }
     finally { setSaving(false); }
   };
@@ -341,14 +323,14 @@ const CompanyNotes = () => {
     try {
       await fetch(`/api/notes/shared/${id}`, { method: 'DELETE', credentials: 'include' });
       setNotes(prev => prev.filter(n => n.id !== id));
+      if (expandedId === id) setExpandedId(null);
     } catch (e) { setError(e.message); }
   };
 
   const handleTogglePin = async (note) => {
     try {
       const res = await fetch(`/api/notes/shared/${note.id}`, {
-        method: 'PATCH',
-        credentials: 'include',
+        method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pinned: !note.pinned }),
       });
@@ -358,9 +340,7 @@ const CompanyNotes = () => {
     } catch { setError('Failed to update note'); }
   };
 
-  // Separate pinned announcements from the rest
-  const announcements = notes.filter(n => n.pinned && n.note_type === 'announcement');
-  const rest          = notes.filter(n => !(n.pinned && n.note_type === 'announcement'));
+  const handleExpand = (note) => setExpandedId(note ? (expandedId === note.id ? null : note.id) : null);
 
   if (loading) {
     return (
@@ -371,7 +351,7 @@ const CompanyNotes = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-4">
 
       {/* History modal */}
       {historyNoteId && (
@@ -384,8 +364,8 @@ const CompanyNotes = () => {
           <h2 className="text-[18px] font-bold text-[#111113]">Company Notes</h2>
           <p className="text-[13px] text-[#6b7280] mt-0.5">Shared with all staff</p>
         </div>
-        {!showForm && !editingNote && (
-          <button className={GOLD_BTN} onClick={() => setShowForm(true)}>
+        {!showForm && (
+          <button className={GOLD_BTN} onClick={() => { setShowForm(true); setExpandedId(null); }}>
             <Plus className="w-4 h-4" /> New note
           </button>
         )}
@@ -395,9 +375,7 @@ const CompanyNotes = () => {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-[13px] text-red-700">{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-            <X className="w-4 h-4" />
-          </button>
+          <button onClick={() => setError(null)}><X className="w-4 h-4 text-red-400" /></button>
         </div>
       )}
 
@@ -413,7 +391,7 @@ const CompanyNotes = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex border-b border-[#e5e7eb]">
           {[
             { value: 'all',          label: 'All' },
@@ -425,20 +403,16 @@ const CompanyNotes = () => {
               key={tab.value}
               onClick={() => setFilterType(tab.value)}
               className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors ${
-                filterType === tab.value
-                  ? 'border-[#d4a017] text-[#111113]'
-                  : 'border-transparent text-[#6b7280] hover:text-[#111113]'
+                filterType === tab.value ? 'border-[#d4a017] text-[#111113]' : 'border-transparent text-[#6b7280] hover:text-[#111113]'
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-
-        {/* Category filter */}
         {categories.length > 0 && (
           <select
-            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
+            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-[13px] text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
           >
@@ -448,68 +422,43 @@ const CompanyNotes = () => {
         )}
       </div>
 
-      {/* Pinned announcements first */}
-      {announcements.length > 0 && (
-        <div className="space-y-3">
-          {announcements.map(note => (
-            editingNote?.id === note.id ? (
-              <SharedNoteForm
-                key={note.id}
-                initial={note}
-                isAdmin={isAdmin}
-                categories={categories}
-                onSave={handleUpdate}
-                onCancel={() => setEditingNote(null)}
-                saving={saving}
-              />
-            ) : (
-              <SharedNoteCard
-                key={note.id}
-                note={note}
-                isAdmin={isAdmin}
-                currentUserId={currentUserId}
-                onEdit={setEditingNote}
-                onDelete={handleDelete}
-                onTogglePin={handleTogglePin}
-                onViewHistory={setHistoryNoteId}
-              />
-            )
-          ))}
-        </div>
-      )}
-
-      {/* Rest of notes */}
-      {rest.length === 0 && announcements.length === 0 ? (
+      {/* Table */}
+      {notes.length === 0 ? (
         <div className="text-center py-16 text-[#9ca3af]">
           <StickyNote className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-[14px]">No notes yet. Be the first to add one.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {rest.map(note => (
-            editingNote?.id === note.id ? (
-              <SharedNoteForm
-                key={note.id}
-                initial={note}
-                isAdmin={isAdmin}
-                categories={categories}
-                onSave={handleUpdate}
-                onCancel={() => setEditingNote(null)}
-                saving={saving}
-              />
-            ) : (
-              <SharedNoteCard
-                key={note.id}
-                note={note}
-                isAdmin={isAdmin}
-                currentUserId={currentUserId}
-                onEdit={setEditingNote}
-                onDelete={handleDelete}
-                onTogglePin={handleTogglePin}
-                onViewHistory={setHistoryNoteId}
-              />
-            )
-          ))}
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+          <table className="w-full table-fixed">
+            <thead>
+              <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
+                <th className="text-left pl-3 py-2 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-28">Type</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Note</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-32">Category</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-40">Author</th>
+                <th className="w-28 pr-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {notes.map(note => (
+                <SharedNoteRow
+                  key={note.id}
+                  note={note}
+                  isExpanded={expandedId === note.id}
+                  isAdmin={isAdmin}
+                  currentUserId={currentUserId}
+                  categories={categories}
+                  onExpand={handleExpand}
+                  onSave={handleUpdate}
+                  onDelete={handleDelete}
+                  onTogglePin={handleTogglePin}
+                  onViewHistory={setHistoryNoteId}
+                  saving={saving}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

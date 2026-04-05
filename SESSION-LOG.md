@@ -23,7 +23,7 @@ Paste this at the start of every new chat session:
 - **Last session:** 2026-04-05 (Session 10)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Notes feature complete — Personal Notes (My Notes) and Company Shared Notes
+- **Last fixes applied:** Notes feature complete — table layout (Option C) applied to both PersonalNotes and CompanyNotes
 - **Next priority:** Audio Feature — Mode 1 (meeting audio upload to ticket Notes tab)
 
 ---
@@ -39,65 +39,65 @@ No other AI providers.
 ## Session 10 — 2026-04-05
 
 ### Part 1 — Roadmap decisions (no code)
-- AI Phase 4 (CRM Next-Action Suggestions) removed
-- AI Phase 5 (Natural Language Ticket Search) removed
+- AI Phase 4 and Phase 5 removed
 - Audio Feature (two modes) specced and added to roadmap
 - Notes feature (Personal + Company) specced and added to roadmap
 
-### Part 2 — Notes Feature (complete)
+### Part 2 — Notes Feature (initial build)
 
 #### Files created
-
 | File | Location | Purpose |
 |---|---|---|
 | `add_notes_tables.sql` | `web/migrations/` | Creates `personal_notes`, `shared_notes`, `shared_note_versions` tables |
 | `notes.js` | `web/routes/` | All 7 REST endpoints for both note types |
-| `PersonalNotes.jsx` | `web/client/.../components/` | My Notes — CRUD, pin, due dates, complete toggle, filter tabs |
-| `CompanyNotes.jsx` | `web/client/.../components/` | Company Notes — CRUD, types, categories, pin (admin), version history |
+| `PersonalNotes.jsx` | `web/client/.../components/` | My Notes view |
+| `CompanyNotes.jsx` | `web/client/.../components/` | Company Notes view |
 
 #### Files modified
-
 | File | Change |
 |---|---|
-| `server.js` | 2 lines: require notes route + app.use('/api/notes') |
-| `Sidebar.jsx` | `company-notes` and `my-notes` added to MAIN_ITEMS; StickyNote + BookOpen imported |
-| `AppLayout.jsx` | Both views added to PAGE_TITLES and VIEW_TO_PAGE |
-| `Dashboard.jsx` | PersonalNotes + CompanyNotes imported; two currentView render cases added |
+| `server.js` | 2 lines: notes route registered |
+| `Sidebar.jsx` | company-notes + my-notes added to MAIN_ITEMS |
+| `AppLayout.jsx` | Both views in PAGE_TITLES + VIEW_TO_PAGE |
+| `Dashboard.jsx` | PersonalNotes + CompanyNotes imported + view cases added |
 
-#### API endpoints
-- `GET/POST/PATCH/DELETE /api/notes/personal` — personal notes CRUD (ownership enforced)
-- `GET/POST/PATCH/DELETE /api/notes/shared` — shared notes CRUD (admin can delete any, pin, announce)
-- `GET /api/notes/shared/:id/versions` — version history
+### Part 3 — Notes UI redesign (table layout)
 
-#### Key behaviours
-- `req.orgContext.role` used for admin checks (not `membership.role`)
-- Version snapshot saved automatically on shared note edit if title or body changed
-- Non-admins cannot set note_type=announcement or pin=true (silently overridden server-side)
-- Pinned announcements float to top in Company Notes view
-- Overdue reminder banner in My Notes when any due date is past
+User reviewed the initial card-based design and requested a more compact layout for large note counts. Table view (Option C from three options presented) selected.
 
-#### Testing checklist
-- [ ] Sidebar shows Company Notes + My Notes for all users (not just admins)
-- [ ] My Notes: create / edit / delete / pin / complete / due date all work
-- [ ] Overdue banner appears when reminder is past due
-- [ ] Company Notes: regular user sees type dropdown defaulting to Note only
-- [ ] Company Notes: admin sees Announcement type + pin checkbox
-- [ ] Pinned announcement floats to top with gold border
-- [ ] Edit any shared note → version history button → modal shows previous versions
-- [ ] Category filter dropdown populates after first categorised note
-- [ ] Regular user delete button hidden on other users' notes
+**Both components rewritten** — `PersonalNotes.jsx` and `CompanyNotes.jsx` — with the following changes:
+
+- `NoteCard` / `SharedNoteCard` removed — replaced with `NoteRow` / `SharedNoteRow` (module-level table row components)
+- Each note is a single compact table row (~36px tall)
+- Body text shown as truncated preview inline next to the title (greyed out, hidden on mobile)
+- Clicking the edit (pencil) button expands an inline form as a `<tr colSpan>` below that row — no navigation, no modal
+- Due date / type badge / category / author visible at a glance as table columns
+- Pinned rows get a subtle amber background tint (`bg-[#fffdf5]`)
+- `table-fixed` layout prevents column blowout
+- All API calls, state management, filter tabs, overdue banner, version history modal, and admin permission logic unchanged
+
+#### API endpoints (unchanged from initial build)
+- `GET/POST/PATCH/DELETE /api/notes/personal`
+- `GET/POST/PATCH/DELETE /api/notes/shared`
+- `GET /api/notes/shared/:id/versions`
+
+#### Testing checklist after deploy
+- [ ] My Notes: list renders as a compact table, not cards
+- [ ] My Notes: each row shows title + truncated body preview + due date badge
+- [ ] My Notes: click pencil icon → form expands inline below that row
+- [ ] My Notes: save edit → row updates in place, form collapses
+- [ ] My Notes: complete toggle, pin toggle, delete all work from row actions
+- [ ] My Notes: overdue banner, filter tabs still work
+- [ ] Company Notes: list renders as table with Type / Note / Category / Author columns
+- [ ] Company Notes: pinned rows have amber tint
+- [ ] Company Notes: edit expands inline, version history modal still opens
+- [ ] Company Notes: admin-only pin button visible only to admins
+- [ ] 50+ notes scroll comfortably without excessive vertical space
 
 ---
 
 ## Session 9 — 2025-04-04
-
-### AI Phase 3 — Smart Summaries
-`summaries.js` new route. Summarise Ticket button in ticket sidebar. Summarise for Customer button in Quote Quick Actions. Both use claude-haiku.
-
-### AI Phase 2 — Generate Quote with AI
-`quotes-ai.js`, `quotes-ai-generate.js` swapped to Anthropic. `QuotesTab.jsx`, `QuoteFormTabs.jsx`, `QuoteForm.jsx` updated.
-
----
+AI Phase 3 — Smart Summaries. `summaries.js`, `TicketDetailViewTabbed.jsx`, `QuoteDetails.jsx`.
 
 ## Session 8 — 2025-04-04
 UI Push 3 — QuoteFormTabs, CreateTicketModal, IntegratedCalendar, BookingCalendar.
@@ -106,7 +106,7 @@ UI Push 3 — QuoteFormTabs, CreateTicketModal, IntegratedCalendar, BookingCalen
 Sub-component anti-pattern sweep. CRM contacts save bugs fixed.
 
 ## Session 6 — 2025-04-04
-Dashboard TicketsView focus fix. ContactManager modal focus fix. Polling interval removed.
+Dashboard focus fix. ContactManager modal focus fix. Polling interval removed.
 
 ## Session 5 — 2025-04-03
 UI Push 2 complete. AI Phase 1 — Anthropic email classifier.
