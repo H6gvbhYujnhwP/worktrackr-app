@@ -144,3 +144,17 @@ Replaced the small `<select>` dropdown with a visible three-button pill group (G
 **File changed:** `CompanyNotes.jsx` only. No backend, migration, or other file changes.
 
 **Note for user:** The existing "knowledge 1" note was saved with type "note" and will continue to appear under "General", not "Knowledge". Edit it → change the pill to "Knowledge base" → save to reclassify it.
+
+---
+
+### Hotfix — New note defaults to active tab type (Session 10, Part 5)
+
+**Issue:** Clicking "New note" while on the Knowledge tab opened the form defaulting to "General note" type. Same problem on Announcements tab.
+
+**Fix:** One line in `CompanyNotes.jsx`. The create `<SharedNoteForm>` now receives `initial={{ note_type: filterType === 'all' ? 'note' : filterType }}`. The form already reads `initial?.note_type ?? 'note'` as its starting state, so the pill selector pre-selects the correct type automatically. No backend change.
+
+Behaviour after fix:
+- On "All" tab → new note defaults to General note
+- On "General" tab → new note defaults to General note  
+- On "Knowledge" tab → new note defaults to Knowledge base
+- On "Announcements" tab → new note defaults to Announcement

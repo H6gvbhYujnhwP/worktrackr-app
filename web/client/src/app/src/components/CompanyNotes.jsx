@@ -401,9 +401,10 @@ const CompanyNotes = () => {
         </div>
       )}
 
-      {/* New note form */}
+      {/* New note form — defaults to the active tab's type so context is preserved */}
       {showForm && (
         <SharedNoteForm
+          initial={{ note_type: filterType === 'all' ? 'note' : filterType }}
           isAdmin={isAdmin}
           categories={categories}
           onSave={handleCreate}
