@@ -198,3 +198,49 @@ Behaviour after fix:
 - On "General" tab → new note defaults to General note  
 - On "Knowledge" tab → new note defaults to Knowledge base
 - On "Announcements" tab → new note defaults to Announcement
+
+---
+
+## Session 11 — Stage 2 — Ticket Redesign Option B
+
+### Files changed
+| File | Change |
+|---|---|
+| `web/migrations/add_comment_type.sql` | New migration — adds `comment_type VARCHAR(30)` to `comments` table (`update` / `internal` / `system` / `approval_request`) |
+| `web/routes/tickets.js` | `commentSchema` updated to accept `comment_type`. `INSERT` updated to store it. `RETURNING` clause now includes `author_name` and `author_email` via subquery so the new comment can be appended to the thread without a refetch. |
+| `web/client/src/app/src/components/TicketDetailViewTabbed.jsx` | Full rewrite — Option B layout |
+
+### What changed in TicketDetailViewTabbed
+- **Removed:** 6-tab layout (Details, Scheduling, Safety, Quotes, Comments, Attachments)
+- **Added:** Job description amber strip — always pinned at top, editable inline with pencil icon, shows "edited" badge when modified but not yet saved
+- **Added:** Conversation thread — fetches comments from `GET /api/tickets/:id` on mount, grouped by date with dividers, auto-scrolls to latest
+- **Added:** `ThreadEntry` (module-level) — renders 4 distinct styles: system event (slim row), approval request (amber card with Approve/Decline buttons), internal note (amber-tinted, "Internal" badge), standard update (white card)
+- **Added:** Compose area — 3 tabs: Update / Internal note / Request approval. Background tints change per tab. Ctrl+Enter to post. Posts to `POST /api/tickets/:id/comments` with `comment_type`.
+- **Added:** 3-button view toggle below job strip: Conversation / Quotes / Safety — Quotes and Safety load their existing sub-components (`QuotesTab`, `SafetyTab`)
+- **Added:** Right sidebar — Workflow stage tracker (5 stages, current derived from ticket status), Details (priority/status/sector/scheduled date/duration), Assignee, Metadata, Actions (Save + Summarise)
+- **Preserved exactly:** all `updateTicket()` call shape, all form state & `onChange` handlers, `handleSummarise()`, SafetyTab, QuotesTab, `onBack` prop, `useSimulation()` usage
+- **Removed:** `alert()` on save (replaced by silent state update + error display)
+- **Sub-component rule:** `ThreadEntry` and `DateDivider` defined at module level
+
+### Deploy steps
+1. Run migration: `web/migrations/add_comment_type.sql` against production DB
+2. Deploy code (Render auto-deploys on push)
+
+### Testing checklist
+- [ ] Open a ticket — job description strip shows amber, description visible
+- [ ] Click pencil → textarea opens, edit text, "edited" badge appears, pencil closes on click
+- [ ] Save changes → "edited" badge disappears, form fields reflect saved state
+- [ ] Conversation tab loads with spinner then shows empty state or existing comments
+- [ ] Post an Update → appears in thread immediately with correct author name
+- [ ] Post an Internal note → amber-tinted bubble, "Internal" badge visible
+- [ ] Post a Request approval → yellow card with Approve/Decline buttons
+- [ ] Switch to Quotes tab → QuotesTab renders
+- [ ] Switch to Safety tab → SafetyTab renders
+- [ ] Right sidebar: workflow dots reflect current ticket status
+- [ ] Right sidebar: priority/status/sector selects update form on change
+- [ ] Save changes button saves all sidebar form fields correctly
+- [ ] Summarise ticket button still works, summary appears below button
+- [ ] Back button returns to ticket list
+
+### Next priority
+Audio Stage 2 — "Audio" compose option in the ticket thread. Upload audio OR paste transcript → Whisper → Claude extraction → review screen → posts one combined note to thread.

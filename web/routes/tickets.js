@@ -54,7 +54,8 @@ const updateTicketSchema = z.object({
 });
 
 const commentSchema = z.object({
-  body: z.string().min(1)
+  body: z.string().min(1),
+  comment_type: z.enum(['update', 'internal', 'system', 'approval_request']).default('update'),
 });
 
 // -------------------- ROUTES --------------------
@@ -382,7 +383,7 @@ router.post('/:id/comments', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
     const { id } = req.params;
-    const { body } = commentSchema.parse(req.body);
+    const { body, comment_type } = commentSchema.parse(req.body);
 
     const ticketCheck = await query(
       'SELECT id FROM tickets WHERE id = $1 AND organisation_id = $2',
@@ -393,10 +394,11 @@ router.post('/:id/comments', async (req, res) => {
     }
 
     const commentResult = await query(`
-      INSERT INTO comments (ticket_id, author_id, body)
-      VALUES ($1,$2,$3)
-      RETURNING *
-    `, [id, req.user.userId, body]);
+      INSERT INTO comments (ticket_id, author_id, body, comment_type)
+      VALUES ($1,$2,$3,$4)
+      RETURNING *, (SELECT name FROM users WHERE id = $2) as author_name,
+                   (SELECT email FROM users WHERE id = $2) as author_email
+    `, [id, req.user.userId, body, comment_type]);
 
     await query('UPDATE tickets SET updated_at = NOW() WHERE id = $1', [id]);
 
