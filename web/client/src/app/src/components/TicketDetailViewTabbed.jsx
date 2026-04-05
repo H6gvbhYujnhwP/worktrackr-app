@@ -1,12 +1,16 @@
 // web/client/src/app/src/components/TicketDetailViewTabbed.jsx
-// Option B redesign — job description pinned, conversation thread, right sidebar workflow.
-// Audio Stage 2: Audio compose tab with Whisper + Claude extraction → review → post.
+// Option A redesign:
+//   1. Customer / contact strip below title bar (AI auto-matching on load)
+//   2. Compose area pinned ABOVE the conversation thread
+//   3. ✦ Generate quote button in compose area top-right
+//   Audio Stage 2 compose panel preserved exactly.
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ArrowLeft, Save, Loader2, MessageSquare, DollarSign, Sparkles,
   Paperclip, Shield, Edit3, Send, Lock, Mic, Upload, FileText,
-  ChevronDown, ChevronUp, CheckCircle2, X,
+  ChevronDown, ChevronUp, CheckCircle2, X, Building2, User, Phone,
+  Mail, Link2, Search,
 } from 'lucide-react';
 import { useSimulation, useAuth } from '../App.jsx';
 import {
@@ -74,7 +78,203 @@ const pill = (cls, text) => (
   <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${cls}`}>{text}</span>
 );
 
-// ─── Thread entry — module-level (never inside parent fn body) ────────────────
+// ─── Contact picker modal — module-level ─────────────────────────────────────
+function ContactPickerModal({ onSelect, onClose }) {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState('');
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/contacts', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => setContacts(d.contacts || d || []))
+      .catch(() => setContacts([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = contacts.filter(c => {
+    const q = search.toLowerCase();
+    return (
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.email || '').toLowerCase().includes(q) ||
+      (c.primaryContact || c.primary_contact || '').toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="bg-white rounded-xl shadow-2xl w-[480px] max-h-[70vh] flex flex-col border border-[#e5e7eb]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+          <span className="text-[14px] font-semibold text-[#1d1d1f]">Link customer / contact</span>
+          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-4 py-3 border-b border-[#e5e7eb]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, email…"
+              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#e5e7eb] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40 focus:border-[#d4a017]"
+            />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {loading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-[#d4a017]" />
+            </div>
+          )}
+          {!loading && filtered.length === 0 && (
+            <p className="text-center text-[13px] text-[#9ca3af] py-8">No contacts found</p>
+          )}
+          {!loading && filtered.map(c => {
+            const isSel  = selected?.id === c.id;
+            const person = c.primaryContact || c.primary_contact || '';
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelected(c)}
+                className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-[#f3f4f6] last:border-b-0 transition-colors
+                  ${isSel ? 'bg-[#fef9ee]' : 'hover:bg-[#fafafa]'}`}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0 mt-0.5
+                  ${isSel ? 'bg-[#d4a017]' : 'bg-indigo-400'}`}>
+                  {(c.name || '?').charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[13px] font-medium ${isSel ? 'text-[#92400e]' : 'text-[#1d1d1f]'}`}>
+                    {c.name}
+                    {isSel && <CheckCircle2 className="inline w-3.5 h-3.5 ml-1.5 text-[#d4a017]" />}
+                  </p>
+                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                    {person && <span className="text-[11px] text-[#6b7280]">{person}</span>}
+                    {c.email && <span className="text-[11px] text-[#9ca3af]">{c.email}</span>}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="px-4 py-3 border-t border-[#e5e7eb] flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-[13px] text-[#6b7280] hover:text-[#374151] border border-[#e5e7eb] rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!selected}
+            onClick={() => selected && onSelect(selected)}
+            className="px-4 py-1.5 text-[13px] bg-[#d4a017] text-white font-medium rounded-md
+                       hover:bg-[#c4920f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Link contact
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Customer strip — module-level ───────────────────────────────────────────
+function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, onUnlink, onDismissHint, onPickerOpen }) {
+  if (matchState === 'loading') {
+    return (
+      <div className="flex items-center gap-2 px-6 py-2 bg-[#fafafa] border-b border-[#e5e7eb]">
+        <Loader2 className="w-3 h-3 animate-spin text-[#9ca3af]" />
+        <span className="text-[11px] text-[#9ca3af] italic">Searching for matching customer…</span>
+      </div>
+    );
+  }
+
+  if (matchState === 'hint' && mentionedName && !linkedContact) {
+    return (
+      <div className="flex items-center gap-3 px-6 py-2 bg-[#fffbeb] border-b border-[#fcd34d]">
+        <Building2 className="w-3.5 h-3.5 text-[#d97706] flex-shrink-0" />
+        <span className="text-[12px] text-[#92400e] flex-1">
+          <span className="font-semibold">{mentionedName}</span> mentioned — not in your database.
+        </span>
+        <button
+          onClick={onPickerOpen}
+          className="text-[11px] font-medium text-white bg-[#d4a017] px-2.5 py-1 rounded hover:bg-[#c4920f] transition-colors flex-shrink-0"
+        >
+          Add customer
+        </button>
+        <button onClick={onDismissHint} className="text-[#b45309] hover:text-[#92400e] flex-shrink-0">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  if (linkedContact) {
+    const person  = linkedContact.primaryContact || linkedContact.primary_contact || linkedContact.contact_person || '';
+    const phone   = linkedContact.phone   || linkedContact.contact_phone || '';
+    const email   = linkedContact.email   || linkedContact.contact_email || '';
+    const bizName = linkedContact.name    || linkedContact.contact_name  || '';
+
+    return (
+      <div className="flex items-center gap-4 px-6 py-2 bg-white border-b border-[#e5e7eb] flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Building2 className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" />
+          <span className="text-[13px] font-semibold text-[#1d1d1f] truncate">{bizName}</span>
+          {aiMatched && (
+            <span className="text-[10px] bg-[#dcfce7] text-[#166534] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ml-1">
+              ✦ AI matched
+            </span>
+          )}
+        </div>
+        {person && (
+          <div className="flex items-center gap-1.5 text-[12px] text-[#6b7280]">
+            <User className="w-3 h-3 text-[#9ca3af]" />
+            <span>{person}</span>
+          </div>
+        )}
+        {phone && (
+          <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#374151] transition-colors">
+            <Phone className="w-3 h-3 text-[#9ca3af]" />
+            <span>{phone}</span>
+          </a>
+        )}
+        {email && (
+          <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#374151] transition-colors">
+            <Mail className="w-3 h-3 text-[#9ca3af]" />
+            <span className="truncate max-w-[180px]">{email}</span>
+          </a>
+        )}
+        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onPickerOpen}
+            className="text-[11px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded px-2 py-0.5 transition-colors flex items-center gap-1"
+          >
+            <Link2 className="w-3 h-3" /> Change
+          </button>
+          <button onClick={onUnlink} className="text-[#9ca3af] hover:text-[#dc2626] transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-6 py-2 bg-white border-b border-[#e5e7eb]">
+      <button
+        onClick={onPickerOpen}
+        className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-[#6b7280] border border-dashed border-[#d1d5db] rounded px-2.5 py-1 transition-colors"
+      >
+        <Link2 className="w-3 h-3" /> Link customer / contact
+      </button>
+    </div>
+  );
+}
+
+// ─── Thread entry — module-level ─────────────────────────────────────────────
 function ThreadEntry({ comment, isCurrentUser }) {
   const initials = (comment.author_name || '?').slice(0, 1).toUpperCase();
   const avatarBg = isCurrentUser ? 'bg-[#d4a017]' : 'bg-indigo-500';
@@ -156,12 +356,10 @@ function ThreadEntry({ comment, isCurrentUser }) {
   );
 }
 
-// ─── Audio note renderer — module-level ───────────────────────────────────────
+// ─── Audio note renderer — module-level ──────────────────────────────────────
 function AudioNoteEntry({ comment, avatarBg, initials }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const body = comment.body || '';
-
-  // Parse sections from the formatted body text
   const sections = [];
   let transcript = '';
   const lines = body.split('\n');
@@ -176,15 +374,11 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
       sections.push(currentSection);
       return;
     }
-    if (line.startsWith('• ') && currentSection) {
-      currentSection.items.push(line.slice(2));
-      return;
-    }
+    if (line.startsWith('• ') && currentSection) { currentSection.items.push(line.slice(2)); return; }
     if (line === '---') { currentSection = null; return; }
     if (currentSection === null && line.trim() && !line.startsWith('🎙️')) {
       transcript += line + '\n';
     } else if (currentSection && !line.startsWith('•') && !line.startsWith('**') && line.trim()) {
-      // Plain text under a section (e.g. summary)
       if (currentSection.items.length === 0) currentSection.summary = line;
     }
   });
@@ -207,12 +401,10 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
           </span>
         </div>
         <div className="rounded-lg border border-[#ddd6fe] bg-[#faf5ff] overflow-hidden">
-          {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-[#ddd6fe] bg-[#ede9fe]/40">
             <Mic className="w-3.5 h-3.5 text-[#7c3aed]" />
             <span className="text-[12px] font-semibold text-[#6d28d9]">{title || '🎙️ Meeting Note'}</span>
           </div>
-          {/* Sections */}
           <div className="px-3 py-3 space-y-3">
             {sections.map((sec, i) => (
               <div key={i}>
@@ -233,7 +425,6 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
               </div>
             ))}
           </div>
-          {/* Transcript toggle */}
           <button
             onClick={() => setShowTranscript(v => !v)}
             className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] text-[#9ca3af] hover:text-[#6b7280] border-t border-[#ddd6fe] transition-colors bg-white/50"
@@ -253,12 +444,12 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
   );
 }
 
-// ─── Audio compose panel — module-level ───────────────────────────────────────
+// ─── Audio compose panel — module-level ──────────────────────────────────────
 function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
-  const [inputMode,      setInputMode]      = useState('upload'); // 'upload' | 'paste'
+  const [inputMode,      setInputMode]      = useState('upload');
   const [audioFile,      setAudioFile]      = useState(null);
   const [pasteText,      setPasteText]      = useState('');
-  const [audioState,     setAudioState]     = useState('idle'); // 'idle' | 'processing' | 'review'
+  const [audioState,     setAudioState]     = useState('idle');
   const [extraction,     setExtraction]     = useState(null);
   const [transcript,     setTranscript]     = useState('');
   const [formattedBody,  setFormattedBody]  = useState('');
@@ -267,7 +458,6 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
   const [localError,     setLocalError]     = useState('');
   const [dragOver,       setDragOver]       = useState(false);
   const fileInputRef = useRef(null);
-
   const ACCEPTED_TYPES = '.mp3,.m4a,.wav,.webm';
 
   function handleFile(file) {
@@ -293,11 +483,9 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
         setAudioState('idle');
         return;
       }
-
-      const res  = await fetch(`/api/transcribe/ticket-note`, { method: 'POST', credentials: 'include', body: fd });
+      const res  = await fetch('/api/transcribe/ticket-note', { method: 'POST', credentials: 'include', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Processing failed');
-
       setExtraction(data.extraction);
       setTranscript(data.transcript);
       setFormattedBody(data.formatted_body);
@@ -320,14 +508,9 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
       if (!res.ok) throw new Error('Failed to post');
       const data = await res.json();
       onPost(data.comment);
-      // Reset
-      setAudioFile(null);
-      setPasteText('');
-      setAudioState('idle');
-      setExtraction(null);
-      setTranscript('');
-      setFormattedBody('');
-    } catch (err) {
+      setAudioFile(null); setPasteText(''); setAudioState('idle');
+      setExtraction(null); setTranscript(''); setFormattedBody('');
+    } catch {
       setGlobalError('Failed to post audio note — please try again.');
     } finally {
       setPosting(false);
@@ -335,14 +518,10 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
   }
 
   function handleReset() {
-    setAudioState('idle');
-    setExtraction(null);
-    setTranscript('');
-    setFormattedBody('');
-    setLocalError('');
+    setAudioState('idle'); setExtraction(null);
+    setTranscript(''); setFormattedBody(''); setLocalError('');
   }
 
-  // ── Review screen ─────────────────────────────────────────────────────────
   if (audioState === 'review' && extraction) {
     const sections = [
       { label: 'Summary',      items: extraction.summary ? [extraction.summary] : [],  color: 'text-[#1d1d1f]', single: true },
@@ -353,125 +532,95 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
     ].filter(s => s.items.length > 0);
 
     return (
-      <div className="p-4 bg-[#faf5ff] border-t border-[#e5e7eb] space-y-4">
-        {/* Review header */}
-        <div className="flex items-center justify-between">
+      <div className="bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#e5e7eb] bg-[#faf5ff]">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-[#7c3aed]" />
             <span className="text-[13px] font-semibold text-[#6d28d9]">Review before posting</span>
           </div>
-          <button onClick={handleReset} className="text-[12px] text-[#9ca3af] hover:text-[#6b7280] flex items-center gap-1">
-            <X className="w-3.5 h-3.5" /> Start over
-          </button>
+          <button onClick={handleReset} className="text-[#9ca3af] hover:text-[#6b7280]"><X className="w-4 h-4" /></button>
         </div>
-
-        {/* Extracted sections */}
-        <div className="bg-white rounded-lg border border-[#ddd6fe] divide-y divide-[#f3f4f6]">
+        <div className="px-5 py-4 space-y-4 max-h-[280px] overflow-y-auto">
           {sections.map((sec, i) => (
-            <div key={i} className="px-4 py-3">
-              <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${sec.color}`}>{sec.label}</div>
+            <div key={i}>
+              <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${sec.color}`}>{sec.label}</div>
               {sec.single
-                ? <p className="text-[12px] text-[#374151] leading-relaxed">{sec.items[0]}</p>
-                : <ul className="space-y-0.5">
-                    {sec.items.map((item, j) => (
-                      <li key={j} className="flex items-start gap-1.5 text-[12px] text-[#374151]">
-                        <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-              }
+                ? <p className="text-[13px] text-[#374151] leading-relaxed">{sec.items[0]}</p>
+                : <ul className="space-y-1">{sec.items.map((item, j) => (
+                    <li key={j} className="flex items-start gap-1.5 text-[13px] text-[#374151]">
+                      <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span><span>{item}</span>
+                    </li>
+                  ))}</ul>}
             </div>
           ))}
+          <button
+            onClick={() => setShowTranscript(v => !v)}
+            className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-[#6b7280] transition-colors"
+          >
+            <FileText className="w-3 h-3" />
+            {showTranscript ? 'Hide transcript' : 'Show transcript'}
+            {showTranscript ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+          {showTranscript && (
+            <p className="text-[11px] text-[#6b7280] leading-relaxed bg-[#f9fafb] rounded p-3 whitespace-pre-wrap border border-[#e5e7eb]">
+              {transcript}
+            </p>
+          )}
         </div>
-
-        {/* Transcript accordion */}
-        <button
-          onClick={() => setShowTranscript(v => !v)}
-          className="w-full flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-[#6b7280] transition-colors"
-        >
-          <FileText className="w-3.5 h-3.5" />
-          {showTranscript ? 'Hide transcript' : 'Show full transcript'}
-          {showTranscript ? <ChevronUp className="w-3.5 h-3.5 ml-auto" /> : <ChevronDown className="w-3.5 h-3.5 ml-auto" />}
-        </button>
-        {showTranscript && (
-          <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 max-h-40 overflow-y-auto">
-            <p className="text-[11px] text-[#6b7280] leading-relaxed whitespace-pre-wrap">{transcript}</p>
-          </div>
-        )}
-
-        {/* Post button */}
-        <div className="flex justify-end">
+        <div className="px-5 py-3 border-t border-[#e5e7eb] flex justify-end gap-2">
+          <button onClick={handleReset} className="px-3 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-md hover:bg-[#f9fafb] transition-colors">
+            Re-do
+          </button>
           <button
             onClick={handlePost}
             disabled={posting}
-            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-5 py-2 rounded-md
-                       hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md hover:bg-[#6d28d9] disabled:opacity-50 transition-colors"
           >
             {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            Post meeting note
+            Post note
           </button>
         </div>
       </div>
     );
   }
 
-  // ── Processing screen ─────────────────────────────────────────────────────
   if (audioState === 'processing') {
     return (
-      <div className="p-6 border-t border-[#e5e7eb] flex flex-col items-center gap-3">
+      <div className="p-6 flex flex-col items-center gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-[#7c3aed]" />
         <p className="text-[13px] text-[#6b7280]">
-          {inputMode === 'upload' ? 'Transcribing audio with Whisper, then extracting notes with Claude…'
-                                  : 'Extracting notes with Claude…'}
+          {inputMode === 'upload' ? 'Transcribing with Whisper, then extracting with Claude…' : 'Extracting notes with Claude…'}
         </p>
       </div>
     );
   }
 
-  // ── Idle / upload screen ──────────────────────────────────────────────────
   return (
-    <div className="border-t border-[#e5e7eb] bg-white">
-      {/* Mode toggle */}
+    <div className="bg-white">
       <div className="flex border-b border-[#e5e7eb]">
-        {[
-          { id: 'upload', label: 'Upload audio', Icon: Upload   },
-          { id: 'paste',  label: 'Paste transcript', Icon: FileText },
-        ].map(({ id, label, Icon }) => (
+        {[{ id: 'upload', label: 'Upload audio', Icon: Upload }, { id: 'paste', label: 'Paste transcript', Icon: FileText }].map(({ id, label, Icon }) => (
           <button
             key={id}
             onClick={() => { setInputMode(id); setLocalError(''); }}
             className={`flex items-center gap-1.5 px-5 py-2.5 text-[12px] font-medium border-b-2 transition-colors
-              ${inputMode === id
-                ? 'border-[#7c3aed] text-[#6d28d9] bg-white'
-                : 'border-transparent text-[#9ca3af] hover:text-[#6b7280] bg-[#fafafa]'}`}
+              ${inputMode === id ? 'border-[#7c3aed] text-[#6d28d9] bg-white' : 'border-transparent text-[#9ca3af] hover:text-[#6b7280] bg-[#fafafa]'}`}
           >
             <Icon className="w-3.5 h-3.5" />{label}
           </button>
         ))}
       </div>
-
-      <div className="px-6 py-4 space-y-3">
-        {localError && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-[12px]">{localError}</div>
-        )}
-
+      <div className="px-5 py-4 space-y-3">
+        {localError && <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-[12px]">{localError}</div>}
         {inputMode === 'upload' ? (
           <div
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
+            className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors
               ${dragOver ? 'border-[#7c3aed] bg-[#faf5ff]' : 'border-[#e5e7eb] hover:border-[#c4b5fd] hover:bg-[#faf5ff]'}`}
           >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_TYPES}
-              onChange={e => handleFile(e.target.files[0])}
-              className="hidden"
-            />
+            <input ref={fileInputRef} type="file" accept={ACCEPTED_TYPES} onChange={e => handleFile(e.target.files[0])} className="hidden" />
             {audioFile ? (
               <div className="flex items-center justify-center gap-2">
                 <Mic className="w-5 h-5 text-[#7c3aed]" />
@@ -479,10 +628,7 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
                   <p className="text-[13px] font-medium text-[#6d28d9]">{audioFile.name}</p>
                   <p className="text-[11px] text-[#9ca3af]">{(audioFile.size / 1024 / 1024).toFixed(1)} MB</p>
                 </div>
-                <button
-                  onClick={e => { e.stopPropagation(); setAudioFile(null); }}
-                  className="ml-2 text-[#9ca3af] hover:text-[#6b7280]"
-                >
+                <button onClick={e => { e.stopPropagation(); setAudioFile(null); }} className="ml-2 text-[#9ca3af] hover:text-[#6b7280]">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -499,18 +645,15 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
             value={pasteText}
             onChange={e => setPasteText(e.target.value)}
             placeholder="Paste your meeting transcript here…"
-            rows={6}
-            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[13px] text-[#374151] placeholder-[#9ca3af]
-                       resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/40 focus:border-[#7c3aed]"
+            rows={4}
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[13px] text-[#374151] placeholder-[#9ca3af] resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/40 focus:border-[#7c3aed]"
           />
         )}
-
         <div className="flex justify-end">
           <button
             onClick={handleProcess}
             disabled={(inputMode === 'upload' ? !audioFile : !pasteText.trim())}
-            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-5 py-2 rounded-md
-                       hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 bg-[#7c3aed] text-white text-[13px] font-semibold px-5 py-2 rounded-md hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
             {inputMode === 'upload' ? 'Transcribe & extract' : 'Extract notes'}
@@ -521,7 +664,7 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
   );
 }
 
-// ─── Date divider — module-level ──────────────────────────────────────────────
+// ─── Date divider — module-level ─────────────────────────────────────────────
 function DateDivider({ label }) {
   return (
     <div className="flex items-center gap-3 py-1">
@@ -532,7 +675,7 @@ function DateDivider({ label }) {
   );
 }
 
-// ─── Compose tabs config ──────────────────────────────────────────────────────
+// ─── Compose tabs config ─────────────────────────────────────────────────────
 const COMPOSE_TABS = [
   { id: 'update',           label: 'Update',           placeholder: 'Add an update visible to the whole team…'           },
   { id: 'internal',         label: 'Internal note',    placeholder: 'Add an internal note — not shown outside the team…' },
@@ -540,13 +683,10 @@ const COMPOSE_TABS = [
   { id: 'audio',            label: 'Audio',            placeholder: null                                                  },
 ];
 
-// ─── Group comments by calendar date ─────────────────────────────────────────
 function groupByDate(comments) {
   const groups = {};
   comments.forEach(c => {
-    const label = new Date(c.created_at).toLocaleDateString('en-GB', {
-      day: '2-digit', month: 'long', year: 'numeric',
-    });
+    const label = new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
     if (!groups[label]) groups[label] = [];
     groups[label].push(c);
   });
@@ -563,13 +703,10 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const [error,  setError]              = useState('');
   const [summary, setSummary]           = useState('');
   const [summarising, setSummarising]   = useState(false);
-
   const [mainView, setMainView]         = useState('thread');
-
   const [editingDesc, setEditingDesc]   = useState(false);
   const [descEdited,  setDescEdited]    = useState(false);
   const originalDesc                    = useRef('');
-
   const [comments, setComments]               = useState([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [composeTab, setComposeTab]           = useState('update');
@@ -577,12 +714,21 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const [posting, setPosting]                 = useState(false);
   const threadEndRef                          = useRef(null);
 
+  // ── Customer strip ─────────────────────────────────────────────────────────
+  const [linkedContact,     setLinkedContact]     = useState(null);
+  const [matchState,        setMatchState]        = useState('idle'); // 'idle'|'loading'|'matched'|'hint'|'none'
+  const [mentionedName,     setMentionedName]     = useState('');
+  const [aiMatched,         setAiMatched]         = useState(false);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const aiMatchTriggered                          = useRef(false);
+
   const [form, setForm] = useState({
     title: '', description: '', priority: 'medium', status: 'open',
     sector: '', assignee_id: '', scheduled_date: '', scheduled_duration_mins: '',
     method_statement: null, risk_assessment: null,
   });
 
+  // Load ticket from simulation store
   useEffect(() => {
     const t = tickets.find(t => String(t.id) === String(ticketId));
     if (t) {
@@ -604,17 +750,71 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
     }
   }, [tickets, ticketId]);
 
+  // Load comments + hydrate linked contact from API
   useEffect(() => {
     if (!ticketId) return;
     setCommentsLoading(true);
     fetch(`/api/tickets/${ticketId}`, { credentials: 'include' })
       .then(r => r.json())
-      .then(data => setComments(data.comments || []))
+      .then(data => {
+        setComments(data.comments || []);
+        const t = data.ticket;
+        if (t?.contact_id && t?.contact_name) {
+          setLinkedContact({
+            id:              t.contact_id,
+            name:            t.contact_name,
+            email:           t.contact_email || '',
+            phone:           t.contact_phone || '',
+            primary_contact: t.contact_person || '',
+          });
+          setMatchState('matched');
+          setAiMatched(false);
+        }
+      })
       .catch(() => {})
       .finally(() => setCommentsLoading(false));
   }, [ticketId]);
 
-  // Expose current ticket ID to VoiceAssistant (global signal — safe, ephemeral)
+  // Trigger AI contact matching once when ticket loads and has no linked contact
+  useEffect(() => {
+    if (!ticket || aiMatchTriggered.current) return;
+    if (linkedContact || matchState === 'matched') return;
+    aiMatchTriggered.current = true;
+    setMatchState('loading');
+    fetch(`/api/tickets/${ticketId}/match-contact`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.confidence === 'high' && result.matched_contact_id && result.contact_data) {
+          setLinkedContact({
+            id:              result.contact_data.id,
+            name:            result.contact_data.name,
+            email:           result.contact_data.email || '',
+            phone:           result.contact_data.phone || '',
+            primary_contact: result.contact_data.primary_contact || '',
+          });
+          setAiMatched(true);
+          setMatchState('matched');
+          // Persist silently
+          fetch(`/api/tickets/${ticketId}`, {
+            method: 'PUT', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact_id: result.matched_contact_id }),
+          }).catch(() => {});
+        } else if (result.confidence === 'low' && result.mentioned_name) {
+          setMentionedName(result.mentioned_name);
+          setMatchState('hint');
+        } else {
+          setMatchState('none');
+        }
+      })
+      .catch(() => setMatchState('none'));
+  }, [ticket, ticketId, linkedContact, matchState]);
+
+  // Expose current ticket ID to VoiceAssistant
   useEffect(() => {
     if (ticketId) window.__worktrackr_current_ticket = ticketId;
     return () => { window.__worktrackr_current_ticket = null; };
@@ -669,7 +869,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to summarise');
       setSummary(data.summary);
-    } catch (err) {
+    } catch {
       setSummary('Could not generate summary. Please try again.');
     } finally {
       setSummarising(false);
@@ -697,10 +897,37 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
     }
   };
 
-  // Called by AudioComposePanel when note is posted
-  const handleAudioPost = (comment) => {
-    setComments(prev => [...prev, comment]);
-  };
+  const handleAudioPost = (comment) => setComments(prev => [...prev, comment]);
+
+  const handleContactSelect = useCallback((contact) => {
+    setLinkedContact({
+      id:              contact.id,
+      name:            contact.name,
+      email:           contact.email || '',
+      phone:           contact.phone || '',
+      primary_contact: contact.primaryContact || contact.primary_contact || '',
+    });
+    setAiMatched(false);
+    setMatchState('matched');
+    setShowContactPicker(false);
+    fetch(`/api/tickets/${ticketId}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact_id: contact.id }),
+    }).catch(() => {});
+  }, [ticketId]);
+
+  const handleContactUnlink = useCallback(() => {
+    setLinkedContact(null); setAiMatched(false); setMatchState('none');
+    fetch(`/api/tickets/${ticketId}`, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact_id: null }),
+    }).catch(() => {});
+  }, [ticketId]);
+
+  const handleDismissHint = useCallback(() => { setMatchState('none'); setMentionedName(''); }, []);
+  const handleGenerateQuote = () => setMainView('quotes');
 
   if (!ticket) {
     return (
@@ -710,16 +937,23 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
     );
   }
 
-  const assignedUser       = users?.find(u => u.id === (form.assignee_id || ticket.assignee_id || ticket.assignedTo));
-  const stageIndex         = statusToStageIndex(form.status);
-  const dateGroups         = groupByDate(comments);
-  const currentComposeTab  = COMPOSE_TABS.find(t => t.id === composeTab);
-  const isAudioTab         = composeTab === 'audio';
+  const assignedUser      = users?.find(u => u.id === (form.assignee_id || ticket.assignee_id || ticket.assignedTo));
+  const stageIndex        = statusToStageIndex(form.status);
+  const dateGroups        = groupByDate(comments);
+  const currentComposeTab = COMPOSE_TABS.find(t => t.id === composeTab);
+  const isAudioTab        = composeTab === 'audio';
 
   return (
     <div className="w-full bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
 
-      {/* ── Header ── */}
+      {showContactPicker && (
+        <ContactPickerModal
+          onSelect={handleContactSelect}
+          onClose={() => setShowContactPicker(false)}
+        />
+      )}
+
+      {/* ── Title bar ── */}
       <div className="px-6 py-4 border-b border-[#e5e7eb]">
         <div className="flex items-center gap-2 mb-2">
           <button
@@ -741,6 +975,17 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         </div>
       </div>
 
+      {/* ── Customer / contact strip ── */}
+      <CustomerStrip
+        linkedContact={linkedContact}
+        matchState={matchState}
+        mentionedName={mentionedName}
+        aiMatched={aiMatched}
+        onUnlink={handleContactUnlink}
+        onDismissHint={handleDismissHint}
+        onPickerOpen={() => setShowContactPicker(true)}
+      />
+
       {error && (
         <div className="mx-6 mt-3 bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-lg text-[13px]">
           {error}
@@ -758,13 +1003,9 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-semibold text-[#92400e] uppercase tracking-wider">
-                    Job description
-                  </span>
+                  <span className="text-[10px] font-semibold text-[#92400e] uppercase tracking-wider">Job description</span>
                   {descEdited && (
-                    <span className="text-[10px] bg-[#fef3c7] text-[#92400e] px-1.5 py-0.5 rounded font-medium">
-                      edited
-                    </span>
+                    <span className="text-[10px] bg-[#fef3c7] text-[#92400e] px-1.5 py-0.5 rounded font-medium">edited</span>
                   )}
                 </div>
                 {editingDesc ? (
@@ -793,7 +1034,83 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             </div>
           </div>
 
-          {/* View toggle */}
+          {/* ── Compose area — pinned ABOVE thread ── */}
+          {mainView === 'thread' && (
+            <div className="border-b-2 border-[#e5e7eb] bg-white">
+              {/* Tab row + Generate quote button */}
+              <div className="flex items-stretch border-b border-[#e5e7eb]">
+                <div className="flex flex-1">
+                  {COMPOSE_TABS.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setComposeTab(tab.id)}
+                      className={`flex items-center gap-1.5 flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#e5e7eb] transition-colors
+                        ${composeTab === tab.id
+                          ? `bg-white text-[#1d1d1f] border-b-2 ${tab.id === 'audio' ? 'border-b-[#7c3aed]' : 'border-b-[#d4a017]'}`
+                          : 'bg-[#fafafa] text-[#9ca3af] hover:text-[#6b7280] border-b-0'}`}
+                    >
+                      <span className="mx-auto flex items-center gap-1">
+                        {tab.id === 'audio' && <Mic className="w-3 h-3" />}
+                        {tab.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {/* ✦ Generate quote */}
+                <button
+                  onClick={handleGenerateQuote}
+                  className="flex items-center gap-1.5 px-4 text-[12px] font-semibold text-[#b8860b]
+                             bg-[#fef9ee] border-l border-[#e5e7eb] hover:bg-[#fef3c7] transition-colors flex-shrink-0 whitespace-nowrap"
+                  title="Generate a quote from this ticket"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  ✦ Generate quote
+                </button>
+              </div>
+
+              {/* Compose body */}
+              {isAudioTab ? (
+                <AudioComposePanel
+                  ticketId={ticketId}
+                  onPost={handleAudioPost}
+                  setGlobalError={setError}
+                />
+              ) : (
+                <div className={`${
+                  composeTab === 'internal'         ? 'bg-[#fffbeb]' :
+                  composeTab === 'approval_request' ? 'bg-[#fefce8]' : 'bg-white'
+                }`}>
+                  <textarea
+                    value={composeBody}
+                    onChange={e => setComposeBody(e.target.value)}
+                    placeholder={currentComposeTab?.placeholder}
+                    rows={3}
+                    className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-[#374151] placeholder-[#9ca3af]"
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postComment(); }}
+                  />
+                  <div className="flex items-center justify-between px-4 pb-3">
+                    <button className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded-md px-3 py-1.5 transition-colors bg-white">
+                      <Paperclip className="w-3.5 h-3.5" /> Attach
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-[#9ca3af]">Ctrl+Enter to post</span>
+                      <button
+                        onClick={postComment}
+                        disabled={posting || !composeBody.trim()}
+                        className="flex items-center gap-2 bg-[#d4a017] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md
+                                   hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                        {composeTab === 'approval_request' ? 'Send request' : 'Post update'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* View toggle: Conversation / Quotes / Safety */}
           <div className="flex border-b border-[#e5e7eb] bg-[#fafafa]">
             {[
               { id: 'thread', label: 'Conversation', Icon: MessageSquare },
@@ -814,105 +1131,38 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             ))}
           </div>
 
-          {/* Conversation thread */}
+          {/* Thread — now BELOW compose */}
           {mainView === 'thread' && (
-            <div className="flex flex-col flex-1">
-              <div className="flex-1 px-6 py-5 space-y-4 overflow-y-auto" style={{ maxHeight: '480px' }}>
-                {commentsLoading && (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#d4a017]" />
-                  </div>
-                )}
-                {!commentsLoading && comments.length === 0 && (
-                  <div className="text-center py-14 text-[#9ca3af]">
-                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-[#e5e7eb]" />
-                    <p className="text-[13px]">No updates yet — post the first one below</p>
-                  </div>
-                )}
-                {!commentsLoading && dateGroups.map(([dateLabel, dayComments]) => (
-                  <div key={dateLabel} className="space-y-4">
-                    <DateDivider label={dateLabel} />
-                    {dayComments.map(c => (
-                      <ThreadEntry
-                        key={c.id}
-                        comment={c}
-                        isCurrentUser={currentUser?.id === c.author_id}
-                      />
-                    ))}
-                  </div>
-                ))}
-                <div ref={threadEndRef} />
-              </div>
-
-              {/* Compose area */}
-              <div className="border-t border-[#e5e7eb] bg-white">
-                {/* Compose tabs */}
-                <div className="flex border-b border-[#e5e7eb]">
-                  {COMPOSE_TABS.map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setComposeTab(tab.id)}
-                      className={`flex items-center gap-1.5 flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#e5e7eb] transition-colors
-                        ${composeTab === tab.id
-                          ? `bg-white text-[#1d1d1f] border-b-2 ${tab.id === 'audio' ? 'border-b-[#7c3aed]' : 'border-b-[#d4a017]'}`
-                          : 'bg-[#fafafa] text-[#9ca3af] hover:text-[#6b7280] border-b-0'}`}
-                    >
-                      <span className="mx-auto flex items-center gap-1">
-                        {tab.id === 'audio' && <Mic className="w-3 h-3" />}
-                        {tab.label}
-                      </span>
-                    </button>
+            <div className="flex-1 px-6 py-5 space-y-4 overflow-y-auto" style={{ maxHeight: '420px' }}>
+              {commentsLoading && (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#d4a017]" />
+                </div>
+              )}
+              {!commentsLoading && comments.length === 0 && (
+                <div className="text-center py-14 text-[#9ca3af]">
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-[#e5e7eb]" />
+                  <p className="text-[13px]">No updates yet — post the first one above</p>
+                </div>
+              )}
+              {!commentsLoading && dateGroups.map(([dateLabel, dayComments]) => (
+                <div key={dateLabel} className="space-y-4">
+                  <DateDivider label={dateLabel} />
+                  {dayComments.map(c => (
+                    <ThreadEntry key={c.id} comment={c} isCurrentUser={currentUser?.id === c.author_id} />
                   ))}
                 </div>
-
-                {/* Audio panel or text compose */}
-                {isAudioTab ? (
-                  <AudioComposePanel
-                    ticketId={ticketId}
-                    onPost={handleAudioPost}
-                    setGlobalError={setError}
-                  />
-                ) : (
-                  <div className={`${ composeTab === 'internal' ? 'bg-[#fffbeb]' : composeTab === 'approval_request' ? 'bg-[#fefce8]' : 'bg-white' }`}>
-                    <textarea
-                      value={composeBody}
-                      onChange={e => setComposeBody(e.target.value)}
-                      placeholder={currentComposeTab?.placeholder}
-                      rows={3}
-                      className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-[#374151] placeholder-[#9ca3af]"
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postComment(); }}
-                    />
-                    <div className="flex items-center justify-between px-4 pb-3">
-                      <button className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded-md px-3 py-1.5 transition-colors bg-white">
-                        <Paperclip className="w-3.5 h-3.5" /> Attach
-                      </button>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] text-[#9ca3af]">Ctrl+Enter to post</span>
-                        <button
-                          onClick={postComment}
-                          disabled={posting || !composeBody.trim()}
-                          className="flex items-center gap-2 bg-[#d4a017] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md
-                                     hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                          {composeTab === 'approval_request' ? 'Send request' : 'Post update'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              ))}
+              <div ref={threadEndRef} />
             </div>
           )}
 
-          {/* Quotes */}
           {mainView === 'quotes' && (
             <div className="flex-1 px-6 py-5">
               <QuotesTab ticketId={ticketId} />
             </div>
           )}
 
-          {/* Safety */}
           {mainView === 'safety' && (
             <div className="flex-1 px-6 py-5">
               <SafetyTab
@@ -936,9 +1186,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 return (
                   <div key={stage.id} className="flex items-center gap-2.5">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0
-                      ${done   ? 'bg-[#16a34a] text-white' :
-                        active ? 'bg-[#d4a017] text-white' :
-                                 'border border-[#d1d5db] text-[#9ca3af]'}`}>
+                      ${done ? 'bg-[#16a34a] text-white' : active ? 'bg-[#d4a017] text-white' : 'border border-[#d1d5db] text-[#9ca3af]'}`}>
                       {done ? '✓' : i + 1}
                     </div>
                     <span className={`text-[12px] ${done || active ? 'font-medium text-[#1d1d1f]' : 'text-[#9ca3af]'}`}>
@@ -953,7 +1201,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
           {/* Details */}
           <div className="px-5 py-4 space-y-3">
             <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider">Details</div>
-
             <div>
               <div className="text-[11px] text-[#9ca3af] mb-1">Priority</div>
               <Select value={form.priority} onValueChange={onChange('priority')}>
@@ -961,7 +1208,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{cap(p)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-
             <div>
               <div className="text-[11px] text-[#9ca3af] mb-1">Status</div>
               <Select value={form.status} onValueChange={onChange('status')}>
@@ -969,7 +1215,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-
             <div>
               <div className="text-[11px] text-[#9ca3af] mb-1">Sector</div>
               <Select value={form.sector || 'none'} onValueChange={v => onChange('sector')(v === 'none' ? '' : v)}>
@@ -980,7 +1225,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 </SelectContent>
               </Select>
             </div>
-
             <div>
               <div className="text-[11px] text-[#9ca3af] mb-1">Scheduled date</div>
               <input
@@ -990,7 +1234,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 className="w-full border border-[#e5e7eb] rounded-md h-8 px-2 text-[12px] text-[#374151] bg-white focus:outline-none focus:ring-1 focus:ring-[#d4a017]"
               />
             </div>
-
             <div>
               <div className="text-[11px] text-[#9ca3af] mb-1">Duration (mins)</div>
               <input
@@ -1049,7 +1292,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
           {/* Actions */}
           <div className="px-5 py-4 space-y-2">
             <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Actions</div>
-
             <button
               onClick={onSave}
               disabled={saving || !form.title}
@@ -1061,7 +1303,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
                 : <><Save className="w-4 h-4" /> Save changes</>}
             </button>
-
             <button
               onClick={handleSummarise}
               disabled={summarising}
@@ -1073,7 +1314,6 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Summarising…</>
                 : <><Sparkles className="w-3.5 h-3.5" /> Summarise ticket</>}
             </button>
-
             {summary && (
               <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-lg p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[#b8860b] mb-1.5 flex items-center gap-1">

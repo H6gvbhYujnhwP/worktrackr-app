@@ -20,11 +20,11 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-05 (Session 10)
+- **Last session:** 2026-04-05 (Session 14)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Notes feature complete — table layout (Option C) applied to both PersonalNotes and CompanyNotes
-- **Next priority:** Audio Feature — Mode 1 (meeting audio upload to ticket Notes tab)
+- **Last fixes applied:** Ticket Redesign Option A — customer/contact strip, compose at top, ✦ Generate quote button
+- **Next priority:** Quote Line Items Redesign
 
 ---
 
@@ -448,8 +448,72 @@ Both actions use existing endpoints: `POST /api/tickets` and `POST /api/tickets/
 ### Sub-component rule — confirmed compliant
 All new components defined at module level ✓
 
+### Next session priorities (superseded — see Session 14 below)
+
+---
+
+## Session 14 — Ticket Redesign Option A
+
+### Files changed
+| File | Change |
+|---|---|
+| `web/routes/tickets.js` | (1) `contact_id` added to `updateTicketSchema`. (2) GET `/:id` now JOINs `contacts` table — returns `contact_name`, `contact_email`, `contact_phone`, `contact_person`, `contact_type` alongside ticket data. (3) New `POST /:id/match-contact` endpoint — calls Claude to scan ticket title + description against org's contacts list, returns `{ matched_contact_id, contact_data, mentioned_name, confidence }`. Graceful fallback if `ANTHROPIC_API_KEY` absent. |
+| `web/client/.../TicketDetailViewTabbed.jsx` | Full rewrite — Option A layout |
+
+### What changed in TicketDetailViewTabbed
+
+**1. Customer / contact strip**
+- Persistent bar directly below title bar — appears on every ticket
+- Four UI states (all module-level `CustomerStrip` component):
+  - **loading** — subtle spinner + "Searching for matching customer…" while AI runs
+  - **matched** — business name, contact person, phone (tel: link), email (mailto: link). Green "✦ AI matched" badge if auto-matched by Claude. "Change" + unlink (×) buttons
+  - **hint** — amber bar: "[Name] mentioned — not in your database." with "Add customer" button and dismiss ×. Shown when Claude detects a name but finds no match in the CRM
+  - **none / empty** — ghost dashed "Link customer / contact" button
+
+**AI matching behaviour**
+- Triggers once per ticket open when `contact_id` is null
+- Calls `POST /api/tickets/:id/match-contact` (server-side Claude call — API key never exposed to client)
+- Confident match (`confidence: 'high'`) → auto-links, saves `contact_id` to DB silently via `PUT /api/tickets/:id`, shows green badge
+- Name detected but no CRM match (`confidence: 'low'`) → amber hint bar
+- No name (`confidence: 'none'`) or API key absent → ghost link button
+
+**Contact picker modal** (`ContactPickerModal` — module-level)
+- Opens from "Link customer", "Add customer", or "Change" buttons
+- Fetches `/api/contacts`, searchable by name/email
+- Selected row highlighted gold with checkmark
+- Confirms → calls `PUT /api/tickets/:id` with `contact_id`, updates strip immediately
+
+**2. Compose area moved to top**
+- Compose tabs (Update / Internal note / Request approval / Audio) now appear directly below the job description strip, ABOVE the conversation thread
+- Thread scroll area sits below the view toggle (Conversation / Quotes / Safety)
+- Empty state updated: "No updates yet — post the first one **above**"
+
+**3. ✦ Generate quote button**
+- Sits in the top-right of the compose tab row (gold background, Sparkles icon)
+- Currently navigates to the Quotes tab — wired up ready for AI Quote Generation flow (next roadmap item)
+- Sub-component rule ✓ — all new components at module level
+
+### No migration required
+`contact_id UUID REFERENCES contacts(id)` column already present from `add_ticket_extended_fields.sql`. No new DB changes needed.
+
+### Sub-component rule — confirmed compliant
+`ContactPickerModal`, `CustomerStrip`, `ThreadEntry`, `AudioNoteEntry`, `AudioComposePanel`, `DateDivider` — all module-level ✓
+
+### Testing checklist after deploy
+- [ ] Open a ticket with no linked contact → strip shows "Link customer / contact" ghost button (or AI hint/match)
+- [ ] If ticket title/description mentions a CRM contact name → strip briefly shows "Searching…" then snaps to matched state with green "AI matched" badge
+- [ ] If name mentioned but not in CRM → amber hint bar with "Add customer" button and dismiss
+- [ ] Click "Link customer" → picker modal opens, search works, select a contact → strip populates
+- [ ] Linked contact: business name, person, phone (tel:), email (mailto:) all show
+- [ ] "Change" button reopens picker; × unlinks and clears strip
+- [ ] Contact linkage persists on page reload (saved to DB)
+- [ ] Compose area is now at the top: Update / Internal note / Request approval / Audio tabs below job strip
+- [ ] Thread appears below the Conversation / Quotes / Safety toggle
+- [ ] "✦ Generate quote" button visible in compose tab row → click switches to Quotes tab
+- [ ] All existing compose/post/audio/summarise/save behaviour unchanged
+- [ ] Back button, sidebar selects, workflow dots all work as before
+
 ### Next session priorities
-1. Ticket Redesign Option A (fresh session — large file, needs full context budget)
-2. Quote Line Items Redesign
-3. AI Quote Generation from Ticket
-4. Notes → Ticket already done ✓
+1. Quote Line Items Redesign — full rebuild of line item editor (two sections, buy/sell price, VAT toggle, profit calc)
+2. AI Quote Generation from Ticket — full flow with review panel
+3. Audio Mode 2 (floating voice assistant) — must not be forgotten

@@ -41,34 +41,12 @@ Floating gold mic FAB, global. Web Speech API, max 60s. Claude routes intent to:
 
 ---
 
-## Upcoming — Ticket Redesign Option A
-
-Full redesign of `TicketDetailViewTabbed.jsx`. Resolves three problems with the current build.
-
-**1. Customer / contact strip**
-Persistent bar directly below the ticket title bar showing:
-- Business name (links to CRM contact record)
-- Contact name
-- Telephone
-- Email
-
-All fields pull live from the contacts/customers list. Editable inline.
-
-**AI customer matching on ticket creation:**
-- On ticket creation by any input (form, email intake, voice assistant, audio extraction) — Claude scans title and description for business/contact name or email
-- Confident match found → auto-populated with subtle green "AI matched" badge
-- Name mentioned but no match found → amber prompt bar at top of ticket: *"Acme Corp mentioned — not in your database. Add customer?"* with "Add customer" button and dismiss option
-- Prompt disappears once customer is linked or dismissed
-
-**2. Compose tabs move to the top**
-Update / Internal note / Request approval / Audio tabs move from the bottom of the thread to the top, directly below the customer strip and job description strip. "Compose first, read history below."
-
-**3. Generate quote button**
-"✦ Generate quote" button in the top-right of the compose area triggers the AI quote generation flow (see below).
-
-**Layout:** Two-column. Left: customer strip → job strip → compose tabs → thread. Right sidebar: workflow tracker → details → assignee → save. No structural change to the sidebar.
-
----
+### ✅ Ticket Redesign Option A (COMPLETE)
+Full rewrite of `TicketDetailViewTabbed.jsx`:
+- **Customer / contact strip** — persistent bar below title bar. Four states: loading (AI scanning), matched (business name + contact + phone + email + optional "AI matched" badge), hint (amber bar when name detected but not in CRM), empty (ghost link button). Contact picker modal — searchable, gold selection. Contact linkage persisted to DB via `contact_id` on tickets table.
+- **AI customer matching** — `POST /api/tickets/:id/match-contact` calls Claude on ticket open when no contact is linked. Confident match auto-populates with green badge. Ambiguous name → amber prompt. No match → ghost button. Fully server-side (API key never exposed).
+- **Compose area at top** — Update / Internal note / Request approval / Audio tabs now sit above the conversation thread (below job strip), not below it.
+- **✦ Generate quote button** — in compose tab row top-right, navigates to Quotes tab. Wired ready for AI quote generation flow.
 
 ## Upcoming — Quote Line Items Redesign
 

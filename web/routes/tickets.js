@@ -31,6 +31,7 @@ const updateTicketSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   assigneeId: z.string().uuid().nullable().optional(),
   assignee_id: z.string().uuid().nullable().optional(), // Support both camelCase and snake_case
+  contact_id: z.string().uuid().nullable().optional(),  // Link ticket to a CRM contact
   sector: z.string().max(255).nullable().optional(),
   scheduled_date: z.union([
     z.string().datetime(),
@@ -137,14 +138,18 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
 
     const ticketResult = await query(`
-      SELECT t.*, 
+      SELECT t.*,
              creator.name as created_by_name, creator.email as created_by_email,
              assignee.name as assignee_name, assignee.email as assignee_email,
-             q.name as queue_name
+             q.name as queue_name,
+             c.name as contact_name, c.email as contact_email,
+             c.phone as contact_phone, c.primary_contact as contact_person,
+             c.type as contact_type
       FROM tickets t
       LEFT JOIN users creator ON t.created_by = creator.id
       LEFT JOIN users assignee ON t.assignee_id = assignee.id
       LEFT JOIN queues q ON t.queue_id = q.id
+      LEFT JOIN contacts c ON t.contact_id = c.id
       WHERE t.id = $1 AND t.organisation_id = $2
     `, [id, organizationId]);
 
@@ -512,6 +517,92 @@ router.delete('/bulk', async (req, res) => {
     console.error('❌ Bulk update error:', error);
     console.error('Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to update tickets', details: error.message });
+  }
+});
+
+// ─── AI contact matching ───────────────────────────────────────────────────────
+// POST /api/tickets/:id/match-contact
+// Scans ticket title + description with Claude to find or suggest a CRM contact.
+// Returns: { matched_contact_id, contact_data, mentioned_name, confidence }
+async function callAnthropicJSON(systemPrompt, userMessage) {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  const raw = data.content[0].text.trim().replace(/```json|```/g, '').trim();
+  return JSON.parse(raw);
+}
+
+router.post('/:id/match-contact', async (req, res) => {
+  try {
+    const { organizationId } = req.orgContext;
+    const { id } = req.params;
+
+    const ticketRow = await query(
+      'SELECT title, description FROM tickets WHERE id = $1 AND organisation_id = $2',
+      [id, organizationId]
+    );
+    if (ticketRow.rows.length === 0) return res.status(404).json({ error: 'Ticket not found' });
+    const { title, description } = ticketRow.rows[0];
+
+    const contactsRows = await query(
+      'SELECT id, name, email, phone, primary_contact FROM contacts WHERE organisation_id = $1 ORDER BY name',
+      [organizationId]
+    );
+    const contacts = contactsRows.rows;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.json({ matched_contact_id: null, mentioned_name: null, confidence: 'none' });
+    }
+
+    const contactList = contacts.map(c =>
+      `ID: ${c.id} | Name: ${c.name} | Email: ${c.email || ''} | Contact: ${c.primary_contact || ''}`
+    ).join('\n');
+
+    const result = await callAnthropicJSON(
+      `You are a contact-matching assistant. Given a ticket title and description, and a list of CRM contacts, determine if any contact is clearly referenced.
+Return ONLY valid JSON in this exact format: {"matched_contact_id": "<uuid or null>", "mentioned_name": "<name string or null>", "confidence": "high|low|none"}
+- confidence "high": name, email, or business name clearly matches a contact in the list
+- confidence "low": a business/person name is mentioned but not found in the list
+- confidence "none": no name or business is mentioned at all
+Do not include any other text.`,
+      `Contacts list:\n${contactList}\n\nTicket title: ${title}\nTicket description: ${description || '(none)'}`
+    );
+
+    if (!result) {
+      return res.json({ matched_contact_id: null, mentioned_name: null, confidence: 'none' });
+    }
+
+    // If confident match, fetch contact data to return
+    let contact_data = null;
+    if (result.confidence === 'high' && result.matched_contact_id) {
+      const matched = contacts.find(c => c.id === result.matched_contact_id);
+      if (matched) contact_data = matched;
+    }
+
+    res.json({
+      matched_contact_id: result.confidence === 'high' ? result.matched_contact_id : null,
+      mentioned_name: result.mentioned_name || null,
+      confidence: result.confidence,
+      contact_data,
+    });
+
+  } catch (err) {
+    console.error('AI match-contact error:', err);
+    res.json({ matched_contact_id: null, mentioned_name: null, confidence: 'none' });
   }
 });
 
