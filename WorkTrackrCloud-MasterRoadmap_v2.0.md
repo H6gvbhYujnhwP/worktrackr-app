@@ -1,6 +1,6 @@
 # WorkTrackr Cloud: Master Development Roadmap v2.0
 
-**Version:** 2.2
+**Version:** 2.3
 **Date:** April 2026 (updated)
 
 ---
@@ -27,136 +27,155 @@ Real Anthropic Claude call in `email-intake.js`. Keyword fallback if API key abs
 - **My Notes** (`my-notes`) — private per user. Pin, due dates (reminders), complete toggle, filter tabs. Sidebar: MAIN section.
 - **Company Notes** (`company-notes`) — all staff read/write. Three types: note / knowledge / announcement. Categories, admin pin, version history. Sidebar: MAIN section.
 
+### ✅ Audio Stage 1 — Inline Dictation in Notes (COMPLETE)
+`DictationButton.jsx` — Web Speech API, live preview, en-GB. Added to PersonalNotes and CompanyNotes.
+
+### ✅ Audio Stage 2 — Meeting Audio Upload to Ticket (COMPLETE)
+Upload audio or paste transcript → Whisper → Claude extraction → mandatory review → posts to ticket thread as structured audio note entry.
+
+### ✅ Audio Stage 3 — Voice Dictation Assistant / Mode 2 (COMPLETE)
+Floating gold mic FAB, global. Web Speech API, max 60s. Claude routes intent to: ticket note, new ticket, personal note, personal reminder, company note, CRM calendar, ticket calendar. Mandatory review + browser TTS confirmation loop.
+
 ### ❌ AI Phase 4 — CRM Next-Action Suggestions — REMOVED (too thin)
-### ❌ AI Phase 5 — Natural Language Ticket Search — REMOVED (too thin, infrastructure cost not justified)
+### ❌ AI Phase 5 — Natural Language Ticket Search — REMOVED (too thin)
 
 ---
 
-## In Progress
+## Upcoming — Ticket Redesign Option A
 
-### ✅ Ticket Redesign — Option B (COMPLETE — deployed) (conversation-first)
+Full redesign of `TicketDetailViewTabbed.jsx`. Resolves three problems with the current build.
 
-The current ticket view has disconnected tab-based sections and wastes horizontal space. Agreed redesign direction:
+**1. Customer / contact strip**
+Persistent bar directly below the ticket title bar showing:
+- Business name (links to CRM contact record)
+- Contact name
+- Telephone
+- Email
 
-**Layout changes:**
-- Full-width layout — no wasted whitespace either side
-- Job description pinned at top as an always-visible amber strip. Editable inline with an "edited" marker shown when modified
-- Tabs removed from the main body — replaced with a single continuous conversation/activity thread below the job description
-- Right sidebar: workflow stage tracker, metadata, assignment, action buttons
-- Compose area at bottom with tabs: Update / Internal note / Request approval / Audio
+All fields pull live from the contacts/customers list. Editable inline.
 
-**Conversation thread:**
-- All updates, notes, file uploads, system events, and approval requests appear inline in chronological order
-- Each entry shows avatar, name, timestamp
-- Staff can attach images and documents to any update
-- System events (status changes, quote sent, approval received) post automatically as thread entries
-- Internal notes visually distinct from team-visible updates
+**AI customer matching on ticket creation:**
+- On ticket creation by any input (form, email intake, voice assistant, audio extraction) — Claude scans title and description for business/contact name or email
+- Confident match found → auto-populated with subtle green "AI matched" badge
+- Name mentioned but no match found → amber prompt bar at top of ticket: *"Acme Corp mentioned — not in your database. Add customer?"* with "Add customer" button and dismiss option
+- Prompt disappears once customer is linked or dismissed
 
-**Workflow stages (right sidebar):**
-1. Ticket created
-2. Assigned to engineer
-3. In progress
-4. Manager approval (if required)
-5. Resolved & closed
+**2. Compose tabs move to the top**
+Update / Internal note / Request approval / Audio tabs move from the bottom of the thread to the top, directly below the customer strip and job description strip. "Compose first, read history below."
 
-**Approval pings:**
-- When a ticket is passed between stages or approval is requested, a ping goes to all relevant org users
-- Approval requests appear inline in the thread as highlighted cards with Approve / Request changes buttons
+**3. Generate quote button**
+"✦ Generate quote" button in the top-right of the compose area triggers the AI quote generation flow (see below).
 
-**Files and images:**
-- Each thread entry can include file attachments and images
-- Attachments displayed as pills below the message body
+**Layout:** Two-column. Left: customer strip → job strip → compose tabs → thread. Right sidebar: workflow tracker → details → assignee → save. No structural change to the sidebar.
+
+---
+
+## Upcoming — Quote Line Items Redesign
+
+Complete rebuild of the quote line item editor.
+
+**Two sections:** Materials & parts / Labour & other charges.
+
+**Per line item fields:**
+- Description (free text)
+- Supplier / source (free text)
+- Type (dropdown: material / labour / expense / subcontractor)
+- Quantity
+- Buy price £ — cost to business
+- Sell price £ — charged to customer. Turns red if below buy price
+- Line total (sell × qty, auto-calculated)
+- Profit ((sell − buy) × qty, auto-calculated)
+- VAT toggle per line — defaults to Ex VAT. Flip to +VAT adds 20% to that line's VAT contribution
+
+**Footer totals (all live):** Total buy-in · Subtotal ex VAT · VAT total · Total inc VAT · Total profit + margin %
+
+VAT rate fixed at 20% for now. Per-line rate (e.g. 5% domestic energy) deferred to a future session.
+
+---
+
+## Upcoming — AI Quote Generation from Ticket
+
+"✦ Generate quote" button in ticket detail reads everything on the ticket and pre-fills a new quote with suggested line items.
+
+**Inputs Claude reads:**
+- Ticket title and description
+- All thread notes and internal comments
+- Audio meeting note extractions (structured Stage 2 output)
+- Scheduled duration and sector
+- Product catalogue — Claude attempts to match mentioned items to catalogue entries and pulls in buy/sell prices and supplier. If no catalogue match, description is pre-filled and pricing left blank for the user
+
+**Flow:**
+1. Click "Generate quote"
+2. Claude extracts suggested line items
+3. Mandatory review panel — each item shown with its source (e.g. "from internal note 4 Apr") and a confidence indicator. User can remove items before the quote opens
+4. Confirm → quote form opens pre-filled
+
+**Line item lock mechanism:**
+- Every AI-generated row carries a visible **"AI"** badge
+- Every row where buy price, sell price, or supplier was pulled from the product catalogue carries a separate visible **"Catalogue"** badge
+- A row can carry both badges simultaneously (AI suggested the item AND catalogue supplied the pricing)
+- User edits any field on a row → both badges disappear, row becomes `locked: true` permanently
+- Locked rows are never modified by any future AI action, including regeneration
+- Deleted rows are gone — never restored by AI
+- Manually added rows are never AI-touched
+
+**"Top up from notes" option:**
+- After a quote has been generated, if new notes are added to the ticket a "Top up" option appears
+- Top up only suggests new items — never touches existing rows (locked or unlocked)
+- Same review panel before anything is added
+
+**AI flagging:**
+- Items Claude is uncertain about are flagged inline in the review panel, e.g. "Switch mentioned but model unclear — description left blank"
+- Flagged items appear but are highlighted so the user knows to review them before confirming
+
+---
+
+## Upcoming — Notes Enhancements
+
+Both Personal Notes and Company Notes gain two new row actions:
+
+**"Create ticket from note"**
+- Opens Create Ticket modal with note title → ticket title, note body → ticket description pre-filled
+- User reviews and confirms
+- Once ticket created, a link to it appears on the note
+
+**"Add to existing ticket"**
+- Opens a searchable picker of open tickets
+- Note body is posted to that ticket's thread as an internal note (with note title and timestamp)
+- Available to any staff member on company notes; note owner only on personal notes
 
 ---
 
 ## Upcoming — Full Ticket-to-Invoice Workflow
 
-### Vision
-WorkTrackr is a full workflow platform. A job should flow end-to-end without leaving the app:
-
-**Ticket → Quote → Customer approval → Work → Completion → Invoice**
-
-Every step is recorded in the ticket's conversation thread. The invoice is pre-populated automatically from all approved quotes and logged work on that ticket — no re-entry.
-
-### Stages to build (future phases, post ticket redesign)
+**Vision:** Ticket → Quote → Customer approval → Work → Completion → Invoice — all in one place, no re-entry.
 
 **Quote integration inside ticket**
-- "Create quote" initiated from inside the ticket thread
-- Quote events (created, sent, approved, declined) post automatically to the ticket thread
-- Status auto-advances when customer approves (e.g. → "Quote accepted")
-- Pings assigned engineer and manager on approval
+- "Create quote" from inside the ticket thread
+- Quote events (created, sent, approved, declined) post automatically to thread
+- Status auto-advances on customer approval
+- Pings assigned engineer and manager
 
 **Work logging**
-- Time and parts logged against a ticket from within the thread
-- Variation quotes raised if scope changes (same send/approve flow)
+- Time and parts logged against ticket from within the thread
+- Variation quotes raised if scope changes
 
 **Invoice generation from ticket**
-- Once job marked complete, "Generate invoice" button appears
-- Invoice pre-populated with: original quote line items, approved variations, time logged, parts used
-- Conversation thread serves as the full audit trail
+- "Generate invoice" button appears when job is marked complete
+- Pre-populated from: approved quote line items, variations, time logged, parts used
+- Thread is the full audit trail
 
 ---
 
 ## Future Integration — idoyourquotes.com
 
-**Owner note (April 2026):** A separate application, idoyourquotes.com, already exists and handles quote creation, pricing, and customer approval flows. A future integration between WorkTrackr and idoyourquotes.com would allow:
+A separate application (idoyourquotes.com) handles quote creation and customer approval. Future bi-directional webhook integration:
+- WorkTrackr fires job/ticket to idoyourquotes.com as a quote request
+- Customer approves on idoyourquotes.com
+- Approved quote + pricing returned to WorkTrackr via webhook, posted to ticket thread
+- Invoice generation pulls from returned data
 
-- WorkTrackr to fire a job/ticket across to idoyourquotes.com as a quote request (webhook or API call)
-- Customer approval handled on idoyourquotes.com
-- Approved quote and pricing data returned to WorkTrackr via webhook, posted automatically to the ticket thread
-- Invoice generation in WorkTrackr pulls from the returned approved quote data
-
-**This avoids rebuilding the full quote/approval flow natively in WorkTrackr** and instead leverages the existing idoyourquotes.com platform. The integration point is a bi-directional webhook: WorkTrackr sends the job, idoyourquotes.com sends back the result.
-
-**Design considerations when ready to build:**
-- Auth: shared secret or OAuth between the two apps
-- Payload: job description, contact details, line items (if pre-populated), ticket ID for return reference
-- Return payload: approved quote lines, total, customer signature/acceptance timestamp, quote PDF URL
-- WorkTrackr stores the returned data and marks the ticket as "Quote approved externally"
-- Both apps remain independently functional — integration is additive, not dependent
-
-**Priority:** deferred until ticket workflow redesign and core invoice module are complete. Flag for its own design session before implementation.
-
----
-
-## Upcoming — Audio Feature
-
-### ✅ Stage 1 — Inline Dictation in Notes (COMPLETE)
-`DictationButton.jsx` component added to both `PersonalNotes.jsx` and `CompanyNotes.jsx`.
-- Web Speech API (browser-native, free, no server)
-- Tap to start / tap to stop
-- Live preview box with interim text as user speaks
-- Final text appended to note body on stop
-- Graceful fallback — renders nothing if browser unsupported
-- `lang: en-GB`
-
-### ✅ Stage 2 — Meeting Audio Upload to Ticket (COMPLETE)
-Upload audio (mp3, m4a, wav, webm) to an existing ticket OR paste Zoom/Teams transcript text. Whisper transcribes; Claude extracts structured notes. Mandatory review step before anything saves. Posts result into the ticket conversation thread.
-
-**Implementation notes:**
-- Reuse `transcribe.js` — swap GPT-4 extraction to `claude-haiku-4-5-20251001`
-- Needs `OPENAI_API_KEY` on Render for Whisper step only
-- Audio compose tab in the new ticket thread layout
-- Extracted notes post to the ticket thread as a single structured entry
-
-### ✅ Stage 3 — Voice Dictation Assistant (Mode 2) (COMPLETE)
-Floating gold mic FAB, global across all screens. Tap to record (Web Speech API, max 60s). Claude receives transcript + context (current screen, open tickets, user, date/time) and routes to the correct destination. Mandatory review step with editable fields. Browser TTS speaks confirmation: "I'll add a note to ticket #1234 — is that right?". User confirms or retries.
-
-**Routes supported:** ticket note, new ticket, personal note, personal reminder, company shared note, CRM calendar event, ticket calendar event.
-
-### Stage 3 — Voice Dictation Assistant (Mode 2)
-Hold-to-record, max 60s. Claude interprets intent and routes automatically. Mandatory review before commit.
-
-**Entry points:** floating action button (everywhere), ticket thread compose, Create Ticket form.
-
-**Context Claude receives:** current screen, open tickets, CRM contacts, current user, date/time.
-
-**Routes:** new ticket, note on ticket, CRM calendar entry, ticket calendar entry, personal note, personal reminder, company shared note.
-
-**TTS confirmation loop (planned for this stage):**
-- After Claude extracts intent, the app speaks back a summary: "I'll create a note on this ticket saying X — is that right?"
-- User says yes → saves. User says no → continues dictation to correct.
-- Uses browser-native `speechSynthesis` (free, no server).
+**Priority:** deferred until ticket workflow redesign and invoice module complete.
 
 ---
 
