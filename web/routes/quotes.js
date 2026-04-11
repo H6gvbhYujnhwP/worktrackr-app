@@ -26,7 +26,9 @@ const createQuoteSchema = z.object({
     discount_percent: z.number().min(0).max(100).optional(),
     tax_rate: z.number().min(0).max(100).optional(),
     sort_order: z.number().int().optional(),
-    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring']).optional(),
+    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring', 'material', 'expense', 'subcontractor']).optional(),
+    buy_cost: z.number().min(0).optional(),
+    supplier: z.string().optional(),
     hours: z.number().min(0).optional(),
     hourly_rate: z.number().min(0).optional(),
     recurrence: z.enum(['monthly', 'annual']).optional()
@@ -56,7 +58,9 @@ const updateLineItemsSchema = z.object({
     discount_percent: z.number().min(0).max(100).optional(),
     tax_rate: z.number().min(0).max(100).optional(),
     sort_order: z.number().int().optional(),
-    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring']).optional(),
+    item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring', 'material', 'expense', 'subcontractor']).optional(),
+    buy_cost: z.number().min(0).optional(),
+    supplier: z.string().optional(),
     hours: z.number().min(0).optional(),
     hourly_rate: z.number().min(0).optional(),
     recurrence: z.enum(['monthly', 'annual']).optional(),
@@ -339,8 +343,8 @@ router.post('/', async (req, res) => {
           INSERT INTO quote_lines (
             quote_id, product_id, description, quantity, unit_price,
             discount_percent, tax_rate, line_total, sort_order,
-            item_type, hours, hourly_rate, recurrence
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            item_type, hours, hourly_rate, recurrence, buy_cost, supplier
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           RETURNING *
         `;
 
@@ -357,7 +361,9 @@ router.post('/', async (req, res) => {
           item.item_type || 'parts',
           item.hours || null,
           item.hourly_rate || null,
-          item.recurrence || null
+          item.recurrence || null,
+          item.buy_cost || 0,
+          item.supplier || null
         ];
 
         await client.query(lineItemQuery, lineItemValues);
@@ -506,8 +512,9 @@ router.put('/:id/line-items', async (req, res) => {
           await client.query(
             `UPDATE quote_lines 
              SET product_id = $1, description = $2, quantity = $3, unit_price = $4,
-                 discount_percent = $5, tax_rate = $6, line_total = $7, sort_order = $8
-             WHERE id = $9 AND quote_id = $10`,
+                 discount_percent = $5, tax_rate = $6, line_total = $7, sort_order = $8,
+                 buy_cost = $9, supplier = $10
+             WHERE id = $11 AND quote_id = $12`,
             [
               item.product_id || null,
               item.description,
@@ -517,6 +524,8 @@ router.put('/:id/line-items', async (req, res) => {
               item.tax_rate || 20,
               lineTotal,
               item.sort_order || i,
+              item.buy_cost || 0,
+              item.supplier || null,
               item.id,
               id
             ]
@@ -533,8 +542,8 @@ router.put('/:id/line-items', async (req, res) => {
           await client.query(
             `INSERT INTO quote_lines (
               quote_id, product_id, description, quantity, unit_price,
-              discount_percent, tax_rate, line_total, sort_order
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+              discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
             [
               id,
               item.product_id || null,
@@ -544,7 +553,9 @@ router.put('/:id/line-items', async (req, res) => {
               item.discount_percent || 0,
               item.tax_rate || 20,
               lineTotal,
-              item.sort_order || i
+              item.sort_order || i,
+              item.buy_cost || 0,
+              item.supplier || null
             ]
           );
         }
@@ -887,8 +898,8 @@ router.post('/:id/duplicate', async (req, res) => {
         await client.query(
           `INSERT INTO quote_lines (
             quote_id, product_id, description, quantity, unit_price,
-            discount_percent, tax_rate, line_total, sort_order
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
             newQuote.id,
             item.product_id,
@@ -898,7 +909,9 @@ router.post('/:id/duplicate', async (req, res) => {
             item.discount_percent,
             item.tax_rate,
             item.line_total,
-            item.sort_order
+            item.sort_order,
+            item.buy_cost || 0,
+            item.supplier || null
           ]
         );
       }

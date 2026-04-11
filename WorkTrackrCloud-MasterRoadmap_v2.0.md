@@ -48,26 +48,19 @@ Full rewrite of `TicketDetailViewTabbed.jsx`:
 - **Compose area at top** — Update / Internal note / Request approval / Audio tabs now sit above the conversation thread (below job strip), not below it.
 - **✦ Generate quote button** — in compose tab row top-right, navigates to Quotes tab. Wired ready for AI quote generation flow.
 
-## Upcoming — Quote Line Items Redesign
+## ✅ COMPLETE — Quote Line Items Redesign
 
 Complete rebuild of the quote line item editor.
 
-**Two sections:** Materials & parts / Labour & other charges.
+**Two sections:** Materials & parts / Labour & other charges — each with its own "Add" button.
 
-**Per line item fields:**
-- Description (free text)
-- Supplier / source (free text)
-- Type (dropdown: material / labour / expense / subcontractor)
-- Quantity
-- Buy price £ — cost to business
-- Sell price £ — charged to customer. Turns red if below buy price
-- Line total (sell × qty, auto-calculated)
-- Profit ((sell − buy) × qty, auto-calculated)
-- VAT toggle per line — defaults to Ex VAT. Flip to +VAT adds 20% to that line's VAT contribution
+**Per line item fields:** Description, Supplier (free text), Type (material / labour / expense / subcontractor), Qty, Buy £ (cost to business), Sell £ (charged to customer — turns red if below buy price), Line total (qty × sell, auto), Profit ((sell − buy) × qty, auto), VAT toggle per line (Ex / +VAT, defaults to Ex VAT, adds 20% when enabled).
 
-**Footer totals (all live):** Total buy-in · Subtotal ex VAT · VAT total · Total inc VAT · Total profit + margin %
+**Footer totals (all live):** Total buy-in (hidden until any buy price entered), Subtotal ex VAT, VAT total (20% on VAT-enabled lines), Total inc VAT, Total profit + margin % (green/red).
 
-VAT rate fixed at 20% for now. Per-line rate (e.g. 5% domestic energy) deferred to a future session.
+VAT rate fixed at 20%. Per-line rate deferred.
+
+**Files changed:** `QuoteForm.jsx` (full line items section rewrite, all sub-components at module level), `web/routes/quotes.js` (Zod schema expanded: new item_type values, buy_cost + supplier fields; all 4 INSERT/UPDATE SQL statements updated), `web/migrations/add_quote_lines_supplier.sql` (new — adds supplier column; buy_cost already existed).
 
 ---
 

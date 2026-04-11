@@ -20,11 +20,11 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-05 (Session 14)
+- **Last session:** 2026-04-11 (Session 15)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Ticket Redesign Option A — customer/contact strip, compose at top, ✦ Generate quote button
-- **Next priority:** Quote Line Items Redesign
+- **Last fixes applied:** Quote Line Items Redesign — two-section editor, buy/sell prices, VAT toggle, profit footer
+- **Next priority:** AI Quote Generation from Ticket (full flow with review panel)
 
 ---
 
@@ -449,6 +449,90 @@ Both actions use existing endpoints: `POST /api/tickets` and `POST /api/tickets/
 All new components defined at module level ✓
 
 ### Next session priorities (superseded — see Session 14 below)
+
+---
+
+## Session 15 — 2026-04-11
+
+### Quote Line Items Redesign
+
+**Files changed**
+| File | Change |
+|---|---|
+| `web/client/.../QuoteForm.jsx` | Full rewrite of line items section. All other sections (Quote Information, Terms & Conditions, Internal Notes, action buttons) unchanged. |
+| `web/routes/quotes.js` | (1) `item_type` enum expanded to include `material`, `expense`, `subcontractor` in both `createQuoteSchema` and `updateLineItemsSchema`. (2) `buy_cost` and `supplier` added to both Zod schemas. (3) All 4 INSERT/UPDATE SQL statements updated to persist `buy_cost` and `supplier` (create, update, new item during edit, duplicate-quote copy). |
+| `web/migrations/add_quote_lines_supplier.sql` | New migration — adds `supplier VARCHAR(255)` to `quote_lines` (`buy_cost` already existed from `enhance_quotes_for_ai_v2.sql`). |
+
+**New module-level components in QuoteForm.jsx (sub-component rule ✓)**
+- `VatPill` — Ex / +VAT pill toggle per line
+- `LineItemRow` — single table row with all 9 visible fields
+- `SectionHeaderRow` — section divider with icon, item count, "Add" button
+- `EmptySectionRow` — placeholder row when section has no items
+- `QuoteTotals` — live footer totals block
+
+**New line item state shape**
+```js
+{
+  product_id: null,
+  description: '',
+  supplier: '',           // new
+  item_type: 'material',  // was 'parts'; now: material/labour/expense/subcontractor
+  quantity: 1,
+  buy_price: 0,           // new (maps to DB column buy_cost)
+  unit_price: 0,          // sell price (unchanged in DB/API)
+  vat_enabled: false,     // new (maps to tax_rate: 0 or 20 on submit)
+  discount_percent: 0,
+}
+```
+
+**Two-section layout**
+- Materials & parts — items where `item_type === 'material'` (or legacy `'parts'`)
+- Labour & other charges — items where `item_type !== 'material'`
+- Section is derived from `item_type`; "Add material" defaults to `material`, "Add charge" defaults to `labour`
+- Changing the type dropdown moves the row between sections on next render
+
+**Table columns** (responsive — some hidden on small/medium screens)
+`Description · Supplier (sm+) · Type (md+) · Qty · Buy£ (lg+) · Sell£ · Total · Profit (lg+) · VAT (sm+) · Del`
+
+**Sell price red rule:** cell text turns red if `unit_price > 0 && unit_price < buy_price`
+
+**VAT logic:** `vat_enabled: true` → `tax_rate: 20` sent to API. `vat_enabled: false` → `tax_rate: 0`. VAT total in footer = sum of vat-enabled lines × 20%.
+
+**Footer totals**
+- "Total buy-in" row hidden until at least one line has a buy price > 0
+- "Profit" row: green background if ≥ 0, red if negative
+- Margin % shown in brackets
+
+**Edit mode loading** — `buy_cost` from DB mapped to `buy_price` on client; `tax_rate > 0` mapped to `vat_enabled: true`
+
+**Deploy steps**
+1. Run migration: `web/migrations/add_quote_lines_supplier.sql` against production DB
+2. Push code — Render auto-deploys
+
+**Testing checklist after deploy**
+- [ ] Create new quote: Materials section shows with "Add material" button, Labour section shows with "Add charge" button
+- [ ] Click "Add material" → new row appears in Materials section with type=Material
+- [ ] Click "Add charge" → new row appears in Labour section with type=Labour
+- [ ] Type in Description field → text stays, no focus loss
+- [ ] Fill Supplier, change Type dropdown → row stays in correct section
+- [ ] Enter Qty and Sell price → Total auto-updates
+- [ ] Enter Buy price → Profit column updates; margin % appears in footer
+- [ ] Set Sell price below Buy price → sell price cell turns red
+- [ ] Click "Ex" VAT pill → flips to "+VAT" (gold), VAT total in footer increases
+- [ ] Click "+VAT" → reverts to "Ex", VAT total decreases
+- [ ] Footer: Total buy-in appears once any buy price entered
+- [ ] Footer: Subtotal ex VAT, VAT total, Total inc VAT all correct
+- [ ] Footer: Profit row green/red correctly
+- [ ] Delete row (hover → trash appears) → row removed; minimum 1 row enforced
+- [ ] Changing type to "Labour" on a Materials row → row moves to Labour section
+- [ ] Load Template → items populate, template terms apply
+- [ ] Save as Draft → quote saved, redirect to QuoteDetails
+- [ ] Edit existing quote → buy_price, supplier, vat_enabled all load from DB correctly
+- [ ] No regressions in Quote Information, Terms, Internal Notes, or action buttons
+
+### Next session priorities
+1. AI Quote Generation from Ticket — full flow with review panel
+2. Audio Mode 2 (floating voice assistant) — must not be forgotten
 
 ---
 
