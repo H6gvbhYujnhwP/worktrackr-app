@@ -152,12 +152,12 @@ A separate application (idoyourquotes.com) handles quote creation and customer a
 ## Core Platform Work
 
 ### Jobs Module
-- [ ] Finalise DB schema
-- [ ] Jobs API (CRUD)
+- [x] Finalise DB schema
+- [x] Jobs API (CRUD + time-entries + parts sub-resources)
 - [ ] Jobs list view + detail page
 - [ ] Job creation and edit forms
 - [ ] Calendar integration
-- [ ] Quote → Job conversion
+- [x] Quote → Job conversion (handler was already written; table now exists)
 
 ### Invoices Module
 - [ ] Invoices API + UI

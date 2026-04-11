@@ -20,15 +20,75 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-11 (Session 18)
+- **Last session:** 2026-04-11 (Session 19)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Quote events on ticket thread (Session 18). Notes Enhancements confirmed already complete from Session 13 Part 2.
-- **Next priority:** Jobs Module Phase 1 — schema + migration + API (no UI yet)
+- **Last fixes applied:** Jobs Module Phase 1 — schema, migration, API (Session 19)
+- **Next priority:** Jobs Module Phase 2 — UI (list view + detail page + forms)
 
 ---
 
 ## Session 18 — 2026-04-11
+## Session 19 — 2026-04-11
+
+### Jobs Module Phase 1 — Schema, Migration, and API
+
+**Schema confirmed before any code was written.**
+
+#### Files changed
+| File | Change |
+|---|---|
+| `web/migrations/create_jobs_table.sql` | **NEW** — creates `jobs`, `job_time_entries`, `job_parts` tables + `generate_job_number()` function + adds `converted_to_job_id` to `quotes`. All statements idempotent. |
+| `web/routes/jobs.js` | **NEW** — full Jobs CRUD + time-entries + parts sub-resources (11 endpoints). |
+| `web/server.js` | 2 lines: `require` + `app.use` for `jobs.js` at `/api/jobs`. |
+
+#### Architecture
+- Migration named `create_jobs_table.sql` — sorts after `create_crm_events_table.sql`, before `create_products_table.sql`; safe alphabetical ordering.
+- `generate_job_number()` uses `CREATE OR REPLACE` — idempotent; counts existing job rows per org, zero-pads to 4 digits, prefixes `JB-`.
+- `converted_to_invoice_id` stored as plain `UUID` (no FK) — FK will be added when the invoices table migration runs.
+- `quotes.converted_to_job_id` added via `DO $$ BEGIN ... IF NOT EXISTS` guard — the existing `convert-to-job` handler in `quotes.js` required this column but it was never in any migration.
+- All sub-resources (time-entries, parts) verify job → org ownership before touching child rows.
+- Status auto-timestamps: `actual_start` set automatically when status → `in_progress`; `actual_end` set when status → `completed` (only if not already set).
+- Soft-delete: DELETE sets `status = cancelled`; invoiced jobs cannot be cancelled.
+- All DB column → camelCase mapping in `mapJob`, `mapTimeEntry`, `mapPart` helpers.
+
+#### API surface
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/jobs` | List jobs (filters: status, contact_id, assigned_to, page, limit) |
+| GET | `/api/jobs/:id` | Single job with time + parts totals |
+| POST | `/api/jobs` | Create job manually |
+| PUT | `/api/jobs/:id` | Update job |
+| DELETE | `/api/jobs/:id` | Soft-cancel |
+| POST | `/api/jobs/:id/time-entries` | Log time |
+| GET | `/api/jobs/:id/time-entries` | List time entries + total minutes |
+| DELETE | `/api/jobs/:id/time-entries/:entryId` | Remove time entry |
+| POST | `/api/jobs/:id/parts` | Add part |
+| GET | `/api/jobs/:id/parts` | List parts + totalCost + totalValue |
+| DELETE | `/api/jobs/:id/parts/:partId` | Remove part |
+
+#### No UI changes this session
+Phase 1 is backend-only. The existing `POST /api/quotes/:id/convert-to-job` in `quotes.js` will function correctly against the real table once the migration runs — no changes to that handler were required.
+
+#### Testing checklist after deploy
+- [ ] Render logs show `create_jobs_table.sql` migration running + completing on first deploy
+- [ ] Subsequent deploys show `⊘ Skipping create_jobs_table.sql (already executed)`
+- [ ] `POST /api/jobs` with `{ title, status }` → 201 + `{ job: { jobNumber: "JB-0001", ... } }`
+- [ ] Second POST → `JB-0002`
+- [ ] `GET /api/jobs` → list with pagination
+- [ ] `GET /api/jobs/:id` → includes `totalTimeMinutes`, `totalPartsValue`
+- [ ] `PUT /api/jobs/:id` with `{ status: "in_progress" }` → `actual_start` auto-set
+- [ ] `PUT /api/jobs/:id` with `{ status: "completed" }` → `actual_end` auto-set
+- [ ] `DELETE /api/jobs/:id` → status = cancelled; re-fetch confirms
+- [ ] `POST /api/jobs/:id/time-entries` with `{ duration_minutes: 60, billable: true }` → 201
+- [ ] `POST /api/jobs/:id/time-entries` with `started_at` + `ended_at` → `duration_minutes` computed from diff
+- [ ] `GET /api/jobs/:id/time-entries` → list + `totalMinutes`
+- [ ] `POST /api/jobs/:id/parts` → 201
+- [ ] `GET /api/jobs/:id/parts` → list + `totalCost` + `totalValue`
+- [ ] `POST /api/quotes/:id/convert-to-job` on an accepted quote → succeeds (was previously broken — table now exists)
+- [ ] Convert-to-job sets `quotes.converted_to_job_id`
+
+
 
 ### Quote Events on Ticket Thread
 
