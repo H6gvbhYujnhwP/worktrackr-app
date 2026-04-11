@@ -517,3 +517,17 @@ All new components defined at module level ✓
 1. Quote Line Items Redesign — full rebuild of line item editor (two sections, buy/sell price, VAT toggle, profit calc)
 2. AI Quote Generation from Ticket — full flow with review panel
 3. Audio Mode 2 (floating voice assistant) — must not be forgotten
+
+---
+
+### Hotfix — Remove broken top bar (search + New X button)
+
+**Issue:** The desktop top bar (`TopBar` component in `AppLayout.jsx`) contained two non-functional elements:
+- A search bar with a ⌘K badge — purely decorative, no command palette wired, clicking did nothing
+- A "New Ticket / New Contact / New Event" etc. button — called `onNavigate(sameViewYoureAlreadyOn)`, i.e. completely broken
+
+**Fix:** `TopBar` component removed entirely from `AppLayout.jsx`. Also cleaned up all dead code that only existed to support it: `PAGE_TITLES`, `PRIMARY_ACTIONS`, `pageTitle` variable, and the `Bell`, `Search`, `Plus` lucide imports.
+
+**Layout:** `<main>` already had `md:pt-0` so desktop content fills the full height immediately with no gap. Mobile header (`MobileHeader`) and its `pt-14` on mobile are untouched.
+
+**File changed:** `AppLayout.jsx` only. No other files affected — `TopBar` was self-contained.

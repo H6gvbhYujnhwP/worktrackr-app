@@ -5,36 +5,9 @@
 // Props unchanged: { children, user, isAdmin, onNavigate, lastUpdate, currentView }
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Bell, Search, Plus } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Sidebar from './Sidebar';
 import VoiceAssistant from './VoiceAssistant';
-
-// ─── Page title map ───────────────────────────────────────────────────────────
-const PAGE_TITLES = {
-  tickets:          'Tickets',
-  calendar:         'Ticket Calendar',
-  contacts:         'Contacts',
-  'product-catalog':'Products',
-  quotes:           'Quotes',
-  'crm-calendar':   'CRM Calendar',
-  users:            'User Management',
-  billing:          'Billing',
-  'pricing-config': 'Pricing Configuration',
-  security:         'Security',
-  'email-intake':   'Email Intake',
-  'company-notes':  'Company Notes',
-  'my-notes':       'My Notes',
-};
-
-// Context-aware primary action per view
-const PRIMARY_ACTIONS = {
-  tickets:          { label: '+ New Ticket',   view: 'tickets'         },
-  contacts:         { label: '+ New Contact',  view: 'contacts'        },
-  quotes:           { label: '+ New Quote',    view: 'quotes'          },
-  'product-catalog':{ label: '+ New Product',  view: 'product-catalog' },
-  'crm-calendar':   { label: '+ New Event',    view: 'crm-calendar'    },
-  calendar:         { label: '+ New Event',    view: 'calendar'        },
-};
 
 // ─── currentView → sidebar item id ───────────────────────────────────────────
 const VIEW_TO_PAGE = {
@@ -51,49 +24,6 @@ const VIEW_TO_PAGE = {
   'email-intake':   'email-intake',
   'company-notes':  'company-notes',
   'my-notes':       'my-notes',
-};
-
-// ─── TopBar ───────────────────────────────────────────────────────────────────
-const TopBar = ({ title, currentView, onNavigate }) => {
-  const action = PRIMARY_ACTIONS[currentView];
-
-  return (
-    <header className="hidden md:flex h-14 bg-white border-b border-[#e5e7eb]
-                        px-7 items-center justify-between sticky top-0 z-30 flex-shrink-0">
-      <h1 className="text-base font-bold text-[#1d1d1f]">{title}</h1>
-
-      <div className="flex items-center gap-3">
-        {/* Search hint */}
-        <div className="flex items-center gap-1.5 px-3.5 py-1.5 border border-[#e5e7eb]
-                        rounded-lg text-xs text-[#9ca3af] bg-[#fafafa] cursor-pointer
-                        hover:border-[#d1d5db] transition-colors min-w-[200px]">
-          <Search className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="flex-1">Search...</span>
-          <kbd className="text-[10px] bg-white border border-[#e5e7eb] rounded px-1.5 py-0.5
-                          font-sans leading-none">⌘K</kbd>
-        </div>
-
-        {/* Notifications */}
-        <button className="w-[34px] h-[34px] rounded-lg flex items-center justify-center
-                           hover:bg-[#f3f4f6] transition-colors relative">
-          <Bell className="w-[18px] h-[18px] text-[#6b7280]" strokeWidth={1.8} />
-          <span className="absolute top-[7px] right-[7px] w-2 h-2 bg-[#d4a017] rounded-full" />
-        </button>
-
-        {/* Context-aware primary action */}
-        {action && (
-          <button
-            onClick={() => onNavigate && onNavigate(action.view)}
-            className="bg-[#d4a017] text-[#111113] px-4 py-2 rounded-lg text-[13px]
-                       font-semibold hover:bg-[#c4920f] transition-all hover:-translate-y-px
-                       active:translate-y-0 whitespace-nowrap"
-          >
-            {action.label}
-          </button>
-        )}
-      </div>
-    </header>
-  );
 };
 
 // ─── MobileHeader ─────────────────────────────────────────────────────────────
@@ -139,7 +69,6 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentVie
   };
 
   const currentPage = VIEW_TO_PAGE[currentView] || 'all-tickets';
-  const pageTitle   = PAGE_TITLES[currentView] || 'WorkTrackr';
 
   // Sidebar width: desktop=240px, tablet=64px, mobile=off-screen
   const sidebarWidth = isTablet ? 64 : 240;
@@ -181,13 +110,6 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentVie
         className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
         style={{ marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? sidebarWidth : 0 }}
       >
-        {/* Desktop top bar */}
-        <TopBar
-          title={pageTitle}
-          currentView={currentView}
-          onNavigate={handleNavigation}
-        />
-
         {/* Content — NO double wrapper. Children render directly on gray bg. */}
         <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
           <div className="p-4 md:p-6 lg:p-7 max-w-[1600px] mx-auto">
