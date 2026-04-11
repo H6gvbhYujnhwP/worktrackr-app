@@ -7,7 +7,9 @@
 
 -- =============================================================================
 -- 1. generate_job_number(org_id UUID) function
+-- DROP first — CREATE OR REPLACE cannot change an existing function's return type
 -- =============================================================================
+DROP FUNCTION IF EXISTS generate_job_number(UUID);
 CREATE OR REPLACE FUNCTION generate_job_number(org_id UUID)
 RETURNS TEXT AS $$
 DECLARE
