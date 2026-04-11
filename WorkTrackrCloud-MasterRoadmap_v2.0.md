@@ -1,7 +1,7 @@
 # WorkTrackr Cloud: Master Development Roadmap v2.0
 
-**Version:** 2.3
-**Date:** April 2026 (updated)
+**Version:** 2.4
+**Date:** April 2026 (updated Session 16)
 
 ---
 
@@ -17,7 +17,7 @@ No other AI providers.
 ### ✅ AI Phase 1 — Email Classifier
 Real Anthropic Claude call in `email-intake.js`. Keyword fallback if API key absent.
 
-### ✅ AI Phase 2 — AI Quote Generation
+### ✅ AI Phase 2 — AI Quote Generation (original)
 `quotes-ai.js`, `quotes-ai-generate.js` — Claude generates quote line items. Gold AI badge on AI-generated quotes.
 
 ### ✅ AI Phase 3 — Smart Summaries
@@ -46,58 +46,52 @@ Full rewrite of `TicketDetailViewTabbed.jsx`:
 - **Customer / contact strip** — persistent bar below title bar. Four states: loading (AI scanning), matched (business name + contact + phone + email + optional "AI matched" badge), hint (amber bar when name detected but not in CRM), empty (ghost link button). Contact picker modal — searchable, gold selection. Contact linkage persisted to DB via `contact_id` on tickets table.
 - **AI customer matching** — `POST /api/tickets/:id/match-contact` calls Claude on ticket open when no contact is linked. Confident match auto-populates with green badge. Ambiguous name → amber prompt. No match → ghost button. Fully server-side (API key never exposed).
 - **Compose area at top** — Update / Internal note / Request approval / Audio tabs now sit above the conversation thread (below job strip), not below it.
-- **✦ Generate quote button** — in compose tab row top-right, navigates to Quotes tab. Wired ready for AI quote generation flow.
+- **✦ Generate quote button** — in compose tab row top-right. Now opens AI review panel (see below).
 
-## ✅ COMPLETE — Quote Line Items Redesign
-
+### ✅ COMPLETE — Quote Line Items Redesign
 Complete rebuild of the quote line item editor.
 
 **Two sections:** Materials & parts / Labour & other charges — each with its own "Add" button.
 
-**Per line item fields:** Description, Supplier (free text), Type (material / labour / expense / subcontractor), Qty, Buy £ (cost to business), Sell £ (charged to customer — turns red if below buy price), Line total (qty × sell, auto), Profit ((sell − buy) × qty, auto), VAT toggle per line (Ex / +VAT, defaults to Ex VAT, adds 20% when enabled).
+**Per line item fields:** Description, Supplier, Type, Qty, Buy £, Sell £, Line total, Profit, VAT toggle per line.
 
-**Footer totals (all live):** Total buy-in (hidden until any buy price entered), Subtotal ex VAT, VAT total (20% on VAT-enabled lines), Total inc VAT, Total profit + margin % (green/red).
+**Footer totals (all live):** Total buy-in, Subtotal ex VAT, VAT total (20%), Total inc VAT, Total profit + margin %.
 
-VAT rate fixed at 20%. Per-line rate deferred.
+### ✅ COMPLETE — AI Quote Generation from Ticket (Session 16)
 
-**Files changed:** `QuoteForm.jsx` (full line items section rewrite, all sub-components at module level), `web/routes/quotes.js` (Zod schema expanded: new item_type values, buy_cost + supplier fields; all 4 INSERT/UPDATE SQL statements updated), `web/migrations/add_quote_lines_supplier.sql` (new — adds supplier column; buy_cost already existed).
+"✦ Generate quote" button in ticket detail reads everything on the ticket and pre-fills a new quote with AI-suggested line items.
+
+**Backend:** `POST /api/quotes/generate-from-ticket` (`web/routes/quotes-from-ticket.js`). Reads ticket title/description/sector/duration, all thread comments (labelled by type, date, author), and the org's active product catalogue. Calls Claude (`claude-haiku-4-5-20251001`). Returns structured line items with `confidence`, `source`, `flagged`, `flag_reason`, `catalogue_sourced` fields.
+
+**Review panel** (`GenerateQuotePanel` — module-level in `TicketDetailViewTabbed.jsx`):
+- Slide-in from right, full-height overlay
+- Confidence dot per item: green = high, amber = medium, red = low
+- Flagged items highlighted amber with `flag_reason` banner
+- Catalogue-matched items carry blue "Catalogue" badge
+- User can remove items before confirming (strikethrough + restore)
+- "Confirm & open quote" writes to `sessionStorage('worktrackr_ai_quote_prefill')` then navigates to `/app/crm/quotes/new?ticket_id=...`
+
+**Bridge:** `QuoteFormTabs.jsx` reads sessionStorage on mount, sets `aiDraftData`, clears the key, skips AI Generator tab → lands directly on pre-filled manual form.
+
+**Line item lock mechanism** (in `QuoteForm.jsx`):
+- AI-generated rows: gold **AI** badge (Sparkles icon) above Description field
+- Catalogue-sourced rows: blue **Catalogue** badge (Tag icon)
+- A row can carry both badges simultaneously
+- Any user edit to a real field → both badges cleared, `locked: true` permanently set
+- Manually added rows never receive badges
+- `ai_generated`, `catalogue_sourced`, `locked` are frontend-only — never sent to the API
 
 ---
 
-## Upcoming — AI Quote Generation from Ticket
+## Upcoming — "Top up from notes"
 
-"✦ Generate quote" button in ticket detail reads everything on the ticket and pre-fills a new quote with suggested line items.
+After a quote has already been generated from a ticket, if new notes are added to the ticket, a "Top up" button should appear on the quote.
 
-**Inputs Claude reads:**
-- Ticket title and description
-- All thread notes and internal comments
-- Audio meeting note extractions (structured Stage 2 output)
-- Scheduled duration and sector
-- Product catalogue — Claude attempts to match mentioned items to catalogue entries and pulls in buy/sell prices and supplier. If no catalogue match, description is pre-filled and pricing left blank for the user
-
-**Flow:**
-1. Click "Generate quote"
-2. Claude extracts suggested line items
-3. Mandatory review panel — each item shown with its source (e.g. "from internal note 4 Apr") and a confidence indicator. User can remove items before the quote opens
-4. Confirm → quote form opens pre-filled
-
-**Line item lock mechanism:**
-- Every AI-generated row carries a visible **"AI"** badge
-- Every row where buy price, sell price, or supplier was pulled from the product catalogue carries a separate visible **"Catalogue"** badge
-- A row can carry both badges simultaneously (AI suggested the item AND catalogue supplied the pricing)
-- User edits any field on a row → both badges disappear, row becomes `locked: true` permanently
-- Locked rows are never modified by any future AI action, including regeneration
-- Deleted rows are gone — never restored by AI
-- Manually added rows are never AI-touched
-
-**"Top up from notes" option:**
-- After a quote has been generated, if new notes are added to the ticket a "Top up" option appears
-- Top up only suggests new items — never touches existing rows (locked or unlocked)
-- Same review panel before anything is added
-
-**AI flagging:**
-- Items Claude is uncertain about are flagged inline in the review panel, e.g. "Switch mentioned but model unclear — description left blank"
-- Flagged items appear but are highlighted so the user knows to review them before confirming
+- Sends only the new notes (those added after the quote was created) to Claude
+- Returns new suggested items only — never touches existing rows
+- Same review panel as the initial generation
+- Locked rows are never touched by top-up
+- Implementation: needs a `quote_generated_at` timestamp on the quote, plus a "Top up" button in the QuotesTab when a quote already exists for the ticket
 
 ---
 
@@ -122,10 +116,8 @@ Both Personal Notes and Company Notes gain two new row actions:
 **Vision:** Ticket → Quote → Customer approval → Work → Completion → Invoice — all in one place, no re-entry.
 
 **Quote integration inside ticket**
-- "Create quote" from inside the ticket thread
 - Quote events (created, sent, approved, declined) post automatically to thread
 - Status auto-advances on customer approval
-- Pings assigned engineer and manager
 
 **Work logging**
 - Time and parts logged against ticket from within the thread

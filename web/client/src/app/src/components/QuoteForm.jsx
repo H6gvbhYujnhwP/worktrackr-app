@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench, StickyNote } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench, StickyNote, Sparkles, Tag } from 'lucide-react';
 import QuickAddContactModal from './QuickAddContactModal';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -47,18 +47,22 @@ function calcLineProfit(item) {
 
 function newItem(type) {
   return {
-    product_id: null,
-    description: '',
-    supplier: '',
-    item_type: type,
-    quantity: 1,
-    unit: '',
-    buy_price: 0,
-    unit_price: 0,
-    discount_percent: 0,
-    vat_enabled: false,
-    line_notes: '',
-    _showNotes: false,
+    product_id:        null,
+    description:       '',
+    supplier:          '',
+    item_type:         type,
+    quantity:          1,
+    unit:              '',
+    buy_price:         0,
+    unit_price:        0,
+    discount_percent:  0,
+    vat_enabled:       false,
+    line_notes:        '',
+    _showNotes:        false,
+    // Badge / lock state — frontend-only, never sent to API
+    ai_generated:      false,
+    catalogue_sourced: false,
+    locked:            false,
   };
 }
 
@@ -90,12 +94,29 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
   const profit    = calcLineProfit(item);
   const belowCost = item.unit_price > 0 && item.unit_price < item.buy_price;
   const hasNotes  = !!(item.line_notes && item.line_notes.trim());
+  const hasBadges = item.ai_generated || item.catalogue_sourced;
 
   return (
     <>
       <tr className="border-b border-[#f3f4f6] hover:bg-[#fefcf5] group transition-colors">
-        {/* Description */}
+        {/* Description — includes AI / Catalogue badges when present */}
         <td className="px-3 py-2 min-w-[140px]">
+          {hasBadges && (
+            <div className="flex items-center gap-1 mb-1">
+              {item.ai_generated && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-[#fef9ee] text-[#b8860b] border border-[#d4a017]/30 px-1.5 py-0.5 rounded"
+                  title="AI-generated — edit any field to clear">
+                  <Sparkles className="w-2.5 h-2.5" /> AI
+                </span>
+              )}
+              {item.catalogue_sourced && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded"
+                  title="Price from product catalogue — edit any field to clear">
+                  <Tag className="w-2.5 h-2.5" /> Catalogue
+                </span>
+              )}
+            </div>
+          )}
           <input
             className={CELL_IN}
             placeholder="Description…"
@@ -391,17 +412,21 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       if (initialData.line_items && initialData.line_items.length > 0) {
         setLineItems(initialData.line_items.map(item => ({
           ...newItem(item.item_type || 'material'),
-          description: item.description || '',
-          supplier: item.supplier || '',
-          item_type: item.item_type || 'material',
-          quantity: item.quantity || 1,
-          unit: item.unit || '',
-          buy_price: parseFloat(item.buy_price || item.buy_cost) || 0,
-          unit_price: parseFloat(item.unit_price) || 0,
-          discount_percent: parseFloat(item.discount_percent) || 0,
-          vat_enabled: (item.tax_rate || 0) > 0,
-          line_notes: item.line_notes || '',
-          _showNotes: !!(item.line_notes),
+          description:       item.description || '',
+          supplier:          item.supplier || '',
+          item_type:         item.item_type || 'material',
+          quantity:          item.quantity || 1,
+          unit:              item.unit || '',
+          buy_price:         parseFloat(item.buy_price || item.buy_cost) || 0,
+          unit_price:        parseFloat(item.unit_price) || 0,
+          discount_percent:  parseFloat(item.discount_percent) || 0,
+          vat_enabled:       (item.tax_rate || 0) > 0,
+          line_notes:        item.line_notes || '',
+          _showNotes:        !!(item.line_notes),
+          // Badge / lock state from AI prefill
+          ai_generated:      item.ai_generated      === true,
+          catalogue_sourced: item.catalogue_sourced === true,
+          locked:            item.locked            === true,
         })));
       }
     }
@@ -460,10 +485,18 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   const updateLineItem = (index, field, value) => {
     setLineItems(prev => {
       const updated = [...prev];
+      const current = updated[index];
       const numericFields = ['quantity', 'unit_price', 'buy_price', 'discount_percent'];
+
+      // If the row carries AI or Catalogue badges and the user touches a real field,
+      // permanently clear both badges and mark the row locked.
+      const badgeFields = ['description','supplier','item_type','quantity','unit','buy_price','unit_price','discount_percent','vat_enabled','line_notes'];
+      const clearBadges = (current.ai_generated || current.catalogue_sourced) && badgeFields.includes(field);
+
       updated[index] = {
-        ...updated[index],
-        [field]: numericFields.includes(field) ? (parseFloat(value) || 0) : value
+        ...current,
+        [field]: numericFields.includes(field) ? (parseFloat(value) || 0) : value,
+        ...(clearBadges ? { ai_generated: false, catalogue_sourced: false, locked: true } : {}),
       };
       return updated;
     });
@@ -504,19 +537,20 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     setSaving(true);
     try {
       const sanitizedLineItems = validItems.map((item, i) => ({
-        id: item.id || undefined,
-        product_id: item.product_id || undefined,
-        description: item.description.trim(),
-        quantity: parseFloat(item.quantity) || 1,
-        unit: item.unit || undefined,
-        unit_price: parseFloat(item.unit_price) || 0,
-        buy_cost: parseFloat(item.buy_price) || 0,
-        supplier: item.supplier || undefined,
-        item_type: item.item_type || 'material',
-        tax_rate: item.vat_enabled ? 20 : 0,
+        id:               item.id || undefined,
+        product_id:       item.product_id || undefined,
+        description:      item.description.trim(),
+        quantity:         parseFloat(item.quantity) || 1,
+        unit:             item.unit || undefined,
+        unit_price:       parseFloat(item.unit_price) || 0,
+        buy_cost:         parseFloat(item.buy_price) || 0,
+        supplier:         item.supplier || undefined,
+        item_type:        item.item_type || 'material',
+        tax_rate:         item.vat_enabled ? 20 : 0,
         discount_percent: parseFloat(item.discount_percent) || 0,
-        line_notes: item.line_notes || undefined,
-        sort_order: i,
+        line_notes:       item.line_notes || undefined,
+        sort_order:       i,
+        // ai_generated, catalogue_sourced, locked are frontend-only — never sent to API
       }));
 
       const url    = isEditMode ? `/api/quotes/${quoteId}` : '/api/quotes';

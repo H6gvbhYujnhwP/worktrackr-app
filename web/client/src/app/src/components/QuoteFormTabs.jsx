@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import QuoteForm from './QuoteForm';
@@ -16,6 +16,23 @@ export default function QuoteFormTabs() {
 
   const [activeTab, setActiveTab] = useState(urlTab === 'ai' ? 'ai' : 'manual');
   const [aiDraftData, setAiDraftData] = useState(null);
+
+  // On mount: check sessionStorage for AI-prefilled items from GenerateQuotePanel
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('worktrackr_ai_quote_prefill');
+      if (raw) {
+        sessionStorage.removeItem('worktrackr_ai_quote_prefill');
+        const prefill = JSON.parse(raw);
+        if (prefill && Array.isArray(prefill.line_items) && prefill.line_items.length > 0) {
+          setAiDraftData(prefill);
+          setActiveTab('manual'); // Skip AI Generator, go straight to form
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
 
   // Handle AI draft generation complete
   const handleAIDraftComplete = (draftData) => {

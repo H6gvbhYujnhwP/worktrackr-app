@@ -10,7 +10,7 @@ import {
   ArrowLeft, Save, Loader2, MessageSquare, DollarSign, Sparkles,
   Paperclip, Shield, Edit3, Send, Lock, Mic, Upload, FileText,
   ChevronDown, ChevronUp, CheckCircle2, X, Building2, User, Phone,
-  Mail, Link2, Search,
+  Mail, Link2, Search, Tag, AlertTriangle,
 } from 'lucide-react';
 import { useSimulation, useAuth } from '../App.jsx';
 import {
@@ -664,8 +664,281 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
   );
 }
 
-// ─── Date divider — module-level ─────────────────────────────────────────────
-function DateDivider({ label }) {
+// ─── Confidence dot — module-level ───────────────────────────────────────────
+function ConfidenceDot({ confidence }) {
+  const map = {
+    high:   { color: 'bg-emerald-500', label: 'High confidence' },
+    medium: { color: 'bg-amber-400',   label: 'Medium confidence' },
+    low:    { color: 'bg-red-400',     label: 'Low confidence' },
+  };
+  const cfg = map[confidence] || map.medium;
+  return (
+    <span title={cfg.label} className={`inline-block w-2 h-2 rounded-full flex-shrink-0 mt-1 ${cfg.color}`} />
+  );
+}
+
+// ─── Review item row — module-level ──────────────────────────────────────────
+function ReviewItemRow({ item, onRemove }) {
+  const typeLabel = { material: 'Material', labour: 'Labour', expense: 'Expense', subcontractor: 'Sub' };
+  const typeCls   = {
+    material:      'bg-blue-50 text-blue-700',
+    labour:        'bg-purple-50 text-purple-700',
+    expense:       'bg-orange-50 text-orange-700',
+    subcontractor: 'bg-pink-50 text-pink-700',
+  };
+
+  return (
+    <div className={`rounded-lg border px-4 py-3 ${item.flagged ? 'border-amber-300 bg-[#fffbeb]' : 'border-[#e5e7eb] bg-white'}`}>
+      <div className="flex items-start gap-2">
+        <ConfidenceDot confidence={item.confidence} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-medium text-[#1d1d1f] leading-snug">{item.description}</p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${typeCls[item.item_type] || 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+                  {typeLabel[item.item_type] || item.item_type}
+                </span>
+                <span className="text-[11px] text-[#9ca3af]">
+                  {item.quantity} {item.unit || 'ea'}
+                  {item.unit_price > 0 && ` · £${item.unit_price.toFixed(2)}`}
+                  {item.buy_cost  > 0 && ` (cost £${item.buy_cost.toFixed(2)})`}
+                </span>
+                {item.catalogue_sourced && (
+                  <span className="flex items-center gap-0.5 text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                    <Tag className="w-2.5 h-2.5" /> Catalogue
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#9ca3af] italic mt-1">{item.source}</p>
+            </div>
+            <button
+              onClick={() => onRemove()}
+              title="Remove this item"
+              className="text-[#9ca3af] hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors flex-shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {item.flagged && item.flag_reason && (
+            <div className="flex items-start gap-1.5 mt-2 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+              <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-800 leading-snug">{item.flag_reason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Generate quote panel — module-level ─────────────────────────────────────
+function GenerateQuotePanel({ ticketId, ticketTitle, onClose }) {
+  const [panelState,    setPanelState]    = useState('loading'); // loading | review | error
+  const [suggestedItems, setSuggestedItems] = useState([]);
+  const [removed,       setRemoved]       = useState(new Set());
+  const [panelError,    setPanelError]    = useState('');
+
+  useEffect(() => {
+    callGenerate();
+  }, []);
+
+  async function callGenerate() {
+    setPanelState('loading');
+    setPanelError('');
+    try {
+      const res  = await fetch('/api/quotes/generate-from-ticket', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      setSuggestedItems(data.line_items || []);
+      setPanelState('review');
+    } catch (err) {
+      setPanelError(err.message || 'Could not generate suggestions. Please try again.');
+      setPanelState('error');
+    }
+  }
+
+  function toggleRemove(idx) {
+    setRemoved(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) { next.delete(idx); } else { next.add(idx); }
+      return next;
+    });
+  }
+
+  function handleConfirm() {
+    const approvedItems = suggestedItems
+      .filter((_, idx) => !removed.has(idx))
+      .map(item => ({
+        description:       item.description,
+        item_type:         item.item_type,
+        quantity:          item.quantity,
+        unit:              item.unit,
+        unit_price:        item.unit_price,
+        buy_price:         item.buy_cost,
+        supplier:          item.supplier || '',
+        product_id:        item.product_id || null,
+        line_notes:        '',
+        discount_percent:  0,
+        vat_enabled:       false,
+        ai_generated:      true,
+        catalogue_sourced: item.catalogue_sourced || false,
+        locked:            false,
+        _showNotes:        false,
+      }));
+
+    const prefill = {
+      ticket_id:  ticketId,
+      title:      ticketTitle ? `Quote — ${ticketTitle}` : '',
+      line_items: approvedItems,
+      created_via: 'ai',
+    };
+    try {
+      sessionStorage.setItem('worktrackr_ai_quote_prefill', JSON.stringify(prefill));
+    } catch {
+      // sessionStorage full — still navigate, form will be blank
+    }
+    window.location.href = `/app/crm/quotes/new?ticket_id=${ticketId}`;
+  }
+
+  const activeCount = suggestedItems.length - removed.size;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-stretch justify-end">
+      {/* Backdrop */}
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="w-full max-w-[480px] bg-white border-l border-[#e5e7eb] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between bg-[#fef9ee]">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#d4a017]" />
+            <span className="text-[14px] font-semibold text-[#1d1d1f]">Generate quote</span>
+          </div>
+          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280] transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+
+          {panelState === 'loading' && (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 px-6">
+              <Loader2 className="w-8 h-8 animate-spin text-[#d4a017]" />
+              <div className="text-center">
+                <p className="text-[13px] font-medium text-[#374151]">Reading ticket and generating suggestions…</p>
+                <p className="text-[12px] text-[#9ca3af] mt-1">Claude is reviewing the ticket, thread notes, and your product catalogue</p>
+              </div>
+            </div>
+          )}
+
+          {panelState === 'error' && (
+            <div className="px-5 py-8 text-center">
+              <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-400" />
+              <p className="text-[13px] text-[#374151] font-medium mb-1">Generation failed</p>
+              <p className="text-[12px] text-[#9ca3af] mb-5">{panelError}</p>
+              <button
+                onClick={callGenerate}
+                className="px-4 py-2 text-[13px] font-semibold bg-[#d4a017] text-white rounded-lg hover:bg-[#c4920f] transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {panelState === 'review' && (
+            <div className="px-5 py-4">
+              {/* Confidence legend */}
+              <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#f3f4f6]">
+                <p className="text-[11px] text-[#9ca3af]">Confidence:</p>
+                {[['high','bg-emerald-500','High'], ['medium','bg-amber-400','Medium'], ['low','bg-red-400','Low']].map(([k, cls, label]) => (
+                  <span key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
+                    <span className={`w-2 h-2 rounded-full ${cls}`} />{label}
+                  </span>
+                ))}
+              </div>
+
+              {suggestedItems.length === 0 && (
+                <p className="text-[13px] text-[#9ca3af] text-center py-8">
+                  No line items could be extracted from this ticket. Try adding more detail to the thread notes.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {suggestedItems.map((item, idx) => (
+                  <div key={idx} className={removed.has(idx) ? 'opacity-40 line-through' : ''}>
+                    <ReviewItemRow
+                      item={item}
+                      onRemove={() => toggleRemove(idx)}
+                    />
+                    {removed.has(idx) && (
+                      <button
+                        onClick={() => toggleRemove(idx)}
+                        className="text-[11px] text-[#d4a017] hover:underline mt-1 ml-4"
+                      >
+                        Restore
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {suggestedItems.some(i => i.flagged && !removed.has(suggestedItems.indexOf(i))) && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-[12px] text-amber-800">
+                    <span className="font-semibold">⚠ Some items are flagged</span> — review them before confirming. Flagged items will open in the quote form with notes for you to fill in.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 p-3 bg-[#f0f9ff] border border-blue-100 rounded-lg">
+                <p className="text-[11px] text-[#374151]">
+                  <span className="font-semibold text-blue-700">All AI-generated items</span> will carry a gold <span className="font-mono bg-[#fef9ee] px-1 rounded">AI</span> badge in the quote form.
+                  Items matched from your <span className="font-mono bg-blue-50 px-1 rounded">Catalogue</span> carry a second badge. Editing any field permanently removes both badges.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {panelState === 'review' && (
+          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center justify-between gap-3">
+            <p className="text-[12px] text-[#9ca3af]">
+              {activeCount} item{activeCount !== 1 ? 's' : ''} selected
+              {removed.size > 0 && <span className="ml-1">({removed.size} removed)</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={activeCount === 0}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-[#d4a017] text-white rounded-lg hover:bg-[#c4920f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Confirm &amp; open quote
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
   return (
     <div className="flex items-center gap-3 py-1">
       <div className="flex-1 h-px bg-[#f3f4f6]" />
@@ -720,6 +993,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const [mentionedName,     setMentionedName]     = useState('');
   const [aiMatched,         setAiMatched]         = useState(false);
   const [showContactPicker, setShowContactPicker] = useState(false);
+  const [showQuotePanel,    setShowQuotePanel]    = useState(false);
   const aiMatchTriggered                          = useRef(false);
 
   const [form, setForm] = useState({
@@ -927,7 +1201,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   }, [ticketId]);
 
   const handleDismissHint = useCallback(() => { setMatchState('none'); setMentionedName(''); }, []);
-  const handleGenerateQuote = () => setMainView('quotes');
+  const handleGenerateQuote = () => setShowQuotePanel(true);
 
   if (!ticket) {
     return (
@@ -950,6 +1224,14 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         <ContactPickerModal
           onSelect={handleContactSelect}
           onClose={() => setShowContactPicker(false)}
+        />
+      )}
+
+      {showQuotePanel && (
+        <GenerateQuotePanel
+          ticketId={ticketId}
+          ticketTitle={ticket?.title}
+          onClose={() => setShowQuotePanel(false)}
         />
       )}
 
