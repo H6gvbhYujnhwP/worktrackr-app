@@ -938,7 +938,8 @@ function GenerateQuotePanel({ ticketId, ticketTitle, onClose }) {
   );
 }
 
-
+// ─── Date divider — module-level ─────────────────────────────────────────────
+function DateDivider({ label }) {
   return (
     <div className="flex items-center gap-3 py-1">
       <div className="flex-1 h-px bg-[#f3f4f6]" />
