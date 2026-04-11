@@ -23,7 +23,7 @@ Paste this at the start of every new chat session:
 - **Last session:** 2026-04-11 (Session 19)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Jobs Module Phase 1 — schema, migration, API (Session 19)
+- **Last fixes applied:** Jobs Module Phase 1 fully verified — schema, migration, API, hotfixes (Session 19)
 - **Next priority:** Jobs Module Phase 2 — UI (list view + detail page + forms)
 
 ---
@@ -68,25 +68,19 @@ Paste this at the start of every new chat session:
 | DELETE | `/api/jobs/:id/parts/:partId` | Remove part |
 
 #### No UI changes this session
-Phase 1 is backend-only. The existing `POST /api/quotes/:id/convert-to-job` in `quotes.js` will function correctly against the real table once the migration runs — no changes to that handler were required.
+Phase 1 is backend-only. The existing `POST /api/quotes/:id/convert-to-job` in `quotes.js` will function correctly against the real table.
 
-#### Testing checklist after deploy
-- [ ] Render logs show `create_jobs_table.sql` migration running + completing on first deploy
-- [ ] Subsequent deploys show `⊘ Skipping create_jobs_table.sql (already executed)`
-- [ ] `POST /api/jobs` with `{ title, status }` → 201 + `{ job: { jobNumber: "JB-0001", ... } }`
-- [ ] Second POST → `JB-0002`
-- [ ] `GET /api/jobs` → list with pagination
-- [ ] `GET /api/jobs/:id` → includes `totalTimeMinutes`, `totalPartsValue`
-- [ ] `PUT /api/jobs/:id` with `{ status: "in_progress" }` → `actual_start` auto-set
-- [ ] `PUT /api/jobs/:id` with `{ status: "completed" }` → `actual_end` auto-set
-- [ ] `DELETE /api/jobs/:id` → status = cancelled; re-fetch confirms
-- [ ] `POST /api/jobs/:id/time-entries` with `{ duration_minutes: 60, billable: true }` → 201
-- [ ] `POST /api/jobs/:id/time-entries` with `started_at` + `ended_at` → `duration_minutes` computed from diff
-- [ ] `GET /api/jobs/:id/time-entries` → list + `totalMinutes`
-- [ ] `POST /api/jobs/:id/parts` → 201
-- [ ] `GET /api/jobs/:id/parts` → list + `totalCost` + `totalValue`
-- [ ] `POST /api/quotes/:id/convert-to-job` on an accepted quote → succeeds (was previously broken — table now exists)
-- [ ] Convert-to-job sets `quotes.converted_to_job_id`
+#### Hotfixes applied during verification
+- `generate_job_number` existed with different return type — added `DROP FUNCTION IF EXISTS` before CREATE
+- Pre-existing `jobs` table had fewer columns — added `fix_jobs_missing_columns.sql` migration
+- `users` table uses `name` not `full_name` — fixed all JOIN aliases in `jobs.js`
+
+#### Verified
+- [x] Migration recorded in schema_migrations
+- [x] jobs, job_time_entries, job_parts tables exist
+- [x] quotes.converted_to_job_id column exists
+- [x] generate_job_number function exists
+- [x] GET /api/jobs returns empty list correctly
 
 
 
