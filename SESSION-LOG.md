@@ -20,13 +20,46 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-11 (Session 17)
+- **Last session:** 2026-04-11 (Session 18)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** AI Quote Top-up from Notes — complete
-- **Next priority:** Jobs Module (largest structural gap, blocks Invoices and Payments)
+- **Last fixes applied:** Quote events on ticket thread (Session 18). Notes Enhancements confirmed already complete from Session 13 Part 2.
+- **Next priority:** Jobs Module Phase 1 — schema + migration + API (no UI yet)
 
 ---
+
+## Session 18 — 2026-04-11
+
+### Quote Events on Ticket Thread
+
+**State impact analysis confirmed before any code was written.**
+
+#### Notes Enhancements — already done
+On inspection, `NewTicketFromNoteModal` and `AddNoteToTicketModal` were fully implemented in both `PersonalNotes.jsx` and `CompanyNotes.jsx` in Session 13 Part 2. No changes required.
+
+#### Files changed
+| File | Change |
+|---|---|
+| `web/routes/quotes.js` | Added `postQuoteEventToThread(ticketId, event, quoteNumber, totalAmount, userId)` helper (non-blocking, errors logged but never surface). Hooked into: (1) CREATE — after COMMIT when `ticket_id` is set; (2) PUT `/:id` — when `validatedData.status === 'sent'`; (3) `POST /:id/accept` — after COMMIT; (4) `POST /:id/decline` — after update succeeds. |
+| `web/client/.../TicketDetailViewTabbed.jsx` | Added `quote_event` branch in `ThreadEntry`. Parses `[event]` prefix from body to determine colour: blue = created, purple = sent, green = accepted, red = declined. Displays `DollarSign` icon in a coloured circle + formatted message + timestamp. |
+
+#### Architecture
+- `comment_type = 'quote_event'` inserted directly via `db.query` — bypasses Zod enum in `tickets.js` (intentional, internal-only type)
+- Body format: `[created|sent|accepted|declined] Quote QT-001 … · £xxx`
+- Frontend strips the `[event]` prefix before displaying
+- `postQuoteEventToThread` is fire-and-forget after the main DB operation completes — a failure never breaks the quote flow
+- No DB migration needed — `comment_type` is a varchar, not a DB-level enum
+
+#### Testing checklist after deploy
+- [ ] Create a quote linked to a ticket → ticket thread shows blue "Quote QT-xxx created · £xxx" event row
+- [ ] Mark quote status as Sent (via PUT) → thread shows purple "Quote QT-xxx sent to customer · £xxx"
+- [ ] Accept a quote → thread shows green "Quote QT-xxx accepted by customer · £xxx"
+- [ ] Decline a quote → thread shows red "Quote QT-xxx declined by customer · £xxx"
+- [ ] Quote with no `ticket_id` → no thread post, no error
+- [ ] Render logs: `[QuoteEvent] Posted 'created' to thread for ticket <id>`
+- [ ] Quote action failure does NOT affect quote save (event failure is silent to user)
+
+
 
 ## Session 17 — 2026-04-11
 

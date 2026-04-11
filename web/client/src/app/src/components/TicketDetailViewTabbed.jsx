@@ -294,6 +294,31 @@ function ThreadEntry({ comment, isCurrentUser }) {
     );
   }
 
+  if (type === 'quote_event') {
+    const body = comment.body || '';
+    const eventMatch = body.match(/^\[(\w+)\]\s*/);
+    const event    = eventMatch ? eventMatch[1] : 'created';
+    const display  = body.replace(/^\[\w+\]\s*/, '');
+    const cfg = {
+      created:  { bg: 'bg-blue-50',   border: 'border-blue-200',  dot: 'bg-blue-400',   text: 'text-blue-700'  },
+      sent:     { bg: 'bg-purple-50', border: 'border-purple-200', dot: 'bg-purple-400', text: 'text-purple-700' },
+      accepted: { bg: 'bg-green-50',  border: 'border-green-200', dot: 'bg-green-500',  text: 'text-green-700' },
+      declined: { bg: 'bg-red-50',    border: 'border-red-200',   dot: 'bg-red-400',    text: 'text-red-700'   },
+    }[event] || { bg: 'bg-[#f3f4f6]', border: 'border-[#e5e7eb]', dot: 'bg-[#9ca3af]', text: 'text-[#6b7280]' };
+
+    return (
+      <div className="flex items-center gap-3 py-0.5">
+        <div className={`w-5 h-5 rounded-full ${cfg.bg} border ${cfg.border} flex items-center justify-center flex-shrink-0`}>
+          <DollarSign className={`w-2.5 h-2.5 ${cfg.text}`} />
+        </div>
+        <span className={`text-[12px] font-medium flex-1 ${cfg.text}`}>{display}</span>
+        <span className="text-[11px] text-[#d1d5db] flex-shrink-0">
+          {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
+    );
+  }
+
   if (type === 'approval_request') {
     return (
       <div className="flex gap-3">

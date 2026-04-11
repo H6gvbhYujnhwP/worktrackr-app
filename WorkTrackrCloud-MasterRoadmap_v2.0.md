@@ -1,7 +1,7 @@
 # WorkTrackr Cloud: Master Development Roadmap v2.0
 
-**Version:** 2.5
-**Date:** April 2026 (updated Session 17)
+**Version:** 2.6
+**Date:** April 2026 (updated Session 18)
 
 ---
 
@@ -102,19 +102,19 @@ Complete rebuild of the quote line item editor.
 
 ---
 
-## Upcoming — Notes Enhancements
+### ✅ COMPLETE — Notes Enhancements (Session 13 Part 2, confirmed Session 18)
 
-Both Personal Notes and Company Notes gain two new row actions:
+Both Personal Notes and Company Notes have "Create ticket from note" (`NewTicketFromNoteModal`) and "Add to existing ticket" (`AddNoteToTicketModal`) — module-level components, fully wired.
 
-**"Create ticket from note"**
-- Opens Create Ticket modal with note title → ticket title, note body → ticket description pre-filled
-- User reviews and confirms
-- Once ticket created, a link to it appears on the note
+### ✅ COMPLETE — Quote Events on Ticket Thread (Session 18)
 
-**"Add to existing ticket"**
-- Opens a searchable picker of open tickets
-- Note body is posted to that ticket's thread as an internal note (with note title and timestamp)
-- Available to any staff member on company notes; note owner only on personal notes
+Quote lifecycle events now auto-post to the linked ticket's thread.
+
+**Events:** created (blue), sent (purple), accepted (green), declined (red).
+
+**Backend:** `postQuoteEventToThread` helper in `web/routes/quotes.js`. Non-blocking — failures logged but never surface. Hooked into: CREATE, PUT status→sent, accept, decline. Body format: `[event] Quote QT-xxx … · £xxx`.
+
+**Frontend:** `quote_event` branch in `ThreadEntry` (`TicketDetailViewTabbed.jsx`). Parses `[event]` prefix, renders coloured `DollarSign` icon circle + message + timestamp. No DB migration needed — `comment_type` is varchar.
 
 ---
 

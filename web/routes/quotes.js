@@ -4,6 +4,31 @@ const { z } = require('zod');
 const PDFDocument = require('pdfkit');
 const db = require('../../shared/db');
 
+// ── Helper: post a quote event to a ticket's thread ───────────────────────────
+// event: 'created' | 'sent' | 'accepted' | 'declined'
+// Non-blocking — errors are logged but never surface to the caller.
+async function postQuoteEventToThread(ticketId, event, quoteNumber, totalAmount, userId) {
+  if (!ticketId) return;
+  try {
+    const amount = parseFloat(totalAmount || 0).toFixed(2);
+    const messages = {
+      created:  `[created] Quote ${quoteNumber} created · £${amount}`,
+      sent:     `[sent] Quote ${quoteNumber} sent to customer · £${amount}`,
+      accepted: `[accepted] Quote ${quoteNumber} accepted by customer · £${amount}`,
+      declined: `[declined] Quote ${quoteNumber} declined by customer · £${amount}`,
+    };
+    const body = messages[event];
+    if (!body) return;
+    await db.query(
+      `INSERT INTO comments (ticket_id, author_id, body, comment_type) VALUES ($1, $2, $3, 'quote_event')`,
+      [ticketId, userId || null, body]
+    );
+    console.log(`[QuoteEvent] Posted '${event}' to thread for ticket ${ticketId}`);
+  } catch (err) {
+    console.error(`[QuoteEvent] Failed to post thread event (non-fatal):`, err.message);
+  }
+}
+
 // Validation schemas
 const createQuoteSchema = z.object({
   contact_id: z.string().uuid(),
@@ -377,6 +402,9 @@ router.post('/', async (req, res) => {
 
       await client.query('COMMIT');
 
+      // Post event to ticket thread (non-blocking)
+      await postQuoteEventToThread(quote.ticket_id, 'created', quote.quote_number, quote.total_amount, userId);
+
       // Fetch complete quote with line items
       const completeQuoteQuery = `
         SELECT 
@@ -462,6 +490,12 @@ router.put('/:id', async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Quote not found' });
+    }
+
+    // Post event to ticket thread when status transitions to 'sent'
+    const updatedQuote = result.rows[0];
+    if (validatedData.status === 'sent' && updatedQuote.ticket_id) {
+      await postQuoteEventToThread(updatedQuote.ticket_id, 'sent', updatedQuote.quote_number, updatedQuote.total_amount, req.user?.userId);
     }
 
     res.json(result.rows[0]);
@@ -720,7 +754,11 @@ router.post('/:id/accept', async (req, res) => {
 
       await client.query('COMMIT');
 
-      res.json({ message: 'Quote accepted successfully', quote: quoteResult.rows[0] });
+      // Post event to ticket thread (non-blocking)
+      const acceptedQuote = quoteResult.rows[0];
+      await postQuoteEventToThread(acceptedQuote.ticket_id, 'accepted', acceptedQuote.quote_number, acceptedQuote.total_amount, userId);
+
+      res.json({ message: 'Quote accepted successfully', quote: acceptedQuote });
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -753,7 +791,11 @@ router.post('/:id/decline', async (req, res) => {
       return res.status(404).json({ error: 'Quote not found or cannot be declined' });
     }
 
-    res.json({ message: 'Quote declined', quote: result.rows[0] });
+    // Post event to ticket thread (non-blocking)
+    const declinedQuote = result.rows[0];
+    await postQuoteEventToThread(declinedQuote.ticket_id, 'declined', declinedQuote.quote_number, declinedQuote.total_amount, req.user?.userId);
+
+    res.json({ message: 'Quote declined', quote: declinedQuote });
   } catch (error) {
     console.error('Error declining quote:', error);
     res.status(500).json({ error: 'Failed to decline quote' });
