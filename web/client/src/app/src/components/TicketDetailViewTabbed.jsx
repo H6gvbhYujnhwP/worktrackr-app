@@ -733,7 +733,7 @@ function ReviewItemRow({ item, onRemove }) {
 }
 
 // ─── Generate quote panel — module-level ─────────────────────────────────────
-function GenerateQuotePanel({ ticketId, ticketTitle, onClose }) {
+function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
   const [panelState,    setPanelState]    = useState('loading'); // loading | review | error
   const [suggestedItems, setSuggestedItems] = useState([]);
   const [removed,       setRemoved]       = useState(new Set());
@@ -793,9 +793,10 @@ function GenerateQuotePanel({ ticketId, ticketTitle, onClose }) {
       }));
 
     const prefill = {
-      ticket_id:  ticketId,
-      title:      ticketTitle ? `Quote — ${ticketTitle}` : '',
-      line_items: approvedItems,
+      ticket_id:   ticketId,
+      contact_id:  contactId || undefined,
+      title:       ticketTitle ? `Quote — ${ticketTitle}` : '',
+      line_items:  approvedItems,
       created_via: 'ai',
     };
     try {
@@ -1232,6 +1233,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         <GenerateQuotePanel
           ticketId={ticketId}
           ticketTitle={ticket?.title}
+          contactId={linkedContact?.id || ''}
           onClose={() => setShowQuotePanel(false)}
         />
       )}

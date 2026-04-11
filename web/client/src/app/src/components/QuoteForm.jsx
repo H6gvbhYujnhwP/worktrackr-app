@@ -404,10 +404,11 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     if (initialData && !isEditMode) {
       setFormData(prev => ({
         ...prev,
-        title: initialData.title || '',
-        description: initialData.description || '',
+        contact_id:       initialData.contact_id  || prev.contact_id,
+        title:            initialData.title        || '',
+        description:      initialData.description  || '',
         terms_conditions: initialData.terms_conditions || prev.terms_conditions,
-        notes: initialData.notes || ''
+        notes:            initialData.notes        || '',
       }));
       if (initialData.line_items && initialData.line_items.length > 0) {
         setLineItems(initialData.line_items.map(item => ({
