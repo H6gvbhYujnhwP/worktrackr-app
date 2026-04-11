@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench, StickyNote } from 'lucide-react';
 import QuickAddContactModal from './QuickAddContactModal';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const INPUT_CLS  = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
-const LABEL_CLS  = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
+const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
+const LABEL_CLS   = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
 const SECTION_WRAP = 'bg-white rounded-xl border border-[#e5e7eb] overflow-hidden mb-5';
 const SECTION_HEAD = 'px-6 py-4 border-b border-[#e5e7eb]';
 const SECTION_BODY = 'px-6 py-5';
-const GOLD_BTN   = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const OUTLINE_BTN= 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors disabled:opacity-50';
+const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors disabled:opacity-50';
 
 const STATUS_BADGE = {
   draft:    'bg-[#f3f4f6] text-[#6b7280]',
@@ -28,16 +28,21 @@ const ITEM_TYPES = [
   { value: 'subcontractor', label: 'Subcontractor' },
 ];
 
+const UNIT_OPTIONS = ['hrs', 'days', 'ea', 'm', 'm²', 'm³', 'kg', 'set', 'lot', 'pack', 'visit'];
+
 function isMaterialType(type) {
   return type === 'material' || type === 'parts';
 }
 
 function calcLineTotal(item) {
-  return (item.quantity || 0) * (item.unit_price || 0);
+  const base = (item.quantity || 0) * (item.unit_price || 0);
+  const disc = item.discount_percent || 0;
+  return base * (1 - disc / 100);
 }
 
 function calcLineProfit(item) {
-  return ((item.unit_price || 0) - (item.buy_price || 0)) * (item.quantity || 0);
+  const sellAfterDisc = (item.unit_price || 0) * (1 - (item.discount_percent || 0) / 100);
+  return (sellAfterDisc - (item.buy_price || 0)) * (item.quantity || 0);
 }
 
 function newItem(type) {
@@ -47,10 +52,13 @@ function newItem(type) {
     supplier: '',
     item_type: type,
     quantity: 1,
+    unit: '',
     buy_price: 0,
     unit_price: 0,
-    vat_enabled: false,
     discount_percent: 0,
+    vat_enabled: false,
+    line_notes: '',
+    _showNotes: false,
   };
 }
 
@@ -76,100 +84,166 @@ function VatPill({ enabled, onChange }) {
 const CELL_IN   = 'w-full bg-transparent text-[13px] text-[#111113] placeholder-[#d1d5db] focus:outline-none p-0 min-w-0';
 const CELL_IN_R = `${CELL_IN} text-right`;
 
-function LineItemRow({ item, globalIndex, onUpdate, onRemove, canRemove }) {
+// Returns a React Fragment with a data row + optional notes sub-row
+function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
   const lineTotal = calcLineTotal(item);
   const profit    = calcLineProfit(item);
   const belowCost = item.unit_price > 0 && item.unit_price < item.buy_price;
+  const hasNotes  = !!(item.line_notes && item.line_notes.trim());
 
   return (
-    <tr className="border-b border-[#f3f4f6] hover:bg-[#fefcf5] group transition-colors">
-      <td className="px-3 py-2 min-w-[160px]">
-        <input
-          className={CELL_IN}
-          placeholder="Description…"
-          value={item.description}
-          onChange={e => onUpdate(globalIndex, 'description', e.target.value)}
-        />
-      </td>
-      <td className="px-2 py-2 w-24 hidden sm:table-cell">
-        <input
-          className={CELL_IN}
-          placeholder="Supplier"
-          value={item.supplier}
-          onChange={e => onUpdate(globalIndex, 'supplier', e.target.value)}
-        />
-      </td>
-      <td className="px-2 py-2 w-32 hidden md:table-cell">
-        <select
-          className="w-full bg-transparent text-[12px] text-[#374151] focus:outline-none cursor-pointer"
-          value={item.item_type}
-          onChange={e => onUpdate(globalIndex, 'item_type', e.target.value)}
-        >
-          {ITEM_TYPES.map(t => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-      </td>
-      <td className="px-2 py-2 w-14">
-        <input
-          type="number" min="0" step="any"
-          className={CELL_IN_R}
-          value={item.quantity}
-          onChange={e => onUpdate(globalIndex, 'quantity', e.target.value)}
-        />
-      </td>
-      <td className="px-2 py-2 w-20 hidden lg:table-cell">
-        <input
-          type="number" min="0" step="0.01"
-          className={CELL_IN_R}
-          placeholder="0.00"
-          value={item.buy_price || ''}
-          onChange={e => onUpdate(globalIndex, 'buy_price', e.target.value)}
-        />
-      </td>
-      <td className="px-2 py-2 w-20">
-        <input
-          type="number" min="0" step="0.01"
-          className={`${CELL_IN_R} ${belowCost ? 'text-red-600 font-semibold' : ''}`}
-          placeholder="0.00"
-          value={item.unit_price || ''}
-          onChange={e => onUpdate(globalIndex, 'unit_price', e.target.value)}
-        />
-      </td>
-      <td className="px-2 py-2 w-20 text-right text-[13px] font-semibold text-[#111113] select-none">
-        £{lineTotal.toFixed(2)}
-      </td>
-      <td className={`px-2 py-2 w-20 text-right text-[12px] font-medium select-none hidden lg:table-cell ${
-        profit > 0 ? 'text-emerald-600' : profit < 0 ? 'text-red-600' : 'text-[#c9cdd6]'
-      }`}>
-        {profit !== 0 ? `£${profit.toFixed(2)}` : '—'}
-      </td>
-      <td className="px-2 py-2 w-14 hidden sm:table-cell">
-        <VatPill
-          enabled={item.vat_enabled}
-          onChange={v => onUpdate(globalIndex, 'vat_enabled', v)}
-        />
-      </td>
-      <td className="px-2 py-2 w-8">
-        {canRemove && (
-          <button
-            type="button"
-            onClick={() => onRemove(globalIndex)}
-            className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#9ca3af] hover:text-red-500 hover:bg-[#fee2e2] transition-all"
-            title="Remove line"
+    <>
+      <tr className="border-b border-[#f3f4f6] hover:bg-[#fefcf5] group transition-colors">
+        {/* Description */}
+        <td className="px-3 py-2 min-w-[140px]">
+          <input
+            className={CELL_IN}
+            placeholder="Description…"
+            value={item.description}
+            onChange={e => onUpdate(globalIndex, 'description', e.target.value)}
+          />
+        </td>
+        {/* Supplier */}
+        <td className="px-2 py-2 w-20 hidden sm:table-cell">
+          <input
+            className={CELL_IN}
+            placeholder="Supplier"
+            value={item.supplier}
+            onChange={e => onUpdate(globalIndex, 'supplier', e.target.value)}
+          />
+        </td>
+        {/* Type */}
+        <td className="px-2 py-2 w-28 hidden md:table-cell">
+          <select
+            className="w-full bg-transparent text-[12px] text-[#374151] focus:outline-none cursor-pointer"
+            value={item.item_type}
+            onChange={e => onUpdate(globalIndex, 'item_type', e.target.value)}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </td>
-    </tr>
+            {ITEM_TYPES.map(t => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </td>
+        {/* Qty */}
+        <td className="px-2 py-2 w-12">
+          <input
+            type="number" min="0" step="any"
+            className={CELL_IN_R}
+            value={item.quantity}
+            onChange={e => onUpdate(globalIndex, 'quantity', e.target.value)}
+          />
+        </td>
+        {/* Unit */}
+        <td className="px-2 py-2 w-16 hidden sm:table-cell">
+          <input
+            list="unit-options"
+            className={CELL_IN}
+            placeholder="hrs"
+            value={item.unit}
+            onChange={e => onUpdate(globalIndex, 'unit', e.target.value)}
+          />
+          <datalist id="unit-options">
+            {UNIT_OPTIONS.map(u => <option key={u} value={u} />)}
+          </datalist>
+        </td>
+        {/* Buy £ */}
+        <td className="px-2 py-2 w-18 hidden lg:table-cell">
+          <input
+            type="number" min="0" step="0.01"
+            className={CELL_IN_R}
+            placeholder="0.00"
+            value={item.buy_price || ''}
+            onChange={e => onUpdate(globalIndex, 'buy_price', e.target.value)}
+          />
+        </td>
+        {/* Sell £ */}
+        <td className="px-2 py-2 w-18">
+          <input
+            type="number" min="0" step="0.01"
+            className={`${CELL_IN_R} ${belowCost ? 'text-red-600 font-semibold' : ''}`}
+            placeholder="0.00"
+            value={item.unit_price || ''}
+            onChange={e => onUpdate(globalIndex, 'unit_price', e.target.value)}
+          />
+        </td>
+        {/* Disc % */}
+        <td className="px-2 py-2 w-12 hidden md:table-cell">
+          <input
+            type="number" min="0" max="100" step="1"
+            className={CELL_IN_R}
+            placeholder="0"
+            value={item.discount_percent || ''}
+            onChange={e => onUpdate(globalIndex, 'discount_percent', e.target.value)}
+          />
+        </td>
+        {/* Total */}
+        <td className="px-2 py-2 w-20 text-right text-[13px] font-semibold text-[#111113] select-none">
+          £{lineTotal.toFixed(2)}
+        </td>
+        {/* Profit */}
+        <td className={`px-2 py-2 w-20 text-right text-[12px] font-medium select-none hidden lg:table-cell ${
+          profit > 0 ? 'text-emerald-600' : profit < 0 ? 'text-red-600' : 'text-[#c9cdd6]'
+        }`}>
+          {profit !== 0 ? `£${profit.toFixed(2)}` : '—'}
+        </td>
+        {/* VAT */}
+        <td className="px-2 py-2 w-12 hidden sm:table-cell">
+          <VatPill
+            enabled={item.vat_enabled}
+            onChange={v => onUpdate(globalIndex, 'vat_enabled', v)}
+          />
+        </td>
+        {/* Notes toggle + Delete */}
+        <td className="px-1 py-2 w-14">
+          <div className="flex items-center justify-end gap-0.5">
+            <button
+              type="button"
+              onClick={() => onUpdate(globalIndex, '_showNotes', !item._showNotes)}
+              title="Toggle line notes"
+              className={`p-1 rounded transition-colors ${
+                hasNotes || item._showNotes
+                  ? 'text-[#d4a017] hover:bg-[#fef9ee]'
+                  : 'opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:bg-[#f3f4f6]'
+              }`}
+            >
+              <StickyNote className="w-3.5 h-3.5" />
+            </button>
+            {canRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(globalIndex)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#9ca3af] hover:text-red-500 hover:bg-[#fee2e2] transition-all"
+                title="Remove line"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Notes sub-row */}
+      {item._showNotes && (
+        <tr className="border-b border-[#f3f4f6] bg-[#fffdf5]">
+          <td colSpan={20} className="px-3 pb-2 pt-0">
+            <textarea
+              className="w-full text-[12px] text-[#374151] bg-transparent border border-[#e5e7eb] rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#d4a017]/40 focus:border-[#d4a017] resize-none placeholder-[#c9cdd6]"
+              rows={2}
+              placeholder="Line notes — shown on quote and PDF (e.g. installation details, part numbers, access requirements)"
+              value={item.line_notes}
+              onChange={e => onUpdate(globalIndex, 'line_notes', e.target.value)}
+            />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
 function SectionHeaderRow({ icon: Icon, title, count, onAdd, addLabel }) {
   return (
     <tr className="bg-[#fafafa] border-y border-[#e5e7eb]">
-      <td colSpan={10} className="px-3 py-2">
+      <td colSpan={20} className="px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className="w-3.5 h-3.5 text-[#9ca3af]" />
@@ -195,7 +269,7 @@ function SectionHeaderRow({ icon: Icon, title, count, onAdd, addLabel }) {
 function EmptySectionRow({ message }) {
   return (
     <tr>
-      <td colSpan={10} className="px-4 py-3 text-[12px] text-[#c9cdd6] italic select-none">
+      <td colSpan={20} className="px-4 py-3 text-[12px] text-[#c9cdd6] italic select-none">
         {message}
       </td>
     </tr>
@@ -255,11 +329,11 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   const navigate = useNavigate();
   const { id: quoteId } = useParams();
   const isEditMode = mode === 'edit' || !!quoteId;
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [saving, setSaving]       = useState(false);
   const [showCreateContact, setShowCreateContact] = useState(false);
-  const [contacts, setContacts] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [contacts, setContacts]   = useState([]);
+  const [products, setProducts]   = useState([]);
   const [templates, setTemplates] = useState([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [quoteNumber, setQuoteNumber] = useState('');
@@ -316,15 +390,18 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       }));
       if (initialData.line_items && initialData.line_items.length > 0) {
         setLineItems(initialData.line_items.map(item => ({
-          product_id: null,
+          ...newItem(item.item_type || 'material'),
           description: item.description || '',
           supplier: item.supplier || '',
           item_type: item.item_type || 'material',
           quantity: item.quantity || 1,
+          unit: item.unit || '',
           buy_price: parseFloat(item.buy_price || item.buy_cost) || 0,
           unit_price: parseFloat(item.unit_price) || 0,
+          discount_percent: parseFloat(item.discount_percent) || 0,
           vat_enabled: (item.tax_rate || 0) > 0,
-          discount_percent: 0,
+          line_notes: item.line_notes || '',
+          _showNotes: !!(item.line_notes),
         })));
       }
     }
@@ -356,10 +433,13 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
               supplier: item.supplier || '',
               item_type: item.item_type || 'parts',
               quantity: item.quantity,
+              unit: item.unit || '',
               buy_price: parseFloat(item.buy_cost) || 0,
               unit_price: item.unit_price,
+              discount_percent: parseFloat(item.discount_percent) || 0,
               vat_enabled: (item.tax_rate || 0) > 0,
-              discount_percent: item.discount_percent || 0,
+              line_notes: item.line_notes || '',
+              _showNotes: !!(item.line_notes),
             })));
           }
         })
@@ -401,15 +481,10 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
           if (product) unitPrice = product.client_price || 0;
         }
         return {
-          product_id: item.product_id || null,
+          ...newItem(item.item_type || 'material'),
           description: item.description || '',
-          supplier: '',
-          item_type: item.item_type || 'material',
           quantity: item.default_quantity || 1,
-          buy_price: 0,
           unit_price: unitPrice,
-          vat_enabled: false,
-          discount_percent: 0,
         };
       });
       if (items.length > 0) setLineItems(items);
@@ -433,12 +508,14 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         product_id: item.product_id || undefined,
         description: item.description.trim(),
         quantity: parseFloat(item.quantity) || 1,
+        unit: item.unit || undefined,
         unit_price: parseFloat(item.unit_price) || 0,
         buy_cost: parseFloat(item.buy_price) || 0,
         supplier: item.supplier || undefined,
         item_type: item.item_type || 'material',
         tax_rate: item.vat_enabled ? 20 : 0,
-        discount_percent: 0,
+        discount_percent: parseFloat(item.discount_percent) || 0,
+        line_notes: item.line_notes || undefined,
         sort_order: i,
       }));
 
@@ -482,7 +559,6 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
     }
   }, [formData, lineItems, isEditMode, quoteId, navigate, initialData]);
 
-  // Section data — with global indices preserved
   const materialItems = lineItems.map((item, i) => ({ item, i })).filter(({ item }) => isMaterialType(item.item_type));
   const labourItems   = lineItems.map((item, i) => ({ item, i })).filter(({ item }) => !isMaterialType(item.item_type));
 
@@ -539,7 +615,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                 )}
               </div>
               {isEditMode ? (
-                <input className={`${INPUT_CLS} bg-[#fafafa] cursor-not-allowed`} value={contactName} disabled title="Cannot change contact after quote creation" />
+                <input className={`${INPUT_CLS} bg-[#fafafa] cursor-not-allowed`} value={contactName} disabled />
               ) : (
                 <Select value={formData.contact_id} onValueChange={v => setFormData({ ...formData, contact_id: v })}>
                   <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
@@ -602,7 +678,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             <h2 className="text-[15px] font-semibold text-[#111113]">Line Items</h2>
             <p className="text-[12px] text-[#9ca3af] mt-0.5">
               Materials &amp; parts · Labour &amp; other charges ·
-              <span className="text-[#c9cdd6] ml-1">sell price turns red if below buy-in · toggle VAT per line</span>
+              <span className="text-[#c9cdd6] ml-1">🗒 note icon per row · sell price turns red if below buy-in</span>
             </p>
           </div>
           <button type="button" onClick={() => setShowTemplateSelector(!showTemplateSelector)} className={OUTLINE_BTN}>
@@ -611,38 +687,38 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse">
+          <table className="w-full min-w-[580px] border-collapse">
             <thead>
               <tr className="bg-[#f9fafb] border-b border-[#e5e7eb]">
                 <th className="px-3 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">Description</th>
-                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-24  hidden sm:table-cell">Supplier</th>
-                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-32  hidden md:table-cell">Type</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-14">Qty</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20  hidden lg:table-cell">Buy £</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20">Sell £</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20  hidden sm:table-cell">Supplier</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-28  hidden md:table-cell">Type</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12">Qty</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-16  hidden sm:table-cell">Unit</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-18  hidden lg:table-cell">Buy £</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-18">Sell £</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12  hidden md:table-cell">Disc%</th>
                 <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20">Total</th>
                 <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20  hidden lg:table-cell">Profit</th>
-                <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-14  hidden sm:table-cell">VAT</th>
-                <th className="w-8"></th>
+                <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12  hidden sm:table-cell">VAT</th>
+                <th className="w-14"></th>
               </tr>
             </thead>
             <tbody>
-              {/* Materials & parts */}
               <SectionHeaderRow icon={Package} title="Materials & parts"
                 count={materialItems.length} onAdd={addMaterialItem} addLabel="Add material" />
               {materialItems.map(({ item, i }) => (
-                <LineItemRow key={i} item={item} globalIndex={i}
+                <LineItemRows key={i} item={item} globalIndex={i}
                   onUpdate={updateLineItem} onRemove={removeLineItem} canRemove={lineItems.length > 1} />
               ))}
               {materialItems.length === 0 && (
                 <EmptySectionRow message="No materials or parts yet — click 'Add material' above" />
               )}
 
-              {/* Labour & other charges */}
               <SectionHeaderRow icon={Wrench} title="Labour & other charges"
                 count={labourItems.length} onAdd={addLabourItem} addLabel="Add charge" />
               {labourItems.map(({ item, i }) => (
-                <LineItemRow key={i} item={item} globalIndex={i}
+                <LineItemRows key={i} item={item} globalIndex={i}
                   onUpdate={updateLineItem} onRemove={removeLineItem} canRemove={lineItems.length > 1} />
               ))}
               {labourItems.length === 0 && (

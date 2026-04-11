@@ -23,7 +23,7 @@ Paste this at the start of every new chat session:
 - **Last session:** 2026-04-11 (Session 15)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Quote Line Items Redesign — two-section editor, buy/sell prices, VAT toggle, profit footer
+- **Last fixes applied:** Quote Line Items Redesign + 6 completions (unit, discount, line notes, margin panel, PDF overhaul, email copy-paste)
 - **Next priority:** AI Quote Generation from Ticket (full flow with review panel)
 
 ---
@@ -533,6 +533,44 @@ All new components defined at module level ✓
 ### Next session priorities
 1. AI Quote Generation from Ticket — full flow with review panel
 2. Audio Mode 2 (floating voice assistant) — must not be forgotten
+
+### Quote Completions — 6 improvements (same session)
+
+**Files changed**
+| File | Change |
+|---|---|
+| `web/client/.../QuoteForm.jsx` | Added: `unit` (datalist: hrs/days/ea/m/m²/m³/kg/set/lot/pack/visit), `discount_percent` (Disc% column), `line_notes` (expandable amber sub-row, toggled by 🗒 sticky-note icon — gold if notes present). `calcLineTotal` and `calcLineProfit` now account for discount. `newItem()` and all load/save paths updated. Sub-component rule: `LineItemRows` returns Fragment (data row + optional notes sub-row). |
+| `web/client/.../QuoteDetails.jsx` | Full rewrite. New module-level `LineItemsTable` — grouped by Materials/Labour, shows unit, discount%, VAT badge, line notes in italic sub-row. New module-level `MarginPanel` — collapsible "Internal — Margin Analysis" section: per-line revenue/cost/profit/margin%, total row with overall margin. Footer totals now show Subtotal ex VAT / VAT (20%) / Total inc VAT (computed client-side from line items). Fixed: contact name fallback chain, duplicate now copies all new fields. |
+| `web/client/.../SendQuoteModal.jsx` | Auto-generates professional email body from quote data on mount. Body is fully editable textarea. Two copy buttons (banner + label). "Copy to Clipboard" gold button — flashes green "Copied!". "Send via SMTP" button — attempts `/api/quotes/:id/send` with clear error if SMTP not configured. Subject pre-filled from quote number + title. |
+| `web/routes/quotes.js` | (1) `unit` and `line_notes` added to Zod schemas. (2) All 4 INSERT/UPDATE SQL statements updated. (3) **VAT-on-zero bug fixed** — `(item.tax_rate || 20)` → `(item.tax_rate != null ? item.tax_rate : 20)` in `calculateQuoteTotals`. (4) PDF overhauled: new column layout (Description/Unit/Qty/Price/Total), line notes shown italic below each item, discount shown as "-x%" on price, totals now show Subtotal ex VAT / VAT (20%) / Total inc VAT. |
+| `web/migrations/add_quote_lines_notes.sql` | New — adds `line_notes TEXT` to `quote_lines`. |
+
+**Pending DB migration (run in Render shell)**
+```bash
+node -e "const db = require('./shared/db'); db.query('ALTER TABLE quote_lines ADD COLUMN IF NOT EXISTS line_notes TEXT').then(()=>{console.log('Done');process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})"
+```
+
+**Testing checklist after deploy**
+- [ ] Line items form: Unit column visible (sm+), type "hrs" → saved to DB
+- [ ] Disc% column visible (md+), enter 10 → line total reduces, footer updates
+- [ ] Click sticky-note icon → amber sub-row expands with textarea
+- [ ] Enter line notes → icon turns gold
+- [ ] Save quote → unit, discount, line_notes all persisted
+- [ ] Edit quote → all three fields load back correctly
+- [ ] QuoteDetails: Materials & parts / Labour sections shown
+- [ ] QuoteDetails: unit shown in Unit column, discount shown as "-10%"
+- [ ] QuoteDetails: +VAT badge on VAT-enabled lines
+- [ ] QuoteDetails: line notes shown in italic below item row
+- [ ] QuoteDetails: footer shows Subtotal ex VAT / VAT / Total inc VAT (not old Subtotal/Tax/Total)
+- [ ] QuoteDetails: Margin Analysis section collapsed by default
+- [ ] Margin Analysis: click to expand → per-line revenue, cost, profit, margin%
+- [ ] Margin Analysis: total row shows overall margin%
+- [ ] Margin Analysis: if no buy costs entered, profit column shows —
+- [ ] Send modal: opens with professional email body pre-filled
+- [ ] Send modal: body includes quote ref, title, all items grouped, totals
+- [ ] Send modal: "Copy Email" button in banner copies text, flashes green
+- [ ] Send modal: "Copy to Clipboard" footer button also works
+- [ ] PDF: Unit column present, notes below item in italics, totals show ex-VAT/VAT/inc-VAT
 
 ---
 

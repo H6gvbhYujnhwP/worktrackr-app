@@ -29,6 +29,8 @@ const createQuoteSchema = z.object({
     item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring', 'material', 'expense', 'subcontractor']).optional(),
     buy_cost: z.number().min(0).optional(),
     supplier: z.string().optional(),
+    unit: z.string().optional(),
+    line_notes: z.string().optional(),
     hours: z.number().min(0).optional(),
     hourly_rate: z.number().min(0).optional(),
     recurrence: z.enum(['monthly', 'annual']).optional()
@@ -61,6 +63,8 @@ const updateLineItemsSchema = z.object({
     item_type: z.enum(['labour', 'parts', 'fixed_fee', 'recurring', 'material', 'expense', 'subcontractor']).optional(),
     buy_cost: z.number().min(0).optional(),
     supplier: z.string().optional(),
+    unit: z.string().optional(),
+    line_notes: z.string().optional(),
     hours: z.number().min(0).optional(),
     hourly_rate: z.number().min(0).optional(),
     recurrence: z.enum(['monthly', 'annual']).optional(),
@@ -96,7 +100,7 @@ function calculateQuoteTotals(lineItems, quoteDiscountAmount = 0, quoteDiscountP
     const lineSubtotal = item.quantity * item.unit_price;
     const lineDiscount = lineSubtotal * ((item.discount_percent || 0) / 100);
     const lineAfterDiscount = lineSubtotal - lineDiscount;
-    const lineTax = lineAfterDiscount * ((item.tax_rate || 20) / 100);
+    const lineTax = lineAfterDiscount * ((item.tax_rate != null ? item.tax_rate : 20) / 100);
     return sum + lineTax;
   }, 0);
 
@@ -343,8 +347,8 @@ router.post('/', async (req, res) => {
           INSERT INTO quote_lines (
             quote_id, product_id, description, quantity, unit_price,
             discount_percent, tax_rate, line_total, sort_order,
-            item_type, hours, hourly_rate, recurrence, buy_cost, supplier
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            item_type, hours, hourly_rate, recurrence, buy_cost, supplier, unit, line_notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
           RETURNING *
         `;
 
@@ -363,7 +367,9 @@ router.post('/', async (req, res) => {
           item.hourly_rate || null,
           item.recurrence || null,
           item.buy_cost || 0,
-          item.supplier || null
+          item.supplier || null,
+          item.unit || null,
+          item.line_notes || null
         ];
 
         await client.query(lineItemQuery, lineItemValues);
@@ -513,8 +519,8 @@ router.put('/:id/line-items', async (req, res) => {
             `UPDATE quote_lines 
              SET product_id = $1, description = $2, quantity = $3, unit_price = $4,
                  discount_percent = $5, tax_rate = $6, line_total = $7, sort_order = $8,
-                 buy_cost = $9, supplier = $10
-             WHERE id = $11 AND quote_id = $12`,
+                 buy_cost = $9, supplier = $10, unit = $11, line_notes = $12
+             WHERE id = $13 AND quote_id = $14`,
             [
               item.product_id || null,
               item.description,
@@ -526,6 +532,8 @@ router.put('/:id/line-items', async (req, res) => {
               item.sort_order || i,
               item.buy_cost || 0,
               item.supplier || null,
+              item.unit || null,
+              item.line_notes || null,
               item.id,
               id
             ]
@@ -542,8 +550,8 @@ router.put('/:id/line-items', async (req, res) => {
           await client.query(
             `INSERT INTO quote_lines (
               quote_id, product_id, description, quantity, unit_price,
-              discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+              discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier, unit, line_notes
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
               id,
               item.product_id || null,
@@ -555,7 +563,9 @@ router.put('/:id/line-items', async (req, res) => {
               lineTotal,
               item.sort_order || i,
               item.buy_cost || 0,
-              item.supplier || null
+              item.supplier || null,
+              item.unit || null,
+              item.line_notes || null
             ]
           );
         }
@@ -898,8 +908,8 @@ router.post('/:id/duplicate', async (req, res) => {
         await client.query(
           `INSERT INTO quote_lines (
             quote_id, product_id, description, quantity, unit_price,
-            discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            discount_percent, tax_rate, line_total, sort_order, buy_cost, supplier, unit, line_notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
           [
             newQuote.id,
             item.product_id,
@@ -911,7 +921,9 @@ router.post('/:id/duplicate', async (req, res) => {
             item.line_total,
             item.sort_order,
             item.buy_cost || 0,
-            item.supplier || null
+            item.supplier || null,
+            item.unit || null,
+            item.line_notes || null
           ]
         );
       }
@@ -1046,74 +1058,110 @@ router.get('/:id/pdf', async (req, res) => {
 
     // Add line items table
     const tableTop = doc.y;
-    const itemX = 50;
-    const descX = 100;
-    const qtyX = 350;
-    const priceX = 410;
-    const totalX = 480;
+    const descX  = 50;
+    const unitX  = 310;
+    const qtyX   = 355;
+    const priceX = 390;
+    const totalX = 460;
+    const pageW  = 545;
 
     // Table header
-    doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Item', itemX, tableTop);
-    doc.text('Description', descX, tableTop);
-    doc.text('Qty', qtyX, tableTop);
-    doc.text('Price', priceX, tableTop);
-    doc.text('Total', totalX, tableTop);
+    doc.fontSize(9).font('Helvetica-Bold');
+    doc.text('Description', descX, tableTop, { width: 255 });
+    doc.text('Unit',  unitX,  tableTop, { width: 40 });
+    doc.text('Qty',   qtyX,   tableTop, { width: 30, align: 'right' });
+    doc.text('Price', priceX, tableTop, { width: 65, align: 'right' });
+    doc.text('Total', totalX, tableTop, { width: 80, align: 'right' });
 
-    // Draw header line
-    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+    // Header underline
+    doc.moveTo(descX, tableTop + 14).lineTo(pageW, tableTop + 14).lineWidth(0.5).stroke();
 
     // Table rows
-    let yPos = tableTop + 25;
+    let yPos = tableTop + 22;
     doc.font('Helvetica').fontSize(9);
 
-    lineItems.forEach((item, index) => {
-      const itemTotal = parseFloat(item.quantity) * parseFloat(item.unit_price);
-      
-      doc.text(index + 1, itemX, yPos);
-      doc.text(item.description, descX, yPos, { width: 240 });
-      doc.text(parseFloat(item.quantity).toFixed(2), qtyX, yPos);
-      doc.text(`£${parseFloat(item.unit_price).toFixed(2)}`, priceX, yPos);
-      doc.text(`£${itemTotal.toFixed(2)}`, totalX, yPos);
-      
-      yPos += 25;
-      
-      // Add new page if needed
-      if (yPos > 700) {
+    lineItems.forEach((item) => {
+      const qty      = parseFloat(item.quantity) || 0;
+      const price    = parseFloat(item.unit_price) || 0;
+      const disc     = parseFloat(item.discount_percent || 0);
+      const itemTotal = qty * price * (1 - disc / 100);
+      const displayPrice = disc > 0
+        ? `£${price.toFixed(2)}\n(-${disc}%)`
+        : `£${price.toFixed(2)}`;
+
+      // Check for new page
+      if (yPos > 680) {
         doc.addPage();
         yPos = 50;
       }
+
+      const descText = item.description || '';
+      const descHeight = doc.heightOfString(descText, { width: 255 });
+      const rowHeight = Math.max(descHeight, 14) + 4;
+
+      doc.text(descText, descX, yPos, { width: 255 });
+      doc.text(item.unit || '',  unitX, yPos, { width: 40 });
+      doc.text(qty % 1 === 0 ? qty.toFixed(0) : qty.toFixed(2), qtyX, yPos, { width: 30, align: 'right' });
+      doc.text(displayPrice, priceX, yPos, { width: 65, align: 'right' });
+      doc.text(`£${itemTotal.toFixed(2)}`, totalX, yPos, { width: 80, align: 'right' });
+
+      yPos += rowHeight;
+
+      // Line notes (italic, indented)
+      if (item.line_notes) {
+        doc.font('Helvetica-Oblique').fontSize(8)
+           .text(item.line_notes, descX + 10, yPos, { width: 480, color: '#666666' });
+        yPos += doc.heightOfString(item.line_notes, { width: 480 }) + 4;
+        doc.font('Helvetica').fontSize(9);
+      }
+
+      yPos += 4;
     });
 
-    // Draw line before totals
-    doc.moveTo(350, yPos).lineTo(550, yPos).stroke();
-    yPos += 10;
+    // Divider before totals
+    doc.moveTo(priceX, yPos).lineTo(pageW, yPos).lineWidth(0.5).stroke();
+    yPos += 8;
 
-    // Calculate totals
+    // Calculate totals correctly (ex-VAT subtotal, VAT only on enabled lines)
     const subtotal = lineItems.reduce((sum, item) => {
-      return sum + (parseFloat(item.quantity) * parseFloat(item.unit_price));
+      const qty   = parseFloat(item.quantity) || 0;
+      const price = parseFloat(item.unit_price) || 0;
+      const disc  = parseFloat(item.discount_percent || 0);
+      return sum + qty * price * (1 - disc / 100);
     }, 0);
 
-    const taxAmount = lineItems.reduce((sum, item) => {
-      const itemTotal = parseFloat(item.quantity) * parseFloat(item.unit_price);
-      const taxRate = parseFloat(item.tax_rate || 0) / 100;
-      return sum + (itemTotal * taxRate);
+    const vatAmount = lineItems.reduce((sum, item) => {
+      const qty     = parseFloat(item.quantity) || 0;
+      const price   = parseFloat(item.unit_price) || 0;
+      const disc    = parseFloat(item.discount_percent || 0);
+      const lineNet = qty * price * (1 - disc / 100);
+      const taxRate = item.tax_rate != null ? parseFloat(item.tax_rate) : 20;
+      return sum + lineNet * (taxRate / 100);
     }, 0);
 
-    const total = subtotal + taxAmount;
+    const totalIncVat = subtotal + vatAmount;
 
-    // Display totals
-    doc.fontSize(10).font('Helvetica-Bold');
-    doc.text('Subtotal:', 410, yPos);
-    doc.font('Helvetica').text(`£${subtotal.toFixed(2)}`, 480, yPos);
-    
+    // Totals block (right-aligned)
+    const labelX  = 350;
+    const valueX  = 460;
+    const totWidth = 80;
+
+    doc.font('Helvetica').fontSize(9);
+    doc.text('Subtotal ex VAT:', labelX, yPos, { width: 105 });
+    doc.text(`£${subtotal.toFixed(2)}`,      valueX, yPos, { width: totWidth, align: 'right' });
+    yPos += 16;
+
+    doc.text('VAT (20%):', labelX, yPos, { width: 105 });
+    doc.text(`£${vatAmount.toFixed(2)}`,     valueX, yPos, { width: totWidth, align: 'right' });
+    yPos += 16;
+
+    doc.moveTo(labelX, yPos).lineTo(pageW, yPos).lineWidth(0.5).stroke();
+    yPos += 6;
+
+    doc.font('Helvetica-Bold').fontSize(11);
+    doc.text('Total inc VAT:', labelX, yPos, { width: 105 });
+    doc.text(`£${totalIncVat.toFixed(2)}`, valueX, yPos, { width: totWidth, align: 'right' });
     yPos += 20;
-    doc.font('Helvetica-Bold').text('Tax (VAT):', 410, yPos);
-    doc.font('Helvetica').text(`£${taxAmount.toFixed(2)}`, 480, yPos);
-    
-    yPos += 20;
-    doc.fontSize(12).font('Helvetica-Bold').text('Total:', 410, yPos);
-    doc.text(`£${total.toFixed(2)}`, 480, yPos);
 
     // Add terms and conditions
     if (quote.terms_conditions) {
