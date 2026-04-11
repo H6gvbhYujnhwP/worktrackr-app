@@ -452,7 +452,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
             internal_notes: data.internal_notes || ''
           });
           if (data.line_items && data.line_items.length > 0) {
-            setLineItems(data.line_items.map(item => ({
+            const existingItems = data.line_items.map(item => ({
               id: item.id,
               product_id: item.product_id || null,
               description: item.description || '',
@@ -466,7 +466,40 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
               vat_enabled: (item.tax_rate || 0) > 0,
               line_notes: item.line_notes || '',
               _showNotes: !!(item.line_notes),
-            })));
+            }));
+
+            // Check for top-up items from AI panel
+            let allItems = existingItems;
+            try {
+              const topupRaw = sessionStorage.getItem('worktrackr_ai_topup_items');
+              if (topupRaw) {
+                sessionStorage.removeItem('worktrackr_ai_topup_items');
+                const topupItems = JSON.parse(topupRaw);
+                if (Array.isArray(topupItems) && topupItems.length > 0) {
+                  const mapped = topupItems.map(item => ({
+                    ...newItem(item.item_type || 'material'),
+                    description:       item.description || '',
+                    supplier:          item.supplier || '',
+                    item_type:         item.item_type || 'material',
+                    quantity:          item.quantity || 1,
+                    unit:              item.unit || '',
+                    buy_price:         parseFloat(item.buy_price || 0) || 0,
+                    unit_price:        parseFloat(item.unit_price || 0) || 0,
+                    discount_percent:  0,
+                    vat_enabled:       false,
+                    line_notes:        '',
+                    _showNotes:        false,
+                    ai_generated:      true,
+                    catalogue_sourced: item.catalogue_sourced === true,
+                    locked:            false,
+                  }));
+                  allItems = [...existingItems, ...mapped];
+                  console.log(`[QuoteForm] Appended ${mapped.length} top-up item(s) from AI panel`);
+                }
+              }
+            } catch { /* ignore sessionStorage errors */ }
+
+            setLineItems(allItems);
           }
         })
         .catch(() => navigate('/app/dashboard', { state: { view: 'quotes' } }))

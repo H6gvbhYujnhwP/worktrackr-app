@@ -1,7 +1,7 @@
 # WorkTrackr Cloud: Master Development Roadmap v2.0
 
-**Version:** 2.4
-**Date:** April 2026 (updated Session 16)
+**Version:** 2.5
+**Date:** April 2026 (updated Session 17)
 
 ---
 
@@ -83,15 +83,22 @@ Complete rebuild of the quote line item editor.
 
 ---
 
-## Upcoming — "Top up from notes"
+### ✅ COMPLETE — AI Quote Top-up from Notes (Session 17)
 
-After a quote has already been generated from a ticket, if new notes are added to the ticket, a "Top up" button should appear on the quote.
+"Top up from notes" button appears on every quote card in the Quotes tab of a ticket. Sends only notes added *after* the quote's `created_at` to Claude, returns new suggested items, appended to the existing quote.
 
-- Sends only the new notes (those added after the quote was created) to Claude
-- Returns new suggested items only — never touches existing rows
-- Same review panel as the initial generation
-- Locked rows are never touched by top-up
-- Implementation: needs a `quote_generated_at` timestamp on the quote, plus a "Top up" button in the QuotesTab when a quote already exists for the ticket
+**Backend:** `POST /api/quotes/topup-from-ticket` (added to `web/routes/quotes-from-ticket.js`). Accepts `{ ticket_id, since_date }`. Filters comments to only those after `since_date`. Focused "new notes only" prompt — Claude told not to re-suggest anything already likely on the quote. Returns identical `{ line_items }` shape as the generate endpoint.
+
+**Review panel** (`TopUpPanel` — module-level in `TicketDetailViewTabbed.jsx`):
+- Blue-accented variant of `GenerateQuotePanel` (reuses `ReviewItemRow`, `ConfidenceDot`)
+- Header shows quote number; loading text shows "Scanning notes added since [date]"
+- If no new notes exist → empty state with Close button, no footer
+- User removes/restores items before confirming
+- "Add to quote" writes approved items to `sessionStorage('worktrackr_ai_topup_items')` then navigates to `/app/crm/quotes/{quoteId}`
+
+**QuotesTab.jsx:** Accepts `onTopUp(quoteId, quoteNumber, sinceDate)` prop. Each existing quote card gains a "Top up from notes" button in a footer row (click-propagation stopped so card navigation doesn't fire).
+
+**QuoteForm.jsx (edit mode):** On mount, after loading existing line items, checks `sessionStorage('worktrackr_ai_topup_items')`. If present: parses, clears key, maps items with `ai_generated: true` / `catalogue_sourced` flags, appends to existing rows. Existing rows untouched. New rows carry gold AI badge + existing clear-on-edit lock mechanism.
 
 ---
 

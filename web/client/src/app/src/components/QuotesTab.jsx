@@ -21,7 +21,7 @@ const QUOTE_STATUS_ICONS = {
   superseded: FileText,
 };
 
-export default function QuotesTab({ ticketId }) {
+export default function QuotesTab({ ticketId, onTopUp }) {
   const [quotes, setQuotes]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
@@ -194,6 +194,22 @@ export default function QuotesTab({ ticketId }) {
                     )}
                   </div>
                 </div>
+
+                {/* Top up from notes button */}
+                {onTopUp && (
+                  <div
+                    className="mt-3 pt-3 border-t border-[#f3f4f6] flex justify-end"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => onTopUp(quote.id, quote.quote_number, quote.created_at)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Top up from notes
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

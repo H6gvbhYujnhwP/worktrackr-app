@@ -939,6 +939,218 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
   );
 }
 
+// ─── Top-up panel — module-level ─────────────────────────────────────────────
+function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
+  const [panelState,     setPanelState]     = useState('loading');
+  const [suggestedItems, setSuggestedItems] = useState([]);
+  const [removed,        setRemoved]        = useState(new Set());
+  const [panelError,     setPanelError]     = useState('');
+
+  const sinceLabel = sinceDate
+    ? new Date(sinceDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '';
+
+  useEffect(() => { callTopUp(); }, []);
+
+  async function callTopUp() {
+    setPanelState('loading');
+    setPanelError('');
+    try {
+      const res  = await fetch('/api/quotes/topup-from-ticket', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId, since_date: sinceDate }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Top-up failed');
+      setSuggestedItems(data.line_items || []);
+      setPanelState('review');
+    } catch (err) {
+      setPanelError(err.message || 'Could not generate suggestions. Please try again.');
+      setPanelState('error');
+    }
+  }
+
+  function toggleRemove(idx) {
+    setRemoved(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) { next.delete(idx); } else { next.add(idx); }
+      return next;
+    });
+  }
+
+  function handleConfirm() {
+    const approvedItems = suggestedItems
+      .filter((_, idx) => !removed.has(idx))
+      .map(item => ({
+        description:       item.description,
+        item_type:         item.item_type,
+        quantity:          item.quantity,
+        unit:              item.unit,
+        unit_price:        item.unit_price,
+        buy_price:         item.buy_cost,
+        supplier:          item.supplier || '',
+        product_id:        item.product_id || null,
+        line_notes:        '',
+        discount_percent:  0,
+        vat_enabled:       false,
+        ai_generated:      true,
+        catalogue_sourced: item.catalogue_sourced || false,
+        locked:            false,
+        _showNotes:        false,
+      }));
+    try {
+      sessionStorage.setItem('worktrackr_ai_topup_items', JSON.stringify(approvedItems));
+    } catch { /* sessionStorage full — navigate anyway, form will load without top-up */ }
+    window.location.href = `/app/crm/quotes/${quoteId}`;
+  }
+
+  const activeCount = suggestedItems.length - removed.size;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-stretch justify-end">
+      <div className="flex-1 bg-black/30" onClick={onClose} />
+      <div className="w-full max-w-[480px] bg-white border-l border-[#e5e7eb] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between bg-[#f0f9ff]">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-500" />
+            <div>
+              <span className="text-[14px] font-semibold text-[#1d1d1f]">Top up quote</span>
+              {quoteNumber && (
+                <span className="ml-2 text-[12px] text-[#6b7280]">{quoteNumber}</span>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280] transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto">
+
+          {panelState === 'loading' && (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 px-6">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <div className="text-center">
+                <p className="text-[13px] font-medium text-[#374151]">Reading new notes…</p>
+                <p className="text-[12px] text-[#9ca3af] mt-1">
+                  Scanning notes added since {sinceLabel}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {panelState === 'error' && (
+            <div className="px-5 py-8 text-center">
+              <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-400" />
+              <p className="text-[13px] text-[#374151] font-medium mb-1">Top-up failed</p>
+              <p className="text-[12px] text-[#9ca3af] mb-5">{panelError}</p>
+              <button
+                onClick={callTopUp}
+                className="px-4 py-2 text-[13px] font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {panelState === 'review' && (
+            <div className="px-5 py-4">
+
+              {/* Since-date callout */}
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-[#f3f4f6]">
+                <span className="text-[11px] text-[#9ca3af]">New notes since</span>
+                <span className="text-[11px] font-semibold text-[#374151] bg-[#f3f4f6] px-2 py-0.5 rounded">
+                  {sinceLabel}
+                </span>
+              </div>
+
+              {/* Confidence legend */}
+              <div className="flex items-center gap-4 mb-4">
+                <p className="text-[11px] text-[#9ca3af]">Confidence:</p>
+                {[['high','bg-emerald-500','High'], ['medium','bg-amber-400','Medium'], ['low','bg-red-400','Low']].map(([k, cls, label]) => (
+                  <span key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
+                    <span className={`w-2 h-2 rounded-full ${cls}`} />{label}
+                  </span>
+                ))}
+              </div>
+
+              {suggestedItems.length === 0 && (
+                <p className="text-[13px] text-[#9ca3af] text-center py-8">
+                  No new items found in notes added since this quote was created.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {suggestedItems.map((item, idx) => (
+                  <div key={idx} className={removed.has(idx) ? 'opacity-40 line-through' : ''}>
+                    <ReviewItemRow item={item} onRemove={() => toggleRemove(idx)} />
+                    {removed.has(idx) && (
+                      <button
+                        onClick={() => toggleRemove(idx)}
+                        className="text-[11px] text-blue-500 hover:underline mt-1 ml-4"
+                      >
+                        Restore
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {suggestedItems.length > 0 && (
+                <div className="mt-4 p-3 bg-[#f0f9ff] border border-blue-100 rounded-lg">
+                  <p className="text-[11px] text-[#374151]">
+                    <span className="font-semibold text-blue-700">New items will be appended</span> to the existing quote with gold <span className="font-mono bg-[#fef9ee] px-1 rounded">AI</span> badges. Editing any field permanently removes the badge.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {panelState === 'review' && suggestedItems.length > 0 && (
+          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center justify-between gap-3">
+            <p className="text-[12px] text-[#9ca3af]">
+              {activeCount} item{activeCount !== 1 ? 's' : ''} selected
+              {removed.size > 0 && <span className="ml-1">({removed.size} removed)</span>}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={activeCount === 0}
+                className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Add to quote
+              </button>
+            </div>
+          </div>
+        )}
+        {panelState === 'review' && suggestedItems.length === 0 && (
+          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Date divider — module-level ─────────────────────────────────────────────
 function DateDivider({ label }) {
   return (
@@ -996,6 +1208,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const [aiMatched,         setAiMatched]         = useState(false);
   const [showContactPicker, setShowContactPicker] = useState(false);
   const [showQuotePanel,    setShowQuotePanel]    = useState(false);
+  const [topUpTarget,       setTopUpTarget]       = useState(null); // { quoteId, quoteNumber, sinceDate }
   const aiMatchTriggered                          = useRef(false);
 
   const [form, setForm] = useState({
@@ -1238,6 +1451,16 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         />
       )}
 
+      {topUpTarget && (
+        <TopUpPanel
+          ticketId={ticketId}
+          quoteId={topUpTarget.quoteId}
+          quoteNumber={topUpTarget.quoteNumber}
+          sinceDate={topUpTarget.sinceDate}
+          onClose={() => setTopUpTarget(null)}
+        />
+      )}
+
       {/* ── Title bar ── */}
       <div className="px-6 py-4 border-b border-[#e5e7eb]">
         <div className="flex items-center gap-2 mb-2">
@@ -1444,7 +1667,10 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
 
           {mainView === 'quotes' && (
             <div className="flex-1 px-6 py-5">
-              <QuotesTab ticketId={ticketId} />
+              <QuotesTab
+                ticketId={ticketId}
+                onTopUp={(quoteId, quoteNumber, sinceDate) => setTopUpTarget({ quoteId, quoteNumber, sinceDate })}
+              />
             </div>
           )}
 

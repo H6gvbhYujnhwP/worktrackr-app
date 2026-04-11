@@ -20,13 +20,53 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-11 (Session 16)
+- **Last session:** 2026-04-11 (Session 17)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** AI Quote Generation from Ticket — all three phases complete
-- **Next priority:** "Top up from notes" option (Phase 4 of AI quote flow) OR Jobs Module
+- **Last fixes applied:** AI Quote Top-up from Notes — complete
+- **Next priority:** Jobs Module (largest structural gap, blocks Invoices and Payments)
 
 ---
+
+## Session 17 — 2026-04-11
+
+### AI Quote Top-up from Notes
+
+**State impact analysis confirmed before any code was written.**
+
+#### Files changed
+| File | Change |
+|---|---|
+| `web/routes/quotes-from-ticket.js` | Added `POST /topup-from-ticket`. Accepts `{ ticket_id, since_date }`. Filters comments to `created_at > since_date`. Calls Claude with focused "new notes only" prompt. Returns same `{ line_items }` shape as generate endpoint. No server.js change needed — already mounted at `/api/quotes`. |
+| `web/client/.../TicketDetailViewTabbed.jsx` | Added `TopUpPanel` module-level component (blue-accented variant of `GenerateQuotePanel`, reuses `ReviewItemRow`/`ConfidenceDot`). Added `topUpTarget` state. Wired `onTopUp` prop to `<QuotesTab>`. Renders `<TopUpPanel>` when `topUpTarget` is set. |
+| `web/client/.../QuotesTab.jsx` | Accepts `onTopUp` prop. Each quote card gains a "Top up from notes" button in a bordered footer row. `e.stopPropagation()` prevents card navigation from firing. Calls `onTopUp(quote.id, quote.quote_number, quote.created_at)`. |
+| `web/client/.../QuoteForm.jsx` | Edit-mode fetch `.then()`: after mapping existing line items, checks `sessionStorage('worktrackr_ai_topup_items')`. If present: parses, clears key, maps with `ai_generated: true` / `catalogue_sourced` / `locked: false`, appends to existing rows. Existing rows untouched. |
+
+#### Architecture
+- `TopUpPanel` opens from `TicketDetailViewTabbed` (not `QuotesTab`) so `ReviewItemRow`/`ConfidenceDot` are not duplicated
+- `QuotesTab` is purely a signal emitter via `onTopUp` — no panel logic inside it
+- On confirm: `sessionStorage('worktrackr_ai_topup_items')` written, navigate to `/app/crm/quotes/{quoteId}`
+- `QuoteForm` edit mode detects + clears the key on mount — seamless append
+- Appended rows carry gold AI badge + existing clear-on-edit badge logic applies identically
+- Sub-component rule ✓ — `TopUpPanel` is module-level
+
+#### Testing checklist after deploy
+- [ ] Open ticket with an existing quote → Quotes tab shows "Top up from notes" button on each quote card
+- [ ] Button click opens blue top-up panel (does NOT navigate to quote)
+- [ ] Card click still navigates to quote view (stopPropagation working)
+- [ ] Panel header shows quote number
+- [ ] Loading text: "Scanning notes added since [DD Mon YYYY]"
+- [ ] Ticket with no new notes since quote created → "No new items found…" + Close button only
+- [ ] Ticket with new notes → items listed with confidence dots/flags
+- [ ] Remove/restore items works as expected
+- [ ] "Add to quote" → navigates to quote edit page
+- [ ] Quote edit page loads existing line items + new AI rows appended at bottom
+- [ ] Appended rows have gold AI badge; editing description clears badge
+- [ ] Existing rows have no badges and are unaffected
+- [ ] Render logs: `[TopUpFromTicket] Calling Claude for ticket X, N new note(s) since DD Mon YYYY`
+- [ ] `[QuoteForm] Appended N top-up item(s) from AI panel` in browser console
+
+
 
 ## AI Policy (confirmed Session 10)
 All AI features use **Anthropic Claude** exclusively (`claude-haiku-4-5-20251001`).
