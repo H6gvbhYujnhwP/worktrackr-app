@@ -154,8 +154,8 @@ router.get('/', async (req, res) => {
         j.*,
         c.name  AS contact_name,
         q.quote_number,
-        u1.full_name AS assigned_to_name,
-        u2.full_name AS created_by_name
+        u1.name AS assigned_to_name,
+        u2.name AS created_by_name
       FROM jobs j
       LEFT JOIN contacts c  ON c.id = j.contact_id
       LEFT JOIN quotes  q   ON q.id = j.quote_id
@@ -204,8 +204,8 @@ router.get('/:id', async (req, res) => {
         j.*,
         c.name  AS contact_name,
         q.quote_number,
-        u1.full_name AS assigned_to_name,
-        u2.full_name AS created_by_name,
+        u1.name AS assigned_to_name,
+        u2.name AS created_by_name,
         (
           SELECT COALESCE(SUM(te.duration_minutes), 0)
           FROM job_time_entries te
@@ -480,7 +480,7 @@ router.get('/:id/time-entries', async (req, res) => {
     }
 
     const result = await db.query(
-      `SELECT te.*, u.full_name AS user_name
+      `SELECT te.*, u.name AS user_name
        FROM job_time_entries te
        LEFT JOIN users u ON u.id = te.user_id
        WHERE te.job_id = $1
