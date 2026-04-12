@@ -1,11 +1,12 @@
 // web/client/src/app/src/components/CRMCalendar.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import {
   Calendar, Clock, Plus, Phone, Users, Target,
   AlertTriangle, CheckCircle, X, Edit, Trash2,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Briefcase, ExternalLink
 } from 'lucide-react';
 
 // FIX 1: type values are lowercase to match backend Zod schema
@@ -14,9 +15,12 @@ const eventTypes = [
   { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[#dcfce7] text-[#15803d]' },
   { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[#f3e8ff] text-[#7e22ce]' },
   { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[#ffedd5] text-[#c2410c]' },
+  { value: 'job',        label: 'Job',         icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
 ];
 
 export default function CRMCalendar({ timezone = 'Europe/London' }) {
+
+  const navigate = useNavigate();
 
   const generateTimeOptions = () => {
     const times = [];
@@ -52,6 +56,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
   };
 
   const [events, setEvents] = useState([]);
+  const [jobEvents, setJobEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -79,6 +84,35 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     const init = async () => {
       const eventsData = await loadEventsFromAPI();
       setEvents(eventsData);
+
+      // Load scheduled jobs and merge as read-only calendar items
+      try {
+        const jobsRes = await fetch('/api/jobs?limit=500', { credentials: 'include' });
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          const scheduled = (jobsData.jobs || [])
+            .filter(j => j.scheduledStart && j.status !== 'cancelled')
+            .map(j => ({
+              id:           `job-${j.id}`,
+              _isJob:       true,
+              _jobId:       j.id,
+              title:        `${j.jobNumber} — ${j.title}`,
+              type:         'job',
+              start_at:     j.scheduledStart,
+              end_at:       j.scheduledEnd || j.scheduledStart,
+              company:      j.contactName || '',
+              contact:      j.assignedToName || '',
+              status:       j.status,
+              jobNumber:    j.jobNumber,
+              jobTitle:     j.title,
+              jobStatus:    j.status,
+              notes:        j.notes || '',
+            }));
+          setJobEvents(scheduled);
+        }
+      } catch (err) {
+        console.error('[CRMCalendar] Failed to load job events:', err);
+      }
     };
     init();
   }, []);
@@ -108,11 +142,13 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    return events.filter(event => {
+    const crm = events.filter(event => {
       const ts = event.start_at || event.startAt;
       if (ts) return ts.split('T')[0] === dateStr;
       return event.date === dateStr;
     });
+    const jobs = jobEvents.filter(j => j.start_at && j.start_at.split('T')[0] === dateStr);
+    return [...crm, ...jobs];
   };
 
   const getEventTypeConfig = (type) => eventTypes.find(t => t.value === type) || eventTypes[0];
@@ -720,87 +756,165 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h2 className="text-[15px] font-semibold text-[#111113]">Event Details</h2>
+              <h2 className="text-[15px] font-semibold text-[#111113]">
+                {selectedEvent._isJob ? 'Scheduled Job' : 'Event Details'}
+              </h2>
               <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <h3 className="text-[15px] font-semibold text-[#111113]">{selectedEvent.title}</h3>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${getEventTypeConfig(selectedEvent.type).color}`}>
-                  {getEventTypeConfig(selectedEvent.type).label}
-                </span>
-              </div>
-              <div className="space-y-2 text-[13px]">
-                <div><span className="font-medium text-[#374151]">Company:</span> <span className="text-[#6b7280]">{selectedEvent.company}</span></div>
-                <div><span className="font-medium text-[#374151]">Contact:</span> <span className="text-[#6b7280]">{selectedEvent.contact}</span></div>
-                {(selectedEvent.start_at || selectedEvent.startAt) && (
-                  <>
-                    <div><span className="font-medium text-[#374151]">Date:</span> <span className="text-[#6b7280]">{formatDate(selectedEvent.start_at || selectedEvent.startAt)}</span></div>
-                    <div><span className="font-medium text-[#374151]">Time:</span> <span className="text-[#6b7280]">{formatTime(selectedEvent.start_at || selectedEvent.startAt)} – {formatTime(selectedEvent.end_at || selectedEvent.endAt)}</span></div>
-                  </>
-                )}
-                {selectedEvent.assigned_user && (
-                  <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_user}</span></div>
-                )}
-                {selectedEvent.assigned_users && selectedEvent.assigned_users.length > 0 && (
-                  <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_users.join(', ')}</span></div>
-                )}
-                <div>
-                  <span className="font-medium text-[#374151]">Status:</span>{' '}
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${selectedEvent.status === 'done' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fef9ee] text-[#d4a017]'}`}>
-                    {selectedEvent.status === 'done' ? 'Done' : 'Planned'}
-                  </span>
+
+            {/* ── JOB variant ── */}
+            {selectedEvent._isJob ? (
+              <>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-[#fef9ee] border border-[#d4a017]/20 flex-shrink-0">
+                      <Briefcase className="w-4 h-4 text-[#d4a017]" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">{selectedEvent.jobNumber}</p>
+                      <h3 className="text-[14px] font-semibold text-[#111113] mt-0.5">{selectedEvent.jobTitle}</h3>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-[13px]">
+                    {(selectedEvent.start_at) && (
+                      <>
+                        <div><span className="font-medium text-[#374151]">Date:</span> <span className="text-[#6b7280]">{formatDate(selectedEvent.start_at)}</span></div>
+                        <div>
+                          <span className="font-medium text-[#374151]">Time:</span>{' '}
+                          <span className="text-[#6b7280]">
+                            {formatTime(selectedEvent.start_at)}
+                            {selectedEvent.end_at && selectedEvent.end_at !== selectedEvent.start_at
+                              ? ` – ${formatTime(selectedEvent.end_at)}`
+                              : ''}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {selectedEvent.company && (
+                      <div><span className="font-medium text-[#374151]">Contact:</span> <span className="text-[#6b7280]">{selectedEvent.company}</span></div>
+                    )}
+                    {selectedEvent.contact && (
+                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.contact}</span></div>
+                    )}
+                    <div>
+                      <span className="font-medium text-[#374151]">Status:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ml-1 ${
+                        selectedEvent.jobStatus === 'scheduled'   ? 'bg-[#dbeafe] text-[#1d4ed8]' :
+                        selectedEvent.jobStatus === 'in_progress' ? 'bg-[#fef3c7] text-[#d97706]' :
+                        selectedEvent.jobStatus === 'on_hold'     ? 'bg-[#f3f4f6] text-[#6b7280]' :
+                        selectedEvent.jobStatus === 'completed'   ? 'bg-[#dcfce7] text-[#15803d]' :
+                        selectedEvent.jobStatus === 'invoiced'    ? 'bg-[#f3e8ff] text-[#7e22ce]' :
+                        'bg-[#fee2e2] text-[#dc2626]'
+                      }`}>
+                        {selectedEvent.jobStatus?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedEvent.notes && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
+                    </div>
+                  )}
                 </div>
-                {selectedEvent.location && (
-                  <div><span className="font-medium text-[#374151]">Location:</span> <span className="text-[#6b7280]">{selectedEvent.location}</span></div>
-                )}
-              </div>
-              {selectedEvent.notes && (
-                <div>
-                  <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Notes</p>
-                  <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row sm:justify-between gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button
-                onClick={() => scheduleFromEvent(selectedEvent)}
-                className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
-              >
-                <Calendar className="w-4 h-4" /> Schedule Meeting
-              </button>
-              <div className="flex flex-wrap gap-2 justify-end">
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => openEditModal(selectedEvent)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
-                >
-                  <Edit className="w-4 h-4" /> Edit
-                </button>
-                {/* FIX 4: Mark Done button now has onClick wired to PUT /api/crm-events/:id */}
-                {selectedEvent.status !== 'done' && (
+                <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
                   <button
-                    onClick={() => markEventDone(selectedEvent)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                    onClick={() => setSelectedEvent(null)}
+                    className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
                   >
-                    <CheckCircle className="w-4 h-4" /> Mark Done
+                    Close
                   </button>
-                )}
-              </div>
-            </div>
+                  <button
+                    onClick={() => { setSelectedEvent(null); navigate(`/app/jobs/${selectedEvent._jobId}`); }}
+                    className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> View Job
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* ── CRM event variant (unchanged) ── */
+              <>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <h3 className="text-[15px] font-semibold text-[#111113]">{selectedEvent.title}</h3>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${getEventTypeConfig(selectedEvent.type).color}`}>
+                      {getEventTypeConfig(selectedEvent.type).label}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-[13px]">
+                    <div><span className="font-medium text-[#374151]">Company:</span> <span className="text-[#6b7280]">{selectedEvent.company}</span></div>
+                    <div><span className="font-medium text-[#374151]">Contact:</span> <span className="text-[#6b7280]">{selectedEvent.contact}</span></div>
+                    {(selectedEvent.start_at || selectedEvent.startAt) && (
+                      <>
+                        <div><span className="font-medium text-[#374151]">Date:</span> <span className="text-[#6b7280]">{formatDate(selectedEvent.start_at || selectedEvent.startAt)}</span></div>
+                        <div><span className="font-medium text-[#374151]">Time:</span> <span className="text-[#6b7280]">{formatTime(selectedEvent.start_at || selectedEvent.startAt)} – {formatTime(selectedEvent.end_at || selectedEvent.endAt)}</span></div>
+                      </>
+                    )}
+                    {selectedEvent.assigned_user && (
+                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_user}</span></div>
+                    )}
+                    {selectedEvent.assigned_users && selectedEvent.assigned_users.length > 0 && (
+                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_users.join(', ')}</span></div>
+                    )}
+                    <div>
+                      <span className="font-medium text-[#374151]">Status:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${selectedEvent.status === 'done' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fef9ee] text-[#d4a017]'}`}>
+                        {selectedEvent.status === 'done' ? 'Done' : 'Planned'}
+                      </span>
+                    </div>
+                    {selectedEvent.location && (
+                      <div><span className="font-medium text-[#374151]">Location:</span> <span className="text-[#6b7280]">{selectedEvent.location}</span></div>
+                    )}
+                  </div>
+                  {selectedEvent.notes && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 px-6 py-4 border-t border-[#e5e7eb]">
+                  <button
+                    onClick={() => scheduleFromEvent(selectedEvent)}
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                  >
+                    <Calendar className="w-4 h-4" /> Schedule Meeting
+                  </button>
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                    <button
+                      onClick={() => setSelectedEvent(null)}
+                      className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => openEditModal(selectedEvent)}
+                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                    >
+                      <Edit className="w-4 h-4" /> Edit
+                    </button>
+                    {/* FIX 4: Mark Done button now has onClick wired to PUT /api/crm-events/:id */}
+                    {selectedEvent.status !== 'done' && (
+                      <button
+                        onClick={() => markEventDone(selectedEvent)}
+                        className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Mark Done
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

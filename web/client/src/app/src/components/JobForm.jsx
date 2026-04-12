@@ -40,6 +40,7 @@ export default function JobForm() {
   const [saving, setSaving]         = useState(false);
   const [loadingJob, setLoadingJob] = useState(isEditMode);
   const [errors, setErrors]         = useState({});
+  const [jobNumber, setJobNumber]   = useState('');
 
   const [formData, setFormData] = useState({
     title:           '',
@@ -79,6 +80,7 @@ export default function JobForm() {
       .then(r => { if (!r.ok) throw new Error('Failed to fetch job'); return r.json(); })
       .then(data => {
         const job = data.job;
+        setJobNumber(job.jobNumber || '');
         setFormData({
           title:           job.title || '',
           description:     job.description || '',
@@ -205,7 +207,9 @@ export default function JobForm() {
             <div className="flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-[#d4a017]" />
               <h1 className="text-[20px] font-bold text-[#111113]">
-                {isEditMode ? 'Edit Job' : 'Create Job'}
+                {isEditMode
+                  ? (jobNumber ? `Edit Job — ${jobNumber}` : 'Edit Job')
+                  : 'Create Job'}
               </h1>
             </div>
             <p className="text-[13px] text-[#9ca3af] mt-0.5">
