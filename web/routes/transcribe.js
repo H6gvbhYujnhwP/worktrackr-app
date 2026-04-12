@@ -108,23 +108,23 @@ Return ONLY valid JSON:
 
 // ─── Format extraction as readable note body ──────────────────────────────────
 function formatAudioNote(extraction, filename) {
-  const lines = [`\uD83C\uDF99\uFE0F Meeting Note${filename ? ` \u2014 ${filename}` : ''}`];
+  const lines = ['\uD83C\uDF99\uFE0F Meeting Note' + (filename ? ' \u2014 ' + filename : '')];
   lines.push('', '**Summary**', extraction.summary || '(none)');
   if (extraction.action_items?.length) {
     lines.push('', '**Action Items**');
-    extraction.action_items.forEach(i => lines.push(`\u2022 ${i}`));
+    extraction.action_items.forEach(i => lines.push('\u2022 ' + i));
   }
   if (extraction.key_details?.length) {
     lines.push('', '**Key Details**');
-    extraction.key_details.forEach(i => lines.push(`\u2022 ${i}`));
+    extraction.key_details.forEach(i => lines.push('\u2022 ' + i));
   }
   if (extraction.decisions?.length) {
     lines.push('', '**Decisions**');
-    extraction.decisions.forEach(i => lines.push(`\u2022 ${i}`));
+    extraction.decisions.forEach(i => lines.push('\u2022 ' + i));
   }
   if (extraction.follow_ups?.length) {
     lines.push('', '**Follow-ups**');
-    extraction.follow_ups.forEach(i => lines.push(`\u2022 ${i}`));
+    extraction.follow_ups.forEach(i => lines.push('\u2022 ' + i));
   }
   return lines.join('\n');
 }
@@ -223,7 +223,7 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
   }
 });
 
-// ─── POST /api/transcribe/extract-ticket (Claude — was GPT-4) ─────────────────
+// ─── POST /api/transcribe/extract-ticket (Claude) ─────────────────────────────
 router.post('/extract-ticket', async (req, res) => {
   try {
     const { transcript_id, transcript_text } = extractTicketSchema.parse(req.body);
@@ -267,73 +267,130 @@ router.post('/extract-ticket', async (req, res) => {
 });
 
 // ─── Voice intent prompt ──────────────────────────────────────────────────────
-function buildVoiceIntentPrompt(transcript, context) {
+// Phase 1: company/contact added to crm_calendar schema
+// Phase 3: conversationHistory param, clarification_needed/missing_fields/question in response
+// Phase 5: compound intent shape
+function buildVoiceIntentPrompt(transcript, context, conversationHistory) {
+  const history = Array.isArray(conversationHistory) ? conversationHistory : [];
+
+  let historySection = '';
+  if (history.length > 0) {
+    historySection = '\n\nCONVERSATION SO FAR:\n';
+    for (const entry of history) {
+      historySection += (entry.role === 'user' ? 'USER' : 'ASSISTANT') + ': ' + entry.content + '\n';
+    }
+    historySection += '\nThe user has now responded. Use the full conversation above to fill in previously missing fields. Do NOT ask again for anything already given in the conversation.';
+  }
+
+  const userLine = history.length > 0
+    ? 'LATEST USER RESPONSE: "' + transcript + '"'
+    : 'USER SAID: "' + transcript + '"';
+
   return `You are an AI assistant embedded in WorkTrackr, a field service management and CRM platform.
 A user has spoken a voice command. Determine their intent and extract the relevant data.
 
-USER SAID: "${transcript}"
+${userLine}
 
 CONTEXT:
-${context}
+${context}${historySection}
 
 AVAILABLE INTENTS:
-- ticket_note      → Add a note/comment to an existing ticket
-- new_ticket       → Create a brand-new support ticket
-- personal_note    → Save a private note to My Notes
-- personal_reminder → Save a private note with a due date/reminder
-- company_note     → Share a note with the whole team (Company Notes)
-- crm_calendar     → Schedule a CRM event (call, meeting, follow-up)
-- ticket_calendar  → Book a calendar entry for a job/ticket
-- unknown          → Cannot determine intent
+- ticket_note       -> Add a note/comment to an existing ticket
+- new_ticket        -> Create a brand-new support ticket
+- personal_note     -> Save a private note to My Notes
+- personal_reminder -> Save a private note with a due date/reminder
+- company_note      -> Share a note with the whole team (Company Notes)
+- crm_calendar      -> Schedule a CRM event (call, meeting, follow-up)
+- ticket_calendar   -> Book a calendar entry for a job/ticket
+- compound          -> User wants to do TWO distinct things at once
+- unknown           -> Cannot determine intent
+
+REQUIRED FIELDS — if any required field is missing, set clarification_needed: true and ask:
+- crm_calendar:       date/time (required), title (required), type (required); company/contact optional but ask once if unmentioned
+- new_ticket:         title (required), priority (ask if not stated)
+- ticket_note:        ticket_id (required unless currently viewing a ticket per context), body (required)
+- personal_reminder:  title (required), due_date (ALWAYS ask "when?" if not provided)
+- personal_note:      title (required), body (required)
+- company_note:       title (required), body (required), note_type (ask "knowledge base, general, or announcement?" if missing)
+- ticket_calendar:    title (required), eventDate (required), startTime (required)
+
+CLARIFICATION RULES:
+- Set clarification_needed: true only if a REQUIRED field is missing
+- question must be a short spoken sentence, under 15 words
+- Do NOT re-ask for anything already provided in the conversation history above
+- After 3 rounds, make your best guess and proceed without asking further
 
 Return ONLY valid JSON — no markdown, no explanation:
 {
   "intent": "ticket_note",
   "confidence": 0.92,
+  "clarification_needed": false,
+  "missing_fields": [],
+  "question": null,
   "ticket_id": "uuid-of-ticket-or-null",
-  "confirmation_message": "Short spoken summary e.g. I'll add a note to ticket #1234 saying the router has been replaced — is that right?",
+  "confirmation_message": "Short spoken summary e.g. Adding a note to the VPN ticket saying the router is replaced. Confirm?",
+  "compound_items": null,
   "data": {
-    "for ticket_note":      { "ticket_id": "uuid", "body": "note text", "comment_type": "internal" },
-    "for new_ticket":       { "title": "brief title", "description": "full description", "priority": "low|medium|high|urgent" },
-    "for personal_note":    { "title": "note title", "body": "note body" },
-    "for personal_reminder":{ "title": "reminder title", "body": "details", "due_date": "ISO 8601 datetime or null" },
-    "for company_note":     { "title": "title", "body": "body", "note_type": "note|knowledge|announcement" },
-    "for crm_calendar":     { "title": "event title", "type": "call|meeting|follow_up|other", "start_at": "ISO 8601", "end_at": "ISO 8601", "notes": "optional notes" },
-    "for ticket_calendar":  { "title": "event title", "eventDate": "YYYY-MM-DD", "startTime": "HH:MM", "endTime": "HH:MM", "description": "optional" }
+    "for ticket_note":       { "ticket_id": "uuid", "body": "note text", "comment_type": "internal" },
+    "for new_ticket":        { "title": "brief title", "description": "full description", "priority": "low|medium|high|urgent" },
+    "for personal_note":     { "title": "note title", "body": "note body" },
+    "for personal_reminder": { "title": "reminder title", "body": "details", "due_date": "ISO 8601 datetime or null" },
+    "for company_note":      { "title": "title", "body": "body", "note_type": "note|knowledge|announcement" },
+    "for crm_calendar":      { "title": "event title", "type": "call|meeting|follow_up|other", "start_at": "ISO 8601", "end_at": "ISO 8601", "notes": "optional notes", "company": "company name or null", "contact": "contact person name or null" },
+    "for ticket_calendar":   { "title": "event title", "eventDate": "YYYY-MM-DD", "startTime": "HH:MM", "endTime": "HH:MM", "description": "optional" }
   }
 }
 
+For COMPOUND intents (two distinct actions):
+{
+  "intent": "compound",
+  "confidence": 0.88,
+  "clarification_needed": false,
+  "missing_fields": [],
+  "question": null,
+  "ticket_id": null,
+  "confirmation_message": "Adding a note to the Acme ticket and scheduling a call tomorrow at 2pm. Confirm?",
+  "compound_items": [
+    { "intent": "ticket_note", "data": { "ticket_id": "uuid", "body": "note text", "comment_type": "internal" } },
+    { "intent": "crm_calendar", "data": { "title": "Call with Acme", "type": "call", "start_at": "ISO 8601", "end_at": "ISO 8601", "company": null, "contact": null } }
+  ],
+  "data": {}
+}
+
 Rules:
-- Only include the data fields relevant to the chosen intent
-- If no ticket is identifiable for ticket_note, set ticket_id to null and include it in data
-- Due dates should be ISO 8601 (e.g. 2026-04-10T09:00:00.000Z); infer from phrases like "tomorrow", "next Monday" relative to today's date in the context
-- For CRM/calendar times, default to 1-hour duration if end time not mentioned
-- confidence is 0-1; below 0.5 use intent "unknown"
-- confirmation_message must be a natural spoken sentence, concise (under 25 words)`;
+- Only include data fields relevant to the chosen intent
+- If no ticket identifiable for ticket_note, set ticket_id to null
+- Due dates in ISO 8601; infer from "tomorrow", "next Monday" relative to today's date in context
+- Default to 1-hour duration for CRM/calendar if end time not mentioned
+- confidence is 0.0-1.0; use "unknown" if below 0.5
+- confirmation_message must be a natural spoken sentence under 25 words`;
 }
 
 // ─── POST /api/transcribe/voice-intent ────────────────────────────────────────
 router.post('/voice-intent', async (req, res) => {
   try {
-    const { transcript, context } = req.body;
+    const { transcript, context, conversationHistory } = req.body;
     if (!transcript || transcript.trim().length < 2) {
       return res.status(400).json({ error: 'No transcript provided' });
     }
 
+    const history = Array.isArray(conversationHistory) ? conversationHistory : [];
+
     const contextStr = [
-      context.currentView   ? `Current screen: ${context.currentView}` : '',
-      context.userName      ? `Current user: ${context.userName}` : '',
-      context.dateTime      ? `Date/time: ${context.dateTime}` : '',
-      context.currentTicketId ? `Currently viewing ticket ID: ${context.currentTicketId}` : '',
+      context.currentView    ? 'Current screen: ' + context.currentView : '',
+      context.userName       ? 'Current user: ' + context.userName : '',
+      context.dateTime       ? 'Date/time: ' + context.dateTime : '',
+      context.currentTicketId ? 'Currently viewing ticket ID: ' + context.currentTicketId : '',
       context.openTickets?.length
-        ? `Recent open tickets:\n${context.openTickets.map(t => `  - ID: ${t.id} | #${t.ref || t.id.slice(0,8)} "${t.title}" (${t.status})`).join('\n')}`
+        ? 'Recent open tickets:\n' + context.openTickets.map(t => '  - ID: ' + t.id + ' | #' + (t.ref || t.id.slice(0,8)) + ' "' + t.title + '" (' + t.status + ')').join('\n')
         : 'No open tickets loaded',
     ].filter(Boolean).join('\n');
 
-    console.log('[VoiceIntent] Transcript:', transcript.slice(0, 100));
+    console.log('[VoiceIntent] Transcript:', transcript.slice(0, 100), '| History rounds:', history.length);
+
     const raw = await callClaude(
       'You are a voice intent router for a field service CRM application. Always respond with valid JSON only.',
-      buildVoiceIntentPrompt(transcript.trim(), contextStr),
+      buildVoiceIntentPrompt(transcript.trim(), contextStr, history),
     );
 
     let result;
@@ -344,13 +401,17 @@ router.post('/voice-intent', async (req, res) => {
       result = {
         intent: 'unknown',
         confidence: 0,
+        clarification_needed: false,
+        missing_fields: [],
+        question: null,
         ticket_id: null,
         confirmation_message: "I couldn't understand that — please try again.",
+        compound_items: null,
         data: {},
       };
     }
 
-    console.log('[VoiceIntent] Intent:', result.intent, 'confidence:', result.confidence);
+    console.log('[VoiceIntent] Intent:', result.intent, '| Confidence:', result.confidence, '| Clarify:', result.clarification_needed);
     res.json({ success: true, ...result });
   } catch (error) {
     console.error('[VoiceIntent] Error:', error);
@@ -381,8 +442,8 @@ router.get('/', async (req, res) => {
     const { ticket_id, limit = 50, offset = 0 } = req.query;
     let query = `SELECT t.*, u.email as created_by_email FROM transcripts t LEFT JOIN users u ON t.user_id = u.id WHERE t.organisation_id = $1`;
     const params = [orgId]; let pi = 2;
-    if (ticket_id) { query += ` AND t.ticket_id = $${pi++}`; params.push(ticket_id); }
-    query += ` ORDER BY t.created_at DESC LIMIT $${pi} OFFSET $${pi + 1}`;
+    if (ticket_id) { query += ' AND t.ticket_id = $' + pi++; params.push(ticket_id); }
+    query += ' ORDER BY t.created_at DESC LIMIT $' + pi + ' OFFSET $' + (pi + 1);
     params.push(parseInt(limit), parseInt(offset));
     const result = await db.query(query, params);
     res.json({ transcripts: result.rows, total: result.rows.length, limit: parseInt(limit), offset: parseInt(offset) });

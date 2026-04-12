@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 28 — 2026-04-12
+**Last updated:** Session 29 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -19,19 +19,16 @@
 | Quotes | ✅ Working | Line items redesign, buy/sell/margin, AI generation from ticket, PDF |
 | Jobs (Projects) | ✅ Working | All user-facing labels say "Project/Projects"; internal ids/routes/API remain `jobs` |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
-| Voice Assistant | ⚠️ Partial | Floating FAB works, intent routing works, BUT: no voice confirmation loop (requires screen tap), CRM calendar missing company/contact extraction. Full overhaul scoped — see ROADMAP.md |
+| Voice Assistant | ✅ Working | Full hands-free overhaul complete. 5 phases shipped: (1) CRM calendar company/contact fix, (2) voice confirm loop, (3) clarification rounds, (4) smart auto-save, (5) compound intents |
 | Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint |
 | Invoices — Frontend | ✅ Phase 2 done | List view, detail view, route wrappers, JobDetail integration |
-| Payments | ❌ Not built | Backlog — after voice overhaul |
+| Payments | ❌ Not built | Backlog |
 
 ---
 
 ## Known Bugs / Outstanding Issues
 
-| # | Module | Description | Severity |
-|---|---|---|---|
-| 1 | Voice Assistant | No voice confirmation loop — after TTS speaks, mic goes silent, requires screen tap to confirm. Not hands-free. | High |
-| 2 | Voice Assistant | `crm_calendar` intent: `company` and `contact` not in Claude prompt schema, not extracted, not saved to API. CRM events created with blank company/contact. | High |
+_No known bugs at time of Session 29 close._
 
 ---
 
@@ -60,7 +57,7 @@
 | `routes/invoices.js` | Invoices CRUD, PDF — mounted at `/api/invoices` |
 | `routes/crm-events.js` | CRM calendar events CRUD |
 | `routes/contacts.js` | CRM contacts CRUD |
-| `routes/transcribe.js` | Whisper transcription, Claude extraction, voice intent routing. `buildVoiceIntentPrompt()` at line ~270. **Needs update: add company/contact to crm_calendar schema, add clarification_needed/missing_fields/question to response shape.** |
+| `routes/transcribe.js` | Whisper transcription, Claude extraction, voice intent routing. `buildVoiceIntentPrompt(transcript, context, conversationHistory)` — 3 params. Response includes `clarification_needed`, `missing_fields`, `question`, `compound_items`. |
 | `routes/summaries.js` | Smart summaries (ticket + quote) + CRM next-action suggestions |
 | `routes/users.js` | User management |
 | `routes/auth.js` | Login, logout, session |
@@ -76,7 +73,7 @@
 | `components/Dashboard.jsx` | Inline view switcher |
 | `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen |
 | `components/CRMCalendar.jsx` | CRM calendar — 3 views, jobs integration, AI next-action suggestions. Module-level: `NextActionButton`, `NextActionBox` |
-| `components/VoiceAssistant.jsx` | Floating gold mic FAB. **Needs full overhaul** — see ROADMAP.md. Key sections: `saveIntent()` (saves per intent), `ReviewPanel` (shows after processing), `CrmCalendarFields` (missing company/contact fields), `buildVoiceIntentPrompt` in transcribe.js (missing company/contact in crm_calendar schema). |
+| `components/VoiceAssistant.jsx` | Floating gold mic FAB. Full hands-free overhaul (Session 29). Phase state machine: idle→recording→processing→clarifying→review/voice_confirm→saving→success. 20 module-level components. Stale-closure guard refs. |
 | `components/QuoteForm.jsx` | Quote create/edit — line items, AI prefill, badge/lock |
 | `components/QuoteDetails.jsx` | Quote detail — line items table, margin panel, send modal |
 | `components/JobsList.jsx` | Jobs list (labels: "Project") |
@@ -112,7 +109,7 @@
 | GET/POST/PUT/DELETE | `/api/tickets` | Tickets |
 | POST | `/api/tickets/:id/match-contact` | Claude contact match |
 | POST | `/api/transcribe/ticket-note` | Whisper + Claude extraction |
-| POST | `/api/transcribe/voice-intent` | Claude intent routing for voice assistant |
+| POST | `/api/transcribe/voice-intent` | Claude intent routing. Accepts `{ transcript, context, conversationHistory[] }`. Returns `{ intent, confidence, clarification_needed, missing_fields, question, compound_items, data, confirmation_message }`. |
 | GET/POST | `/api/summaries/ticket/:id` | Smart summary for ticket |
 | POST | `/api/summaries/crm-event/:id/next-action` | AI next-action after event marked Done |
 

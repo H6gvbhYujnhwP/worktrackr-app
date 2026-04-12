@@ -25,8 +25,66 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-12 (Session 28)
-- **Next priority:** Voice Assistant overhaul — full hands-free conversational flow (see ROADMAP.md for full spec)
+- **Last session:** 2026-04-12 (Session 29)
+- **Next priority:** Payments module — or Quote Line Items Redesign (see ROADMAP.md backlog)
+
+---
+
+## Session 29 — 2026-04-12
+
+### Voice Assistant Overhaul — All 5 Phases
+
+#### Files changed
+| File | What changed |
+|---|---|
+| `web/routes/transcribe.js` | Phase 1: `company`/`contact` added to `crm_calendar` schema in `buildVoiceIntentPrompt`. Phase 3: added `conversationHistory` param (3rd arg), `CONVERSATION SO FAR` block injected into prompt, `clarification_needed`/`missing_fields`/`question` added to response schema, required-fields-per-intent documented in prompt. Phase 5: compound intent shape and instructions added to prompt. POST handler: extracts `conversationHistory` from body, passes to `buildVoiceIntentPrompt`, logs round count. |
+| `web/client/src/app/src/components/VoiceAssistant.jsx` | Full overhaul — 5 phases. See breakdown below. |
+
+#### VoiceAssistant.jsx breakdown
+
+**Phase 1 — CRM calendar fix (Bug #2 resolved):**
+- `CrmCalendarFields`: added Company + Contact text inputs (2-column grid, optional)
+- `saveIntent()` crm_calendar case: now passes `company` and `contact` in POST body
+
+**Phase 2 — Voice confirmation loop (Bug #1 resolved):**
+- New phase `voice_confirm` between `review` and `saving`
+- `beginConfirmRecognition()`: opens 8s Web Speech window; listens for affirmatives/negatives
+  - Affirmative → auto-calls `handleConfirm` with current editData/editItems
+  - Negative → `handleRetry` + speaks "Cancelled."
+  - Timeout/ambiguous → falls to review panel (tap still available)
+- `VoiceConfirmIndicator`: amber pulsing dot + countdown + "Hear again" button (module-level ✅)
+- `speak()` updated with `onEnd` callback param (double-fire guarded with `fired` flag + length-based fallback)
+- `editData` lifted out of `ReviewPanel` to `VoiceAssistant` level — ReviewPanel now receives `editData`/`onEditData` as props
+- `onReviewTtsEnd` callback: transitions review → voice_confirm after TTS fires
+- `handleHearAgain`: stops current confirm rec, re-speaks, restarts 8s window
+
+**Phase 3 — Clarification rounds:**
+- New phase `clarifying` between `processing` and `review`
+- `ClarifyingPanel`: amber question box, 10s arc countdown, live answer preview, "Skip and fill in manually" link (module-level ✅)
+- `startClarifyMic(history, round)`: 10s Web Speech; on result appends to history, re-calls `submitTranscript`; on no-speech falls to review; hard-stop at 10s
+- `conversationHistory` state (array of `{role, content}` pairs)
+- `clarifyRound` state (max 3); beyond 3 Claude proceeds with best guess per prompt instruction
+- `submitTranscript` updated: accepts `(transcript, history, round)` — injects history into POST body
+
+**Phase 4 — Smart auto-save:**
+- `REQUIRED_FIELDS` constant: maps intent → required field names
+- `shouldAutoSave(result)`: returns true when `confidence >= 0.9` AND `clarification_needed === false` AND all required fields present; returns false for compound/unknown
+- Auto-save path in `submitTranscript`: skips review entirely, speaks confirmation + saves simultaneously, speaks "Done!", success panel closes after 2.2s; falls to review if save fails
+
+**Phase 5 — Compound intents:**
+- `editItems` state: array of `{intent, data}` for compound results
+- `CompoundReviewPanel`: stacked sections per item, each with IntentBadge header + editable fields; single confirm saves both (module-level ✅)
+- `handleConfirm` handles compound: iterates `editItems`, saves each via `saveIntent`, joins success messages with ` & `
+- Voice confirm works identically for compound: affirmative reads from `editItemsRef.current` when intent is compound
+
+#### Stale-closure guard refs (all updated inline each render)
+`resultRef`, `editDataRef`, `editItemsRef`, `handleConfirmRef`, `handleRetryRef`, `startVoiceConfirmRef`, `submitTranscriptRef`, `startClarifyMicRef`, `stopRecordingRef`
+
+#### Sub-component rule compliance
+All 20 functions in VoiceAssistant.jsx defined at module level (before line 790). Zero sub-components inside VoiceAssistant's function body. ✅
+
+#### Phase state machine
+`idle` → `recording` → `processing` → [`clarifying` (×max 3)] → [`voice_confirm` → `saving`] OR [auto-save: `saving` directly] → `success`
 
 ---
 
@@ -39,33 +97,6 @@ Paste this at the start of every new chat session:
 |---|---|
 | `web/routes/summaries.js` | Added `POST /api/summaries/crm-event/:id/next-action`. Fetches event from DB (org-verified), resolves contact name via JOIN, accepts supplemental `company`/`contact` strings from body. Calls Claude Haiku. Returns `{ suggestion, actions[] }`. Graceful fallback on JSON parse error. |
 | `web/client/src/app/src/components/CRMCalendar.jsx` | Added `Sparkles`, `Ticket`, `FileText`, `CalendarPlus` imports. Two module-level components: `NextActionButton`, `NextActionBox`. Added `nextAction`/`nextActionLoading` state. Extended `markEventDone` to fire next-action endpoint (non-blocking). Added `handleNextAction` for `new_ticket`, `new_quote`, `schedule_followup`. `NextActionBox` rendered below notes in CRM event body. All close/delete paths reset `nextAction`. |
-
-#### Sub-component rule compliance
-- `NextActionButton` — module level ✅
-- `NextActionBox` — module level ✅
-
----
-
-### Voice Assistant Analysis (discussed, not yet built)
-
-#### Problem identified
-The current `VoiceAssistant.jsx` flow stops dead after TTS speaks the confirmation message — it waits silently for a screen tap. Not hands-free. Two specific bugs found in code:
-
-1. **No voice confirmation loop** — after `speak(confirmation_message)` fires on `ReviewPanel` mount, the mic goes silent. User must tap "Confirm & save" on screen.
-2. **CRM calendar missing company/contact** — `buildVoiceIntentPrompt` in `transcribe.js` does not include `company` or `contact` in the `crm_calendar` data schema. These fields are never extracted, never saved. Events created with blank company/contact.
-
-#### Full spec agreed — see ROADMAP.md "Voice Assistant Overhaul" for complete detail.
-
----
-
-## Session 27 — 2026-04-12
-
-### Rename Jobs → Projects — Phase 2 (frontend labels only)
-
-#### Modified files
-| File | Lines changed | What changed |
-|---|---|---|
-| `TicketDetailViewTabbed.jsx` | 1539, 1562 | `"Job description"` → `"Project description"`; `"Edit job description"` → `"Edit project description"` |
 
 ---
 
