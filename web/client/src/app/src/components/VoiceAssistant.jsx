@@ -728,7 +728,10 @@ export default function VoiceAssistant({ currentView, user }) {
     timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000);
 
     // Auto-stop at 60s
-    maxTimerRef.current = setTimeout(() => stopRecording(), MAX_RECORD_MS);
+    maxTimerRef.current = setTimeout(() => {
+      setError('Time limit reached — recording stopped after 60 seconds.');
+      stopRecording();
+    }, MAX_RECORD_MS);
   }, []); // eslint-disable-line
 
   // ── Stop recording → send to Claude ────────────────────────────────────

@@ -15,7 +15,8 @@
 //   • Live preview box appears below showing interim words in real time
 //   • Tap again → stops recording, final text passed to onResult()
 //   • Preview box disappears after a short delay once stopped
-//   • If Web Speech API is unsupported the component renders null silently
+//   • If Web Speech API is unsupported, a visible disabled button is rendered
+//     with a tooltip explaining that Chrome or Edge is required
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Mic, MicOff, X } from 'lucide-react';
@@ -138,8 +139,21 @@ export default function DictationButton({ onResult, disabled = false, className 
     setError('');
   }, []);
 
-  // ── Unsupported browser — render nothing ────────────────────────────────
-  if (!SpeechRecognition) return null;
+  // ── Unsupported browser — render disabled button with tooltip ───────────
+  if (!SpeechRecognition) {
+    return (
+      <div className={className}>
+        <button
+          type="button"
+          disabled
+          title="Voice dictation requires Google Chrome or Microsoft Edge"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium border bg-white border-[#e5e7eb] text-[#9ca3af] opacity-50 cursor-not-allowed"
+        >
+          <Mic size={14} className="text-[#9ca3af]" /> Dictate
+        </button>
+      </div>
+    );
+  }
 
   // ── What to show in the preview box ────────────────────────────────────
   const previewText = (finalBuffer + (interimText ? interimText : '')).trim();
