@@ -452,6 +452,7 @@ export default function App() {
             <Route path="crm/quotes/:id/edit" element={<QuoteFormWithLayout mode="edit" />} />
             <Route path="jobs/new" element={<JobFormWithLayout />} />
             <Route path="jobs/:id" element={<JobDetailWithLayout />} />
+            <Route path="jobs/:id/edit" element={<JobFormWithLayout />} />
             <Route path="settings/pricing-config" element={<PricingConfigWithLayout />} />
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/app/dashboard" replace />} />

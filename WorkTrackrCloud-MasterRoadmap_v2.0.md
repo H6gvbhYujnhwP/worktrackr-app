@@ -156,9 +156,9 @@ A separate application (idoyourquotes.com) handles quote creation and customer a
 - [x] Jobs API (CRUD + time-entries + parts sub-resources)
 - [x] Jobs list view + detail page
 - [x] Job creation form
-- [ ] Job edit form
-- [ ] Time entry logging UI (add entries from detail page)
-- [ ] Parts logging UI (add parts from detail page)
+- [x] Job edit form
+- [x] Time entry logging UI (add entries from detail page)
+- [x] Parts logging UI (add parts from detail page)
 - [ ] Calendar integration
 - [x] Quote → Job conversion (handler was already written; table now exists)
 

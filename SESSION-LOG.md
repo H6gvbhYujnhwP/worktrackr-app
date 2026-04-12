@@ -20,15 +20,67 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-11 (Session 20)
+- **Last session:** 2026-04-12 (Session 21)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Jobs Module Phase 2 — UI (list view + detail page + create form)
-- **Next priority:** Jobs Module Phase 3 — Edit form + time entry / parts logging UI
+- **Last fixes applied:** Jobs Module Phase 3 — Edit form + time entry / parts logging UI (add + delete)
+- **Next priority:** Jobs calendar integration; then Invoices module
 
 ---
 
-## Session 20 — 2026-04-11
+## Session 21 — 2026-04-12
+
+### Jobs Module Phase 3 — Edit Form + Time Entry / Parts Logging UI
+
+**Impact analysis confirmed before any code was written.**
+
+#### Files changed
+| File | Change |
+|---|---|
+| `web/client/.../JobForm.jsx` | Extended for edit mode. `useParams()` detects `id` → edit mode. On mount: fetches job, pre-populates all fields via `isoToDatetimeLocal()`. Submit PUTs to `/api/jobs/:id`, navigates back to detail. Back button goes to detail (edit) or jobs list (create). Status label changes to "Status" in edit, "Initial Status" in create. Includes `invoiced` as a status option in edit mode. Create mode fully backward-compatible. |
+| `web/client/.../JobDetail.jsx` | Added 4 new module-level components: `AddTimeEntryForm`, `AddPartForm`. Enhanced `TimeEntriesSection` with: add form toggle, `refreshKey` pattern, delete per row (with confirm dialog + spinner). Enhanced `PartsSection` with: add form toggle, `refreshKey` pattern, delete per row. All sub-components defined at module level — sub-component rule ✓. |
+| `web/client/.../App.jsx` | Added `<Route path="jobs/:id/edit" element={<JobFormWithLayout />} />` after the detail route. `JobFormWithLayout` unchanged — `JobForm` detects edit mode internally. |
+
+#### Architecture — edit mode detection
+`JobForm` calls `useParams()`. The create route (`jobs/new`) returns `{}` — no `id`. The edit route (`jobs/:id/edit`) returns `{ id: '...' }`. `isEditMode = Boolean(jobId)` is the single discriminator. No new wrapper file needed.
+
+#### Architecture — time/parts inline forms
+`AddTimeEntryForm` and `AddPartForm` are module-level components receiving `{ jobId, onSuccess, onCancel }` props. They appear inline below the section header when the "Log Time" / "Add Part" button is clicked. On success → call `onSuccess()` which calls `refresh()` (increments `refreshKey`) and hides the form. On cancel → hides the form. Delete buttons use a `deletingId` state to show a spinner on the active row.
+
+#### `refreshKey` pattern (no useCallback)
+```
+const [refreshKey, setRefreshKey] = useState(0);
+useEffect(() => { /* fetch */ }, [jobId, refreshKey]);
+const refresh = () => setRefreshKey(k => k + 1);
+```
+
+#### Testing checklist after deploy
+- [ ] Job detail → "Edit" button → navigates to `/app/jobs/:id/edit`
+- [ ] Edit form pre-populated: title, description, status, contact, assigned to, scheduled start/end, notes
+- [ ] Edit form: change assigned to user → save → detail page shows updated name
+- [ ] Edit form: clear start/end dates → save → dates show "—" in detail
+- [ ] Edit form: status dropdown includes all statuses including Invoiced
+- [ ] Edit form: back button returns to job detail (not jobs list)
+- [ ] Edit form: "Save Changes" button text (not "Create Job")
+- [ ] Create form: back button still returns to jobs list ✓
+- [ ] Create form: button still says "Create Job" ✓
+- [ ] Time entries section: "Log Time" button appears above entry list
+- [ ] Click "Log Time" → inline form slides in with description + hours + billable toggle
+- [ ] Log 1.5 hours → entry appears in table showing "1h 30m" · total updates
+- [ ] Log time with no hours → shows validation error, does not submit
+- [ ] X button on time entry row → confirm dialog → entry removed → totals update
+- [ ] Parts section: "Add Part" button appears above parts list
+- [ ] Click "Add Part" → inline form with description, qty, unit, buy/sell price
+- [ ] Add part with description only → appears in table
+- [ ] Add part with all fields → buy/sell/line value shown correctly
+- [ ] Add part with no description → shows validation error
+- [ ] X button on part row → confirm dialog → part removed → totals update
+- [ ] Cancel button on both forms hides form without submitting
+- [ ] Sub-component rule ✓: AddTimeEntryForm, AddPartForm, TimeEntriesSection, PartsSection, StatusBadge all module-level
+
+---
+
+
 
 ### Jobs Module Phase 2 — UI (List View + Detail Page + Create Form)
 

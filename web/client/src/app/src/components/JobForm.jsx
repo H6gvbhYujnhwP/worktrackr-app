@@ -1,29 +1,45 @@
 // web/client/src/app/src/components/JobForm.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Loader2, Save } from 'lucide-react';
 
 // ── Design system constants ────────────────────────────────────────────────────
 const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]';
 const LABEL_CLS = 'block text-[12px] font-semibold text-[#374151] mb-1';
-const SECTION_HDR = 'text-[11px] font-bold text-[#9ca3af] uppercase tracking-wider mb-4';
 
 const JOB_STATUSES = [
   { value: 'scheduled',   label: 'Scheduled'   },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'on_hold',     label: 'On Hold'     },
   { value: 'completed',   label: 'Completed'   },
+  { value: 'invoiced',    label: 'Invoiced'    },
 ];
+
+// Convert ISO datetime string to datetime-local input format (YYYY-MM-DDTHH:MM)
+function isoToDatetimeLocal(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return '';
+  }
+}
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function JobForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id: jobId } = useParams();         // present when route is jobs/:id/edit
+  const isEditMode = Boolean(jobId);
 
-  const [contacts, setContacts] = useState([]);
-  const [users, setUsers]       = useState([]);
-  const [saving, setSaving]     = useState(false);
-  const [errors, setErrors]     = useState({});
+  const [contacts, setContacts]     = useState([]);
+  const [users, setUsers]           = useState([]);
+  const [saving, setSaving]         = useState(false);
+  const [loadingJob, setLoadingJob] = useState(isEditMode);
+  const [errors, setErrors]         = useState({});
 
   const [formData, setFormData] = useState({
     title:           '',
@@ -36,7 +52,7 @@ export default function JobForm() {
     notes:           '',
   });
 
-  // Load contacts + users on mount
+  // Load contacts + users
   useEffect(() => {
     fetch('/api/contacts', { credentials: 'include' })
       .then(r => r.json())
@@ -48,10 +64,39 @@ export default function JobForm() {
       .then(data => setUsers(data.users || data || []))
       .catch(err => console.error('Error fetching users:', err));
 
-    // Pre-fill contact if passed via query param
-    const contactId = searchParams.get('contact_id');
-    if (contactId) setFormData(prev => ({ ...prev, contact_id: contactId }));
+    // Pre-fill contact if passed via query param (create mode only)
+    if (!isEditMode) {
+      const contactId = searchParams.get('contact_id');
+      if (contactId) setFormData(prev => ({ ...prev, contact_id: contactId }));
+    }
   }, []);
+
+  // In edit mode: fetch existing job and pre-populate form
+  useEffect(() => {
+    if (!isEditMode || !jobId) return;
+    setLoadingJob(true);
+    fetch(`/api/jobs/${jobId}`, { credentials: 'include' })
+      .then(r => { if (!r.ok) throw new Error('Failed to fetch job'); return r.json(); })
+      .then(data => {
+        const job = data.job;
+        setFormData({
+          title:           job.title || '',
+          description:     job.description || '',
+          status:          job.status || 'scheduled',
+          contact_id:      job.contactId || '',
+          assigned_to:     job.assignedTo || '',
+          scheduled_start: isoToDatetimeLocal(job.scheduledStart),
+          scheduled_end:   isoToDatetimeLocal(job.scheduledEnd),
+          notes:           job.notes || '',
+        });
+      })
+      .catch(err => {
+        console.error('[JobForm] Failed to load job for edit:', err);
+        alert('Failed to load job. Returning to jobs list.');
+        navigate('/app/dashboard', { state: { view: 'jobs' } });
+      })
+      .finally(() => setLoadingJob(false));
+  }, [jobId, isEditMode]);
 
   const set = (field) => (e) =>
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -74,43 +119,75 @@ export default function JobForm() {
     setSaving(true);
 
     const payload = {
-      title:           formData.title.trim(),
-      description:     formData.description.trim() || null,
-      status:          formData.status,
-      contact_id:      formData.contact_id || null,
-      assigned_to:     formData.assigned_to || null,
-      notes:           formData.notes.trim() || null,
+      title:       formData.title.trim(),
+      description: formData.description.trim() || null,
+      status:      formData.status,
+      contact_id:  formData.contact_id || null,
+      assigned_to: formData.assigned_to || null,
+      notes:       formData.notes.trim() || null,
     };
 
-    // Convert local datetime-local values to ISO strings
     if (formData.scheduled_start) {
       payload.scheduled_start = new Date(formData.scheduled_start).toISOString();
+    } else {
+      payload.scheduled_start = null;
     }
     if (formData.scheduled_end) {
       payload.scheduled_end = new Date(formData.scheduled_end).toISOString();
+    } else {
+      payload.scheduled_end = null;
     }
 
     try {
-      const r = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      if (!r.ok) {
-        const errData = await r.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to create job');
+      let r, data;
+      if (isEditMode) {
+        r = await fetch(`/api/jobs/${jobId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const errData = await r.json().catch(() => ({}));
+          throw new Error(errData.error || 'Failed to update job');
+        }
+        data = await r.json();
+        console.log('[JobForm] Updated job:', data.job?.jobNumber);
+        navigate(`/app/jobs/${jobId}`);
+      } else {
+        r = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const errData = await r.json().catch(() => ({}));
+          throw new Error(errData.error || 'Failed to create job');
+        }
+        data = await r.json();
+        console.log('[JobForm] Created job:', data.job?.jobNumber);
+        navigate(`/app/jobs/${data.job.id}`);
       }
-      const data = await r.json();
-      console.log('[JobForm] Created job:', data.job?.jobNumber);
-      navigate(`/app/jobs/${data.job.id}`);
     } catch (err) {
       console.error('[JobForm] Submit error:', err);
-      alert(err.message || 'Failed to create job. Please try again.');
+      alert(err.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
     } finally {
       setSaving(false);
     }
   };
+
+  const backTarget = isEditMode
+    ? () => navigate(`/app/jobs/${jobId}`)
+    : () => navigate('/app/dashboard', { state: { view: 'jobs' } });
+
+  if (loadingJob) {
+    return (
+      <div className="flex items-center justify-center h-64 text-[13px] text-[#9ca3af]">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading job…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -119,7 +196,7 @@ export default function JobForm() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/app/dashboard', { state: { view: 'jobs' } })}
+            onClick={backTarget}
             className="p-2 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -127,9 +204,15 @@ export default function JobForm() {
           <div>
             <div className="flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-[#d4a017]" />
-              <h1 className="text-[20px] font-bold text-[#111113]">Create Job</h1>
+              <h1 className="text-[20px] font-bold text-[#111113]">
+                {isEditMode ? 'Edit Job' : 'Create Job'}
+              </h1>
             </div>
-            <p className="text-[13px] text-[#9ca3af] mt-0.5">Fill in the details below to create a new job</p>
+            <p className="text-[13px] text-[#9ca3af] mt-0.5">
+              {isEditMode
+                ? 'Update the fields below and save your changes'
+                : 'Fill in the details below to create a new job'}
+            </p>
           </div>
         </div>
         <button
@@ -138,7 +221,9 @@ export default function JobForm() {
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Creating…' : 'Create Job'}
+          {saving
+            ? (isEditMode ? 'Saving…' : 'Creating…')
+            : (isEditMode ? 'Save Changes' : 'Create Job')}
         </button>
       </div>
 
@@ -182,7 +267,7 @@ export default function JobForm() {
 
               {/* Status */}
               <div>
-                <label className={LABEL_CLS}>Initial Status</label>
+                <label className={LABEL_CLS}>{isEditMode ? 'Status' : 'Initial Status'}</label>
                 <select
                   value={formData.status}
                   onChange={set('status')}
@@ -294,17 +379,19 @@ export default function JobForm() {
             </div>
           </div>
 
-          {/* Save button repeated for convenience on right column */}
+          {/* Save button repeated for convenience */}
           <button
             onClick={handleSubmit}
             disabled={saving}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Creating…' : 'Create Job'}
+            {saving
+              ? (isEditMode ? 'Saving…' : 'Creating…')
+              : (isEditMode ? 'Save Changes' : 'Create Job')}
           </button>
           <button
-            onClick={() => navigate('/app/dashboard', { state: { view: 'jobs' } })}
+            onClick={backTarget}
             className="w-full px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
           >
             Cancel

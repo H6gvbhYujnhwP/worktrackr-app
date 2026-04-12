@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/JobDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Briefcase, Clock, Package, User, Calendar, Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Briefcase, Clock, Package, User, Calendar, Edit, Trash2, ChevronDown, ChevronUp, Plus, X, Loader2 } from 'lucide-react';
 
 // ── Module-level helpers ───────────────────────────────────────────────────────
 function fmt(amount) { return `£${parseFloat(amount || 0).toFixed(2)}`; }
@@ -28,7 +28,10 @@ function fmtMinutes(mins) {
   return `${h}h ${m}m`;
 }
 
-// Module-level StatusBadge — never defined inside a parent function body
+const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]';
+const LABEL_CLS = 'block text-[11px] font-semibold text-[#6b7280] mb-1';
+
+// ── Module-level StatusBadge ───────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
     scheduled:   'bg-[#dbeafe] text-[#1d4ed8]',
@@ -48,15 +51,250 @@ function StatusBadge({ status }) {
   );
 }
 
-// Module-level TimeEntriesSection
+// ── Module-level AddTimeEntryForm ──────────────────────────────────────────────
+function AddTimeEntryForm({ jobId, onSuccess, onCancel }) {
+  const [form, setForm]   = useState({ description: '', hours: '', billable: true });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr]     = useState('');
+
+  const setField = (field) => (e) =>
+    setForm(prev => ({ ...prev, [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+  const handleSubmit = async () => {
+    const rawHours = parseFloat(form.hours);
+    if (!form.hours || isNaN(rawHours) || rawHours <= 0) {
+      setErr('Please enter a valid duration greater than zero.');
+      return;
+    }
+    setErr('');
+    setSaving(true);
+    const durationMinutes = Math.round(rawHours * 60);
+    try {
+      const r = await fetch(`/api/jobs/${jobId}/time-entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          description:      form.description.trim() || null,
+          duration_minutes: durationMinutes,
+          billable:         form.billable,
+        }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to log time');
+      }
+      onSuccess();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-[#e5e7eb] bg-[#fffdf5] px-5 py-4">
+      <p className="text-[12px] font-semibold text-[#374151] mb-3">Log Time Entry</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <div className="sm:col-span-2">
+          <label className={LABEL_CLS}>Description (optional)</label>
+          <input
+            type="text"
+            value={form.description}
+            onChange={setField('description')}
+            placeholder="e.g. Initial diagnosis and repair"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Duration (hours) <span className="text-red-500">*</span></label>
+          <input
+            type="number"
+            min="0.1"
+            step="0.25"
+            value={form.hours}
+            onChange={setField('hours')}
+            placeholder="e.g. 1.5"
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3 mb-3">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.billable}
+            onChange={setField('billable')}
+            className="w-4 h-4 rounded border-[#e5e7eb] accent-[#d4a017]"
+          />
+          <span className="text-[13px] text-[#374151]">Billable</span>
+        </label>
+      </div>
+      {err && <p className="text-[12px] text-red-500 mb-2">{err}</p>}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          {saving ? 'Logging…' : 'Log Time'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-2 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Module-level AddPartForm ───────────────────────────────────────────────────
+function AddPartForm({ jobId, onSuccess, onCancel }) {
+  const [form, setForm]   = useState({ description: '', quantity: '1', unit: '', unit_cost: '', unit_price: '' });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr]     = useState('');
+
+  const setField = (field) => (e) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async () => {
+    if (!form.description.trim()) {
+      setErr('Description is required.');
+      return;
+    }
+    const qty = parseFloat(form.quantity);
+    if (isNaN(qty) || qty < 0) {
+      setErr('Quantity must be a positive number.');
+      return;
+    }
+    setErr('');
+    setSaving(true);
+    const payload = {
+      description: form.description.trim(),
+      quantity:    qty,
+    };
+    if (form.unit.trim())       payload.unit       = form.unit.trim();
+    if (form.unit_cost !== '')  payload.unit_cost  = parseFloat(form.unit_cost) || 0;
+    if (form.unit_price !== '') payload.unit_price = parseFloat(form.unit_price) || 0;
+
+    try {
+      const r = await fetch(`/api/jobs/${jobId}/parts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to add part');
+      }
+      onSuccess();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-[#e5e7eb] bg-[#fffdf5] px-5 py-4">
+      <p className="text-[12px] font-semibold text-[#374151] mb-3">Add Part / Material</p>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <div className="sm:col-span-2">
+          <label className={LABEL_CLS}>Description <span className="text-red-500">*</span></label>
+          <input
+            type="text"
+            value={form.description}
+            onChange={setField('description')}
+            placeholder="e.g. 22mm copper pipe"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Qty</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={form.quantity}
+            onChange={setField('quantity')}
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Unit</label>
+          <input
+            type="text"
+            value={form.unit}
+            onChange={setField('unit')}
+            placeholder="e.g. m, each"
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label className={LABEL_CLS}>Buy Price (£ per unit)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.unit_cost}
+            onChange={setField('unit_cost')}
+            placeholder="0.00"
+            className={INPUT_CLS}
+          />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Sell Price (£ per unit)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.unit_price}
+            onChange={setField('unit_price')}
+            placeholder="0.00"
+            className={INPUT_CLS}
+          />
+        </div>
+      </div>
+      {err && <p className="text-[12px] text-red-500 mb-2">{err}</p>}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          {saving ? 'Adding…' : 'Add Part'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-2 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Module-level TimeEntriesSection ───────────────────────────────────────────
 function TimeEntriesSection({ jobId }) {
-  const [entries, setEntries]       = useState([]);
-  const [totalMinutes, setTotal]    = useState(0);
-  const [loading, setLoading]       = useState(true);
-  const [expanded, setExpanded]     = useState(true);
+  const [entries, setEntries]         = useState([]);
+  const [totalMinutes, setTotal]      = useState(0);
+  const [loading, setLoading]         = useState(true);
+  const [expanded, setExpanded]       = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [refreshKey, setRefreshKey]   = useState(0);
+  const [deletingId, setDeletingId]   = useState(null);
 
   useEffect(() => {
     if (!jobId) return;
+    setLoading(true);
     fetch(`/api/jobs/${jobId}/time-entries`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
@@ -65,7 +303,26 @@ function TimeEntriesSection({ jobId }) {
       })
       .catch(err => console.error('[TimeEntriesSection]', err))
       .finally(() => setLoading(false));
-  }, [jobId]);
+  }, [jobId, refreshKey]);
+
+  const refresh = () => setRefreshKey(k => k + 1);
+
+  const handleDelete = async (entryId) => {
+    if (!window.confirm('Remove this time entry?')) return;
+    setDeletingId(entryId);
+    try {
+      const r = await fetch(`/api/jobs/${jobId}/time-entries/${entryId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!r.ok) throw new Error('Failed to delete');
+      refresh();
+    } catch {
+      alert('Failed to remove time entry.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
@@ -88,53 +345,85 @@ function TimeEntriesSection({ jobId }) {
 
       {expanded && (
         <div className="border-t border-[#e5e7eb]">
+          {/* Add entry button row */}
+          {!showAddForm && (
+            <div className="px-5 py-3 border-b border-[#f3f4f6]">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#d4a017] border border-[#d4a017]/30 rounded-lg hover:bg-[#fef9ee] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Log Time
+              </button>
+            </div>
+          )}
+
+          {/* Add form */}
+          {showAddForm && (
+            <AddTimeEntryForm
+              jobId={jobId}
+              onSuccess={() => { setShowAddForm(false); refresh(); }}
+              onCancel={() => setShowAddForm(false)}
+            />
+          )}
+
+          {/* Entries list */}
           {loading ? (
             <p className="py-6 text-center text-[13px] text-[#9ca3af]">Loading…</p>
           ) : entries.length === 0 ? (
             <p className="py-8 text-center text-[13px] text-[#9ca3af]">No time entries logged yet</p>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-[#e5e7eb]">
-                      {['Staff Member', 'Description', 'Date', 'Duration', 'Billable'].map(h => (
-                        <th key={h} className="py-3 px-4 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry, idx) => (
-                      <tr
-                        key={entry.id}
-                        className={`border-b border-[#f3f4f6] ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
-                      >
-                        <td className="py-3 px-4 font-medium text-[#374151]">{entry.userName || '—'}</td>
-                        <td className="py-3 px-4 text-[#6b7280]">{entry.description || <span className="text-[#9ca3af] italic">No description</span>}</td>
-                        <td className="py-3 px-4 text-[#6b7280] whitespace-nowrap">
-                          {entry.startedAt ? fmtDateTime(entry.startedAt) : fmtDate(entry.createdAt)}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-[#111113] whitespace-nowrap">{fmtMinutes(entry.durationMinutes)}</td>
-                        <td className="py-3 px-4">
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${entry.billable ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
-                            {entry.billable ? 'Billable' : 'Non-billable'}
-                          </span>
-                        </td>
-                      </tr>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-[#e5e7eb]">
+                    {['Staff Member', 'Description', 'Date', 'Duration', 'Billable', ''].map(h => (
+                      <th key={h} className="py-3 px-4 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">
+                        {h}
+                      </th>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-[#e5e7eb] bg-[#fafafa]">
-                      <td className="px-4 py-2.5 text-[12px] font-semibold text-[#374151]" colSpan={3}>Total</td>
-                      <td className="px-4 py-2.5 text-[13px] font-bold text-[#111113]">{fmtMinutes(totalMinutes)}</td>
-                      <td />
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, idx) => (
+                    <tr
+                      key={entry.id}
+                      className={`border-b border-[#f3f4f6] hover:bg-[#fef9ee] transition-colors ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
+                    >
+                      <td className="py-3 px-4 font-medium text-[#374151]">{entry.userName || '—'}</td>
+                      <td className="py-3 px-4 text-[#6b7280]">{entry.description || <span className="text-[#9ca3af] italic">No description</span>}</td>
+                      <td className="py-3 px-4 text-[#6b7280] whitespace-nowrap">
+                        {entry.startedAt ? fmtDateTime(entry.startedAt) : fmtDate(entry.createdAt)}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-[#111113] whitespace-nowrap">{fmtMinutes(entry.durationMinutes)}</td>
+                      <td className="py-3 px-4">
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${entry.billable ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+                          {entry.billable ? 'Billable' : 'Non-billable'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => handleDelete(entry.id)}
+                          disabled={deletingId === entry.id}
+                          className="p-1 text-[#9ca3af] hover:text-red-500 transition-colors disabled:opacity-40"
+                          title="Remove entry"
+                        >
+                          {deletingId === entry.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <X className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
                     </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-[#e5e7eb] bg-[#fafafa]">
+                    <td className="px-4 py-2.5 text-[12px] font-semibold text-[#374151]" colSpan={3}>Total</td>
+                    <td className="px-4 py-2.5 text-[13px] font-bold text-[#111113]">{fmtMinutes(totalMinutes)}</td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -142,16 +431,20 @@ function TimeEntriesSection({ jobId }) {
   );
 }
 
-// Module-level PartsSection
+// ── Module-level PartsSection ──────────────────────────────────────────────────
 function PartsSection({ jobId }) {
-  const [parts, setParts]         = useState([]);
-  const [totalCost, setTotalCost] = useState(0);
-  const [totalValue, setTotalValue] = useState(0);
-  const [loading, setLoading]     = useState(true);
-  const [expanded, setExpanded]   = useState(true);
+  const [parts, setParts]             = useState([]);
+  const [totalCost, setTotalCost]     = useState(0);
+  const [totalValue, setTotalValue]   = useState(0);
+  const [loading, setLoading]         = useState(true);
+  const [expanded, setExpanded]       = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [refreshKey, setRefreshKey]   = useState(0);
+  const [deletingId, setDeletingId]   = useState(null);
 
   useEffect(() => {
     if (!jobId) return;
+    setLoading(true);
     fetch(`/api/jobs/${jobId}/parts`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
@@ -161,7 +454,26 @@ function PartsSection({ jobId }) {
       })
       .catch(err => console.error('[PartsSection]', err))
       .finally(() => setLoading(false));
-  }, [jobId]);
+  }, [jobId, refreshKey]);
+
+  const refresh = () => setRefreshKey(k => k + 1);
+
+  const handleDelete = async (partId) => {
+    if (!window.confirm('Remove this part?')) return;
+    setDeletingId(partId);
+    try {
+      const r = await fetch(`/api/jobs/${jobId}/parts/${partId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!r.ok) throw new Error('Failed to delete');
+      refresh();
+    } catch {
+      alert('Failed to remove part.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
@@ -184,6 +496,28 @@ function PartsSection({ jobId }) {
 
       {expanded && (
         <div className="border-t border-[#e5e7eb]">
+          {/* Add part button row */}
+          {!showAddForm && (
+            <div className="px-5 py-3 border-b border-[#f3f4f6]">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#d4a017] border border-[#d4a017]/30 rounded-lg hover:bg-[#fef9ee] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Part
+              </button>
+            </div>
+          )}
+
+          {/* Add form */}
+          {showAddForm && (
+            <AddPartForm
+              jobId={jobId}
+              onSuccess={() => { setShowAddForm(false); refresh(); }}
+              onCancel={() => setShowAddForm(false)}
+            />
+          )}
+
+          {/* Parts list */}
           {loading ? (
             <p className="py-6 text-center text-[13px] text-[#9ca3af]">Loading…</p>
           ) : parts.length === 0 ? (
@@ -193,8 +527,8 @@ function PartsSection({ jobId }) {
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-[#e5e7eb]">
-                    {['Description', 'Qty', 'Unit', 'Buy Price', 'Sell Price', 'Line Value'].map(h => (
-                      <th key={h} className={`py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa] ${h === 'Description' ? 'text-left' : 'text-right'}`}>
+                    {['Description', 'Qty', 'Unit', 'Buy £', 'Sell £', 'Line Value', ''].map(h => (
+                      <th key={h} className={`py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa] ${h === 'Description' || h === '' ? 'text-left' : 'text-right'}`}>
                         {h}
                       </th>
                     ))}
@@ -205,13 +539,28 @@ function PartsSection({ jobId }) {
                     const qty = parseFloat(part.quantity || 0);
                     const lineValue = qty * (parseFloat(part.unitPrice || 0));
                     return (
-                      <tr key={part.id} className={`border-b border-[#f3f4f6] ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}>
+                      <tr
+                        key={part.id}
+                        className={`border-b border-[#f3f4f6] hover:bg-[#fef9ee] transition-colors ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
+                      >
                         <td className="py-3 px-4 text-[#111113] font-medium">{part.description}</td>
                         <td className="py-3 px-4 text-right text-[#374151]">{qty % 1 === 0 ? qty.toFixed(0) : qty.toFixed(2)}</td>
                         <td className="py-3 px-4 text-right text-[#9ca3af]">{part.unit || '—'}</td>
                         <td className="py-3 px-4 text-right text-[#9ca3af]">{part.unitCost != null ? fmt(part.unitCost) : '—'}</td>
                         <td className="py-3 px-4 text-right text-[#374151]">{part.unitPrice != null ? fmt(part.unitPrice) : '—'}</td>
                         <td className="py-3 px-4 text-right font-semibold text-[#111113]">{part.unitPrice != null ? fmt(lineValue) : '—'}</td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => handleDelete(part.id)}
+                            disabled={deletingId === part.id}
+                            className="p-1 text-[#9ca3af] hover:text-red-500 transition-colors disabled:opacity-40"
+                            title="Remove part"
+                          >
+                            {deletingId === part.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <X className="w-3.5 h-3.5" />}
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -222,6 +571,7 @@ function PartsSection({ jobId }) {
                     <td className="px-4 py-2.5 text-right text-[12px] text-[#9ca3af]">{fmt(totalCost)}</td>
                     <td />
                     <td className="px-4 py-2.5 text-right text-[13px] font-bold text-[#111113]">{fmt(totalValue)}</td>
+                    <td />
                   </tr>
                 </tfoot>
               </table>
@@ -304,7 +654,6 @@ export default function JobDetail() {
 
   const metaLabel = 'text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider';
   const actionBtn = 'flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors';
-
   const statusLabel = (s) => s.replace('_', ' ').replace(/^\w/, c => c.toUpperCase());
 
   return (
@@ -432,7 +781,7 @@ export default function JobDetail() {
             <div className="p-5 space-y-4">
               {[
                 { label: 'Job Number', value: job.jobNumber },
-                { label: 'Created', value: fmtDate(job.createdAt) },
+                { label: 'Created',    value: fmtDate(job.createdAt) },
                 { label: 'Created By', value: job.createdByName || '—' },
                 { label: 'Last Modified', value: fmtDate(job.updatedAt) },
               ].map(({ label, value }) => (
