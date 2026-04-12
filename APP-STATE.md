@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 23 — 2026-04-12
+**Last updated:** Session 24 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -20,27 +20,24 @@
 | Jobs | ✅ Working | List, detail, create, edit (with job number in header), time entries, parts, calendar integration |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Floating FAB, 7 intent destinations, mandatory review step |
-| Invoices | ❌ Not built | Next priority — see ROADMAP.md |
-| Payments | ❌ Not built | Blocked on Invoices |
+| Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint. Frontend next. |
+| Invoices — Frontend | ❌ Not built | Phase 2 — next priority |
+| Payments | ❌ Not built | Blocked on Invoices frontend |
 
 ---
 
 ## Known Bugs / Outstanding Issues
 
-> Update this list at the start of each bug-fix session.
-
 | # | Module | Description | Severity |
 |---|---|---|---|
-| — | — | No confirmed open bugs as of Session 23 | — |
-
-*(Add bugs here as they are discovered during testing)*
+| — | — | No confirmed open bugs as of Session 24 | — |
 
 ---
 
 ## Critical Standing Rules (read every session)
 
 1. **Sub-component rule:** Never define `const Foo = () => ...` inside a parent component's function body. Always module-level or plain render helpers. This was the root cause of CRM contacts input focus bug and Dashboard re-render bug.
-2. **Backend snake_case / frontend camelCase:** Always apply a normaliser (e.g. `mapJob()`, `mapContact()`) on all response paths.
+2. **Backend snake_case / frontend camelCase:** Always apply a normaliser (e.g. `mapJob()`, `mapContact()`, `mapInvoice()`) on all response paths.
 3. **Zod `.default([])` data-loss:** Only write fields explicitly present in the request body on PUT routes — don't let Zod defaults silently overwrite DB values.
 4. **AI policy:** All server-side AI = `claude-haiku-4-5-20251001` via direct fetch to Anthropic API. Whisper for audio only. No other AI providers.
 5. **One phase at a time:** Complete and deliver one phase fully before starting the next.
@@ -59,12 +56,14 @@
 | `routes/tickets.js` | Tickets CRUD, contact match, comment types incl. `audio_note` |
 | `routes/quotes.js` | Quotes CRUD, line items, PDF generation, AI generate-from-ticket |
 | `routes/jobs.js` | Jobs CRUD, time entries, parts — all mounted at `/api/jobs` |
+| `routes/invoices.js` | Invoices CRUD, PDF — mounted at `/api/invoices` |
 | `routes/crm-events.js` | CRM calendar events CRUD |
 | `routes/contacts.js` | CRM contacts CRUD |
 | `routes/transcribe.js` | Whisper transcription, Claude extraction, voice intent routing |
 | `routes/summaries.js` | Smart summaries (ticket + quote), AI next-action stub |
 | `routes/users.js` | User management |
 | `routes/auth.js` | Login, logout, session |
+| `migrations/create_invoices.sql` | invoices + invoice_lines tables, generate_invoice_number() |
 
 ### Frontend (`web/client/src/app/src/`)
 
@@ -102,6 +101,12 @@
 | PUT | `/api/jobs/:id` | Update job |
 | GET/POST/DELETE | `/api/jobs/:id/time-entries` | Time entries for a job |
 | GET/POST/DELETE | `/api/jobs/:id/parts` | Parts for a job |
+| GET | `/api/invoices` | List invoices (optional ?status= filter) |
+| GET | `/api/invoices/:id` | Invoice detail with lines, contact, job |
+| POST | `/api/invoices` | Create invoice (optionally from job_id) |
+| PUT | `/api/invoices/:id` | Update status/due_date/notes/invoice_number |
+| DELETE | `/api/invoices/:id` | Delete invoice |
+| GET | `/api/invoices/:id/pdf` | Invoice PDF download |
 | GET/POST/PUT/DELETE | `/api/crm-events` | CRM calendar events |
 | GET/POST/PUT/DELETE | `/api/quotes` | Quotes |
 | POST | `/api/quotes/generate-from-ticket` | AI quote generation |
@@ -124,17 +129,20 @@ Sidebar
 │   ├── Contacts
 │   ├── Quotes → QuoteForm / QuoteDetails (routes: /app/crm/quotes/new, /app/crm/quotes/:id)
 │   ├── Jobs → JobDetail / JobForm (routes: /app/jobs/:id, /app/jobs/new, /app/jobs/:id/edit)
+│   ├── Invoices → InvoicesList / InvoiceDetail (routes: /app/invoices, /app/invoices/:id) — PHASE 2
 │   └── CRM Calendar (jobs appear here as read-only gold blocks)
 └── Settings / Users
 ```
 
 ---
 
-## Next Priority: Invoices Module
+## Invoice Module — Phase 2 Pending
 
-See ROADMAP.md for full spec. Summary:
-- New `invoices` + `invoice_lines` DB tables
-- Generate invoice from completed/invoiced job (copies parts + time entries as line items)
-- List view, detail view, PDF, status workflow (draft → sent → paid → overdue)
-- "Create Invoice" button on JobDetail when status = completed or invoiced
-- Sidebar nav item under CRM section
+Frontend files to create/modify:
+- `InvoicesList.jsx` (new) — list view with status filter, stat strip
+- `InvoiceDetail.jsx` (new) — detail with lines table, status actions, PDF button
+- `InvoiceDetailWithLayout.jsx` (new) — route wrapper
+- `JobDetail.jsx` (modify) — add "Create Invoice" button when status = completed/invoiced; show linked invoice number when `converted_to_invoice_id` is set
+- `Sidebar.jsx` (modify) — add Invoices nav item under CRM section
+- `App.jsx` (modify) — add `/app/invoices` and `/app/invoices/:id` routes
+- `Dashboard.jsx` (modify) — add invoices view clause to view switcher

@@ -191,6 +191,10 @@ app.use('/api/quotes', authenticateToken, quotesTenderRoutes);
 const jobsRoutes = require('./routes/jobs');
 app.use('/api/jobs', authenticateToken, jobsRoutes);
 
+// Invoices
+const invoicesRoutes = require('./routes/invoices');
+app.use('/api/invoices', authenticateToken, invoicesRoutes);
+
 // AI Summaries
 const summariesRoutes = require('./routes/summaries');
 app.use('/api/summaries', authenticateToken, summariesRoutes);
