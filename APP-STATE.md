@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 24 — 2026-04-12
+**Last updated:** Session 25 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -20,9 +20,9 @@
 | Jobs | ✅ Working | List, detail, create, edit (with job number in header), time entries, parts, calendar integration |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Floating FAB, 7 intent destinations, mandatory review step |
-| Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint. Frontend next. |
-| Invoices — Frontend | ❌ Not built | Phase 2 — next priority |
-| Payments | ❌ Not built | Blocked on Invoices frontend |
+| Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint |
+| Invoices — Frontend | ✅ Phase 2 done | List view, detail view, route wrappers, JobDetail integration |
+| Payments | ❌ Not built | Next priority after Invoices |
 
 ---
 
@@ -30,7 +30,7 @@
 
 | # | Module | Description | Severity |
 |---|---|---|---|
-| — | — | No confirmed open bugs as of Session 24 | — |
+| — | — | No confirmed open bugs as of Session 25 | — |
 
 ---
 
@@ -71,7 +71,7 @@
 |---|---|
 | `App.jsx` | React Router routes — all page-level routes defined here |
 | `components/AppLayout.jsx` | Shell: sidebar + header + `<VoiceAssistant />` |
-| `components/Sidebar.jsx` | Nav items for all modules |
+| `components/Sidebar.jsx` | Nav items for all modules (incl. Invoices added Session 25) |
 | `components/Dashboard.jsx` | Inline view switcher (renders list views inside dashboard) |
 | `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen |
 | `components/CRMCalendar.jsx` | CRM calendar — 3 views, jobs integration, event CRUD modals |
@@ -79,10 +79,14 @@
 | `components/QuoteDetails.jsx` | Quote detail view — line items table, margin panel, send modal |
 | `components/SendQuoteModal.jsx` | Email quote to customer |
 | `components/JobsList.jsx` | Jobs list — stat strip, search, status filter, table |
-| `components/JobDetail.jsx` | Job detail — info card, time entries, parts, status actions |
+| `components/JobDetail.jsx` | Job detail — info card, time entries, parts, status actions, Create Invoice button |
 | `components/JobForm.jsx` | Job create/edit — all fields, edit mode shows job number in header |
 | `components/JobDetailWithLayout.jsx` | Route wrapper for job detail |
 | `components/JobFormWithLayout.jsx` | Route wrapper for job form |
+| `components/InvoicesList.jsx` | Invoices list — stat strip, status filter, search, table |
+| `components/InvoiceDetail.jsx` | Invoice detail — lines table, totals, inline edit, status actions, PDF, delete |
+| `components/InvoiceDetailWithLayout.jsx` | Route wrapper for invoice detail |
+| `components/InvoicesListWithLayout.jsx` | Route wrapper for invoices list |
 | `components/PersonalNotes.jsx` | Personal notes — dictation, ticket linking modals |
 | `components/CompanyNotes.jsx` | Company/shared notes — same as PersonalNotes |
 | `components/VoiceAssistant.jsx` | Floating gold mic FAB — speech → Claude intent → review → save |
@@ -129,20 +133,7 @@ Sidebar
 │   ├── Contacts
 │   ├── Quotes → QuoteForm / QuoteDetails (routes: /app/crm/quotes/new, /app/crm/quotes/:id)
 │   ├── Jobs → JobDetail / JobForm (routes: /app/jobs/:id, /app/jobs/new, /app/jobs/:id/edit)
-│   ├── Invoices → InvoicesList / InvoiceDetail (routes: /app/invoices, /app/invoices/:id) — PHASE 2
-│   └── CRM Calendar (jobs appear here as read-only gold blocks)
+│   ├── Invoices → InvoicesList / InvoiceDetail (routes: /app/invoices, /app/invoices/:id) ✅ DONE
+│   └── CRM Calendar
 └── Settings / Users
 ```
-
----
-
-## Invoice Module — Phase 2 Pending
-
-Frontend files to create/modify:
-- `InvoicesList.jsx` (new) — list view with status filter, stat strip
-- `InvoiceDetail.jsx` (new) — detail with lines table, status actions, PDF button
-- `InvoiceDetailWithLayout.jsx` (new) — route wrapper
-- `JobDetail.jsx` (modify) — add "Create Invoice" button when status = completed/invoiced; show linked invoice number when `converted_to_invoice_id` is set
-- `Sidebar.jsx` (modify) — add Invoices nav item under CRM section
-- `App.jsx` (modify) — add `/app/invoices` and `/app/invoices/:id` routes
-- `Dashboard.jsx` (modify) — add invoices view clause to view switcher

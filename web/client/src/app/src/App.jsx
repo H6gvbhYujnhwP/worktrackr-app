@@ -14,6 +14,8 @@ import QuoteDetailsWithLayout from './components/QuoteDetailsWithLayout.jsx';
 import PricingConfigWithLayout from './components/PricingConfigWithLayout.jsx';
 import JobDetailWithLayout from './components/JobDetailWithLayout.jsx';
 import JobFormWithLayout from './components/JobFormWithLayout.jsx';
+import InvoiceDetailWithLayout from './components/InvoiceDetailWithLayout.jsx';
+import InvoicesListWithLayout from './components/InvoicesListWithLayout.jsx';
 import Login from '../../Login.jsx';
 import './App.css';
 
@@ -453,6 +455,8 @@ export default function App() {
             <Route path="jobs/new" element={<JobFormWithLayout />} />
             <Route path="jobs/:id" element={<JobDetailWithLayout />} />
             <Route path="jobs/:id/edit" element={<JobFormWithLayout />} />
+            <Route path="invoices" element={<InvoicesListWithLayout />} />
+            <Route path="invoices/:id" element={<InvoiceDetailWithLayout />} />
             <Route path="settings/pricing-config" element={<PricingConfigWithLayout />} />
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/app/dashboard" replace />} />

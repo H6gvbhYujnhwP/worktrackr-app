@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/JobDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Briefcase, Clock, Package, User, Calendar, Edit, Trash2, ChevronDown, ChevronUp, Plus, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Briefcase, Clock, Package, User, Calendar, Edit, Trash2, ChevronDown, ChevronUp, Plus, X, Loader2, FileText } from 'lucide-react';
 
 // ── Module-level helpers ───────────────────────────────────────────────────────
 function fmt(amount) { return `£${parseFloat(amount || 0).toFixed(2)}`; }
@@ -594,6 +594,8 @@ export default function JobDetail() {
   const [error, setError]                     = useState(null);
   const [statusChanging, setStatusChanging]   = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [linkedInvoice, setLinkedInvoice]     = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -604,6 +606,41 @@ export default function JobDetail() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Fetch linked invoice number when convertedToInvoiceId is set
+  useEffect(() => {
+    if (!job?.convertedToInvoiceId) { setLinkedInvoice(null); return; }
+    fetch(`/api/invoices/${job.convertedToInvoiceId}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.invoice) {
+          setLinkedInvoice({ id: data.invoice.id, invoiceNumber: data.invoice.invoice_number });
+        }
+      })
+      .catch(() => {}); // silent — the link is informational only
+  }, [job?.convertedToInvoiceId]);
+
+  const handleCreateInvoice = async () => {
+    setCreatingInvoice(true);
+    try {
+      const r = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ job_id: id }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed to create invoice');
+      }
+      const data = await r.json();
+      navigate(`/app/invoices/${data.invoice.id}`);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus) => {
     setStatusChanging(true);
@@ -680,6 +717,25 @@ export default function JobDetail() {
           <button onClick={() => navigate(`/app/jobs/${id}/edit`)} className={actionBtn}>
             <Edit className="w-4 h-4" /> Edit
           </button>
+          {/* Invoice: show linked badge OR create button depending on state */}
+          {job.convertedToInvoiceId ? (
+            <button
+              onClick={() => navigate(`/app/invoices/${job.convertedToInvoiceId}`)}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium bg-[#fef9ee] text-[#b8860b] border border-[#d4a017]/40 rounded-lg hover:bg-[#fef3c7] transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              {linkedInvoice ? `Invoice: ${linkedInvoice.invoiceNumber}` : 'View Invoice'} →
+            </button>
+          ) : (job.status === 'completed' || job.status === 'invoiced') ? (
+            <button
+              onClick={handleCreateInvoice}
+              disabled={creatingInvoice}
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors disabled:opacity-50"
+            >
+              {creatingInvoice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+              {creatingInvoice ? 'Creating…' : 'Create Invoice'}
+            </button>
+          ) : null}
           <button
             onClick={handleDelete}
             disabled={job.status === 'invoiced'}
