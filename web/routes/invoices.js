@@ -1,17 +1,30 @@
 // web/routes/invoices.js
-// Invoices module — Phase 1 backend
-// Patterns: auth via req.orgContext (injected by authenticateToken in server.js),
-//           snake_case column names throughout (frontend applies mapInvoice() normaliser),
-//           explicit field writes on PUT (no Zod .default() silent overwrite),
-//           try/catch on every route, { error } response with appropriate HTTP status.
+// Invoices module — aligned to live DB schema (pre-existing tables).
+//
+// Live column names that differ from the original plan:
+//   tax_amount     (not vat_total)
+//   total_amount   (not total)
+//   balance_due    (total_amount - amount_paid, must be written on INSERT)
+//   tax_rate       on invoice_lines (not vat_applicable boolean)
+//   contact_id     is NOT NULL on invoices — required on every INSERT
+//   due_date       is NOT NULL on invoices — defaults to +30 days if omitted
+//   created_by     written from req.user.userId
+//
+// Status constraint (live): draft | sent | viewed | paid |
+//                           partially_paid | overdue | cancelled | refunded
 
 const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
 const db = require('../../shared/db');
 
+const VALID_STATUSES = [
+  'draft', 'sent', 'viewed', 'paid',
+  'partially_paid', 'overdue', 'cancelled', 'refunded',
+];
+
 // ---------------------------------------------------------------------------
-// Helper: build full invoice row (invoice + lines + contact + job)
+// Helper: fetch full invoice with lines, contact name, job reference
 // ---------------------------------------------------------------------------
 async function fetchFullInvoice(invoiceId, organizationId) {
   const invoiceResult = await db.query(
@@ -43,7 +56,7 @@ async function fetchFullInvoice(invoiceId, organizationId) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: auto-generate invoice number for org
+// Helper: generate next invoice number for org
 // ---------------------------------------------------------------------------
 async function generateInvoiceNumber(client, organizationId) {
   const result = await client.query(
@@ -51,6 +64,15 @@ async function generateInvoiceNumber(client, organizationId) {
     [organizationId]
   );
   return result.rows[0].invoice_number;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: default due_date to issue_date + 30 days
+// ---------------------------------------------------------------------------
+function defaultDueDate(issueDate) {
+  const d = issueDate ? new Date(issueDate) : new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().slice(0, 10);
 }
 
 // ---------------------------------------------------------------------------
@@ -63,13 +85,11 @@ router.get('/', async (req, res) => {
     const { status } = req.query;
 
     const params = [organizationId];
-    let paramIdx = 1;
     let statusClause = '';
 
     if (status) {
-      paramIdx++;
-      statusClause = `AND i.status = $${paramIdx}`;
       params.push(status);
+      statusClause = `AND i.status = $${params.length}`;
     }
 
     const result = await db.query(
@@ -95,7 +115,7 @@ router.get('/', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // GET /api/invoices/:id
-// Single invoice with lines, contact name, job number.
+// Single invoice with lines, contact name, job reference.
 // ---------------------------------------------------------------------------
 router.get('/:id', async (req, res) => {
   try {
@@ -116,20 +136,15 @@ router.get('/:id', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // POST /api/invoices
-// Create invoice. When job_id is supplied, copies parts + time_entries as lines.
-// Sets jobs.converted_to_invoice_id on the source job.
+// Create invoice. When job_id supplied: copies parts + time entries as lines.
+// contact_id is NOT NULL — must be resolved from body or job row.
 // ---------------------------------------------------------------------------
 router.post('/', async (req, res) => {
   const client = await db.pool.connect();
   try {
     const { organizationId } = req.orgContext;
-    const {
-      job_id,
-      contact_id,
-      issue_date,
-      due_date,
-      notes,
-    } = req.body;
+    const { userId } = req.user;
+    const { job_id, contact_id, issue_date, due_date, notes } = req.body;
 
     await client.query('BEGIN');
 
@@ -147,10 +162,20 @@ router.post('/', async (req, res) => {
         return res.status(404).json({ error: 'Job not found' });
       }
       jobRow = jobResult.rows[0];
-      if (!resolvedContactId) {
-        resolvedContactId = jobRow.contact_id || null;
-      }
+      if (!resolvedContactId) resolvedContactId = jobRow.contact_id || null;
     }
+
+    // contact_id is NOT NULL in the live schema
+    if (!resolvedContactId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'contact_id is required. Supply it directly or via a job_id that has a contact.',
+      });
+    }
+
+    // ── Dates ────────────────────────────────────────────────────────────
+    const resolvedIssueDate = issue_date || new Date().toISOString().slice(0, 10);
+    const resolvedDueDate   = due_date   || defaultDueDate(resolvedIssueDate);
 
     // ── Generate invoice number ──────────────────────────────────────────
     const invoiceNumber = await generateInvoiceNumber(client, organizationId);
@@ -165,15 +190,15 @@ router.post('/', async (req, res) => {
         [job_id]
       );
       partsResult.rows.forEach((part, idx) => {
-        const qty       = parseFloat(part.quantity) || 1;
+        const qty       = parseFloat(part.quantity)   || 1;
         const unitPrice = parseFloat(part.unit_price) || 0;
         lineItems.push({
-          description:   part.description,
-          quantity:      qty,
-          unit_price:    unitPrice,
-          line_total:    parseFloat((qty * unitPrice).toFixed(2)),
-          vat_applicable: true,
-          sort_order:    idx,
+          description: part.description,
+          quantity:    qty,
+          unit_price:  unitPrice,
+          tax_rate:    20,
+          line_total:  parseFloat((qty * unitPrice).toFixed(2)),
+          sort_order:  idx,
         });
       });
 
@@ -182,51 +207,53 @@ router.post('/', async (req, res) => {
         `SELECT * FROM job_time_entries WHERE job_id = $1 ORDER BY created_at`,
         [job_id]
       );
-      const partsCount = lineItems.length;
+      const offset = lineItems.length;
       timeResult.rows.forEach((entry, idx) => {
         const hours     = parseFloat(entry.duration_minutes || 0) / 60;
         const rate      = parseFloat(entry.hourly_rate || 0);
-        const unitPrice = rate;
         const qty       = parseFloat(hours.toFixed(2));
-        const label     = entry.description
-          ? `Labour: ${entry.description}`
-          : 'Labour';
+        const label     = entry.description ? `Labour: ${entry.description}` : 'Labour';
         lineItems.push({
-          description:   label,
-          quantity:      qty,
-          unit_price:    unitPrice,
-          line_total:    parseFloat((qty * unitPrice).toFixed(2)),
-          vat_applicable: true,
-          sort_order:    partsCount + idx,
+          description: label,
+          quantity:    qty,
+          unit_price:  rate,
+          tax_rate:    20,
+          line_total:  parseFloat((qty * rate).toFixed(2)),
+          sort_order:  offset + idx,
         });
       });
     }
 
     // ── Calculate totals ─────────────────────────────────────────────────
-    const subtotal = lineItems.reduce((sum, l) => sum + l.line_total, 0);
-    const vatTotal = lineItems.reduce((sum, l) => {
-      return sum + (l.vat_applicable ? l.line_total * 0.20 : 0);
-    }, 0);
-    const total = subtotal + vatTotal;
+    const subtotal   = lineItems.reduce((s, l) => s + l.line_total, 0);
+    const taxAmount  = lineItems.reduce((s, l) => s + l.line_total * ((l.tax_rate || 20) / 100), 0);
+    const totalAmount = subtotal + taxAmount;
+    const balanceDue  = totalAmount; // nothing paid yet
 
     // ── Insert invoice ────────────────────────────────────────────────────
     const invoiceResult = await client.query(
       `INSERT INTO invoices (
-         organisation_id, job_id, contact_id, invoice_number,
-         issue_date, due_date, subtotal, vat_total, total, notes
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         organisation_id, contact_id, job_id, invoice_number,
+         issue_date, due_date,
+         subtotal, tax_amount, total_amount,
+         balance_due, amount_paid,
+         notes, created_by
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING *`,
       [
         organizationId,
-        job_id    || null,
         resolvedContactId,
+        job_id         || null,
         invoiceNumber,
-        issue_date || null,
-        due_date   || null,
+        resolvedIssueDate,
+        resolvedDueDate,
         parseFloat(subtotal.toFixed(2)),
-        parseFloat(vatTotal.toFixed(2)),
-        parseFloat(total.toFixed(2)),
-        notes      || null,
+        parseFloat(taxAmount.toFixed(2)),
+        parseFloat(totalAmount.toFixed(2)),
+        parseFloat(balanceDue.toFixed(2)),
+        0,
+        notes || null,
+        userId,
       ]
     );
     const invoice = invoiceResult.rows[0];
@@ -235,16 +262,16 @@ router.post('/', async (req, res) => {
     for (const line of lineItems) {
       await client.query(
         `INSERT INTO invoice_lines (
-           invoice_id, description, quantity, unit_price, line_total,
-           vat_applicable, sort_order
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           invoice_id, description, quantity, unit_price,
+           tax_rate, line_total, sort_order
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [
           invoice.id,
           line.description,
           line.quantity,
           line.unit_price,
+          line.tax_rate,
           line.line_total,
-          line.vat_applicable,
           line.sort_order,
         ]
       );
@@ -262,7 +289,6 @@ router.post('/', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Return full invoice (re-fetch with joins)
     const full = await fetchFullInvoice(invoice.id, organizationId);
     res.status(201).json({ invoice: full });
   } catch (error) {
@@ -276,15 +302,23 @@ router.post('/', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // PUT /api/invoices/:id
-// Update: status, due_date, notes, invoice_number only.
-// Explicit field writes — NO Zod .default() to avoid silent data-loss.
+// Allowed fields: status, due_date, notes, invoice_number.
+// Explicit field writes only — no silent defaults.
 // ---------------------------------------------------------------------------
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { organizationId } = req.orgContext;
 
-    // Allowed fields — only write keys present in the request body
+    if (
+      req.body.status !== undefined &&
+      !VALID_STATUSES.includes(req.body.status)
+    ) {
+      return res.status(400).json({
+        error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`,
+      });
+    }
+
     const ALLOWED = ['status', 'due_date', 'notes', 'invoice_number'];
     const updates = [];
     const values  = [];
@@ -298,19 +332,16 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No updatable fields supplied' });
+    // Track sent_at / paid_at timestamps automatically
+    if (req.body.status === 'sent') {
+      updates.push(`sent_at = NOW()`);
+    }
+    if (req.body.status === 'paid') {
+      updates.push(`paid_at = NOW()`);
     }
 
-    // Validate status if provided
-    const validStatuses = ['draft', 'sent', 'paid', 'overdue'];
-    if (
-      req.body.status !== undefined &&
-      !validStatuses.includes(req.body.status)
-    ) {
-      return res.status(400).json({
-        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
-      });
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No updatable fields supplied' });
     }
 
     updates.push(`updated_at = NOW()`);
@@ -338,7 +369,7 @@ router.put('/:id', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // DELETE /api/invoices/:id
-// Delete invoice (cascade removes lines). Also nulls jobs.converted_to_invoice_id.
+// Nulls jobs.converted_to_invoice_id, then deletes (lines cascade).
 // ---------------------------------------------------------------------------
 router.delete('/:id', async (req, res) => {
   const client = await db.pool.connect();
@@ -348,14 +379,13 @@ router.delete('/:id', async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Null out job back-reference first
     await client.query(
-      `UPDATE jobs SET converted_to_invoice_id = NULL, updated_at = NOW()
+      `UPDATE jobs
+       SET converted_to_invoice_id = NULL, updated_at = NOW()
        WHERE converted_to_invoice_id = $1`,
       [id]
     );
 
-    // Delete invoice (invoice_lines cascade)
     const result = await client.query(
       `DELETE FROM invoices
        WHERE id = $1 AND organisation_id = $2
@@ -381,7 +411,6 @@ router.delete('/:id', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // GET /api/invoices/:id/pdf
-// Generate PDF. Modelled on quotes.js PDF route.
 // ---------------------------------------------------------------------------
 router.get('/:id/pdf', async (req, res) => {
   try {
@@ -394,7 +423,6 @@ router.get('/:id/pdf', async (req, res) => {
     }
     const lines = invoice.lines || [];
 
-    // ── PDF setup ─────────────────────────────────────────────────────────
     const doc = new PDFDocument({ margin: 50 });
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -408,23 +436,20 @@ router.get('/:id/pdf', async (req, res) => {
     doc.fontSize(24).text('WorkTrackr Cloud', { align: 'left' });
     doc.fontSize(10).text('Custom Workflows. Zero Hassle.', { align: 'left' });
     doc.moveDown();
-
     doc.fontSize(20).font('Helvetica-Bold').text('INVOICE', { align: 'center' });
     doc.moveDown();
 
-    // ── Two-column meta block ─────────────────────────────────────────────
+    // ── Meta block ────────────────────────────────────────────────────────
     const leftX  = 50;
     const rightX = 350;
     let   yPos   = doc.y;
 
-    // Left — Bill To
     doc.fontSize(12).font('Helvetica-Bold').text('Bill To:', leftX, yPos);
     doc.font('Helvetica').fontSize(10);
     doc.text(invoice.contact_name || 'N/A', leftX, yPos + 15);
     if (invoice.contact_email) doc.text(invoice.contact_email, leftX);
     if (invoice.contact_phone) doc.text(invoice.contact_phone, leftX);
 
-    // Right — Invoice details
     doc.fontSize(10).font('Helvetica-Bold').text('Invoice Number:', rightX, yPos);
     doc.font('Helvetica').text(invoice.invoice_number, rightX + 110, yPos);
 
@@ -453,13 +478,12 @@ router.get('/:id/pdf', async (req, res) => {
     const totalX = 470;
     const pageW  = 545;
 
-    // Header row
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Description',  descX,  tableTop, { width: 265 });
-    doc.text('Qty',          qtyX,   tableTop, { width: 50,  align: 'right' });
-    doc.text('Unit Price',   priceX, tableTop, { width: 60,  align: 'right' });
-    doc.text('VAT',          vatX,   tableTop, { width: 25,  align: 'center' });
-    doc.text('Total',        totalX, tableTop, { width: 70,  align: 'right' });
+    doc.text('Description', descX,  tableTop, { width: 265 });
+    doc.text('Qty',         qtyX,   tableTop, { width: 50,  align: 'right' });
+    doc.text('Unit Price',  priceX, tableTop, { width: 60,  align: 'right' });
+    doc.text('VAT',         vatX,   tableTop, { width: 25,  align: 'center' });
+    doc.text('Total',       totalX, tableTop, { width: 70,  align: 'right' });
 
     doc.moveTo(descX, tableTop + 14).lineTo(pageW, tableTop + 14).lineWidth(0.5).stroke();
 
@@ -469,19 +493,21 @@ router.get('/:id/pdf', async (req, res) => {
     lines.forEach((line) => {
       if (rowY > 680) { doc.addPage(); rowY = 50; }
 
-      const qty        = parseFloat(line.quantity)   || 0;
-      const unitPrice  = parseFloat(line.unit_price) || 0;
-      const lineTotal  = parseFloat(line.line_total) || qty * unitPrice;
-      const vatLabel   = line.vat_applicable ? '20%' : '—';
-      const descHeight = doc.heightOfString(line.description, { width: 265 });
-      const rowH       = Math.max(descHeight, 14) + 4;
+      const qty       = parseFloat(line.quantity)   || 0;
+      const unitPrice = parseFloat(line.unit_price) || 0;
+      const lineTotal = parseFloat(line.line_total) || qty * unitPrice;
+      const taxRate   = line.tax_rate != null ? parseFloat(line.tax_rate) : 20;
+      const vatLabel  = taxRate > 0 ? `${taxRate}%` : '—';
+      const descH     = doc.heightOfString(line.description, { width: 265 });
+      const rowH      = Math.max(descH, 14) + 4;
 
-      doc.text(line.description,                 descX,  rowY, { width: 265 });
+      doc.text(line.description,
+                                            descX,  rowY, { width: 265 });
       doc.text(qty % 1 === 0 ? qty.toFixed(0) : qty.toFixed(2),
-                                                 qtyX,   rowY, { width: 50,  align: 'right' });
-      doc.text(`£${unitPrice.toFixed(2)}`,       priceX, rowY, { width: 60,  align: 'right' });
-      doc.text(vatLabel,                         vatX,   rowY, { width: 25,  align: 'center' });
-      doc.text(`£${lineTotal.toFixed(2)}`,       totalX, rowY, { width: 70,  align: 'right' });
+                                            qtyX,   rowY, { width: 50,  align: 'right' });
+      doc.text(`£${unitPrice.toFixed(2)}`,  priceX, rowY, { width: 60,  align: 'right' });
+      doc.text(vatLabel,                    vatX,   rowY, { width: 25,  align: 'center' });
+      doc.text(`£${lineTotal.toFixed(2)}`,  totalX, rowY, { width: 70,  align: 'right' });
 
       rowY += rowH + 4;
     });
@@ -490,30 +516,44 @@ router.get('/:id/pdf', async (req, res) => {
     doc.moveTo(priceX, rowY).lineTo(pageW, rowY).lineWidth(0.5).stroke();
     rowY += 8;
 
-    const subtotal = parseFloat(invoice.subtotal) || 0;
-    const vatTotal = parseFloat(invoice.vat_total) || 0;
-    const total    = parseFloat(invoice.total)     || 0;
+    const subtotal    = parseFloat(invoice.subtotal)     || 0;
+    const taxAmount   = parseFloat(invoice.tax_amount)   || 0;
+    const totalAmount = parseFloat(invoice.total_amount) || 0;
+    const amountPaid  = parseFloat(invoice.amount_paid)  || 0;
+    const balanceDue  = parseFloat(invoice.balance_due)  || 0;
 
-    const labelX  = 350;
-    const valX    = 460;
-    const valW    = 80;
+    const labelX = 350;
+    const valX   = 460;
+    const valW   = 80;
 
     doc.font('Helvetica').fontSize(9);
-    doc.text('Subtotal (ex VAT):',  labelX, rowY, { width: 105 });
-    doc.text(`£${subtotal.toFixed(2)}`, valX, rowY, { width: valW, align: 'right' });
+    doc.text('Subtotal (ex VAT):', labelX, rowY, { width: 105 });
+    doc.text(`£${subtotal.toFixed(2)}`,    valX, rowY, { width: valW, align: 'right' });
     rowY += 16;
 
-    doc.text('VAT (20%):',          labelX, rowY, { width: 105 });
-    doc.text(`£${vatTotal.toFixed(2)}`, valX, rowY, { width: valW, align: 'right' });
+    doc.text('VAT:', labelX, rowY, { width: 105 });
+    doc.text(`£${taxAmount.toFixed(2)}`,   valX, rowY, { width: valW, align: 'right' });
     rowY += 16;
 
     doc.moveTo(labelX, rowY).lineTo(pageW, rowY).lineWidth(0.5).stroke();
     rowY += 6;
 
     doc.font('Helvetica-Bold').fontSize(11);
-    doc.text('Total (inc VAT):',    labelX, rowY, { width: 105 });
-    doc.text(`£${total.toFixed(2)}`, valX,  rowY, { width: valW, align: 'right' });
+    doc.text('Total (inc VAT):', labelX, rowY, { width: 105 });
+    doc.text(`£${totalAmount.toFixed(2)}`, valX, rowY, { width: valW, align: 'right' });
     rowY += 20;
+
+    if (amountPaid > 0) {
+      doc.font('Helvetica').fontSize(9);
+      doc.text('Amount Paid:', labelX, rowY, { width: 105 });
+      doc.text(`£${amountPaid.toFixed(2)}`, valX, rowY, { width: valW, align: 'right' });
+      rowY += 16;
+
+      doc.font('Helvetica-Bold');
+      doc.text('Balance Due:', labelX, rowY, { width: 105 });
+      doc.text(`£${balanceDue.toFixed(2)}`, valX, rowY, { width: valW, align: 'right' });
+      rowY += 16;
+    }
 
     // ── Notes ─────────────────────────────────────────────────────────────
     if (invoice.notes) {
@@ -540,7 +580,7 @@ router.get('/:id/pdf', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// PDF helpers
+// Helpers
 // ---------------------------------------------------------------------------
 function pdfDate(d) {
   if (!d) return 'N/A';
