@@ -15,7 +15,7 @@ const eventTypes = [
   { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[#dcfce7] text-[#15803d]' },
   { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[#f3e8ff] text-[#7e22ce]' },
   { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[#ffedd5] text-[#c2410c]' },
-  { value: 'job',        label: 'Job',         icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
+  { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
 ];
 
 export default function CRMCalendar({ timezone = 'Europe/London' }) {
@@ -757,7 +757,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
           <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
               <h2 className="text-[15px] font-semibold text-[#111113]">
-                {selectedEvent._isJob ? 'Scheduled Job' : 'Event Details'}
+                {selectedEvent._isJob ? 'Scheduled Project' : 'Event Details'}
               </h2>
               <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
                 <X className="w-4 h-4" />
@@ -830,7 +830,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                     onClick={() => { setSelectedEvent(null); navigate(`/app/jobs/${selectedEvent._jobId}`); }}
                     className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" /> View Job
+                    <ExternalLink className="w-3.5 h-3.5" /> View Project
                   </button>
                 </div>
               </>

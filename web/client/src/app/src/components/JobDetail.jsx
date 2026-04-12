@@ -601,7 +601,7 @@ export default function JobDetail() {
     if (!id) return;
     setLoading(true);
     fetch(`/api/jobs/${id}`, { credentials: 'include' })
-      .then(r => { if (!r.ok) throw new Error('Failed to fetch job'); return r.json(); })
+      .then(r => { if (!r.ok) throw new Error('Failed to fetch project'); return r.json(); })
       .then(data => setJob(data.job))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -655,7 +655,7 @@ export default function JobDetail() {
       const data = await r.json();
       setJob(data.job);
     } catch {
-      alert('Failed to update job status.');
+      alert('Failed to update project status.');
     } finally {
       setStatusChanging(false);
     }
@@ -668,22 +668,22 @@ export default function JobDetail() {
       if (!r.ok) throw new Error('Failed');
       navigate('/app/dashboard', { state: { view: 'jobs' } });
     } catch {
-      alert('Failed to cancel job.');
+      alert('Failed to cancel project.');
       setShowDeleteConfirm(false);
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64 text-[13px] text-[#9ca3af]">Loading job…</div>;
+  if (loading) return <div className="flex justify-center items-center h-64 text-[13px] text-[#9ca3af]">Loading project…</div>;
 
   if (error || !job) {
     return (
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 text-center">
-        <p className="text-[13px] text-red-600 mb-3">{error || 'Job not found'}</p>
+        <p className="text-[13px] text-red-600 mb-3">{error || 'Project not found'}</p>
         <button
           onClick={() => navigate('/app/dashboard', { state: { view: 'jobs' } })}
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] mx-auto"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Jobs
+          <ArrowLeft className="w-4 h-4" /> Back to Projects
         </button>
       </div>
     );
@@ -746,7 +746,7 @@ export default function JobDetail() {
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             <Trash2 className="w-4 h-4" />
-            {showDeleteConfirm ? 'Confirm Cancel' : 'Cancel Job'}
+            {showDeleteConfirm ? 'Confirm Cancel' : 'Cancel Project'}
           </button>
         </div>
       </div>
@@ -760,7 +760,7 @@ export default function JobDetail() {
           <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-[#9ca3af]" />
-              <h3 className="text-[13px] font-semibold text-[#374151]">Job Information</h3>
+              <h3 className="text-[13px] font-semibold text-[#374151]">Project Information</h3>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
               {job.description && (
@@ -832,11 +832,11 @@ export default function JobDetail() {
         <div className="space-y-5">
           <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Job Details</h3>
+              <h3 className="text-[13px] font-semibold text-[#374151]">Project Details</h3>
             </div>
             <div className="p-5 space-y-4">
               {[
-                { label: 'Job Number', value: job.jobNumber },
+                { label: 'Project Number', value: job.jobNumber },
                 { label: 'Created',    value: fmtDate(job.createdAt) },
                 { label: 'Created By', value: job.createdByName || '—' },
                 { label: 'Last Modified', value: fmtDate(job.updatedAt) },

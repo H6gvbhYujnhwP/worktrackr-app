@@ -327,7 +327,7 @@ export default function InvoicesList() {
                 <tr className="border-b border-[#e5e7eb]">
                   <th className={TH}>Invoice #</th>
                   <th className={TH}>Contact</th>
-                  <th className={TH}>Job</th>
+                  <th className={TH}>Project</th>
                   <th className={TH}>Issue Date</th>
                   <th className={TH}>Due Date</th>
                   <th className={TH_R}>Total</th>

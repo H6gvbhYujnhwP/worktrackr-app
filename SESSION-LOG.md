@@ -25,8 +25,38 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-12 (Session 25)
-- **Next priority:** Payments module — see ROADMAP.md
+- **Last session:** 2026-04-12 (Session 26)
+- **Next priority:** Rename Jobs → Projects — Phase 2 (if needed); otherwise Payments module
+
+---
+
+## Session 26 — 2026-04-12
+
+### Rename Jobs → Projects — Phase 1 (frontend labels only)
+
+#### Scope
+Labels-only pass. No backend files touched. No logic, route, API path, state field name, or internal identifier changed. All internal `'jobs'` identifiers preserved exactly. Sub-component rule maintained throughout (no structural changes).
+
+#### Modified files
+| File | Lines changed | What changed |
+|---|---|---|
+| `Sidebar.jsx` | CRM_ITEMS array | `label: 'Jobs'` → `label: 'Projects'` (id/view stay `'jobs'`) |
+| `JobsList.jsx` | Page title, subtitle, stat label, Create button ×2, search placeholder, table column header `Job #` → `Project #`, empty-state texts, footer count | All user-visible "Job/Jobs" → "Project/Projects" |
+| `JobDetail.jsx` | Loading text, fetch error string, error-state back button, card headers ×2, meta label, Cancel button, status/cancel alert strings | Same |
+| `JobForm.jsx` | Loading text, alert strings ×2, page title (create + edit + edit-with-number), subtitle, section card header + subtitle, field label, save button labels ×2, PUT/POST/catch error strings | Same |
+| `CRMCalendar.jsx` | `eventTypes` job entry label, event detail modal header, "View Job" button | `'Job'` → `'Project'` in all three places |
+| `InvoiceDetail.jsx` | "Linked Job" section label | → "Linked Project" |
+| `InvoicesList.jsx` | "Job" table column header | → "Project" |
+| `Dashboard.jsx` | File-header comment only | No visible "Job" text existed; internal view id `'jobs'` unchanged |
+
+#### Must-not-break checklist (verified)
+- [x] All `/api/jobs` API paths unchanged
+- [x] All `/app/jobs/…` navigate routes unchanged
+- [x] All `view: 'jobs'` identifiers unchanged
+- [x] `currentView === 'jobs'` in Dashboard unchanged
+- [x] `value: 'job'` in CRMCalendar eventTypes unchanged (`_isJob`, `_jobId` fields unchanged)
+- [x] Sidebar `id: 'jobs'` and `view: 'jobs'` unchanged (only `label` changed)
+- [x] Sub-component rule: no structural changes, all components remain at module level
 
 ---
 

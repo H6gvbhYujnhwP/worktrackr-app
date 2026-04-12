@@ -77,7 +77,7 @@ export default function JobForm() {
     if (!isEditMode || !jobId) return;
     setLoadingJob(true);
     fetch(`/api/jobs/${jobId}`, { credentials: 'include' })
-      .then(r => { if (!r.ok) throw new Error('Failed to fetch job'); return r.json(); })
+      .then(r => { if (!r.ok) throw new Error('Failed to fetch project'); return r.json(); })
       .then(data => {
         const job = data.job;
         setJobNumber(job.jobNumber || '');
@@ -94,7 +94,7 @@ export default function JobForm() {
       })
       .catch(err => {
         console.error('[JobForm] Failed to load job for edit:', err);
-        alert('Failed to load job. Returning to jobs list.');
+        alert('Failed to load project. Returning to projects list.');
         navigate('/app/dashboard', { state: { view: 'jobs' } });
       })
       .finally(() => setLoadingJob(false));
@@ -151,7 +151,7 @@ export default function JobForm() {
         });
         if (!r.ok) {
           const errData = await r.json().catch(() => ({}));
-          throw new Error(errData.error || 'Failed to update job');
+          throw new Error(errData.error || 'Failed to update project');
         }
         data = await r.json();
         console.log('[JobForm] Updated job:', data.job?.jobNumber);
@@ -165,7 +165,7 @@ export default function JobForm() {
         });
         if (!r.ok) {
           const errData = await r.json().catch(() => ({}));
-          throw new Error(errData.error || 'Failed to create job');
+          throw new Error(errData.error || 'Failed to create project');
         }
         data = await r.json();
         console.log('[JobForm] Created job:', data.job?.jobNumber);
@@ -173,7 +173,7 @@ export default function JobForm() {
       }
     } catch (err) {
       console.error('[JobForm] Submit error:', err);
-      alert(err.message || `Failed to ${isEditMode ? 'update' : 'create'} job. Please try again.`);
+      alert(err.message || `Failed to ${isEditMode ? 'update' : 'create'} project. Please try again.`);
     } finally {
       setSaving(false);
     }
@@ -186,7 +186,7 @@ export default function JobForm() {
   if (loadingJob) {
     return (
       <div className="flex items-center justify-center h-64 text-[13px] text-[#9ca3af]">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading job…
+        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading project…
       </div>
     );
   }
@@ -208,14 +208,14 @@ export default function JobForm() {
               <Briefcase className="w-5 h-5 text-[#d4a017]" />
               <h1 className="text-[20px] font-bold text-[#111113]">
                 {isEditMode
-                  ? (jobNumber ? `Edit Job — ${jobNumber}` : 'Edit Job')
-                  : 'Create Job'}
+                  ? (jobNumber ? `Edit Project — ${jobNumber}` : 'Edit Project')
+                  : 'Create Project'}
               </h1>
             </div>
             <p className="text-[13px] text-[#9ca3af] mt-0.5">
               {isEditMode
                 ? 'Update the fields below and save your changes'
-                : 'Fill in the details below to create a new job'}
+                : 'Fill in the details below to create a new project'}
             </p>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function JobForm() {
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving
             ? (isEditMode ? 'Saving…' : 'Creating…')
-            : (isEditMode ? 'Save Changes' : 'Create Job')}
+            : (isEditMode ? 'Save Changes' : 'Create Project')}
         </button>
       </div>
 
@@ -239,14 +239,14 @@ export default function JobForm() {
           {/* Job details */}
           <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
             <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Job Details</h3>
-              <p className="text-[12px] text-[#9ca3af] mt-0.5">Core job information</p>
+              <h3 className="text-[13px] font-semibold text-[#374151]">Project Details</h3>
+              <p className="text-[12px] text-[#9ca3af] mt-0.5">Core project information</p>
             </div>
             <div className="p-5 space-y-4">
 
               {/* Title */}
               <div>
-                <label className={LABEL_CLS}>Job Title <span className="text-red-500">*</span></label>
+                <label className={LABEL_CLS}>Project Title <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData.title}
@@ -392,7 +392,7 @@ export default function JobForm() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving
               ? (isEditMode ? 'Saving…' : 'Creating…')
-              : (isEditMode ? 'Save Changes' : 'Create Job')}
+              : (isEditMode ? 'Save Changes' : 'Create Project')}
           </button>
           <button
             onClick={backTarget}

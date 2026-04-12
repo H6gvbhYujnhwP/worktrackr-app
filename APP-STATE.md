@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 25 — 2026-04-12
+**Last updated:** Session 26 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -17,7 +17,7 @@
 | CRM Contacts | ✅ Working | Full CRUD, snake_case normaliser applied |
 | CRM Calendar | ✅ Working | DB-backed, day/week/month views, Jobs integration added Session 22 |
 | Quotes | ✅ Working | Line items redesign, buy/sell/margin, AI generation from ticket, PDF |
-| Jobs | ✅ Working | List, detail, create, edit (with job number in header), time entries, parts, calendar integration |
+| Jobs (Projects) | ✅ Working | List, detail, create, edit — all user-facing labels now say "Project/Projects"; internal ids/routes/API remain `jobs` |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Floating FAB, 7 intent destinations, mandatory review step |
 | Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint |

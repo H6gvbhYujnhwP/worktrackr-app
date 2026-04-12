@@ -303,7 +303,7 @@ export default function InvoiceDetail() {
               </div>
               {invoice.jobNumber && (
                 <div>
-                  <p className={metaLabel}>Linked Job</p>
+                  <p className={metaLabel}>Linked Project</p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Briefcase className="w-3.5 h-3.5 text-[#9ca3af]" />
                     <p className="text-[14px] font-medium text-[#111113]">{invoice.jobNumber}</p>

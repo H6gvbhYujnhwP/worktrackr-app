@@ -134,22 +134,22 @@ export default function JobsList() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111113]">Jobs</h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Manage and track field service jobs</p>
+          <h1 className="text-[22px] font-bold text-[#111113]">Projects</h1>
+          <p className="text-[13px] text-[#9ca3af] mt-0.5">Manage and track field service projects</p>
         </div>
         <button
           onClick={() => navigate('/app/jobs/new')}
           className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create Job
+          Create Project
         </button>
       </div>
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total Jobs',   value: jobs.length,                                                       color: 'text-[#111113]' },
+          { label: 'Total Projects', value: jobs.length,                                                       color: 'text-[#111113]' },
           { label: 'Scheduled',    value: jobs.filter(j => j.status === 'scheduled').length,                 color: 'text-[#1d4ed8]' },
           { label: 'In Progress',  value: jobs.filter(j => j.status === 'in_progress').length,               color: 'text-[#92400e]' },
           { label: 'Completed',    value: jobs.filter(j => j.status === 'completed' || j.status === 'invoiced').length, color: 'text-[#15803d]' },
@@ -170,7 +170,7 @@ export default function JobsList() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
             <input
               type="text"
-              placeholder="Search by job number, title, contact, or assignee..."
+              placeholder="Search by project number, title, contact, or assignee..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
@@ -198,10 +198,10 @@ export default function JobsList() {
           <div className="text-center py-16">
             <Briefcase className="w-10 h-10 text-[#e5e7eb] mx-auto mb-3" />
             <h3 className="text-[14px] font-medium text-[#374151] mb-1">
-              {jobs.length === 0 ? 'No jobs yet' : 'No jobs found'}
+              {jobs.length === 0 ? 'No projects yet' : 'No projects found'}
             </h3>
             <p className="text-[13px] text-[#9ca3af] mb-4">
-              {jobs.length === 0 ? 'Create your first job to get started' : 'Try adjusting your search or filters'}
+              {jobs.length === 0 ? 'Create your first project to get started' : 'Try adjusting your search or filters'}
             </p>
             {jobs.length === 0 && (
               <button
@@ -209,7 +209,7 @@ export default function JobsList() {
                 className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4 inline mr-1.5" />
-                Create Job
+                Create Project
               </button>
             )}
           </div>
@@ -219,7 +219,7 @@ export default function JobsList() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#e5e7eb]">
-                    {renderSortTh('jobNumber', 'Job #')}
+                    {renderSortTh('jobNumber', 'Project #')}
                     {renderSortTh('title', 'Title')}
                     {renderSortTh('contactName', 'Contact')}
                     <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Status</th>
@@ -246,7 +246,7 @@ export default function JobsList() {
               </table>
             </div>
             <div className="px-4 py-3 border-t border-[#f3f4f6] text-[12px] text-[#9ca3af]">
-              Showing {filteredJobs.length} of {jobs.length} jobs
+              Showing {filteredJobs.length} of {jobs.length} projects
             </div>
           </>
         )}

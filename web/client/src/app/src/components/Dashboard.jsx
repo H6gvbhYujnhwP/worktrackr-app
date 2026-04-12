@@ -3,6 +3,8 @@
 // Replaced coloured badge pills with compact tab chips.
 // Compact inline stats row replaces nothing (was never big cards — those were in spec for future).
 // All logic, state, modals, and child components completely unchanged.
+// Session 26: Jobs → Projects rename pass — no visible "Job/Jobs" text in this file;
+//   internal view identifier 'jobs' intentionally unchanged.
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../../context/AuthProvider.jsx';

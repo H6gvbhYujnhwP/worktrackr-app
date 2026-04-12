@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — Active Roadmap
 
-**Last updated:** Session 25 — 2026-04-12
+**Last updated:** Session 26 — 2026-04-12
 
 ---
 
@@ -28,6 +28,7 @@
 - ✅ **Jobs Phase 3** — Edit form (pre-populated, PUT to API) + inline time entry & parts logging (add + delete)
 - ✅ **Jobs Phase 4** — Edit Job header shows job number (e.g. "Edit Job — JB-0001")
 - ✅ **Jobs Calendar Integration** — Scheduled jobs appear as read-only gold blocks on CRM Calendar
+- ✅ **Rename Jobs → Projects Phase 1** — All user-facing labels changed to "Project/Projects"; internal ids/routes/API paths remain `jobs` throughout
 
 ### Quote Improvements
 - ✅ Quote Line Items Redesign (materials/labour sections, buy/sell price, margin panel, supplier, VAT toggle)
@@ -41,6 +42,14 @@
 ### Invoices Module
 - ✅ **Invoices Phase 1** — Backend only: invoices + invoice_lines DB tables, generate_invoice_number(), full CRUD API (/api/invoices), PDF endpoint.
 - ✅ **Invoices Phase 2** — Frontend UI: InvoicesList, InvoiceDetail, route wrappers, Sidebar nav item, App.jsx routes, Dashboard view clause, JobDetail "Create Invoice" button + linked invoice badge.
+
+---
+
+## Rename Jobs → Projects — Phase 1 ✅ Done
+
+All user-visible labels in 8 frontend files updated to say "Project / Projects". Internal identifiers (`jobs` route, `/api/jobs`, `view: 'jobs'`, `jobNumber` field, etc.) are all unchanged. No backend files touched.
+
+**Phase 2 (if needed):** Any remaining screens not covered in Phase 1 — check `IntegratedCalendar.jsx`, `TicketDetailViewTabbed.jsx` (Generate Quote → job link), `QuoteForm.jsx`, `QuoteDetails.jsx` for any "Job" labels that should read "Project".
 
 ---
 
