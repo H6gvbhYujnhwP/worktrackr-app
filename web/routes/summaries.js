@@ -30,13 +30,11 @@ async function callAnthropic(systemPrompt, userMessage) {
 }
 
 // POST /api/summaries/ticket/:id
-// Returns a plain-English summary of the ticket thread
 router.post('/ticket/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const orgId = req.orgContext.organizationId;
 
-    // Fetch ticket
     const ticketResult = await db.query(
       `SELECT t.title, t.description, t.status, t.priority, t.category,
               t.created_at, t.updated_at,
@@ -55,7 +53,6 @@ router.post('/ticket/:id', async (req, res) => {
 
     const ticket = ticketResult.rows[0];
 
-    // Fetch comments
     const commentsResult = await db.query(
       `SELECT c.body, c.created_at, u.name as author_name
        FROM comments c
@@ -66,8 +63,6 @@ router.post('/ticket/:id', async (req, res) => {
     );
 
     const comments = commentsResult.rows;
-
-    // Build prompt
     const threadText = comments.length > 0
       ? comments.map(c =>
           `[${new Date(c.created_at).toLocaleDateString('en-GB')} — ${c.author_name}]: ${c.body}`
@@ -101,13 +96,11 @@ Write a concise summary (3–5 sentences) of this ticket: what the issue is, wha
 });
 
 // POST /api/summaries/quote/:id
-// Returns a customer-friendly summary of what the quote covers
 router.post('/quote/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const orgId = req.orgContext.organizationId;
 
-    // Fetch quote + line items
     const quoteResult = await db.query(
       `SELECT q.title, q.description, q.status, q.total_amount, q.valid_until,
               q.terms_conditions, q.notes,
@@ -161,6 +154,110 @@ Write a short, friendly summary (2–4 sentences) of what this quote covers — 
   } catch (error) {
     console.error('[Summaries] Quote error:', error);
     res.status(500).json({ error: 'Failed to generate summary', message: error.message });
+  }
+});
+
+// POST /api/summaries/crm-event/:id/next-action
+// Fires after a CRM event is marked Done. Calls Claude Haiku with event context
+// and returns a suggested next action + up to 2 quick-action buttons.
+// Action types: new_ticket | new_quote | schedule_followup | none
+router.post('/crm-event/:id/next-action', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orgId = req.orgContext.organizationId;
+
+    // Verify org ownership; get DB fields including contact name via JOIN
+    const eventResult = await db.query(
+      `SELECT e.id, e.title, e.type, e.notes, e.status, e.description,
+              c.name as contact_name
+       FROM crm_events e
+       LEFT JOIN contacts c ON e.contact_id = c.id
+       WHERE e.id = $1 AND e.organisation_id = $2`,
+      [id, orgId]
+    );
+
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ error: 'CRM event not found' });
+    }
+
+    const event = eventResult.rows[0];
+
+    // company/contact text strings are not DB columns — accepted from body as context
+    const bodyCompany = req.body.company || '';
+    const bodyContact = req.body.contact || '';
+
+    // Best available contact name
+    const contactName = event.contact_name || bodyContact || bodyCompany || 'the contact';
+    const companyName = bodyCompany || event.contact_name || 'the company';
+
+    const typeLabels = {
+      call:      'Phone call',
+      meeting:   'In-person meeting',
+      follow_up: 'Follow-up',
+      renewal:   'Renewal discussion',
+      other:     'Activity',
+    };
+    const typeLabel = typeLabels[event.type] || event.type;
+
+    const userMessage =
+`EVENT TYPE: ${typeLabel}
+TITLE: ${event.title}
+CONTACT: ${contactName}
+COMPANY: ${companyName}
+NOTES: ${event.notes || event.description || 'None recorded'}
+STATUS: Just marked Done
+
+This CRM event has just been marked as done. Based on the event type and any notes, suggest the single most logical next action for this contact.
+
+Respond ONLY with valid JSON (no markdown, no code fences, no extra text):
+{
+  "suggestion": "One or two sentences explaining what to do next and why.",
+  "actions": [
+    { "label": "Short button label", "type": "new_ticket|new_quote|schedule_followup|none" },
+    { "label": "Short button label", "type": "new_ticket|new_quote|schedule_followup|none" }
+  ]
+}
+
+Action type rules:
+- new_ticket: raise a support or work ticket for this contact
+- new_quote: prepare a quote or proposal for this contact
+- schedule_followup: book a follow-up call or meeting
+- none: only if truly no follow-up is warranted
+Return 1–2 actions. Do not repeat the same type twice.`;
+
+    const raw = await callAnthropic(
+      'You are a CRM assistant for an IT support and field services company. Suggest the next logical action after a CRM event is completed. Respond with valid JSON only — no markdown, no extra text.',
+      userMessage
+    );
+
+    // Parse — strip accidental markdown fences
+    let parsed;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch (parseErr) {
+      console.error('[Summaries] Next-action JSON parse error:', parseErr, '\nRaw:', raw);
+      // Graceful fallback so the UI always gets a valid response shape
+      return res.json({
+        suggestion: 'Consider scheduling a follow-up with this contact to keep things moving forward.',
+        actions: [{ label: 'Schedule follow-up', type: 'schedule_followup' }]
+      });
+    }
+
+    // Sanitise shape
+    const suggestion = typeof parsed.suggestion === 'string' ? parsed.suggestion.trim() : '';
+    const actions = Array.isArray(parsed.actions)
+      ? parsed.actions
+          .filter(a => a && typeof a.label === 'string' && typeof a.type === 'string')
+          .slice(0, 2)
+          .map(a => ({ label: a.label.trim(), type: a.type.trim() }))
+      : [];
+
+    res.json({ suggestion, actions });
+
+  } catch (error) {
+    console.error('[Summaries] CRM next-action error:', error);
+    res.status(500).json({ error: 'Failed to generate next-action suggestion', message: error.message });
   }
 });
 

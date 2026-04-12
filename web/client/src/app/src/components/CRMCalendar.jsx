@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label.jsx';
 import {
   Calendar, Clock, Plus, Phone, Users, Target,
   AlertTriangle, CheckCircle, X, Edit, Trash2,
-  ChevronLeft, ChevronRight, Briefcase, ExternalLink
+  ChevronLeft, ChevronRight, Briefcase, ExternalLink,
+  Sparkles, Ticket, FileText, CalendarPlus
 } from 'lucide-react';
 
 // FIX 1: type values are lowercase to match backend Zod schema
@@ -17,6 +18,77 @@ const eventTypes = [
   { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[#ffedd5] text-[#c2410c]' },
   { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODULE-LEVEL SUB-COMPONENTS — sub-component rule: never define inside parent
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Icon map for quick-action button types
+const ACTION_ICONS = {
+  new_ticket:        Ticket,
+  new_quote:         FileText,
+  schedule_followup: CalendarPlus,
+};
+
+// A single quick-action button inside the AI suggestion box
+function NextActionButton({ action, onAction }) {
+  const IconComp = ACTION_ICONS[action.type];
+  return (
+    <button
+      onClick={() => onAction(action.type)}
+      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#b8860b] border border-[#d4a017]/40 rounded-lg hover:bg-[#fde68a]/40 transition-colors"
+    >
+      {IconComp && <IconComp className="w-3.5 h-3.5" />}
+      {action.label}
+    </button>
+  );
+}
+
+// Amber AI suggestion box — appears in event detail modal after Mark Done
+function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
+  if (!loading && !suggestion) return null;
+
+  return (
+    <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-xl p-4">
+      {loading ? (
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 border-2 border-[#d4a017] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <span className="text-[13px] text-[#b8860b]">Analysing event and generating suggestion…</span>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#d4a017] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold text-[#b8860b] uppercase tracking-wider mb-1">
+                  AI Suggestion
+                </p>
+                <p className="text-[13px] text-[#374151] leading-relaxed">{suggestion}</p>
+              </div>
+            </div>
+            <button
+              onClick={onDismiss}
+              className="p-1 rounded-lg hover:bg-[#fde68a]/50 text-[#9ca3af] hover:text-[#374151] flex-shrink-0 transition-colors"
+              title="Dismiss suggestion"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {actions && actions.filter(a => a.type !== 'none').length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-[#d4a017]/20">
+              {actions
+                .filter(a => a.type !== 'none')
+                .map((action, i) => (
+                  <NextActionButton key={i} action={action} onAction={onAction} />
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CRMCalendar({ timezone = 'Europe/London' }) {
 
@@ -67,6 +139,10 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
   const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState('month');
+
+  // AI Phase 4 — CRM Next-Action Suggestions
+  const [nextAction, setNextAction] = useState(null);         // { suggestion, actions[] } | null
+  const [nextActionLoading, setNextActionLoading] = useState(false);
 
   // FIX 1: default type is lowercase 'call'
   const [newEvent, setNewEvent] = useState({
@@ -252,6 +328,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     }
     setShowDeleteConfirm(false);
     setSelectedEvent(null);
+    setNextAction(null);
     setSendCancellationEmail(true);
   };
 
@@ -297,7 +374,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     setEditingEvent(null);
   };
 
-  // FIX 4: mark done handler
+  // FIX 4: mark done handler — also fires AI next-action suggestion (AI Phase 4)
   const markEventDone = async (event) => {
     try {
       await fetch(`/api/crm-events/${event.id}`, {
@@ -309,8 +386,53 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
       const eventsData = await loadEventsFromAPI();
       setEvents(eventsData);
       setSelectedEvent(prev => prev ? { ...prev, status: 'done' } : null);
+
+      // Fire next-action suggestion — non-blocking, never prevents modal close
+      setNextActionLoading(true);
+      setNextAction(null);
+      try {
+        const res = await fetch(`/api/summaries/crm-event/${event.id}/next-action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            company: event.company  || '',
+            contact: event.contact  || '',
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNextAction(data);
+        }
+      } catch (aiErr) {
+        console.error('[CRMCalendar] Next-action fetch error:', aiErr);
+        // Silent fail — suggestion box simply won't appear
+      } finally {
+        setNextActionLoading(false);
+      }
     } catch (error) {
       console.error('Error marking event done:', error);
+    }
+  };
+
+  // Handle quick-action button clicks from the AI suggestion box
+  const handleNextAction = (actionType) => {
+    const contact = selectedEvent?.contact || '';
+    const company = selectedEvent?.company || '';
+    if (actionType === 'new_ticket') {
+      setSelectedEvent(null);
+      setNextAction(null);
+      navigate('/app/tickets/new', { state: { prefillContact: contact, prefillCompany: company } });
+    } else if (actionType === 'new_quote') {
+      setSelectedEvent(null);
+      setNextAction(null);
+      navigate('/app/crm/quotes/new', { state: { prefillContact: contact, prefillCompany: company } });
+    } else if (actionType === 'schedule_followup') {
+      // Pre-fill the schedule meeting modal with this event's contact/company
+      const ev = selectedEvent;
+      setNextAction(null);
+      setSelectedEvent(null);
+      scheduleFromEvent(ev);
     }
   };
 
@@ -759,7 +881,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
               <h2 className="text-[15px] font-semibold text-[#111113]">
                 {selectedEvent._isJob ? 'Scheduled Project' : 'Event Details'}
               </h2>
-              <button onClick={() => setSelectedEvent(null)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+              <button onClick={() => { setSelectedEvent(null); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -821,13 +943,13 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                 </div>
                 <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
                   <button
-                    onClick={() => setSelectedEvent(null)}
+                    onClick={() => { setSelectedEvent(null); setNextAction(null); }}
                     className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
                   >
                     Close
                   </button>
                   <button
-                    onClick={() => { setSelectedEvent(null); navigate(`/app/jobs/${selectedEvent._jobId}`); }}
+                    onClick={() => { setSelectedEvent(null); setNextAction(null); navigate(`/app/jobs/${selectedEvent._jobId}`); }}
                     className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> View Project
@@ -875,6 +997,15 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                       <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
                     </div>
                   )}
+
+                  {/* AI Phase 4 — Next-Action Suggestion box */}
+                  <NextActionBox
+                    loading={nextActionLoading}
+                    suggestion={nextAction?.suggestion}
+                    actions={nextAction?.actions}
+                    onAction={handleNextAction}
+                    onDismiss={() => setNextAction(null)}
+                  />
                 </div>
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 px-6 py-4 border-t border-[#e5e7eb]">
                   <button
@@ -891,7 +1022,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                       <Trash2 className="w-4 h-4" /> Delete
                     </button>
                     <button
-                      onClick={() => setSelectedEvent(null)}
+                      onClick={() => { setSelectedEvent(null); setNextAction(null); }}
                       className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
                     >
                       Close
@@ -1076,7 +1207,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
           <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
               <h3 className="text-[15px] font-semibold text-[#111113]">Delete Event</h3>
-              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1088,7 +1219,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
               </div>
             </div>
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); }} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
               <button onClick={deleteEvent} className="px-4 py-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Delete Event</button>
             </div>
           </div>

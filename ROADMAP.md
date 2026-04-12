@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — Active Roadmap
 
-**Last updated:** Session 27 — 2026-04-12
+**Last updated:** Session 28 — 2026-04-12
 
 ---
 
@@ -15,6 +15,7 @@
 - ✅ **AI Phase 1** — Email intake classifier (Anthropic Claude, keyword fallback)
 - ✅ **AI Phase 2** — Generate Quote with AI (ticket → AI draft → review → save with ai_generated flag)
 - ✅ **AI Phase 3** — Smart Summaries (Summarise Ticket + Summarise for Customer buttons, inline amber display)
+- ✅ **AI Phase 4** — CRM Next-Action Suggestions (amber AI box after Mark Done, 2 contextual quick-action buttons, dismiss, non-blocking)
 
 ### Core fixes
 - ✅ Auth cookie name fix, dangerous public-auth stub replaced, admin audit log fix
@@ -28,8 +29,8 @@
 - ✅ **Jobs Phase 3** — Edit form (pre-populated, PUT to API) + inline time entry & parts logging (add + delete)
 - ✅ **Jobs Phase 4** — Edit Job header shows job number (e.g. "Edit Job — JB-0001")
 - ✅ **Jobs Calendar Integration** — Scheduled jobs appear as read-only gold blocks on CRM Calendar
-- ✅ **Rename Jobs → Projects Phase 1** — All user-visible labels changed to "Project/Projects" in 8 frontend files; internal ids/routes/API paths remain `jobs` throughout
-- ✅ **Rename Jobs → Projects Phase 2** — `TicketDetailViewTabbed.jsx` amber bar label + tooltip updated ("Project description"); `QuoteForm`, `QuoteDetails`, `IntegratedCalendar` audited — no "Job" text found, no changes needed
+- ✅ **Rename Jobs → Projects Phase 1** — All user-visible labels changed to "Project/Projects" in 8 frontend files
+- ✅ **Rename Jobs → Projects Phase 2** — `TicketDetailViewTabbed.jsx` amber bar label + tooltip updated
 
 ### Quote Improvements
 - ✅ Quote Line Items Redesign (materials/labour sections, buy/sell price, margin panel, supplier, VAT toggle)
@@ -73,9 +74,6 @@ Record and allocate payments against invoices.
 ---
 
 ## Backlog
-
-### AI Phase 4 — CRM Next-Action Suggestions
-After a CRM calendar event is marked Done, Claude suggests the next logical action. Files: `CRMCalendar.jsx` + `summaries.js`.
 
 ### PWA / Mobile
 Trusted Web Activity for Google Play Store listing.

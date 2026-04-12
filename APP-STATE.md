@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 27 — 2026-04-12
+**Last updated:** Session 28 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -15,9 +15,9 @@
 | Dashboard | ✅ Working | Stat cards, recent activity |
 | Tickets | ✅ Working | Option A layout, CustomerStrip, Audio tab, Generate Quote button |
 | CRM Contacts | ✅ Working | Full CRUD, snake_case normaliser applied |
-| CRM Calendar | ✅ Working | DB-backed, day/week/month views, Jobs integration added Session 22 |
+| CRM Calendar | ✅ Working | DB-backed, day/week/month views, Jobs integration, AI Next-Action Suggestions (Session 28) |
 | Quotes | ✅ Working | Line items redesign, buy/sell/margin, AI generation from ticket, PDF |
-| Jobs (Projects) | ✅ Working | List, detail, create, edit — all user-facing labels now say "Project/Projects"; internal ids/routes/API remain `jobs`. Phase 2 complete: TicketDetailViewTabbed "Project description" label also updated. |
+| Jobs (Projects) | ✅ Working | List, detail, create, edit — all user-facing labels now say "Project/Projects"; internal ids/routes/API remain `jobs`. Phase 2 complete. |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Floating FAB, 7 intent destinations, mandatory review step |
 | Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint |
@@ -30,7 +30,7 @@
 
 | # | Module | Description | Severity |
 |---|---|---|---|
-| — | — | No confirmed open bugs as of Session 27 | — |
+| — | — | No confirmed open bugs as of Session 28 | — |
 
 ---
 
@@ -60,7 +60,7 @@
 | `routes/crm-events.js` | CRM calendar events CRUD |
 | `routes/contacts.js` | CRM contacts CRUD |
 | `routes/transcribe.js` | Whisper transcription, Claude extraction, voice intent routing |
-| `routes/summaries.js` | Smart summaries (ticket + quote), AI next-action stub |
+| `routes/summaries.js` | Smart summaries (ticket + quote) + CRM next-action suggestions |
 | `routes/users.js` | User management |
 | `routes/auth.js` | Login, logout, session |
 | `migrations/create_invoices.sql` | invoices + invoice_lines tables, generate_invoice_number() |
@@ -71,10 +71,10 @@
 |---|---|
 | `App.jsx` | React Router routes — all page-level routes defined here |
 | `components/AppLayout.jsx` | Shell: sidebar + header + `<VoiceAssistant />` |
-| `components/Sidebar.jsx` | Nav items for all modules (incl. Invoices added Session 25) |
+| `components/Sidebar.jsx` | Nav items for all modules (incl. Invoices) |
 | `components/Dashboard.jsx` | Inline view switcher (renders list views inside dashboard) |
-| `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen. "Project description" label (Session 27). |
-| `components/CRMCalendar.jsx` | CRM calendar — 3 views, jobs integration, event CRUD modals |
+| `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen. "Project description" label. |
+| `components/CRMCalendar.jsx` | CRM calendar — 3 views, jobs integration, event CRUD modals, AI next-action suggestions after Mark Done (Session 28). Module-level: `NextActionButton`, `NextActionBox`. |
 | `components/QuoteForm.jsx` | Quote create/edit — line items, AI prefill, badge/lock mechanism |
 | `components/QuoteDetails.jsx` | Quote detail view — line items table, margin panel, send modal |
 | `components/SendQuoteModal.jsx` | Email quote to customer |
@@ -120,6 +120,7 @@
 | POST | `/api/transcribe/ticket-note` | Whisper + Claude extraction for audio notes |
 | POST | `/api/transcribe/voice-intent` | Claude intent routing for voice assistant |
 | GET/POST | `/api/summaries/ticket/:id` | Smart summary for ticket |
+| POST | `/api/summaries/crm-event/:id/next-action` | AI next-action suggestion after event marked Done |
 
 ---
 

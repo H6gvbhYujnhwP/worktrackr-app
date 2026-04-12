@@ -25,8 +25,40 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-12 (Session 27)
+- **Last session:** 2026-04-12 (Session 28)
 - **Next priority:** Payments module — Phase 1 (backend only)
+
+---
+
+## Session 28 — 2026-04-12
+
+### AI Phase 4 — CRM Next-Action Suggestions
+
+#### Scope
+After a CRM event is marked Done, Claude Haiku analyses the event context and suggests the next logical action. The suggestion appears as an amber AI box inside the event detail modal, directly below the event notes. Two contextual quick-action buttons navigate to the relevant form. Advisory only — never blocking. Suggestion can be dismissed.
+
+#### Files changed
+
+| File | What changed |
+|---|---|
+| `web/routes/summaries.js` | Added `POST /api/summaries/crm-event/:id/next-action`. Fetches event from DB (org-verified), resolves contact name via JOIN, accepts supplemental `company`/`contact` strings from body (not persisted in DB). Calls Claude Haiku with event type, title, contact, company, notes context. Returns `{ suggestion, actions[] }`. JSON parse error falls back gracefully rather than 500. |
+| `web/client/src/app/src/components/CRMCalendar.jsx` | Added `Sparkles`, `Ticket`, `FileText`, `CalendarPlus` lucide imports. Added two **module-level** components: `NextActionButton` and `NextActionBox` (sub-component rule enforced). Added `nextAction` and `nextActionLoading` state. Extended `markEventDone` to fire the next-action endpoint (non-blocking, silent-fail). Added `handleNextAction` for three action types: `new_ticket` → navigate with React Router state, `new_quote` → navigate with state, `schedule_followup` → opens existing Schedule Meeting modal pre-filled. `NextActionBox` rendered inside CRM event body (below notes). All modal close/delete paths now also call `setNextAction(null)`. |
+
+#### Sub-component rule compliance (verified)
+- `NextActionButton` — defined at module level ✅
+- `NextActionBox` — defined at module level ✅
+- No new components defined inside `CRMCalendar` function body ✅
+
+#### Action type routing
+| Type | Destination |
+|---|---|
+| `new_ticket` | `navigate('/app/tickets/new', { state: { prefillContact, prefillCompany } })` |
+| `new_quote` | `navigate('/app/crm/quotes/new', { state: { prefillContact, prefillCompany } })` |
+| `schedule_followup` | Opens existing `showScheduleMeetingModal` pre-filled via `scheduleFromEvent()` |
+| `none` | Filtered out — no button rendered |
+
+#### Note on company/contact fields
+`crm_events` DB table has no `company` or `contact` text columns (Zod schema silently drops them on create). The endpoint accepts them from the POST body as supplemental context. DB-joined `contact_name` (via `contacts` table) takes priority if available.
 
 ---
 
@@ -38,15 +70,6 @@ Paste this at the start of every new chat session:
 Four files audited in full before any changes: `TicketDetailViewTabbed.jsx`, `QuoteForm.jsx`,
 `QuoteDetails.jsx`, `IntegratedCalendar.jsx`. Only `TicketDetailViewTabbed.jsx` contained
 user-visible "Job" strings. No backend files touched. No logic changes.
-
-#### Audit results
-
-| File | "Job/Jobs" found | User-visible | Changed? |
-|---|---|---|---|
-| `TicketDetailViewTabbed.jsx` | Line 1539 label, line 1562 tooltip | Yes | **Yes** |
-| `QuoteForm.jsx` | None | — | No — skipped |
-| `QuoteDetails.jsx` | None | — | No — skipped |
-| `IntegratedCalendar.jsx` | None | — | No — skipped |
 
 #### Modified files
 
@@ -60,36 +83,6 @@ user-visible "Job" strings. No backend files touched. No logic changes.
 - [x] All `job_id`, `jobId`, `jobNumber`, `job_number` field references unchanged
 - [x] JSX comment on line 1534 (`{/* Job description — always pinned */}`) left as-is (not user-visible)
 - [x] Sub-component rule: no structural changes made
-
----
-
-## Session 26 — 2026-04-12
-
-### Rename Jobs → Projects — Phase 1 (frontend labels only)
-
-#### Scope
-Labels-only pass. No backend files touched. No logic, route, API path, state field name, or internal identifier changed. All internal `'jobs'` identifiers preserved exactly. Sub-component rule maintained throughout (no structural changes).
-
-#### Modified files
-| File | Lines changed | What changed |
-|---|---|---|
-| `Sidebar.jsx` | CRM_ITEMS array | `label: 'Jobs'` → `label: 'Projects'` (id/view stay `'jobs'`) |
-| `JobsList.jsx` | Page title, subtitle, stat label, Create button x2, search placeholder, table column header `Job #` → `Project #`, empty-state texts, footer count | All user-visible "Job/Jobs" → "Project/Projects" |
-| `JobDetail.jsx` | Loading text, fetch error string, error-state back button, card headers x2, meta label, Cancel button, status/cancel alert strings | Same |
-| `JobForm.jsx` | Loading text, alert strings x2, page title (create + edit + edit-with-number), subtitle, section card header + subtitle, field label, save button labels x2, PUT/POST/catch error strings | Same |
-| `CRMCalendar.jsx` | `eventTypes` job entry label, event detail modal header, "View Job" button | `'Job'` → `'Project'` in all three places |
-| `InvoiceDetail.jsx` | "Linked Job" section label | → "Linked Project" |
-| `InvoicesList.jsx` | "Job" table column header | → "Project" |
-| `Dashboard.jsx` | File-header comment only | No visible "Job" text existed; internal view id `'jobs'` unchanged |
-
-#### Must-not-break checklist (verified)
-- [x] All `/api/jobs` API paths unchanged
-- [x] All `/app/jobs/…` navigate routes unchanged
-- [x] All `view: 'jobs'` identifiers unchanged
-- [x] `currentView === 'jobs'` in Dashboard unchanged
-- [x] `value: 'job'` in CRMCalendar eventTypes unchanged (`_isJob`, `_jobId` fields unchanged)
-- [x] Sidebar `id: 'jobs'` and `view: 'jobs'` unchanged (only `label` changed)
-- [x] Sub-component rule: no structural changes, all components remain at module level
 
 ---
 
