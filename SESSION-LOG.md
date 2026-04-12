@@ -26,7 +26,7 @@ Paste this at the start of every new chat session:
 
 ## Current State
 - **Last session:** 2026-04-12 (Session 28)
-- **Next priority:** Payments module — Phase 1 (backend only)
+- **Next priority:** Voice Assistant overhaul — full hands-free conversational flow (see ROADMAP.md for full spec)
 
 ---
 
@@ -34,31 +34,27 @@ Paste this at the start of every new chat session:
 
 ### AI Phase 4 — CRM Next-Action Suggestions
 
-#### Scope
-After a CRM event is marked Done, Claude Haiku analyses the event context and suggests the next logical action. The suggestion appears as an amber AI box inside the event detail modal, directly below the event notes. Two contextual quick-action buttons navigate to the relevant form. Advisory only — never blocking. Suggestion can be dismissed.
-
 #### Files changed
-
 | File | What changed |
 |---|---|
-| `web/routes/summaries.js` | Added `POST /api/summaries/crm-event/:id/next-action`. Fetches event from DB (org-verified), resolves contact name via JOIN, accepts supplemental `company`/`contact` strings from body (not persisted in DB). Calls Claude Haiku with event type, title, contact, company, notes context. Returns `{ suggestion, actions[] }`. JSON parse error falls back gracefully rather than 500. |
-| `web/client/src/app/src/components/CRMCalendar.jsx` | Added `Sparkles`, `Ticket`, `FileText`, `CalendarPlus` lucide imports. Added two **module-level** components: `NextActionButton` and `NextActionBox` (sub-component rule enforced). Added `nextAction` and `nextActionLoading` state. Extended `markEventDone` to fire the next-action endpoint (non-blocking, silent-fail). Added `handleNextAction` for three action types: `new_ticket` → navigate with React Router state, `new_quote` → navigate with state, `schedule_followup` → opens existing Schedule Meeting modal pre-filled. `NextActionBox` rendered inside CRM event body (below notes). All modal close/delete paths now also call `setNextAction(null)`. |
+| `web/routes/summaries.js` | Added `POST /api/summaries/crm-event/:id/next-action`. Fetches event from DB (org-verified), resolves contact name via JOIN, accepts supplemental `company`/`contact` strings from body. Calls Claude Haiku. Returns `{ suggestion, actions[] }`. Graceful fallback on JSON parse error. |
+| `web/client/src/app/src/components/CRMCalendar.jsx` | Added `Sparkles`, `Ticket`, `FileText`, `CalendarPlus` imports. Two module-level components: `NextActionButton`, `NextActionBox`. Added `nextAction`/`nextActionLoading` state. Extended `markEventDone` to fire next-action endpoint (non-blocking). Added `handleNextAction` for `new_ticket`, `new_quote`, `schedule_followup`. `NextActionBox` rendered below notes in CRM event body. All close/delete paths reset `nextAction`. |
 
-#### Sub-component rule compliance (verified)
-- `NextActionButton` — defined at module level ✅
-- `NextActionBox` — defined at module level ✅
-- No new components defined inside `CRMCalendar` function body ✅
+#### Sub-component rule compliance
+- `NextActionButton` — module level ✅
+- `NextActionBox` — module level ✅
 
-#### Action type routing
-| Type | Destination |
-|---|---|
-| `new_ticket` | `navigate('/app/tickets/new', { state: { prefillContact, prefillCompany } })` |
-| `new_quote` | `navigate('/app/crm/quotes/new', { state: { prefillContact, prefillCompany } })` |
-| `schedule_followup` | Opens existing `showScheduleMeetingModal` pre-filled via `scheduleFromEvent()` |
-| `none` | Filtered out — no button rendered |
+---
 
-#### Note on company/contact fields
-`crm_events` DB table has no `company` or `contact` text columns (Zod schema silently drops them on create). The endpoint accepts them from the POST body as supplemental context. DB-joined `contact_name` (via `contacts` table) takes priority if available.
+### Voice Assistant Analysis (discussed, not yet built)
+
+#### Problem identified
+The current `VoiceAssistant.jsx` flow stops dead after TTS speaks the confirmation message — it waits silently for a screen tap. Not hands-free. Two specific bugs found in code:
+
+1. **No voice confirmation loop** — after `speak(confirmation_message)` fires on `ReviewPanel` mount, the mic goes silent. User must tap "Confirm & save" on screen.
+2. **CRM calendar missing company/contact** — `buildVoiceIntentPrompt` in `transcribe.js` does not include `company` or `contact` in the `crm_calendar` data schema. These fields are never extracted, never saved. Events created with blank company/contact.
+
+#### Full spec agreed — see ROADMAP.md "Voice Assistant Overhaul" for complete detail.
 
 ---
 
@@ -66,23 +62,10 @@ After a CRM event is marked Done, Claude Haiku analyses the event context and su
 
 ### Rename Jobs → Projects — Phase 2 (frontend labels only)
 
-#### Scope
-Four files audited in full before any changes: `TicketDetailViewTabbed.jsx`, `QuoteForm.jsx`,
-`QuoteDetails.jsx`, `IntegratedCalendar.jsx`. Only `TicketDetailViewTabbed.jsx` contained
-user-visible "Job" strings. No backend files touched. No logic changes.
-
 #### Modified files
-
 | File | Lines changed | What changed |
 |---|---|---|
-| `TicketDetailViewTabbed.jsx` | 1539, 1562 | `"Job description"` → `"Project description"` (amber pinned bar label); `"Edit job description"` → `"Edit project description"` (button title tooltip) |
-
-#### Must-not-break checklist (verified)
-- [x] All `/api/jobs` API paths unchanged
-- [x] All `/app/jobs/…` navigate routes unchanged
-- [x] All `job_id`, `jobId`, `jobNumber`, `job_number` field references unchanged
-- [x] JSX comment on line 1534 (`{/* Job description — always pinned */}`) left as-is (not user-visible)
-- [x] Sub-component rule: no structural changes made
+| `TicketDetailViewTabbed.jsx` | 1539, 1562 | `"Job description"` → `"Project description"`; `"Edit job description"` → `"Edit project description"` |
 
 ---
 
