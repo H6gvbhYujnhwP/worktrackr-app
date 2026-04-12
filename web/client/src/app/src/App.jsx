@@ -12,6 +12,8 @@ import QuotesListWithLayout from './components/QuotesListWithLayout.jsx';
 import QuoteFormWithLayout from './components/QuoteFormWithLayout.jsx';
 import QuoteDetailsWithLayout from './components/QuoteDetailsWithLayout.jsx';
 import PricingConfigWithLayout from './components/PricingConfigWithLayout.jsx';
+import JobDetailWithLayout from './components/JobDetailWithLayout.jsx';
+import JobFormWithLayout from './components/JobFormWithLayout.jsx';
 import Login from '../../Login.jsx';
 import './App.css';
 
@@ -448,6 +450,8 @@ export default function App() {
             <Route path="crm/quotes/new" element={<QuoteFormWithLayout mode="create" />} />
             <Route path="crm/quotes/:id" element={<QuoteDetailsWithLayout />} />
             <Route path="crm/quotes/:id/edit" element={<QuoteFormWithLayout mode="edit" />} />
+            <Route path="jobs/new" element={<JobFormWithLayout />} />
+            <Route path="jobs/:id" element={<JobDetailWithLayout />} />
             <Route path="settings/pricing-config" element={<PricingConfigWithLayout />} />
             <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/app/dashboard" replace />} />

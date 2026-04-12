@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -22,6 +22,7 @@ const CRM_ITEMS = [
   { id: 'contacts',        label: 'Contacts',     icon: UserCircle, view: 'contacts'       },
   { id: 'product-catalog', label: 'Products',     icon: Package,    view: 'product-catalog' },
   { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'          },
+  { id: 'jobs',            label: 'Jobs',         icon: Briefcase,  view: 'jobs'            },
   { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'    },
 ];
 

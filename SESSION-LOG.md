@@ -20,13 +20,75 @@ Paste this at the start of every new chat session:
 ---
 
 ## Current State
-- **Last session:** 2026-04-11 (Session 19)
+- **Last session:** 2026-04-11 (Session 20)
 - **Live URL:** https://worktrackr.cloud
 - **Deploy platform:** Render (auto-deploys on GitHub push)
-- **Last fixes applied:** Jobs Module Phase 1 fully verified — schema, migration, API, hotfixes (Session 19)
-- **Next priority:** Jobs Module Phase 2 — UI (list view + detail page + forms)
+- **Last fixes applied:** Jobs Module Phase 2 — UI (list view + detail page + create form)
+- **Next priority:** Jobs Module Phase 3 — Edit form + time entry / parts logging UI
 
 ---
+
+## Session 20 — 2026-04-11
+
+### Jobs Module Phase 2 — UI (List View + Detail Page + Create Form)
+
+**Impact analysis confirmed before any code was written.**
+
+#### Files changed
+| File | Change |
+|---|---|
+| `web/client/.../Sidebar.jsx` | Added `Briefcase` to lucide imports. Added `{ id: 'jobs', label: 'Jobs', icon: Briefcase, view: 'jobs' }` to `CRM_ITEMS` (between Quotes and CRM Calendar). |
+| `web/client/.../AppLayout.jsx` | Added `jobs: 'jobs'` to `VIEW_TO_PAGE` map. |
+| `web/client/.../Dashboard.jsx` | Imported `JobsList`. Added `{currentView === 'jobs' && <JobsList />}` render clause. |
+| `web/client/.../App.jsx` | Imported `JobDetailWithLayout` and `JobFormWithLayout`. Added routes `jobs/new` and `jobs/:id`. |
+
+#### Files created
+| File | Purpose |
+|---|---|
+| `web/client/.../JobsList.jsx` | Jobs list view — stat strip, search, status filter, sortable table, amber hover rows, gold job number. Matches QuotesList pattern exactly. |
+| `web/client/.../JobDetail.jsx` | Job detail — 2+1 column layout, job info card, collapsible TimeEntriesSection, collapsible PartsSection, status change sidebar, back navigation. All sub-components at module level. |
+| `web/client/.../JobForm.jsx` | Create job form — title, description, status picker, contact select, user select, scheduled start/end (datetime-local), internal notes. Validates required fields. POSTs to `/api/jobs`. Navigates to detail on success. |
+| `web/client/.../JobDetailWithLayout.jsx` | Route wrapper — passes `currentView="jobs"` to AppLayout so sidebar stays highlighted. |
+| `web/client/.../JobFormWithLayout.jsx` | Route wrapper — same pattern as JobDetailWithLayout. |
+
+#### Navigation flow
+- Sidebar "Jobs" item (CRM section) → `view: 'jobs'` → Dashboard renders `<JobsList />` inline
+- Row click → `navigate('/app/jobs/:id')` → `JobDetailWithLayout` (dedicated route)
+- "Create Job" button → `navigate('/app/jobs/new')` → `JobFormWithLayout` (dedicated route)
+- Back buttons → `navigate('/app/dashboard', { state: { view: 'jobs' } })` → returns to list
+
+#### Design system compliance
+- White container `border-[#e5e7eb]`, table headers `text-[11px] uppercase tracking-wider bg-[#fafafa]`
+- Zebra rows with amber hover `#fef9ee`
+- Gold primary buttons `bg-[#d4a017]`
+- Gold focus rings `focus:ring-[#d4a017]/30 focus:border-[#d4a017]`
+- Status badges: scheduled=blue, in_progress=amber, on_hold=grey, completed=green, invoiced=purple, cancelled=red
+
+#### Sub-component rule ✓
+- `StatusBadge`, `TimeEntriesSection`, `PartsSection` all defined at module level in `JobDetail.jsx`
+- `StatusBadge` also at module level in `JobsList.jsx`
+- No component definitions inside parent function bodies anywhere
+
+#### Testing checklist after deploy
+- [ ] Sidebar CRM section shows "Jobs" with briefcase icon
+- [ ] Clicking Jobs → jobs list renders with stat strip and table
+- [ ] "Create Job" button → form opens at `/app/jobs/new`
+- [ ] Form: title required (shows error on empty submit)
+- [ ] Form: contact dropdown populated from `/api/contacts`
+- [ ] Form: assigned to dropdown populated from `/api/users`
+- [ ] Form: scheduled start/end datetime pickers work
+- [ ] Submit creates job → navigates to `/app/jobs/:id`
+- [ ] Job detail shows all fields, status badge, back button
+- [ ] Time entries section loads (empty state if none)
+- [ ] Parts section loads (empty state if none)
+- [ ] Status change buttons update badge live
+- [ ] "Cancel Job" button requires confirm click, then soft-cancels
+- [ ] Cancelled/invoiced jobs shown with correct badge colour
+- [ ] Back button from detail → returns to jobs list
+- [ ] Jobs sidebar item stays highlighted on detail and form pages
+- [ ] Tablet/mobile layout looks correct (stacked columns)
+
+
 
 ## Session 18 — 2026-04-11
 ## Session 19 — 2026-04-11

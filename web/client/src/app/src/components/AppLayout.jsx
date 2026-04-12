@@ -17,6 +17,7 @@ const VIEW_TO_PAGE = {
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',
   quotes:           'quotes',
+  jobs:             'jobs',
   users:            'manage-users',
   'pricing-config': 'pricing-config',
   billing:          'billing',

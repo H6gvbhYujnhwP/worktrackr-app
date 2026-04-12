@@ -154,8 +154,11 @@ A separate application (idoyourquotes.com) handles quote creation and customer a
 ### Jobs Module
 - [x] Finalise DB schema
 - [x] Jobs API (CRUD + time-entries + parts sub-resources)
-- [ ] Jobs list view + detail page
-- [ ] Job creation and edit forms
+- [x] Jobs list view + detail page
+- [x] Job creation form
+- [ ] Job edit form
+- [ ] Time entry logging UI (add entries from detail page)
+- [ ] Parts logging UI (add parts from detail page)
 - [ ] Calendar integration
 - [x] Quote → Job conversion (handler was already written; table now exists)
 
