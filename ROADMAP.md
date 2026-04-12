@@ -77,9 +77,6 @@ Record and allocate payments against invoices.
 ### AI Phase 4 — CRM Next-Action Suggestions
 After a CRM calendar event is marked Done, Claude suggests the next logical action. Files: `CRMCalendar.jsx` + `summaries.js`.
 
-### AI Phase 5 — Natural Language Ticket Search
-Type "network issues at Acme last month" → relevant tickets. Requires pgvector — larger uplift.
-
 ### PWA / Mobile
 Trusted Web Activity for Google Play Store listing.
 
