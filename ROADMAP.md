@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — Active Roadmap
 
-**Last updated:** Session 26 — 2026-04-12
+**Last updated:** Session 27 — 2026-04-12
 
 ---
 
@@ -28,7 +28,8 @@
 - ✅ **Jobs Phase 3** — Edit form (pre-populated, PUT to API) + inline time entry & parts logging (add + delete)
 - ✅ **Jobs Phase 4** — Edit Job header shows job number (e.g. "Edit Job — JB-0001")
 - ✅ **Jobs Calendar Integration** — Scheduled jobs appear as read-only gold blocks on CRM Calendar
-- ✅ **Rename Jobs → Projects Phase 1** — All user-facing labels changed to "Project/Projects"; internal ids/routes/API paths remain `jobs` throughout
+- ✅ **Rename Jobs → Projects Phase 1** — All user-visible labels changed to "Project/Projects" in 8 frontend files; internal ids/routes/API paths remain `jobs` throughout
+- ✅ **Rename Jobs → Projects Phase 2** — `TicketDetailViewTabbed.jsx` amber bar label + tooltip updated ("Project description"); `QuoteForm`, `QuoteDetails`, `IntegratedCalendar` audited — no "Job" text found, no changes needed
 
 ### Quote Improvements
 - ✅ Quote Line Items Redesign (materials/labour sections, buy/sell price, margin panel, supplier, VAT toggle)
@@ -45,25 +46,22 @@
 
 ---
 
-## Rename Jobs → Projects — Phase 1 ✅ Done
-
-All user-visible labels in 8 frontend files updated to say "Project / Projects". Internal identifiers (`jobs` route, `/api/jobs`, `view: 'jobs'`, `jobNumber` field, etc.) are all unchanged. No backend files touched.
-
-**Phase 2 (if needed):** Any remaining screens not covered in Phase 1 — check `IntegratedCalendar.jsx`, `TicketDetailViewTabbed.jsx` (Generate Quote → job link), `QuoteForm.jsx`, `QuoteDetails.jsx` for any "Job" labels that should read "Project".
-
----
-
 ## Next Priority — Payments
 
 Record and allocate payments against invoices.
 
-### Suggested scope
+### Phase 1 — Backend only (next session)
 - `payments` DB table: `id`, `organisation_id`, `invoice_id`, `amount`, `payment_date`, `method` (cash/bank/card/other), `reference`, `notes`, `created_at`
 - `GET /api/invoices/:id/payments` — list payments for an invoice
-- `POST /api/invoices/:id/payments` — record a payment; auto-update invoice status to `paid` if fully settled
-- `DELETE /api/invoices/:id/payments/:pid` — remove a payment
-- Frontend: `PaymentsSection` inside `InvoiceDetail` (collapsible, same pattern as TimeEntriesSection in JobDetail) — shows payment history, "Record Payment" inline form, running balance
-- Invoice detail shows "Amount Outstanding" after payments applied
+- `POST /api/invoices/:id/payments` — record a payment; auto-update invoice `amount_paid`, `balance_due`; set status to `paid` if fully settled, `partially_paid` if not
+- `DELETE /api/invoices/:id/payments/:pid` — remove a payment; recalculate `amount_paid`, `balance_due`; revert status if needed
+- New files: `web/migrations/create_payments.sql`, `web/routes/payments.js`
+- Modified: `web/server.js` (mount payments router at `/api/invoices`)
+
+### Phase 2 — Frontend (after Phase 1 deployed)
+- `PaymentsSection` inside `InvoiceDetail` — collapsible, same pattern as TimeEntriesSection in JobDetail
+- Shows payment history table, "Record Payment" inline form, running balance / amount outstanding
+- Invoice detail header shows "Amount Outstanding" after payments applied
 
 ### Design system reminders
 - White container: `bg-white rounded-xl border border-[#e5e7eb] overflow-hidden`

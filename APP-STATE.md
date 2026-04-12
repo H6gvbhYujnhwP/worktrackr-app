@@ -1,6 +1,6 @@
 # WorkTrackr Cloud — App State Snapshot
 
-**Last updated:** Session 26 — 2026-04-12
+**Last updated:** Session 27 — 2026-04-12
 **Live URL:** https://worktrackr.cloud
 **Stack:** React frontend · Node.js/Express backend · PostgreSQL · Render auto-deploy
 **AI:** Anthropic Claude `claude-haiku-4-5-20251001` for all reasoning · OpenAI Whisper `whisper-1` for audio only
@@ -17,12 +17,12 @@
 | CRM Contacts | ✅ Working | Full CRUD, snake_case normaliser applied |
 | CRM Calendar | ✅ Working | DB-backed, day/week/month views, Jobs integration added Session 22 |
 | Quotes | ✅ Working | Line items redesign, buy/sell/margin, AI generation from ticket, PDF |
-| Jobs (Projects) | ✅ Working | List, detail, create, edit — all user-facing labels now say "Project/Projects"; internal ids/routes/API remain `jobs` |
+| Jobs (Projects) | ✅ Working | List, detail, create, edit — all user-facing labels now say "Project/Projects"; internal ids/routes/API remain `jobs`. Phase 2 complete: TicketDetailViewTabbed "Project description" label also updated. |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Floating FAB, 7 intent destinations, mandatory review step |
 | Invoices — Backend | ✅ Phase 1 done | DB tables + full CRUD API + PDF endpoint |
 | Invoices — Frontend | ✅ Phase 2 done | List view, detail view, route wrappers, JobDetail integration |
-| Payments | ❌ Not built | Next priority after Invoices |
+| Payments | ❌ Not built | Next priority — Phase 1 (backend only) |
 
 ---
 
@@ -30,7 +30,7 @@
 
 | # | Module | Description | Severity |
 |---|---|---|---|
-| — | — | No confirmed open bugs as of Session 25 | — |
+| — | — | No confirmed open bugs as of Session 27 | — |
 
 ---
 
@@ -73,14 +73,14 @@
 | `components/AppLayout.jsx` | Shell: sidebar + header + `<VoiceAssistant />` |
 | `components/Sidebar.jsx` | Nav items for all modules (incl. Invoices added Session 25) |
 | `components/Dashboard.jsx` | Inline view switcher (renders list views inside dashboard) |
-| `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen |
+| `components/TicketDetailViewTabbed.jsx` | Ticket detail — Option A layout, CustomerStrip, tabs, audio, quote gen. "Project description" label (Session 27). |
 | `components/CRMCalendar.jsx` | CRM calendar — 3 views, jobs integration, event CRUD modals |
 | `components/QuoteForm.jsx` | Quote create/edit — line items, AI prefill, badge/lock mechanism |
 | `components/QuoteDetails.jsx` | Quote detail view — line items table, margin panel, send modal |
 | `components/SendQuoteModal.jsx` | Email quote to customer |
-| `components/JobsList.jsx` | Jobs list — stat strip, search, status filter, table |
-| `components/JobDetail.jsx` | Job detail — info card, time entries, parts, status actions, Create Invoice button |
-| `components/JobForm.jsx` | Job create/edit — all fields, edit mode shows job number in header |
+| `components/JobsList.jsx` | Jobs list — stat strip, search, status filter, table (labels: "Project") |
+| `components/JobDetail.jsx` | Job detail — info card, time entries, parts, status actions, Create Invoice button (labels: "Project") |
+| `components/JobForm.jsx` | Job create/edit — all fields, edit mode shows job number in header (labels: "Project") |
 | `components/JobDetailWithLayout.jsx` | Route wrapper for job detail |
 | `components/JobFormWithLayout.jsx` | Route wrapper for job form |
 | `components/InvoicesList.jsx` | Invoices list — stat strip, status filter, search, table |
@@ -132,7 +132,7 @@ Sidebar
 ├── CRM
 │   ├── Contacts
 │   ├── Quotes → QuoteForm / QuoteDetails (routes: /app/crm/quotes/new, /app/crm/quotes/:id)
-│   ├── Jobs → JobDetail / JobForm (routes: /app/jobs/:id, /app/jobs/new, /app/jobs/:id/edit)
+│   ├── Projects → JobDetail / JobForm (routes: /app/jobs/:id, /app/jobs/new, /app/jobs/:id/edit)
 │   ├── Invoices → InvoicesList / InvoiceDetail (routes: /app/invoices, /app/invoices/:id) ✅ DONE
 │   └── CRM Calendar
 └── Settings / Users

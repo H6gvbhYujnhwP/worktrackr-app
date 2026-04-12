@@ -1536,7 +1536,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-semibold text-[#92400e] uppercase tracking-wider">Job description</span>
+                  <span className="text-[10px] font-semibold text-[#92400e] uppercase tracking-wider">Project description</span>
                   {descEdited && (
                     <span className="text-[10px] bg-[#fef3c7] text-[#92400e] px-1.5 py-0.5 rounded font-medium">edited</span>
                   )}
@@ -1559,7 +1559,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
               </div>
               <button
                 onClick={() => setEditingDesc(v => !v)}
-                title={editingDesc ? 'Done editing' : 'Edit job description'}
+                title={editingDesc ? 'Done editing' : 'Edit project description'}
                 className="text-[#b45309] hover:text-[#92400e] flex-shrink-0 mt-0.5 transition-colors"
               >
                 <Edit3 className="w-3.5 h-3.5" />
