@@ -78,13 +78,19 @@ const AFFIRMATIVES = new Set([
 ]);
 const NEGATIVES = new Set([
   'no', 'nope', 'cancel', 'stop', "don't", 'retry', 'try again',
-  'back', 'never mind', 'scratch that',
+  'never mind', 'scratch that',
 ]);
 
 function matchesSet(text, wordSet) {
   const t = text.toLowerCase().trim();
+  // Exact full-transcript match first
   if (wordSet.has(t)) return true;
-  for (const w of wordSet) { if (t.includes(w)) return true; }
+  // Whole-word match only — never substring (prevents "no" matching inside "note", "know", etc.)
+  for (const w of wordSet) {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('(?:^|\\s)' + escaped + '(?:\\s|$)');
+    if (re.test(t)) return true;
+  }
   return false;
 }
 
@@ -1022,9 +1028,16 @@ export default function VoiceAssistant({ currentView, user }) {
   // ── Phase 2: Triggered when TTS ends on ReviewPanel ───────────────────
   const onReviewTtsEnd = useCallback(() => {
     setPhase(prev => {
-      if (prev !== 'review') return prev; // don't re-enter if already moved on
-      beginConfirmRecognition();
-      return 'voice_confirm';
+      if (prev !== 'review') return prev;
+      // Delay mic open by 1s to let speaker audio clear before listening
+      setTimeout(() => {
+        setPhase(p => {
+          if (p !== 'review') return p;
+          beginConfirmRecognition();
+          return 'voice_confirm';
+        });
+      }, 1000);
+      return prev; // stay on review during the delay
     });
   }, [beginConfirmRecognition]);
 
@@ -1042,8 +1055,10 @@ export default function VoiceAssistant({ currentView, user }) {
     const msg = resultRef.current?.confirmation_message;
     if (msg) {
       speak(msg, () => {
-        startVoiceConfirmRef.current && startVoiceConfirmRef.current();
-        setPhase(prev => prev === 'review' ? 'voice_confirm' : prev);
+        setTimeout(() => {
+          startVoiceConfirmRef.current && startVoiceConfirmRef.current();
+          setPhase(prev => prev === 'review' ? 'voice_confirm' : prev);
+        }, 1000);
       });
     }
   }, []);
