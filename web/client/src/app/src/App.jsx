@@ -116,6 +116,25 @@ const SimulationProvider = ({ children }) => {
   // REMOVED: createBookingFromTicket (localStorage bridge)
   // REMOVED: updateBookingFromTicket (localStorage bridge)
 
+  // Refresh tickets when VoiceAssistant creates one (bypasses createTicket)
+  useEffect(() => {
+    const handler = async () => {
+      try {
+        const { tickets: serverTickets } = await TicketsAPI.list();
+        const transformed = (serverTickets || []).map(t => ({
+          ...t,
+          assignedTo: t.assignee_id,
+          assignedUser: t.assignee_name,
+        }));
+        setTickets(transformed);
+      } catch (e) {
+        console.error('[SimulationProvider] Failed to refresh tickets after voice create', e);
+      }
+    };
+    window.addEventListener('worktrackr:ticket-created', handler);
+    return () => window.removeEventListener('worktrackr:ticket-created', handler);
+  }, []);
+
   // Create ticket (persist to backend)
   const createTicket = async (ticketData) => {
     try {

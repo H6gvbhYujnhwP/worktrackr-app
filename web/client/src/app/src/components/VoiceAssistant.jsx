@@ -874,6 +874,8 @@ export default function VoiceAssistant({ currentView, user }) {
           body: JSON.stringify({ title: data.title || 'Untitled', description: data.description, priority: data.priority || 'medium' }),
         });
         if (!r.ok) throw new Error('Failed to create ticket');
+        const newTicket = await r.json();
+        window.dispatchEvent(new CustomEvent('worktrackr:ticket-created', { detail: newTicket }));
         return 'New ticket created';
       }
       case 'personal_note':
