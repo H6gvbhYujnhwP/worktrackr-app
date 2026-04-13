@@ -115,6 +115,13 @@ const IntegratedCalendar = ({ currentUser, onTicketClick }) => {
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
+  // Refresh when VoiceAssistant creates a ticket calendar event
+  useEffect(() => {
+    const handler = () => loadEvents();
+    window.addEventListener('worktrackr:ticket-calendar-created', handler);
+    return () => window.removeEventListener('worktrackr:ticket-calendar-created', handler);
+  }, [loadEvents]);
+
   // ── build unified event list ───────────────────────────────────────────────
   // Combines DB calendar_events with ticket scheduled_dates so everything
   // appears on the calendar without any localStorage or polling.

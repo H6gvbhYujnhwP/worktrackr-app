@@ -489,6 +489,13 @@ const CompanyNotes = () => {
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
+  // Refresh when VoiceAssistant creates a company note
+  useEffect(() => {
+    const handler = () => fetchNotes();
+    window.addEventListener('worktrackr:company-note-created', handler);
+    return () => window.removeEventListener('worktrackr:company-note-created', handler);
+  }, [fetchNotes]);
+
   const handleCreate = async (payload) => {
     setSaving(true);
     try {

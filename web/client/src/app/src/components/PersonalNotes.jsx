@@ -369,6 +369,13 @@ const PersonalNotes = () => {
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
+  // Refresh when VoiceAssistant creates a personal note
+  useEffect(() => {
+    const handler = () => fetchNotes();
+    window.addEventListener('worktrackr:personal-note-created', handler);
+    return () => window.removeEventListener('worktrackr:personal-note-created', handler);
+  }, [fetchNotes]);
+
   const handleCreate = async (payload) => {
     setSaving(true);
     try {

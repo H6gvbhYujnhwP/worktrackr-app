@@ -886,6 +886,7 @@ export default function VoiceAssistant({ currentView, user }) {
           body: JSON.stringify({ title: data.title || '', body: data.body || '', due_date: data.due_date ?? null }),
         });
         if (!r.ok) throw new Error('Failed to create note');
+        window.dispatchEvent(new CustomEvent('worktrackr:personal-note-created'));
         return intent === 'personal_reminder' ? 'Reminder saved to My Notes' : 'Note saved to My Notes';
       }
       case 'company_note': {
@@ -895,6 +896,7 @@ export default function VoiceAssistant({ currentView, user }) {
           body: JSON.stringify({ title: data.title || '', body: data.body || '', note_type: data.note_type || 'note' }),
         });
         if (!r.ok) throw new Error('Failed to create company note');
+        window.dispatchEvent(new CustomEvent('worktrackr:company-note-created'));
         return 'Note shared with team';
       }
       case 'crm_calendar': {
@@ -914,6 +916,7 @@ export default function VoiceAssistant({ currentView, user }) {
           }),
         });
         if (!r.ok) throw new Error('Failed to create CRM event');
+        window.dispatchEvent(new CustomEvent('worktrackr:crm-event-created'));
         return 'CRM event scheduled';
       }
       case 'ticket_calendar': {
@@ -929,6 +932,7 @@ export default function VoiceAssistant({ currentView, user }) {
           }),
         });
         if (!r.ok) throw new Error('Failed to create calendar event');
+        window.dispatchEvent(new CustomEvent('worktrackr:ticket-calendar-created'));
         return 'Calendar event booked';
       }
       default:

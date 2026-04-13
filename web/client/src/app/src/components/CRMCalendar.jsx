@@ -193,6 +193,16 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
     init();
   }, []);
 
+  // Refresh when VoiceAssistant creates a CRM event
+  useEffect(() => {
+    const handler = async () => {
+      const eventsData = await loadEventsFromAPI();
+      setEvents(eventsData);
+    };
+    window.addEventListener('worktrackr:crm-event-created', handler);
+    return () => window.removeEventListener('worktrackr:crm-event-created', handler);
+  }, []);
+
   // FIX 5: load real contacts on mount
   useEffect(() => {
     const fetchContacts = async () => {
