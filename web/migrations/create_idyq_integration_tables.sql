@@ -53,9 +53,10 @@ CREATE TABLE IF NOT EXISTS idyq_quotes (
     raw                JSONB,
     synced_at          TIMESTAMPTZ DEFAULT NOW(),
     -- Link layer: lives ONLY in WorkTrackr, never sent back to IDYQ.
-    -- Lets staff tie a read-only IDYQ quote to a WorkTrackr contact/customer.
+    -- Ties a read-only IDYQ quote to a WorkTrackr contact. Note: a "company"/
+    -- customer is a row in `contacts` (type = 'company') since the
+    -- customers -> contacts merge removed the old customers table.
     linked_contact_id  UUID REFERENCES contacts(id) ON DELETE SET NULL,
-    linked_customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     UNIQUE (organisation_id, idyq_id)
 );
 CREATE INDEX IF NOT EXISTS idx_idyq_quotes_org    ON idyq_quotes(organisation_id);

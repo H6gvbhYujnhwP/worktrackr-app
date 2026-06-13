@@ -68,7 +68,6 @@ const mapQuote = (r) => ({
   sourceUpdatedAt: r.source_updated_at,
   syncedAt: r.synced_at,
   linkedContactId: r.linked_contact_id,
-  linkedCustomerId: r.linked_customer_id,
 });
 
 const mapLine = (r) => ({
@@ -297,7 +296,7 @@ router.get('/quotes/:idyqId', async (req, res) => {
 
 // --- link layer (WorkTrackr-only: tie a quote to a contact/customer) ---------
 
-// POST /api/idyq/quotes/:idyqId/link   body: { contactId?, customerId? }
+// POST /api/idyq/quotes/:idyqId/link   body: { contactId }  (null to unlink)
 router.post('/quotes/:idyqId/link', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
@@ -305,21 +304,14 @@ router.post('/quotes/:idyqId/link', async (req, res) => {
     if (!requireEnabled(conn, res)) return;
     const schema = z.object({
       contactId: z.string().uuid().nullable().optional(),
-      customerId: z.string().uuid().nullable().optional(),
     });
     const body = schema.parse(req.body || {});
-
-    // Only update the keys actually provided (avoid wiping the other link).
-    const sets = [];
-    const params = [organizationId, req.params.idyqId];
-    let n = 2;
-    if ('contactId' in body) { sets.push(`linked_contact_id = $${++n}`); params.push(body.contactId ?? null); }
-    if ('customerId' in body) { sets.push(`linked_customer_id = $${++n}`); params.push(body.customerId ?? null); }
-    if (sets.length === 0) return res.status(400).json({ error: 'Nothing to link' });
+    if (!('contactId' in body)) return res.status(400).json({ error: 'Nothing to link' });
 
     const r = await query(
-      `UPDATE idyq_quotes SET ${sets.join(', ')} WHERE organisation_id = $1 AND idyq_id = $2 RETURNING *`,
-      params
+      `UPDATE idyq_quotes SET linked_contact_id = $3
+       WHERE organisation_id = $1 AND idyq_id = $2 RETURNING *`,
+      [organizationId, req.params.idyqId, body.contactId ?? null]
     );
     if (r.rows.length === 0) return res.status(404).json({ error: 'Quote not found' });
     res.json({ quote: mapQuote(r.rows[0]) });
