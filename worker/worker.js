@@ -1,6 +1,7 @@
 require('dotenv').config();
 const PgBoss = require('pg-boss');
 const { query } = require('@worktrackr/shared/db');
+const { syncAllConnectedOrgs } = require('@worktrackr/shared/idyq');
 
 // --- Resend (outbound/inbound) ----------------------------------------------
 let resend = null;
@@ -45,6 +46,10 @@ async function startWorker() {
     // Recurring monitor (every 5 minutes)
     await boss.schedule('sla-monitor', '*/5 * * * *', {});
     await boss.work('sla-monitor', handleSLAMonitor);
+
+    // Recurring IdoYourQuotes sync (default every 30 min; override with IDYQ_SYNC_CRON)
+    await boss.schedule('idyq-sync', process.env.IDYQ_SYNC_CRON || '*/30 * * * *', {});
+    await boss.work('idyq-sync', handleIdyqSync);
 
     // Optional smoke test processor (publish jobs via SQL or a script)
     await boss.work('smoke-job', async (job) => {
@@ -217,6 +222,20 @@ async function handleWorkflowTrigger(job) {
     }
   } catch (error) {
     console.error('❌ Workflow trigger failed:', error);
+    throw error;
+  }
+}
+
+async function handleIdyqSync() {
+  try {
+    const results = await syncAllConnectedOrgs();
+    const okCount = results.filter((r) => r.ok).length;
+    console.log(`🔁 IDYQ sync ran for ${results.length} org(s), ${okCount} ok`);
+    if (results.some((r) => !r.ok)) {
+      console.warn('⚠️ IDYQ sync had errors:', results.filter((r) => !r.ok));
+    }
+  } catch (error) {
+    console.error('❌ IDYQ sync failed:', error);
     throw error;
   }
 }

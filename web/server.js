@@ -156,6 +156,9 @@ app.use('/api/', authenticateToken, checkTrialStatus);
 app.use('/api/auth/user', require('./routes/user.js'));
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);
+// IdoYourQuotes (IDYQ) integration — connection toggle, sync, read-only mirror
+const idyqRoutes = require('./routes/idyq');
+app.use('/api/idyq', authenticateToken, idyqRoutes);
 const crmEventsRoutes = require('./routes/crm-events');
 const customerServicesRoutes = require('./routes/customer-services');
 app.use('/api/crm-events', authenticateToken, crmEventsRoutes);
