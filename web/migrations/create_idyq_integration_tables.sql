@@ -8,6 +8,7 @@
 CREATE TABLE IF NOT EXISTS idyq_connection (
     organisation_id        UUID PRIMARY KEY REFERENCES organisations(id) ON DELETE CASCADE,
     enabled                BOOLEAN NOT NULL DEFAULT FALSE,
+    idyq_org_ref           TEXT,                 -- which IDYQ org to read (slug or id)
     connected_at           TIMESTAMPTZ,
     connected_by           UUID REFERENCES users(id),
     last_catalogue_sync_at TIMESTAMPTZ,

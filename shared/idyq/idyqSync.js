@@ -74,6 +74,15 @@ async function getCursor(organisationId, resource) {
   return r.rows[0]?.last_cursor || null;
 }
 
+// Which IDYQ org this WorkTrackr org reads from (slug or id), set at connect time.
+async function getOrgRef(organisationId) {
+  const r = await query(
+    'SELECT idyq_org_ref FROM idyq_connection WHERE organisation_id = $1',
+    [organisationId]
+  );
+  return r.rows[0]?.idyq_org_ref || null;
+}
+
 async function setSyncState(organisationId, resource, { cursor, status, error }) {
   await query(
     `INSERT INTO idyq_sync_state (organisation_id, resource, last_cursor, last_run_at, last_status, last_error)
@@ -126,13 +135,14 @@ async function upsertProduct(organisationId, p) {
 async function syncCatalogue({ organisationId, since } = {}) {
   if (!organisationId) throw new Error('organisationId is required');
   const effectiveSince = since !== undefined ? since : await getCursor(organisationId, 'catalogue');
+  const orgRef = await getOrgRef(organisationId);
   let page = 1;
   let count = 0;
   let cursor = effectiveSince || null;
 
   try {
     while (page <= MAX_PAGES) {
-      const resp = await idyqGet('/api/external/catalogue', { since: effectiveSince, page });
+      const resp = await idyqGet('/api/external/catalogue', { since: effectiveSince, page }, { orgRef });
       const items = extractItems(resp, 'products');
       for (const p of items) {
         await upsertProduct(organisationId, p);
@@ -228,13 +238,14 @@ async function upsertQuote(organisationId, q) {
 async function pullQuotes({ organisationId, since, status } = {}) {
   if (!organisationId) throw new Error('organisationId is required');
   const effectiveSince = since !== undefined ? since : await getCursor(organisationId, 'quotes');
+  const orgRef = await getOrgRef(organisationId);
   let page = 1;
   let count = 0;
   let cursor = effectiveSince || null;
 
   try {
     while (page <= MAX_PAGES) {
-      const resp = await idyqGet('/api/external/quotes', { since: effectiveSince, status, page });
+      const resp = await idyqGet('/api/external/quotes', { since: effectiveSince, status, page }, { orgRef });
       const items = extractItems(resp, 'quotes');
       for (const q of items) {
         await upsertQuote(organisationId, q);
@@ -267,6 +278,7 @@ async function pullQuotes({ organisationId, since, status } = {}) {
  */
 async function pullQuoteByNumber({ organisationId, quoteNumber } = {}) {
   if (!organisationId || !quoteNumber) throw new Error('organisationId and quoteNumber are required');
+  const orgRef = await getOrgRef(organisationId);
 
   // 1) Do we already know the IDYQ id for this number?
   const known = await query(
@@ -274,7 +286,7 @@ async function pullQuoteByNumber({ organisationId, quoteNumber } = {}) {
     [organisationId, quoteNumber]
   );
   if (known.rows[0]?.idyq_id) {
-    const full = await idyqGet(`/api/external/quotes/${encodeURIComponent(known.rows[0].idyq_id)}`);
+    const full = await idyqGet(`/api/external/quotes/${encodeURIComponent(known.rows[0].idyq_id)}`, {}, { orgRef });
     const quote = full && full.quote ? full.quote : full; // accept {quote:{...}} or bare {...}
     await upsertQuote(organisationId, quote);
     return { found: true, quoteNumber, via: 'id' };
@@ -283,7 +295,7 @@ async function pullQuoteByNumber({ organisationId, quoteNumber } = {}) {
   // 2) Otherwise scan list pages for the matching number.
   let page = 1;
   while (page <= MAX_PAGES) {
-    const resp = await idyqGet('/api/external/quotes', { page });
+    const resp = await idyqGet('/api/external/quotes', { page }, { orgRef });
     const items = extractItems(resp, 'quotes');
     let match = null;
     for (const q of items) {

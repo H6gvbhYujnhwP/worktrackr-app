@@ -72,20 +72,21 @@ function buildQueryString(query = {}) {
  * Make a signed GET request to IDYQ and return parsed JSON.
  * Throws on non-2xx (error carries .status and a short body snippet).
  */
-async function idyqGet(path, query = {}) {
+async function idyqGet(path, query = {}, opts = {}) {
   const { secret, baseUrl, expirySeconds } = getConfig();
   const queryString = buildQueryString(query);
   const fullPath = queryString ? `${path}?${queryString}` : path;
   const signedPath = SIGN_INCLUDES_QUERY ? fullPath : path;
   const signature = buildSignatureHeader('GET', signedPath, secret, expirySeconds);
 
-  const res = await fetch(baseUrl + fullPath, {
-    method: 'GET',
-    headers: {
-      'X-WT-Signature': signature,
-      Accept: 'application/json',
-    },
-  });
+  const headers = {
+    'X-WT-Signature': signature,
+    Accept: 'application/json',
+  };
+  // Tells IDYQ which IDYQ org's data to return (per-connection scope).
+  if (opts.orgRef) headers['X-WT-Org'] = String(opts.orgRef);
+
+  const res = await fetch(baseUrl + fullPath, { method: 'GET', headers });
 
   if (!res.ok) {
     let body = '';

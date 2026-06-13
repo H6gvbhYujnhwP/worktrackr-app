@@ -94,6 +94,7 @@ router.get('/connection', async (req, res) => {
     );
     res.json({
       enabled: !!conn?.enabled,
+      idyqOrgRef: conn?.idyq_org_ref || null,
       connectedAt: conn?.connected_at || null,
       lastCatalogueSyncAt: conn?.last_catalogue_sync_at || null,
       lastQuotesSyncAt: conn?.last_quotes_sync_at || null,
@@ -112,12 +113,20 @@ router.post('/connection/connect', async (req, res) => {
     const { organizationId } = req.orgContext;
     const userId = req.user?.userId || null;
 
+    // Which IDYQ org to read from (slug or numeric id), entered at connect time.
+    const schema = z.object({ idyqOrgRef: z.string().min(1) });
+    const parsed = schema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'idyqOrgRef is required (your IDYQ org slug or id)' });
+    }
+    const { idyqOrgRef } = parsed.data;
+
     await query(
-      `INSERT INTO idyq_connection (organisation_id, enabled, connected_at, connected_by, updated_at)
-       VALUES ($1, TRUE, NOW(), $2, NOW())
+      `INSERT INTO idyq_connection (organisation_id, enabled, idyq_org_ref, connected_at, connected_by, updated_at)
+       VALUES ($1, TRUE, $3, NOW(), $2, NOW())
        ON CONFLICT (organisation_id) DO UPDATE SET
-         enabled = TRUE, connected_at = NOW(), connected_by = $2, updated_at = NOW()`,
-      [organizationId, userId]
+         enabled = TRUE, idyq_org_ref = $3, connected_at = NOW(), connected_by = $2, updated_at = NOW()`,
+      [organizationId, userId, idyqOrgRef]
     );
 
     // First sync so the tabs aren't empty. Best-effort: report but don't fail connect.

@@ -34,8 +34,11 @@ Generate the secret (Windows terminal):
 
 ## How it behaves
 
-- **Connect** (CRM Settings → Connect IdoYourQuotes): flips the switch on for that
-  account and does a first sync so the tabs aren't empty.
+- **Connect** (CRM Settings → Connect IdoYourQuotes): the admin enters which IDYQ
+  org to read from (its **slug or numeric id**); WorkTrackr stores it on the
+  connection and sends it as the `X-WT-Org` header on every request, so each
+  WorkTrackr org reads its own IDYQ org. Connecting flips the switch on and does a
+  first sync so the tabs aren't empty.
 - **Scheduled sync** (worker): every 30 min, pulls only what changed since last time
   for every connected account.
 - **On-demand**: "Sync now" for catalogue/quotes, or pull a single quote by number.
@@ -66,17 +69,25 @@ disconnecting never touches WorkTrackr's own data.
 - `GET  /quotes/:idyqId` — one quote + line items
 - `POST /quotes/:idyqId/link` — link a quote to a contact/customer
 
-## TWO THINGS TO CONFIRM (then a one-line change each)
+## Signing + shapes (confirmed against IDYQ)
 
-1. **IDYQ list response shape.** The code tolerantly reads items from
-   `products`/`quotes`/`data`/`results` or a bare array, and detects more pages via
-   `has_more` / `next_page` / `total_pages`. If IDYQ uses none of those, it stops
-   after page 1 (safe). Send one real sample reply and we lock it down in
-   `idyqSync.js` (`extractItems` / `hasMore`).
-2. **Studio's signing details.** We sign `"<expiry>.<nonce>.GET.<path>"` with the
-   path ONLY (no query string), lowercase hex, 90s expiry. If Studio signs the
-   path **including** the query string, set `SIGN_INCLUDES_QUERY = true` in
-   `idyqClient.js`. Confirm the expiry window too.
+Matched to IDYQ's existing Studio bridge: sign `"<expiry>.<nonce>.GET.<path>"` (path
+only, no query string), lowercase hex, ~90s expiry, header `X-WT-Signature`. IDYQ
+returns `{ products|quotes: [...], page, page_size, total, total_pages, has_more }`
+for lists and `{ quote: {...} }` for a single quote — which the client already
+parses.
+
+## Per-org scoping (no server-wide account setting)
+
+WorkTrackr sends `X-WT-Org: <idyq-org-slug-or-id>` with every request; IDYQ scopes
+the response to that org. The value is stored per WorkTrackr org in
+`idyq_connection.idyq_org_ref` (set at connect time). Migration
+`idyq_add_org_ref.sql` adds that column to existing databases.
+
+SECURITY: any holder of `WORKTRACKR_BRIDGE_SECRET` can request any org via
+`X-WT-Org`. Fine while WorkTrackr's backend is the only secret-holder; before
+onboarding third-party customers, add an allow-list of permitted org refs on the
+IDYQ side.
 
 ## Still to do (frontend phase)
 
