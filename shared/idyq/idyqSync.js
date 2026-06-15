@@ -101,13 +101,14 @@ async function setSyncState(organisationId, resource, { cursor, status, error })
 async function upsertProduct(organisationId, p) {
   await query(
     `INSERT INTO idyq_products
-       (organisation_id, idyq_id, sku, name, description, unit_price, currency,
-        category, active, source_updated_at, raw, synced_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb, NOW())
+       (organisation_id, idyq_id, sku, name, description, unit, unit_price, cost_price,
+        install_hours, pricing_type, currency, category, active, source_updated_at, raw, synced_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb, NOW())
      ON CONFLICT (organisation_id, idyq_id) DO UPDATE SET
        sku = EXCLUDED.sku, name = EXCLUDED.name, description = EXCLUDED.description,
-       unit_price = EXCLUDED.unit_price, currency = EXCLUDED.currency,
-       category = EXCLUDED.category, active = EXCLUDED.active,
+       unit = EXCLUDED.unit, unit_price = EXCLUDED.unit_price, cost_price = EXCLUDED.cost_price,
+       install_hours = EXCLUDED.install_hours, pricing_type = EXCLUDED.pricing_type,
+       currency = EXCLUDED.currency, category = EXCLUDED.category, active = EXCLUDED.active,
        source_updated_at = EXCLUDED.source_updated_at, raw = EXCLUDED.raw,
        synced_at = NOW()`,
     [
@@ -116,7 +117,11 @@ async function upsertProduct(organisationId, p) {
       p.sku ?? null,
       p.name ?? null,
       p.description ?? null,
+      p.unit ?? null,
       p.unit_price ?? null,
+      p.cost_price ?? null,
+      p.install_hours ?? null,
+      p.pricing_type ?? null,
       p.currency ?? null,
       p.category ?? null,
       typeof p.active === 'boolean' ? p.active : null,

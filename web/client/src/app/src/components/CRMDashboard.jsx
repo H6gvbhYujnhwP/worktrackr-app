@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
+import { useIdyqConnection, IdyqCatalogView, IdyqQuotesView, IdyqConnectionPanel } from './IdyqIntegration.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 import { 
   Building2, 
@@ -67,6 +68,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
   console.log('[CRMDashboard] Component mounting...');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const idyq = useIdyqConnection();
   console.log('[CRMDashboard] State initialized');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -493,9 +495,9 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
           <TabsList className="flex border-b border-[#e5e7eb] bg-transparent h-auto p-0 w-full rounded-none overflow-x-auto">
             {[
               { value: 'customers', label: 'Customers'       },
-              { value: 'catalog',   label: 'Product Catalog' },
-              { value: 'quotes',    label: 'Quotes'          },
-              { value: 'templates', label: 'Quote Templates' },
+              { value: 'catalog',   label: idyq.connected ? 'Product Catalog · IDYQ' : 'Product Catalog' },
+              { value: 'quotes',    label: idyq.connected ? 'Quotes · IDYQ' : 'Quotes' },
+              ...(idyq.connected ? [] : [{ value: 'templates', label: 'Quote Templates' }]),
               { value: 'settings',  label: 'CRM Settings'    },
             ].map(t => (
               <TabsTrigger
@@ -611,6 +613,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
 
           {/* ── Product Catalog tab ───────────────────────────────────────── */}
           <TabsContent value="catalog" className="p-5 space-y-4">
+            {idyq.connected ? <IdyqCatalogView /> : (<>
             {/* New product form */}
             {showNewProductForm && (
               <div className="border border-[#d4a017]/30 rounded-xl bg-[#fef9ee] p-5">
@@ -761,10 +764,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                 <Plus className="w-4 h-4" /> Add Product / Service
               </button>
             </div>
+            </>)}
           </TabsContent>
 
           {/* ── Quotes tab ────────────────────────────────────────────────── */}
           <TabsContent value="quotes" className="p-5 space-y-4">
+            {idyq.connected ? <IdyqQuotesView /> : (<>
             {quotesLoading ? (
               <div className="py-12 text-center text-[13px] text-[#9ca3af]">Loading quotes...</div>
             ) : quotes.length === 0 ? (
@@ -812,6 +817,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
                 <Plus className="w-4 h-4" /> Create Quote
               </button>
             </div>
+            </>)}
           </TabsContent>
 
           {/* ── Templates tab ─────────────────────────────────────────────── */}
@@ -821,6 +827,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
 
           {/* ── Settings tab ──────────────────────────────────────────────── */}
           <TabsContent value="settings" className="p-5 space-y-6">
+            <IdyqConnectionPanel onChanged={idyq.refresh} />
             <div>
               <h3 className="text-[15px] font-semibold text-[#111113] mb-1">CRM Settings</h3>
               <p className="text-[13px] text-[#9ca3af]">Configure your CRM preferences and renewal alerts</p>

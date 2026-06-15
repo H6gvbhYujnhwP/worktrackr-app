@@ -25,7 +25,11 @@ CREATE TABLE IF NOT EXISTS idyq_products (
     sku               TEXT,
     name              TEXT,
     description       TEXT,
-    unit_price        NUMERIC,
+    unit              TEXT,
+    unit_price        NUMERIC,           -- sell ex VAT
+    cost_price        NUMERIC,           -- buy-in ex VAT
+    install_hours     NUMERIC,
+    pricing_type      TEXT,              -- 'standard' | 'monthly'
     currency          TEXT,
     category          TEXT,
     active            BOOLEAN,
