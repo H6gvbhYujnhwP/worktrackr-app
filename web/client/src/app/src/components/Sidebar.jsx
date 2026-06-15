@@ -48,7 +48,7 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge }) => {
         ${isCollapsed ? 'justify-center px-0 py-2.5' : 'px-3 py-2'}
         ${isActive
           ? 'bg-[rgba(212,160,23,0.12)] text-[#d4a017]'
-          : 'text-[#999] hover:bg-[rgba(255,255,255,0.06)] hover:text-[#ccc]'}
+          : 'text-[#e5e7eb] hover:bg-[rgba(255,255,255,0.06)] hover:text-white'}
       `}
     >
       <Icon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.8} />
@@ -72,7 +72,7 @@ const SectionLabel = ({ label, isCollapsed }) => {
     return <div className="w-5 h-px bg-[#222228] mx-auto my-2" />;
   }
   return (
-    <div className="text-[10px] font-semibold text-[#555] uppercase tracking-[1px] px-3 pt-4 pb-1.5">
+    <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-[1px] px-3 pt-4 pb-1.5">
       {label}
     </div>
   );
