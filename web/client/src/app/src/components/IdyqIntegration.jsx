@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link2, RefreshCw, Unplug, Plug, Lock, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 
 // ── shared styles (match the CRM look) ──────────────────────────────────────
@@ -62,22 +62,24 @@ export function useIdyqConnection() {
   return { connected: !!conn?.enabled, conn, loading, refresh };
 }
 
-// ── read-only catalogue (mirrors IDYQ's fields) ──────────────────────────────
+// ── read-only catalogue (mirrors IDYQ's fields, grouped + collapsible) ───────
 export function IdyqCatalogView() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [live, setLive] = useState(true);
   const [search, setSearch] = useState('');
+  const [collapsed, setCollapsed] = useState({});
 
-  useEffect(() => {
-    let alive = true;
+  const load = useCallback(() => {
     setLoading(true);
-    api('/catalogue?limit=500')
-      .then((d) => { if (alive) { setProducts(d.products || []); setError(null); } })
-      .catch((e) => { if (alive) setError(e.message); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    return api('/catalogue')
+      .then((d) => { setProducts(d.products || []); setLive(d.live !== false); setError(null); })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const filtered = products.filter((p) => {
     if (!search) return true;
@@ -85,14 +87,39 @@ export function IdyqCatalogView() {
     return [p.name, p.description, p.category, p.unit].some((f) => (f || '').toLowerCase().includes(q));
   });
 
+  const groups = useMemo(() => {
+    const m = new Map();
+    for (const p of filtered) {
+      const k = p.category || 'Uncategorised';
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(p);
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [filtered]);
+
+  const toggle = (cat) => setCollapsed((c) => ({ ...c, [cat]: !c[cat] }));
+  const allCollapsed = groups.length > 0 && groups.every(([c]) => collapsed[c]);
+  const setAll = (val) => setCollapsed(Object.fromEntries(groups.map(([c]) => [c, val])));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={READONLY_BADGE}><Lock className="w-3 h-3" /> Read-only · IdoYourQuotes</span>
-          <span className="text-[12px] text-[#9ca3af]">{filtered.length} item{filtered.length === 1 ? '' : 's'}</span>
+          <span className="text-[12px] text-[#9ca3af]">{filtered.length} item{filtered.length === 1 ? '' : 's'} · {groups.length} categor{groups.length === 1 ? 'y' : 'ies'}</span>
+          {!live && <span className="text-[12px] text-[#b45309]">showing last saved copy</span>}
         </div>
-        <input className={`${INPUT_CLS} max-w-xs`} placeholder="Search catalogue…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="flex items-center gap-2 flex-wrap">
+          {groups.length > 0 && (
+            <button type="button" className={OUTLINE_BTN} onClick={() => setAll(!allCollapsed)}>
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
+            </button>
+          )}
+          <button type="button" className={OUTLINE_BTN} onClick={load} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+          <input className={`${INPUT_CLS} max-w-xs`} placeholder="Search catalogue…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
       </div>
 
       {error && (
@@ -101,38 +128,59 @@ export function IdyqCatalogView() {
         </div>
       )}
 
-      <div className="border border-[#e5e7eb] rounded-xl overflow-hidden overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
-              {['Name', 'Description', 'Category', 'Unit', 'Sell (ex VAT)', 'Buy-in (ex VAT)', 'Install hrs', 'Pricing', 'Active'].map((h, i) => (
-                <th key={i} className="px-4 py-2.5 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider text-left whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-[13px] text-[#9ca3af]">Loading catalogue…</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-[13px] text-[#9ca3af]">No catalogue items found.</td></tr>
-            ) : filtered.map((p, index) => (
-              <tr key={p.id} className={`border-b border-[#f3f4f6] align-top ${index % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}>
-                <td className="px-4 py-3 text-[13px] font-medium text-[#111113] min-w-[180px]">{p.name}</td>
-                <td className="px-4 py-3 max-w-[360px]"><DescriptionCell text={p.description} /></td>
-                <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f3f4f6] text-[#6b7280] whitespace-nowrap">{p.category || '—'}</span></td>
-                <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{p.unit || '—'}</td>
-                <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{money(p.unitPrice, p.currency)}</td>
-                <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{money(p.costPrice, p.currency)}</td>
-                <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{numOrDash(p.installHours)}</td>
-                <td className="px-4 py-3 text-[13px] text-[#374151] capitalize whitespace-nowrap">{p.pricingType || '—'}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`text-[12px] font-medium ${p.active ? 'text-[#059669]' : 'text-[#9ca3af]'}`}>{p.active ? 'Active' : 'Inactive'}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <div className="px-4 py-8 text-center text-[13px] text-[#9ca3af] border border-[#e5e7eb] rounded-xl">Loading catalogue…</div>
+      ) : groups.length === 0 ? (
+        <div className="px-4 py-8 text-center text-[13px] text-[#9ca3af] border border-[#e5e7eb] rounded-xl">No catalogue items found.</div>
+      ) : (
+        <div className="space-y-3">
+          {groups.map(([category, items]) => {
+            const isCollapsed = !!collapsed[category];
+            return (
+              <div key={category} className="border border-[#e5e7eb] rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggle(category)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-[#fafafa] hover:bg-[#f3f4f6] transition-colors text-left"
+                >
+                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[#111113]">
+                    {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {category}
+                    <span className="text-[11px] font-medium text-[#9ca3af]">{items.length}</span>
+                  </span>
+                </button>
+                {!isCollapsed && (
+                  <div className="overflow-x-auto border-t border-[#e5e7eb]">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-white border-b border-[#e5e7eb]">
+                          {['Name', 'Description', 'Unit', 'Sell (ex VAT)', 'Buy-in (ex VAT)', 'Install hrs', 'Pricing', 'Active'].map((h, i) => (
+                            <th key={i} className="px-4 py-2 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider text-left whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((p, index) => (
+                          <tr key={p.id} className={`border-b border-[#f3f4f6] align-top ${index % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}>
+                            <td className="px-4 py-3 text-[13px] font-medium text-[#111113] min-w-[180px]">{p.name}</td>
+                            <td className="px-4 py-3 max-w-[360px]"><DescriptionCell text={p.description} /></td>
+                            <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{p.unit || '—'}</td>
+                            <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{money(p.unitPrice, p.currency)}</td>
+                            <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{money(p.costPrice, p.currency)}</td>
+                            <td className="px-4 py-3 text-[13px] text-[#374151] whitespace-nowrap">{numOrDash(p.installHours)}</td>
+                            <td className="px-4 py-3 text-[13px] text-[#374151] capitalize whitespace-nowrap">{p.pricingType || '—'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap"><span className={`text-[12px] font-medium ${p.active ? 'text-[#059669]' : 'text-[#9ca3af]'}`}>{p.active ? 'Active' : 'Inactive'}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

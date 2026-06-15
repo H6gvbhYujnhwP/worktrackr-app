@@ -96,6 +96,23 @@ async function setSyncState(organisationId, resource, { cursor, status, error })
   );
 }
 
+// Fetch the FULL live catalogue straight from IDYQ (all pages), no mirror.
+// Used for the read-through catalogue view so adds/edits/deletes show instantly.
+async function fetchCatalogueLive({ organisationId } = {}) {
+  if (!organisationId) throw new Error('organisationId is required');
+  const orgRef = await getOrgRef(organisationId);
+  const all = [];
+  let page = 1;
+  while (page <= MAX_PAGES) {
+    const resp = await idyqGet('/api/external/catalogue', { page }, { orgRef });
+    const items = extractItems(resp, 'products');
+    all.push(...items);
+    if (!hasMore(resp, page)) break;
+    page++;
+  }
+  return all; // raw IDYQ product objects
+}
+
 // ---- catalogue --------------------------------------------------------------
 
 async function upsertProduct(organisationId, p) {
@@ -334,6 +351,7 @@ async function syncAllConnectedOrgs() {
 
 module.exports = {
   syncCatalogue,
+  fetchCatalogueLive,
   pullQuotes,
   pullQuoteByNumber,
   syncAllConnectedOrgs,

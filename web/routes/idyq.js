@@ -15,7 +15,7 @@
 const express = require('express');
 const { z } = require('zod');
 const { query } = require('@worktrackr/shared/db');
-const { syncCatalogue, pullQuotes, pullQuoteByNumber } = require('@worktrackr/shared/idyq');
+const { syncCatalogue, fetchCatalogueLive, pullQuotes, pullQuoteByNumber } = require('@worktrackr/shared/idyq');
 
 const router = express.Router();
 
@@ -58,6 +58,24 @@ const mapProduct = (r) => ({
   active: r.active,
   sourceUpdatedAt: r.source_updated_at,
   syncedAt: r.synced_at,
+});
+
+// Map a LIVE IDYQ catalogue item (IDYQ's own shape) to the frontend shape.
+const mapLiveProduct = (p) => ({
+  id: p.id,
+  idyqId: String(p.id),
+  sku: p.sku ?? null,
+  name: p.name,
+  description: p.description ?? null,
+  unit: p.unit ?? null,
+  unitPrice: p.unit_price ?? null,
+  costPrice: p.cost_price ?? null,
+  installHours: p.install_hours ?? null,
+  pricingType: p.pricing_type ?? null,
+  currency: p.currency ?? 'GBP',
+  category: p.category ?? null,
+  active: p.active,
+  sourceUpdatedAt: p.updated_at ?? null,
 });
 
 const mapQuote = (r) => ({
@@ -221,32 +239,32 @@ router.post('/pull/quote', async (req, res) => {
 
 // --- read the mirror (what the read-only tabs render) ------------------------
 
-// GET /api/idyq/catalogue?search=&active=&page=&limit=
+// GET /api/idyq/catalogue  -> LIVE from IDYQ (always current), mirror as fallback
 router.get('/catalogue', async (req, res) => {
   try {
     const { organizationId } = req.orgContext;
     const conn = await getConnection(organizationId);
     if (!requireEnabled(conn, res)) return;
-    const { search, active, page = 1, limit = 50 } = req.query;
 
-    let where = 'WHERE organisation_id = $1';
-    const params = [organizationId];
-    let n = 1;
-    if (search) {
-      where += ` AND (name ILIKE $${++n} OR description ILIKE $${n} OR sku ILIKE $${n})`;
-      params.push(`%${search}%`);
+    // Live read-through: adds/edits/deletes in IDYQ show immediately.
+    try {
+      const items = await fetchCatalogueLive({ organisationId: organizationId });
+      const products = items.map(mapLiveProduct);
+      return res.json({ products, total: products.length, readOnly: true, live: true });
+    } catch (liveErr) {
+      console.warn('idyq/catalogue live fetch failed, falling back to stored copy:', liveErr.message);
+      const rows = await query(
+        'SELECT * FROM idyq_products WHERE organisation_id = $1 ORDER BY name NULLS LAST',
+        [organizationId]
+      );
+      return res.json({
+        products: rows.rows.map(mapProduct),
+        total: rows.rows.length,
+        readOnly: true,
+        live: false,
+        stale: true,
+      });
     }
-    if (active !== undefined) {
-      where += ` AND active = $${++n}`;
-      params.push(active === 'true');
-    }
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const rows = await query(
-      `SELECT * FROM idyq_products ${where} ORDER BY name NULLS LAST LIMIT $${++n} OFFSET $${++n}`,
-      [...params, parseInt(limit), offset]
-    );
-    const total = await query(`SELECT COUNT(*)::int AS c FROM idyq_products ${where}`, params);
-    res.json({ products: rows.rows.map(mapProduct), total: total.rows[0].c, readOnly: true });
   } catch (err) {
     console.error('idyq/catalogue error:', err);
     res.status(500).json({ error: 'Failed to load IDYQ catalogue' });
