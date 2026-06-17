@@ -231,8 +231,8 @@ async function upsertQuote(organisationId, q) {
       await client.query(
         `INSERT INTO idyq_quote_lines
            (idyq_quote_id, organisation_id, idyq_product_id, sku, description,
-            qty, unit_price, line_total, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            qty, unit_price, line_total, cost_price, line_profit, line_type, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           quoteRowId,
           organisationId,
@@ -242,6 +242,9 @@ async function upsertQuote(organisationId, q) {
           l.qty ?? null,
           l.unit_price ?? null,
           l.line_total ?? null,
+          l.cost_price ?? null,
+          l.profit ?? null,
+          l.pricing_type ?? l.type ?? null,
           i,
         ]
       );

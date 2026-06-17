@@ -25,6 +25,9 @@ const contactSchema = z.object({
   }).optional().default({}),
   crm: z.object({
     status: z.enum(['active', 'inactive', 'at_risk', 'prospect', 'archived']).default('prospect'),
+    // Sales pipeline stage (Phase 1) — kept separate from `status` (customer health).
+    // Suspect → Prospect → Hot Prospect → Customer.
+    salesStage: z.enum(['suspect', 'prospect', 'hot_prospect', 'customer']).optional(),
     lastActivity: z.string().optional().nullable(),
     nextCRMEvent: z.string().optional().nullable(),
     renewalsCount: z.number().optional().default(0),
@@ -74,14 +77,26 @@ function mapContact(row) {
 }
 
 // GET /api/contacts - Get all contacts for the organization
+// Optional filters: ?type=company|individual  ?stage=suspect|prospect|hot_prospect|customer
 router.get('/', async (req, res) => {
   try {
     const orgContext = await getOrgContext(req.user.userId);
     const organizationId = orgContext.organizationId;
 
+    const conditions = ['organisation_id = $1'];
+    const params = [organizationId];
+    if (req.query.type) {
+      params.push(req.query.type);
+      conditions.push(`"type" = $${params.length}`);
+    }
+    if (req.query.stage) {
+      params.push(req.query.stage);
+      conditions.push(`crm->>'salesStage' = $${params.length}`);
+    }
+
     const result = await query(
-      `SELECT * FROM contacts WHERE organisation_id = $1 ORDER BY created_at DESC`,
-      [organizationId]
+      `SELECT * FROM contacts WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
+      params
     );
 
     res.json(result.rows.map(mapContact));
