@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All six UX mockups are produced and approved (pipeline list, company profile, bonus screen, sales flow, **order form**, **approval/purchasing queues**, **engineer wage progression**), plus the My-Tasks + enriched-profile screens; all now folded into the canonical mockup file. The quote→order **cost/profit/type pull** is built on both apps and ready to deploy (consumed by Phase 3). **Phases 1, 2 and 3 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues). Phases 4–6 are designed and not yet built.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is next** (IDYQ act-on-quote + recurring Contracts). Phases 5–6 not yet built. See §15 "Current state / start here" for the exact deploy position.
 
 **Last updated:** 2026-06-17
 
@@ -224,7 +224,7 @@ Per-user. Always shows the live 25th–25th period:
 
 ---
 
-## 8. Engineer wage-progression scheme (DECIDED)
+## 8. Engineer wage-progression scheme (DECIDED · BUILT in Phase 4 — see §14.7)
 
 Engineers get a **different home screen** from sales. They do **not** see per-company deal profit or commission.
 
@@ -250,8 +250,8 @@ Decision: **neither now**, possibly later. WorkTrackr will **not** be the accoun
 1. ✅ **DONE — Menu / IA regroup** + company-centred records with sales stage & account manager.
 2. ✅ **DONE — Contacts, history timeline, tasks** (+ tasks dashboard).
 3. ✅ **DONE — Orders module** — blank order form (+ supplier/cost/profit columns, IDYQ quote pull), approval queue, purchasing queue, fulfilment (invoiced/paid) flags.
-4. **NEXT — Commission engine** — configurable rules area + calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
-5. **IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking).
+4. ✅ **DONE — Commission engine** — fully-configurable rules area (per-org, nothing hardcoded) + live calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
+5. **NEXT — IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking; recurring 5% commission gets its home here).
 6. **Deals forecast + CSV import** last.
 7. **(Later)** Xero/QuickBooks connector; IDYQ org allow-list before any 3rd-party onboarding.
 
@@ -296,6 +296,7 @@ UX is designed before coding each phase.
 - **NO HARDCODED MONEY RULES (non-negotiable, §1):** no commission/bonus/share/deduction/threshold/period figure is ever in code. All per-org config in `commission_settings`; app ships neutral (zeros/disabled). Any specific schedule is example-only. ✅
 - Phase 4 scope: recurring (5%) **deferred to Phase 5** (needs Contracts); finance/referral via per-order **commission_category** + configured rates; internal cost-before-profit is a **per-org configurable £** (not £350); **roles skipped** this phase (screens reachable from Finance menu; no role-constraint widening). ✅
 - Phase 4 engine: configurable `periodStartDay` (default 1; Sweetbyte = 25 is config not code), manual £ override per order wins over suggestion, manager per-period lock, computed live from paid orders. ✅
+- Phase 4 COMPLETE: commission backend + admin **Commission rules** + **My commission** bonus screen + per-order commission category; engineer wage backend + **My wage** (engineer, read-only, no profit) + **Engineer wages** (manager) + per-org scheme settings. All per-org configurable; zero hardcoded money. ✅
 
 ---
 
@@ -345,12 +346,46 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - Economics: a line's sell = `unit_cost + unit_profit`; IDYQ lines are read-only (edited on the quote in IDYQ). `total_profit` on a **paid** order is the figure Phase 4 commission will read.
 - Dependency: the order form's IDYQ pull shows real cost/profit only once §14.1's four "pull" files are deployed and a sync has run; the manual path works regardless.
 
-### 14.5 memberships.role CHECK — STILL OUTSTANDING (blocks Phase 4 roles UI)
+### 14.5 memberships.role CHECK — STILL OUTSTANDING (needed for role-based home routing, not for Phase 4)
 `database/schema.sql` still has `CHECK (role IN ('admin','manager','staff'))`. The new **Salesman** and **Engineer** roles need an `ALTER ... DROP CONSTRAINT / ADD CONSTRAINT` migration widening this to include `'salesman'` and `'engineer'` **before** the roles toggle UI is built. Manager-gating in Phase 3 keys off `admin`/`manager`/`partner_admin`, so it works today; Salesman/Engineer home screens (Phase 4) need the constraint widened first.
 
-### 14.6 Phase 4 file map — commission engine (Batch A BUILT; B/C pending)
+### 14.6 Phase 4 file map — commission engine (BUILT)
 **Principle enforced: zero hardcoded money values (see §1, §7.1).** App ships neutral; each org configures its own scheme.
 - `web/migrations/phase4_commission_tables.sql` (NEW) — `commission_settings` (per-org `config` JSONB, neutral defaults), `commission_overrides` (manual £ per order, the per-order override field), `commission_period_locks` (manager per-period approval); `ALTER orders ADD commission_category`. Filename `phase4_` sorts after `create_orders_tables.sql`.
 - `web/routes/commission.js` (NEW) — inline engine + API. `DEFAULTS` are all 0/false (no scheme baked in). Config shape: `enabled, oneOffRate, deductionPerSale, financeRate, referralRate, recurringRate, thresholdTurnover, bonusRate, periodStartDay`. Endpoints: `GET/PUT /settings` (PUT manager-only), `GET /me?offset=` (bonus screen: confirmed/pending/bonus/threshold/breakdown/history, paid-gated), `GET /period?offset=` + `POST /period/approve` (manager), `PUT /override/:orderId` (manager). Period math = `periodStartDay`-based 1-month windows, year-cross safe; verified (25th→25th, Dec→Jan).
 - `web/server.js` — mounts `/api/commission`.
-- **Pending Batch B:** `CommissionRules.jsx` (admin: org enters its own numbers; blank by default), `BonusScreen.jsx` (per-user "My commission", reads `/me`), commission-category selector on the order form, Finance-menu nav. **Pending Batch C:** engineer wage-progression (also fully configurable: stage length + deal-count target per org, manual £ rise per stage, neutral delivered-deal count, never profit).
+- **Front-end (BUILT):** `CommissionRules.jsx` (admin: org enters its own numbers; blank by default; manager-gated), `BonusScreen.jsx` (per-user "My commission", reads `/me`: confirmed/pending/bonus/threshold/breakdown/history), commission-category selector on `OrderForm.jsx` (orders API persists `commission_category`), nav wired in `Sidebar.jsx`/`AppLayout.jsx`/`Dashboard.jsx` (My commission in Finance for all; Commission rules manager-only). Engineer wage front-end is in §14.7.
+
+### 14.7 Phase 4 file map — engineer wage progression (BUILT)
+**Same no-hardcode rule (§1).** Org sets stage length + deal-count target; every £ is a manager-entered field; engineers never see profit.
+- `web/migrations/phase4_engineer_wage_tables.sql` (NEW) — `engineer_wage_settings` (per-org `config` JSONB: `stageMonths`, `dealCountTarget`; neutral defaults) and `engineer_wage_records` (per engineer per stage: `current_rate`, `deals_delivered` (neutral count), `deal_target`, `rise_amount`, `new_rate` — all manual £/int; `status` in_progress|confirmed; stage history). Filename `phase4_` sorts after `create_orders_tables.sql`.
+- `web/routes/engineerWage.js` (NEW) — `GET/PUT /settings` (PUT manager), `GET /candidates` (manager; org members for the picker), `GET /me` (engineer's current stage + history, read-only), `GET /` (manager; all engineers), `POST /` (start a stage), `PUT /:id` (manual fields), `POST /:id/confirm`, `DELETE /:id`. Manager-gated via role.
+- `web/server.js` — mounts `/api/engineer-wage`.
+- Frontend (`web/client/src/app/src/components/`): `EngineerWage.jsx` (NEW; "My wage", engineer read-only — current rate, neutral deal count vs target, review date, manager-set rise, history; never profit), `EngineerWageAdmin.jsx` (NEW; manager — scheme settings, start a stage, enter count, set/confirm £ rise). Nav: **My wage** in Delivery (all users), **Engineer wages** manager-only in Delivery; views wired in `Dashboard.jsx`, `AppLayout.jsx`, `Sidebar.jsx`.
+
+---
+
+## 15. Current state / START HERE (for a fresh session)
+
+**Build position:** Phases 0–4 are built. **Phase 5 is next** (IDYQ act-on-quote + recurring Contracts).
+
+**Repo:** WorkTrackr = `worktrackr-app` (this repo), pushed via GitHub Desktop from `C:\repos\worktrackr-app`; Render auto-deploys; `web` runs `web/migrations/*.sql` alphabetically on boot. A "company" is a `contacts` row `type='company'` (never FK to the dropped `customers` table). IDYQ integration is read-only pull.
+
+**Verified against the user's uploaded repo (post-Phase-4):** every delivered route, migration, component, `server.js`, the roadmap and the canonical mockup are present, in the right folders, and current — EXCEPT the two items below.
+
+**⚠ Two repo fixes the user must apply (flagged from the zip check):**
+1. **`phase4_engineer_wage_tables.sql` was misplaced** into `web/client/src/app/src/components/`. It MUST live in **`web/migrations/`** or the engineer-wage tables never get created and `/api/engineer-wage` 500s (the route is already mounted). Move it; delete the components-folder copy.
+2. **Delete the orphan `web/routes/idyq.routes.js`** — leftover from a renamed delivery; the live file is `idyq.js`. Nothing requires the orphan.
+
+**Deploy/verify notes:**
+- **IDYQ quote cost/profit/type pull:** WorkTrackr side is deployed (`idyq_quote_line_cost_fields.sql`, `idyq.js`, `shared/idyq/idyqSync.js` all present). The **IDYQ-repo** file `server/_core/worktrackrBridge.ts` (mapLine emitting `cost_price`/`profit`/`pricing_type`) must also be live in the *other* repo (`idoyourquotes-main`) for cost/profit to actually populate; then run a sync. Until then, pulled order lines carry sell price with zero cost.
+- **Pre-existing clutter (not from this work):** several `*.broken`/`*.backup` files exist in the components folder; unused by the build, optional to remove.
+
+**Still pending / future:**
+- **`memberships.role` CHECK widening (§14.5)** — needed before *role-based home routing* (Salesman→commission, Engineer→wage as landing pages) and any Users role selector. Phase 4 deliberately skipped roles; the screens are reachable from the menu (My commission / My wage; manager-only Commission rules / Engineer wages / Approvals). Manager-gating works today off `admin`/`manager`/`owner`/`partner_admin`.
+- IDYQ **org allow-list** on the bridge before onboarding third-party customers (security).
+- Xero/QuickBooks connector (later).
+
+**Phase 5 scope when ready:** "act on quote" from a mirrored IDYQ quote → create a recurring **Contract** (new tables: contracts + contract_lines, recurring monthly profit); surface recurring profit on the company profile's "Services & monthly profit" panel; wire **recurring 5%** commission (the `recurringRate` config field already exists in `commission_settings`) into the existing commission engine, paid-gated like one-off. Design UX first per the working cadence.
+
+**Working cadence (unchanged):** UX/design per phase first, then build ONE phase at a time, ONE batch per turn, each file validated (`node --check` for JS, `esbuild --jsx=automatic` for JSX) and handed over as a downloadable file with a short `filename → folder` list (no jargon). Keep this roadmap updated as the single source of truth.
