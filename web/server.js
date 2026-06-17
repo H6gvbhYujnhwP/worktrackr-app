@@ -207,6 +207,8 @@ const notesRoutes = require('./routes/notes');
 app.use('/api/notes', authenticateToken, notesRoutes);
 const tasksRoutes = require('./routes/tasks');
 app.use('/api/tasks', authenticateToken, tasksRoutes);
+const ordersRoutes = require('./routes/orders');
+app.use('/api/orders', authenticateToken, ordersRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
