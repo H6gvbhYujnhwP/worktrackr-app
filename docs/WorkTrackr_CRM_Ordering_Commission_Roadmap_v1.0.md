@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All six UX mockups are now produced and approved (pipeline list, company profile, bonus screen, sales flow, **order form**, **approval/purchasing queues**, **engineer wage progression**). The quote→order **cost/profit/type pull** is built on both apps and ready to deploy (used at Phase 3). **Phase 1 is in progress** (company-record groundwork landed). Phases 2–6 are designed and not yet built.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All six UX mockups are produced and approved (pipeline list, company profile, bonus screen, sales flow, **order form**, **approval/purchasing queues**, **engineer wage progression**), plus the My-Tasks + enriched-profile screens; all now folded into the canonical mockup file. The quote→order **cost/profit/type pull** is built on both apps and ready to deploy (consumed by Phase 3). **Phases 1, 2 and 3 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues). Phases 4–6 are designed and not yet built.
 
 **Last updated:** 2026-06-17
 
@@ -243,10 +243,10 @@ Decision: **neither now**, possibly later. WorkTrackr will **not** be the accoun
 
 ## 10. Build order (phased, one at a time)
 
-1. **Menu / IA regroup** + company-centred records with sales stage & account manager.
-2. **Contacts, history timeline, tasks** (+ tasks dashboard).
-3. **Orders module** — blank order form (+ supplier/cost/profit columns), approval queue, purchasing queue, invoiced/paid flags.
-4. **Commission engine** — configurable rules area + calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
+1. ✅ **DONE — Menu / IA regroup** + company-centred records with sales stage & account manager.
+2. ✅ **DONE — Contacts, history timeline, tasks** (+ tasks dashboard).
+3. ✅ **DONE — Orders module** — blank order form (+ supplier/cost/profit columns, IDYQ quote pull), approval queue, purchasing queue, fulfilment (invoiced/paid) flags.
+4. **NEXT — Commission engine** — configurable rules area + calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
 5. **IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking).
 6. **Deals forecast + CSV import** last.
 7. **(Later)** Xero/QuickBooks connector; IDYQ org allow-list before any 3rd-party onboarding.
@@ -286,12 +286,15 @@ UX is designed before coding each phase.
 - Orders can **pull IDYQ quotes**, bringing buy-in cost/profit/type per line, read-only (edited in IDYQ). Distinct from recurring Contracts. ✅
 - Quote→order pull **built on both apps** (bridge + WorkTrackr migration/sync/mapper), deploy-ready. ✅
 - Phase 1 started: contacts `crm.salesStage` (Suspect/Prospect/Hot Prospect/Customer) + company/stage filters. ✅
+- Phase 1 complete: IA regroup (Sales/Delivery/Finance/Contacts/Settings), company pipeline list + company profile hub. ✅
+- Phase 2 complete: `tasks` table + API, My-Tasks dashboard, editable company contacts, per-company tasks, history timeline (CRM events + completed tasks). ✅
+- Phase 3 complete: Orders module — `orders`/`order_lines`/`order_approvals` tables + API, order form (manual lines + IDYQ pull, cost+profit economics), orders list, "New order" from company profile, manager Approval/Purchasing/Fulfilment queues, full Draft→Submitted→Approved→Ordered→Invoiced→Paid lifecycle (paid-gating ready for commission). ✅
 
 ---
 
 ## 13. Mockups produced
 
-**Saved in the repo:** `docs/mockups/ux-design-mockups.html` (the four original approved designs — flow diagram + pipeline list + company profile + bonus screen) and `docs/mockups/ux-design-mockups-phase2.html` (order form, approval/purchasing queues, engineer wage progression). Both are self-contained and browser-openable with a CSS shim; a fresh Claude chat can re-render any screen. (TODO housekeeping: fold the Phase-2 three into the canonical file.)
+**Saved in the repo:** `docs/mockups/ux-design-mockups.html` is now the **single canonical file** holding all nine approved screens (1 sales-pipeline flow, 2 company pipeline list, 3 company profile, 4 sales commission &amp; bonus, 5 order form, 6 approval &amp; purchasing queues, 7 engineer wage progression, 8 My Tasks dashboard, 9 enriched company profile). It is self-contained and browser-openable with a CSS shim; a fresh Claude chat can re-render any screen. (The earlier split files `ux-design-mockups-phase2.html` and `ux-design-mockups-phase2-tasks-history.html` are now superseded by the canonical file.)
 
 - **`worktrackr_sales_pipeline_flow`** — the §3 flow diagram (two branches → shared finance pipeline).
 - **`crm_company_pipeline_list`** — §5.2.
@@ -319,3 +322,21 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 
 ### 14.2 Phase 1 progress
 - `web/routes/contacts.js` — `crm.salesStage` enum (suspect/prospect/hot_prospect/customer) added (separate from `crm.status`); account manager = `crm.assignedTo`; list endpoint takes `?type=` and `?stage=` filters. No migration (rides the `crm` JSONB).
+
+### 14.3 Phase 2 file map (BUILT)
+- `web/migrations/create_tasks_table.sql` (NEW) — `tasks` (title, status open/done + `completed_at`, priority, due_date, `contact_id`, assignee/creator, org-scoped).
+- `web/routes/tasks.js` (NEW) — CRUD + filters `?mine`, `?status`, `?contactId`; setting status `done` stamps `completed_at`.
+- `web/routes/contacts.js` — added `GET /:id/history` (aggregates `crm_events` + completed `tasks`, newest first; two-segment path, no clash with `/:id`).
+- `web/server.js` — mounts `/api/tasks`.
+- Frontend (`web/client/src/app/src/components/`): `MyTasks.jsx` (NEW dashboard, top of Sales), `CompanyProfile.jsx` (enriched: editable `contactPersons` with decision-maker flag, per-company tasks, history timeline), plus `Sidebar.jsx`/`AppLayout.jsx`/`Dashboard.jsx` nav for **My Tasks** (`my-tasks`).
+
+### 14.4 Phase 3 file map (BUILT) — Orders module
+- `web/migrations/create_orders_tables.sql` (NEW) — `orders` (status enum draft→submitted→approved/rejected→ordered→invoiced→paid, `invoiced_at`/`paid_at`, `contact_id`, `salesperson_user_id`), `order_lines` (description, qty, supplier_url, `unit_cost`, `unit_profit`, source manual|idyq, `idyq_quote_id`, `line_type`), `order_approvals` (single approver now, chain-ready).
+- `web/routes/orders.js` (NEW) — list (`?status`/`?contactId`/`?mine`/`?queue=approval|purchasing`), get, create, PUT (header + replace lines, draft/rejected only), `/submit`, `/approve`, `/reject`, `/purchase`, `/invoice`, `/pay` (manager-gated via `getOrgContext().role`), `/pull-quote` (appends mirrored IDYQ quote lines with cost/profit/type), delete (draft only).
+- `web/server.js` — mounts `/api/orders`.
+- Frontend (`web/client/src/app/src/components/`): `OrderForm.jsx` (NEW; company picker, status stepper, manual+IDYQ lines, cost/profit totals, save draft/submit), `OrdersList.jsx` (NEW; list + status filters, hosts the form), `OrderQueues.jsx` (NEW; manager Approval/Purchasing/Fulfilment queues). Wiring in `Dashboard.jsx` (`orders` + `order-queues` views, New-order hop from profile), `Sidebar.jsx` (Orders item; **Approvals** item shown only when `isManager`), `AppLayout.jsx` + `DashboardWithLayout.jsx` (thread `isManager`).
+- Economics: a line's sell = `unit_cost + unit_profit`; IDYQ lines are read-only (edited on the quote in IDYQ). `total_profit` on a **paid** order is the figure Phase 4 commission will read.
+- Dependency: the order form's IDYQ pull shows real cost/profit only once §14.1's four "pull" files are deployed and a sync has run; the manual path works regardless.
+
+### 14.5 memberships.role CHECK — STILL OUTSTANDING (blocks Phase 4 roles UI)
+`database/schema.sql` still has `CHECK (role IN ('admin','manager','staff'))`. The new **Salesman** and **Engineer** roles need an `ALTER ... DROP CONSTRAINT / ADD CONSTRAINT` migration widening this to include `'salesman'` and `'engineer'` **before** the roles toggle UI is built. Manager-gating in Phase 3 keys off `admin`/`manager`/`partner_admin`, so it works today; Salesman/Engineer home screens (Phase 4) need the constraint widened first.

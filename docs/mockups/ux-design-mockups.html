@@ -39,7 +39,7 @@ svg .c-green rect{fill:#EAF3DE;stroke:#3B6D11}svg .c-green .th{fill:#27500A}svg 
 <body>
 <div class="wrap">
 <h1>WorkTrackr — approved UX designs (v1.0)</h1>
-<div class="note">The four screens approved in principle for the CRM / ordering / commission redesign. These are layout/flow references — final styling matches the live WorkTrackr app (white cards, gold accent <code>#d4a017</code>). See <code>WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md</code> §3, §5.2, §5.3, §7.4. A fresh Claude chat can re-render any of these by opening this file.</div>
+<div class="note">All approved CRM / ordering / commission screens in one reference file (Phases 1–3). Screens: 1 sales-pipeline flow, 2 company pipeline list, 3 company profile (see 9), 4 sales commission &amp; bonus, 5 order form, 6 approval &amp; purchasing queues, 7 engineer wage progression, 8 My Tasks dashboard, 9 enriched company profile (contacts/history/tasks). Layout/flow references — final styling matches the live app (white cards, gold accent <code>#d4a017</code>). See <code>WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md</code>. A fresh Claude chat can re-render any screen from this file.</div>
 
 <h2>1. Sales pipeline flow</h2>
 <p class="cap">Prospect → meeting → opportunity, then two branches (coral = one-off order in WorkTrackr; teal = recurring contract from IdoYourQuotes) that rejoin one finance pipeline.</p>
@@ -91,7 +91,7 @@ svg .c-green rect{fill:#EAF3DE;stroke:#3B6D11}svg .c-green .th{fill:#27500A}svg 
 </div>
 </div>
 
-<h2>3. Company profile</h2>
+<h2>3. Company profile <span style="font-size:12px;color:var(--color-text-tertiary);font-weight:400">(superseded by screen 9 — enriched Phase-2 version)</span></h2>
 <p class="cap">The hub — status, account manager, services &amp; monthly profit (from IDYQ), contacts, history. "New order" turns a won deal into a sale.</p>
 <div class="sheet">
 <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px">
@@ -168,6 +168,217 @@ svg .c-green rect{fill:#EAF3DE;stroke:#3B6D11}svg .c-green .th{fill:#27500A}svg 
 </div>
 
 </div>
+
+<h2>5. Order form — one-off job</h2>
+<p class="cap">Starts blank. Build it by hand, or pull one or several IdoYourQuotes quotes — each pulled line brings its <b>description, sell, buy-in cost and profit</b> straight from that quote. IDYQ is the source of truth, so to change a margin the salesperson edits the quote in IDYQ and WorkTrackr re-pulls (read-only here). Manually-added lines are costed in WorkTrackr. Either way, totals auto-calculate and feed the commission &amp; bonus screen.</p>
+<div class="sheet">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+    <div><div style="font-size:18px;font-weight:500">New order</div><div style="font-size:13px;color:var(--color-text-secondary)">One-off job · all figures ex-VAT</div></div>
+    <div style="display:flex;gap:8px"><button class="btn-idyq"><i class="ti ti-file-invoice" style="vertical-align:-2px"></i> Pull from IdoYourQuotes</button><button><i class="ti ti-device-floppy" style="vertical-align:-2px"></i> Save draft</button><button class="btn-go"><i class="ti ti-send" style="vertical-align:-2px"></i> Submit for approval</button></div>
+  </div>
+
+  <div class="step">
+    <span class="on">Draft</span><span>Submitted</span><span>Approved</span><span>Ordered</span><span>Invoiced</span><span>Paid</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px">
+    <div><span class="lbl">Company</span><div class="fld" style="display:flex;align-items:center;justify-content:space-between">RGS Fire <i class="ti ti-chevron-down" style="color:var(--color-text-tertiary)"></i></div></div>
+    <div><span class="lbl">Salesperson</span><div class="fld">James Edgar</div></div>
+    <div><span class="lbl">Order date</span><div class="fld">17 Jun 2026</div></div>
+  </div>
+
+  <div style="margin-bottom:14px">
+    <span class="lbl">Pulled from IdoYourQuotes <i class="ti ti-lock" style="font-size:11px"></i></span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="chip">Q-203 · Cyber Essentials · 1 line <i class="ti ti-x" style="cursor:pointer"></i></span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-info)"><i class="ti ti-plus"></i> Add a quote</span>
+    </div>
+  </div>
+
+  <table>
+    <colgroup><col style="width:25%"><col style="width:7%"><col style="width:16%"><col style="width:13%"><col style="width:13%"><col style="width:12%"><col style="width:14%"></colgroup>
+    <thead><tr><th>Item</th><th class="r">Qty</th><th>Supplier URL</th><th class="r">Unit cost</th><th class="r">Total cost</th><th class="r">Unit profit</th><th class="r">Total profit</th></tr></thead>
+    <tbody>
+      <tr><td>Cyber Essentials Certification<span class="src-idyq">IDYQ</span><div style="font-size:11px;color:var(--color-text-tertiary);white-space:normal;margin-top:2px">Annual cost · from quote Q-203 · <span style="color:#3C3489">edit in IdoYourQuotes</span></div></td><td class="r">1</td><td style="color:var(--color-text-tertiary)">—</td><td class="r">£300.00</td><td class="r">£300.00</td><td class="r g">£299.00</td><td class="r g">£299.00</td></tr>
+      <tr><td>On-site SAQ workshop<div style="font-size:11px;color:var(--color-text-tertiary);white-space:normal;margin-top:2px">One-off · added in WorkTrackr</div></td><td class="r">1</td><td style="color:var(--color-text-tertiary)">—</td><td class="r"><span class="costedit">£40.00 <i class="ti ti-pencil" style="font-size:11px"></i></span></td><td class="r">£40.00</td><td class="r g">£160.00</td><td class="r g">£160.00</td></tr>
+      <tr><td colspan="7" style="border-top:.5px dashed var(--color-border-secondary)"><span style="color:var(--color-text-info)"><i class="ti ti-plus" style="vertical-align:-2px"></i> Add line</span></td></tr>
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4" style="border-top:.5px solid var(--color-border-secondary);font-weight:500;padding-top:10px">Totals</td><td class="r" style="border-top:.5px solid var(--color-border-secondary);font-weight:500;padding-top:10px">£340.00</td><td style="border-top:.5px solid var(--color-border-secondary)"></td><td class="r g" style="border-top:.5px solid var(--color-border-secondary);font-weight:500;padding-top:10px">£459.00</td></tr>
+      <tr><td colspan="4" style="color:var(--color-text-secondary)">Order value (ex-VAT)</td><td class="r" colspan="3" style="font-weight:500">£799.00</td></tr>
+    </tfoot>
+  </table>
+  <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px;line-height:1.6">Lines pulled from IdoYourQuotes bring their <b>buy-in cost and profit straight from that quote</b> — the same figures shown on the quote in IDYQ — and are <b>read-only here</b>; to change a margin, edit the quote in IDYQ and re-pull. Lines added directly in WorkTrackr are costed here (dashed = editable). The pulled <b>Type</b> (annual vs one-off) sets the commission basis. Supplier URL and cost are optional for non-stock sectors. Total profit (ex-VAT) feeds the salesperson's commission &amp; bonus screen and stays locked until the order is marked Paid.</div>
+</div>
+
+<!-- ============ SCREEN 6: APPROVAL + PURCHASING QUEUES ============ -->
+<h2>6. Approval &amp; purchasing queues — manager</h2>
+<p class="cap">Single approver for now. Managers approve/reject submitted orders with a comment; approved orders drop into the purchasing queue to be bought and marked off, writing back to the company history.</p>
+<div class="sheet">
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:16px;font-weight:500">Approval queue</span><span class="pill" style="background:var(--color-background-secondary);color:var(--color-text-secondary)">2 awaiting</span></div>
+    <table>
+      <colgroup><col style="width:30%"><col style="width:20%"><col style="width:14%"><col style="width:14%"><col style="width:22%"></colgroup>
+      <thead><tr><th>Order</th><th>Salesperson</th><th class="r">Value</th><th class="r">Profit</th><th class="r">Decision</th></tr></thead>
+      <tbody>
+        <tr><td>Tasker Joinery — laptops ×3 + setup</td><td>James Edgar</td><td class="r">£2,940</td><td class="r g">£980</td><td class="r" style="white-space:normal"><button class="btn-ok" style="padding:4px 9px"><i class="ti ti-check"></i></button> <button class="btn-no" style="padding:4px 9px"><i class="ti ti-x"></i></button></td></tr>
+        <tr><td>Castle Cars — office printer</td><td>James Edgar</td><td class="r">£420</td><td class="r g">£210</td><td class="r"><button class="btn-ok" style="padding:4px 9px"><i class="ti ti-check"></i></button> <button class="btn-no" style="padding:4px 9px"><i class="ti ti-x"></i></button></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px"><span class="lbl">Comment (saved to order &amp; company history)</span><div class="fld" style="color:var(--color-text-tertiary)">Approved — proceed to purchase.</div></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:16px;font-weight:500">Purchasing queue</span><span class="pill" style="background:var(--color-background-secondary);color:var(--color-text-secondary)">1 approved</span></div>
+    <table>
+      <colgroup><col style="width:30%"><col style="width:24%"><col style="width:14%"><col style="width:14%"><col style="width:18%"></colgroup>
+      <thead><tr><th>Order</th><th>To buy</th><th>Supplier</th><th>Status</th><th class="r">Action</th></tr></thead>
+      <tbody>
+        <tr><td>Tasker Joinery</td><td>3× Dell Latitude 5550</td><td><i class="ti ti-external-link" style="color:var(--color-text-info)"></i> <span style="color:var(--color-text-info)">open</span></td><td><span class="pill" style="background:#E1F5EE;color:#085041">Approved</span></td><td class="r"><button style="padding:4px 9px"><i class="ti ti-shopping-cart" style="vertical-align:-2px"></i> Mark ordered</button></td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px;line-height:1.6">Marking ordered moves the order to <b>Ordered</b> and logs a history entry on the company. Managers and Global Admins work this queue (no separate purchasing role for now). Invoiced and Paid are ticked later on the order; commission stays locked until Paid.</div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 7: ENGINEER WAGE PROGRESSION ============ -->
+<h2>7. Engineer wage progression — per engineer</h2>
+<p class="cap">The engineer's home screen. Rolling 6-month stages; a rise is reviewed each stage end based on delivered deals. Shows a neutral delivered-deal count — never company profit or commission. The rise £ is set manually by a manager.</p>
+<div class="sheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
+    <div><div style="font-size:18px;font-weight:500">My wage progression</div><div style="font-size:13px;color:var(--color-text-secondary)">Tom Reeve · Engineer</div></div>
+    <span style="border:.5px solid var(--color-border-secondary);border-radius:8px;padding:6px 12px;font-size:13px">Stage: 25 Mar – 25 Sep 2026</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">
+    <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Current rate</div><div style="font-size:24px;font-weight:500">£16.50/hr</div></div>
+    <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Deals delivered this stage</div><div style="font-size:24px;font-weight:500">7</div></div>
+    <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Projected next rise</div><div style="font-size:24px;font-weight:500;color:var(--color-text-tertiary)">+£0.75/hr</div><div style="font-size:12px;color:var(--color-text-tertiary)">manager confirms at stage end</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:var(--color-text-secondary)">Progress to next review point</span><span><span style="font-weight:500">7</span> <span style="color:var(--color-text-tertiary)">/ 10 deals</span></span></div>
+    <div class="bar"><div style="width:70%"></div></div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-top:8px">3 more delivered deals reaches the next review point in this stage.</div>
+
+    <div class="mgr">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="tag">Manager only</span><span style="font-size:13px;color:var(--color-text-secondary)">not visible to the engineer</span></div>
+      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <div><span class="lbl">Set this stage's rise (£/hr)</span><div class="fld" style="width:120px">0.75</div></div>
+        <button class="btn-ok"><i class="ti ti-check" style="vertical-align:-2px"></i> Confirm rise</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:16px;font-weight:500;margin-bottom:10px">Previous stages</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary)"><span style="color:var(--color-text-secondary)">25 Sep 2025 – 25 Mar 2026 · 11 deals</span><span class="g" style="font-weight:500">+£1.00/hr</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary)"><span style="color:var(--color-text-secondary)">25 Mar – 25 Sep 2025 · 9 deals</span><span class="g" style="font-weight:500">+£0.75/hr</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary)"><span style="color:var(--color-text-secondary)">25 Sep 2024 – 25 Mar 2025 · 6 deals</span><span class="g" style="font-weight:500">+£0.50/hr</span></div>
+  </div>
+  <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px;line-height:1.6">Wages rise in rolling 6-month stages based on delivered deals. Each amount is set and confirmed by your manager. Company profit and commission are never shown on this screen.</div>
+</div>
+
+<h2>8. My Tasks dashboard</h2>
+<p class="cap">Each person's task list rolled up across companies: what's overdue, due today and coming up. Filter, tick off, or add a task linked to a company.</p>
+<div class="sheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
+    <div><div style="font-size:18px;font-weight:500">My tasks</div><div style="font-size:13px;color:var(--color-text-secondary)">James Edgar · 5 open · 1 overdue</div></div>
+    <button class="btn-gold"><i class="ti ti-plus" style="vertical-align:-2px"></i> Add task</button>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+    <span class="chip on">Open <span style="opacity:.6">5</span></span>
+    <span class="chip">Overdue <span style="opacity:.6">1</span></span>
+    <span class="chip">Due today <span style="opacity:.6">1</span></span>
+    <span class="chip">Completed <span style="opacity:.6">12</span></span>
+  </div>
+
+  <div class="card">
+    <table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px">
+      <colgroup><col style="width:38%"><col style="width:26%"><col style="width:18%"><col style="width:18%"></colgroup>
+      <thead><tr style="color:var(--color-text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left"><th style="padding:6px 0">Task</th><th>Company</th><th>Due</th><th style="text-align:right">Priority</th></tr></thead>
+      <tbody>
+        <tr style="border-top:.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ti ti-square" style="vertical-align:-2px;color:var(--color-text-tertiary)"></i> Call re: owner sign-off</td><td style="color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Harbour Dental Care</td><td style="color:var(--color-text-danger)">overdue 2d</td><td style="text-align:right"><span class="pri pri-high">High</span></td></tr>
+        <tr style="border-top:.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ti ti-square" style="vertical-align:-2px;color:var(--color-text-tertiary)"></i> Send revised quote (×3 laptops)</td><td style="color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tasker Joinery Ltd</td><td>due today</td><td style="text-align:right"><span class="pri pri-med">Medium</span></td></tr>
+        <tr style="border-top:.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ti ti-square" style="vertical-align:-2px;color:var(--color-text-tertiary)"></i> Demo follow-up</td><td style="color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pinegrove Vets</td><td>in 3 days</td><td style="text-align:right"><span class="pri pri-low">Low</span></td></tr>
+        <tr style="border-top:.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i class="ti ti-square" style="vertical-align:-2px;color:var(--color-text-tertiary)"></i> Book discovery meeting</td><td style="color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Castle Cars</td><td>in 5 days</td><td style="text-align:right"><span class="pri pri-med">Medium</span></td></tr>
+        <tr style="border-top:.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--color-text-tertiary)"><i class="ti ti-square-check-filled" style="vertical-align:-2px;color:var(--color-text-success)"></i> <s>Email support proposal</s></td><td style="color:var(--color-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Harbour Dental Care</td><td style="color:var(--color-text-tertiary)">done 4d ago</td><td style="text-align:right"><span class="pri" style="background:var(--color-background-secondary);color:var(--color-text-tertiary)">—</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px">Ticking a task logs a "task completed" entry on the linked company's history. Managers can assign tasks to anyone; everyone else sees their own.</div>
+</div>
+
+<!-- ============ SCREEN 2: COMPANY PROFILE — CONTACTS / HISTORY / TASKS ============ -->
+<h2>9. Company profile — contacts, history &amp; tasks (enriched, Phase 2)</h2>
+<p class="cap">The Phase-2 additions to the company hub: manage several people (with a decision-maker flag), see a full activity timeline, and track tasks for this company.</p>
+<div class="sheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:18px;font-weight:500">Harbour Dental Care</div>
+    <span style="background:#FAEEDA;color:#854F0B;border-radius:6px;padding:3px 10px;font-size:12px">Hot prospect</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+
+    <!-- Contacts (editable) -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:16px;font-weight:500">Contacts</span>
+        <span style="font-size:13px;color:var(--color-text-info)"><i class="ti ti-plus"></i> Add person</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary)">
+        <div class="dot" style="background:var(--color-background-info);color:var(--color-text-info)">SD</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">Sarah Doyle <span style="background:#E1F5EE;color:#085041;border-radius:4px;padding:1px 6px;font-size:10px">decision maker</span></div>
+          <div style="font-size:12px;color:var(--color-text-secondary)">Practice Manager · sarah@harbourdental.co.uk · 01752 …</div>
+        </div>
+        <i class="ti ti-pencil" style="color:var(--color-text-tertiary);font-size:15px"></i>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary)">
+        <div class="dot" style="background:var(--color-background-secondary);color:var(--color-text-secondary)">RH</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">Rob Hale</div>
+          <div style="font-size:12px;color:var(--color-text-secondary)">Owner / Dentist · rob@harbourdental.co.uk</div>
+        </div>
+        <i class="ti ti-pencil" style="color:var(--color-text-tertiary);font-size:15px"></i>
+      </div>
+    </div>
+
+    <!-- Tasks on this company -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:16px;font-weight:500">Tasks</span>
+        <span style="font-size:13px;color:var(--color-text-info)"><i class="ti ti-plus"></i> Add task</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary);font-size:13px">
+        <i class="ti ti-square" style="color:var(--color-text-tertiary)"></i>
+        <span style="flex:1">Call re: owner sign-off</span>
+        <span style="font-size:12px;color:var(--color-text-danger)">overdue 2d</span>
+        <span class="pri pri-high">High</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:.5px solid var(--color-border-tertiary);font-size:13px">
+        <i class="ti ti-square" style="color:var(--color-text-tertiary)"></i>
+        <span style="flex:1">Confirm install date</span>
+        <span style="font-size:12px;color:var(--color-text-secondary)">in 4 days</span>
+        <span class="pri pri-low">Low</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- History timeline -->
+  <div class="card" style="margin-top:12px">
+    <div style="font-size:16px;font-weight:500;margin-bottom:6px">History</div>
+    <div class="tl"><i class="ti ti-phone"></i><div><b>Call</b> — verbal yes, needs owner sign-off <span style="color:var(--color-text-tertiary)">· James · 2d ago</span></div></div>
+    <div class="tl"><i class="ti ti-mail"></i><div><b>Email</b> — sent support proposal <span style="color:var(--color-text-tertiary)">· James · 4d ago</span></div></div>
+    <div class="tl"><i class="ti ti-square-check"></i><div><b>Task completed</b> — prepare proposal <span style="color:var(--color-text-tertiary)">· James · 5d ago</span></div></div>
+    <div class="tl"><i class="ti ti-users"></i><div><b>Meeting</b> — on-site discovery <span style="color:var(--color-text-tertiary)">· James · 9d ago</span></div></div>
+    <div class="tl"><i class="ti ti-note"></i><div><b>Note</b> — decision maker is Sarah (Practice Mgr) <span style="color:var(--color-text-tertiary)">· James · 9d ago</span></div></div>
+  </div>
+  <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px">The timeline gathers calls, emails, meetings, notes, completed tasks and order updates automatically; you can also add a note or log a call by hand.</div>
+</div>
+
 <script>
 (function(){
  var pill=function(t){var m={hot:['#FAEEDA','#854F0B','Hot prospect'],prospect:['#E6F1FB','#0C447C','Prospect'],customer:['#E1F5EE','#085041','Customer'],suspect:['#F1EFE8','#2C2C2A','Suspect']};var a=m[t];return '<span style="background:'+a[0]+';color:'+a[1]+';border-radius:6px;padding:2px 8px;font-size:11px;white-space:nowrap">'+a[2]+'</span>';};
