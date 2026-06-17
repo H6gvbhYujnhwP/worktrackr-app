@@ -7,13 +7,14 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
 const SALES_ITEMS = [
   { id: 'my-tasks',        label: 'My Tasks',     icon: ListChecks, view: 'my-tasks'       },
   { id: 'companies',       label: 'Companies',    icon: Building2,  view: 'companies'      },
+  { id: 'orders',          label: 'Orders',       icon: ClipboardList, view: 'orders'      },
   { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'         },
 ];
 

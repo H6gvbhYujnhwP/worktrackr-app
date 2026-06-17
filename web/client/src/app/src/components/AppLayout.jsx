@@ -15,6 +15,7 @@ const VIEW_TO_PAGE = {
   calendar:         'ticket-calendar',
   'my-tasks':       'my-tasks',
   companies:        'companies',
+  orders:           'orders',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',

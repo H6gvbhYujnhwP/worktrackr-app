@@ -38,6 +38,7 @@ import ContactManager from './ContactManager.jsx';
 import CompanyPipelineList from './CompanyPipelineList.jsx';
 import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
+import OrdersList from './OrdersList.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -77,6 +78,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   const [activeTab, setActiveTab]             = useState('all_open');
   const [openCompanyId, setOpenCompanyId]     = useState(null);
+  const [ordersInitial, setOrdersInitial]     = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
   const [priorityFilter, setPriorityFilter]   = useState('all');
   const [assigneeFilter, setAssigneeFilter]   = useState('all');
@@ -369,9 +371,11 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'contacts'       && <ContactManager />}
       {currentView === 'companies'      && (
         openCompanyId
-          ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)} />
+          ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
+              onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }} />
           : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
       )}
+      {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
