@@ -35,6 +35,8 @@ import CRMDashboard from './CRMDashboard.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
+import CompanyPipelineList from './CompanyPipelineList.jsx';
+import CompanyProfile from './CompanyProfile.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -73,6 +75,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
 
   const [activeTab, setActiveTab]             = useState('all_open');
+  const [openCompanyId, setOpenCompanyId]     = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
   const [priorityFilter, setPriorityFilter]   = useState('all');
   const [assigneeFilter, setAssigneeFilter]   = useState('all');
@@ -363,6 +366,11 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       )}
       {currentView === 'billing' && isAdmin && <XeroIntegration />}
       {currentView === 'contacts'       && <ContactManager />}
+      {currentView === 'companies'      && (
+        openCompanyId
+          ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)} />
+          : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
+      )}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
       {currentView === 'quotes'         && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="quotes" /></ErrorBoundary>}

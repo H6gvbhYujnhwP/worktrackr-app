@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. Phases 1–6 (CRM redesign, ordering, commission, role dashboards) are designed (UX mockups approved in principle) and not yet built.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All six UX mockups are now produced and approved (pipeline list, company profile, bonus screen, sales flow, **order form**, **approval/purchasing queues**, **engineer wage progression**). The quote→order **cost/profit/type pull** is built on both apps and ready to deploy (used at Phase 3). **Phase 1 is in progress** (company-record groundwork landed). Phases 2–6 are designed and not yet built.
 
 **Last updated:** 2026-06-17
 
@@ -148,6 +148,7 @@ The hub. Header: name, **changeable status pill**, account manager, source; acti
 New module — the coral branch. A new order:
 - **Always starts blank** (DECISION — no pre-import of existing deals/customers; James starts fresh).
 - Picks a Company, then line items with columns: **item, quantity, supplier URL (where we buy it), unit cost, total cost, unit profit, total profit** (auto-calculated).
+- **Pull from IdoYourQuotes (DECISION):** an order can pull one or several IDYQ quotes; each pulled line brings its **buy-in cost, profit and type (one-off/annual) straight from that quote**, read-only in WorkTrackr. Margins are changed by editing the quote in IDYQ (the single source of truth, where the customer quote lives) and re-pulling — WorkTrackr never writes back. Manually-added lines are costed in WorkTrackr (editable). The pulled type sets the commission basis (one-off 15% vs recurring 5%). This is distinct from a recurring **Contract** (§5.7): pulling a quote into an order is a one-off snapshot; a Contract tracks ongoing monthly profit.
 - Records the salesperson (for commission).
 - Status workflow: **Draft → Submitted → Approved → Ordered → Invoiced → Paid**, with explicit invoiced and paid flags.
 - Purchasing fields (supplier URL, cost) are **optional** (multi-sector — a consultancy has no "where we buy it").
@@ -169,15 +170,17 @@ Import company/contact/source data; create or update records; avoid duplicate co
 
 ## 6. Roles, permissions & role-based dashboards
 
-### 6.1 Roles (added in the team/Users section)
-- **Account manager** — owns company records; adds contacts, tasks, history notes; creates draft orders; updates deals.
-- **Manager/admin** — views all; reassigns account managers; assigns tasks; approves/rejects orders; reviews dashboards; configures commission rules.
-- **Purchasing user** — views approved orders; updates purchasing status; adds purchasing notes/history.
-- **Read-only user** — views records and history without editing (optional/later).
+### 6.1 Roles (DECISION — toggle in the Users section)
+Four roles, selected per member in the Users screen. Mapped onto the existing `memberships.role` so current users don't break — the live `CHECK (role IN ('admin','manager','staff'))` is widened to add `salesman` and `engineer`:
+- **Global Admin** (`admin`) — everything: all records, approvals, commission rules, Users, Billing, Security.
+- **Manager** (`manager`) — all dashboards, approval & purchasing queues, approves/rejects orders, configures commission rules and sets manual bonus/wage figures. **Not** Billing/Security/Users (Global-Admin-only).
+- **Salesman** (`salesman`, NEW) — owns company records; adds contacts, tasks, history; creates draft orders; sees the "My commission & bonus" screen.
+- **Engineer** (`engineer`, NEW) — delivery + the "My wage progression" screen. **Never** sees per-company profit or commission.
+- (No separate purchasing role for now — Managers/Global Admins work the purchasing queue. Read-only can be added later.)
 
 ### 6.2 Role-based home screens (IMPORTANT visibility rule)
-- **Sales staff →** "My commission & bonus" screen (§7.3).
-- **Engineers →** "My wage progression" screen (§8). **Engineers must NOT see per-company deal profit** or commission figures.
+- **Salesman →** "My commission & bonus" screen (§7.3).
+- **Engineer →** "My wage progression" screen (§8). **Engineers must NOT see per-company deal profit** or commission figures.
 
 ---
 
@@ -217,18 +220,18 @@ Per-user. Always shows the live 25th–25th period:
 
 ---
 
-## 8. Engineer wage-progression scheme (NEW — needs final rules)
+## 8. Engineer wage-progression scheme (DECIDED)
 
 Engineers get a **different home screen** from sales. They do **not** see per-company deal profit or commission.
 
-What they see (as described):
-- When the company **makes a new deal**, engineers' wages **rise in 6-month stages**.
-- Each 6-month stage runs, then the **next 6 months starts again** (rolling).
-- They see a **history of wage rises** from previous 6-month periods.
+**Rules (locked):**
+- **Per-engineer** (not team-wide).
+- Wage rises in **rolling 6-month stages**, triggered by a **count of delivered/new deals** in the stage — a neutral metric that exposes no profit.
+- The **£ rise is a manual field a manager sets/confirms** per stage (consistent with the "manual £ field on every bonus" rule). The engine doesn't auto-pay a rise; a manager enters and confirms it.
+- The engineer sees: current rate, deals delivered this stage, a progress bar to the next review point, the projected/confirmed rise, and a **history** of previous stages and the rise applied. Company profit/commission never appear.
+- Mockup: `engineer_wage_progression` (in the Phase-2 mockups file).
 
-Proposed screen: a "My wage progression" view showing the **current 6-month stage** (progress toward the next rise, expressed without exposing company profit — e.g. as a count/level or an aggregate the business is comfortable showing), the **confirmed/projected rise** at stage end, and a **history list** of previous 6-month stages and the rise applied.
-
-**OPEN QUESTION (must define before building):** the exact formula linking "new deals" to a wage rise. Options to decide: a fixed step per N new deals, per band of new recurring revenue, a fixed £/period, or manager-set per stage. Also: is it per-engineer or team-wide, and what metric is shown to the engineer (since raw profit is off-limits)?
+**OPEN QUESTION — RESOLVED:** deal-count-triggered, manager-set £ rise, per-engineer, neutral count shown (no profit). See rules above.
 
 ---
 
@@ -253,10 +256,11 @@ UX is designed before coding each phase.
 ---
 
 ## 11. Open questions / follow-ups
-- Engineer wage-rise **formula** (see §8) — needs definition.
+- Engineer wage-rise **formula** — **RESOLVED** (§8): deal-count, manager-set £, per-engineer.
 - Order "New order" start: **blank** confirmed. (Recurring still pulls from IDYQ when relevant.)
-- Approval chain: single manager approver vs multi-step — to confirm.
-- IDYQ **org allow-list** on the bridge before onboarding third-party customers (security).
+- Approval chain: **RESOLVED — single manager approver for v1.** Approvals stored in their own per-order table so a chain can be added later without rework.
+- Quote→order **cost/profit/type pull**: **BUILT on both apps** (see §14.1), ready to deploy; consumed at Phase 3.
+- IDYQ **org allow-list** on the bridge before onboarding third-party customers (security). Still open.
 - Optional: make the **Quotes** tab live read-through too (merging WorkTrackr-side link data) — offered, not yet requested.
 - Secret rotation for previously-committed live secrets in `RENDER_SETUP.md` was advised; user chose to defer. (Scrubbed file + hardened `.gitignore` were prepared but not deployed.)
 
@@ -274,19 +278,28 @@ UX is designed before coding each phase.
 - Commission rules must be **configurable** (multi-sector). ✅
 - Order form **always starts blank**; no pre-import of existing deals/customers. ✅
 - **Engineers see a separate wage-progression screen**, never per-company profit. ✅
-- UX mockups approved in principle: pipeline list, company profile, bonus screen. ✅
+- UX mockups approved: pipeline list, company profile, bonus screen, sales flow, order form, approval/purchasing queues, engineer wage progression. ✅
+- **Roles = Global Admin / Manager / Salesman / Engineer**, toggled per member in Users (replaces the earlier account-manager/purchasing/read-only set). ✅
+- **Single manager approver** for order approval (v1); chain deferrable. ✅
+- **Engineer wage**: per-engineer, deal-count-triggered, manager-set £ rise, neutral count shown, no profit. ✅
+- **Every bonus/wage figure has a manual £ field** a manager sets; engine only suggests. ✅
+- Orders can **pull IDYQ quotes**, bringing buy-in cost/profit/type per line, read-only (edited in IDYQ). Distinct from recurring Contracts. ✅
+- Quote→order pull **built on both apps** (bridge + WorkTrackr migration/sync/mapper), deploy-ready. ✅
+- Phase 1 started: contacts `crm.salesStage` (Suspect/Prospect/Hot Prospect/Customer) + company/stage filters. ✅
 
 ---
 
 ## 13. Mockups produced
 
-**Saved in the repo: `docs/mockups/ux-design-mockups.html`** — a self-contained, browser-openable file containing all four approved designs below (the flow diagram + the three screens), with a CSS shim so they render outside Claude. A fresh Claude chat can open/read this file and re-render any screen for exact fidelity; failing that, the prose in §3 / §5.2 / §5.3 / §7.4 is enough to rebuild them.
+**Saved in the repo:** `docs/mockups/ux-design-mockups.html` (the four original approved designs — flow diagram + pipeline list + company profile + bonus screen) and `docs/mockups/ux-design-mockups-phase2.html` (order form, approval/purchasing queues, engineer wage progression). Both are self-contained and browser-openable with a CSS shim; a fresh Claude chat can re-render any screen. (TODO housekeeping: fold the Phase-2 three into the canonical file.)
 
 - **`worktrackr_sales_pipeline_flow`** — the §3 flow diagram (two branches → shared finance pipeline).
 - **`crm_company_pipeline_list`** — §5.2.
 - **`crm_company_profile`** — §5.3.
 - **`user_commission_bonus_screen`** — §7.4.
-- **To produce next:** the Order Form (+ approval/purchasing queues) and the Engineer wage-progression screen.
+- **`order_form`** — §5.5 (incl. IDYQ quote pull, read-only cost/profit).
+- **`approval_purchasing_queues`** — §5.6 (single approver).
+- **`engineer_wage_progression`** — §8 (per-engineer, manual rise field).
 
 ---
 
@@ -295,3 +308,14 @@ UX is designed before coding each phase.
 - WorkTrackr backend: `web/routes/idyq.js`, `shared/idyq/{idyqClient,idyqSync,index}.js`, `worker/worker.js`, `web/server.js`, migrations `web/migrations/create_idyq_integration_tables.sql`, `idyq_add_org_ref.sql`, `idyq_catalogue_fields.sql`.
 - WorkTrackr frontend: `web/client/src/app/src/components/IdyqIntegration.jsx`, `CRMDashboard.jsx`, `Sidebar.jsx`.
 - Test (run from WorkTrackr web shell): `node -e 'require("./shared/idyq/idyqClient").idyqGet("/api/external/catalogue",{page:1},{orgRef:"sweetbyte-ltd-mo5yzrt7"}).then(r=>console.log(r.products?.length))'`
+
+### 14.1 Quote→order cost/profit/type pull (BUILT, deploy-ready; used at Phase 3)
+Verified gap: the bridge previously emitted quote lines sell-only (`product_id, sku, description, qty, unit_price, line_total`) — IDYQ's per-line **buy-in cost** (`quote_line_items.cost_price`) and **type** (`pricing_type`, e.g. `one_off`/`annual`) never crossed; profit is derived in IDYQ's UI (`total − cost×qty`), not stored.
+- **IDYQ** `server/_core/worktrackrBridge.ts` — `mapLine` now also emits `cost_price`, `profit` (computed `total − cost×qty`, to match the quote to the penny), `pricing_type`.
+- **WorkTrackr** `web/migrations/idyq_quote_line_cost_fields.sql` (NEW) — adds `cost_price`, `line_profit`, `line_type` to `idyq_quote_lines` (idempotent; sorts after `create_idyq_integration_tables.sql`).
+- **WorkTrackr** `shared/idyq/idyqSync.js` — quote-line insert stores the three new fields.
+- **WorkTrackr** `web/routes/idyq.js` — `mapLine` exposes `buyInCost`, `profit`, `type`.
+- Deploy order: IDYQ first, then WorkTrackr. Verify: re-run the quote-203 line fetch; the line should carry `cost_price`/`profit`/`pricing_type`. All additive/read-only; no behaviour change until the order form consumes it.
+
+### 14.2 Phase 1 progress
+- `web/routes/contacts.js` — `crm.salesStage` enum (suspect/prospect/hot_prospect/customer) added (separate from `crm.status`); account manager = `crm.assignedTo`; list endpoint takes `?type=` and `?stage=` filters. No migration (rides the `crm` JSONB).
