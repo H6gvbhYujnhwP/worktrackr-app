@@ -19,6 +19,8 @@ const VIEW_TO_PAGE = {
   'order-queues':   'order-queues',
   'my-commission':  'my-commission',
   'commission-rules': 'commission-rules',
+  'my-wage':        'my-wage',
+  'engineer-wages': 'engineer-wages',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',

@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -23,6 +23,7 @@ const DELIVERY_ITEMS = [
   { id: 'jobs',            label: 'Projects',     icon: Briefcase,  view: 'jobs'           },
   { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,   view: 'calendar'       },
   { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'   },
+  { id: 'my-wage',         label: 'My wage',      icon: TrendingUp, view: 'my-wage'        },
 ];
 
 const FINANCE_ITEMS = [
@@ -144,6 +145,12 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
             badge={item.id === 'all-tickets' ? openBadge : 0}
           />
         ))}
+        {isManager && (
+          <NavItem
+            item={{ id: 'engineer-wages', label: 'Engineer wages', icon: Gauge, view: 'engineer-wages' }}
+            isActive={currentPage === 'engineer-wages'} isCollapsed={isCollapsed} onClick={handleNav}
+          />
+        )}
 
         <SectionLabel label="Finance" isCollapsed={isCollapsed} />
         {FINANCE_ITEMS.map(item => (

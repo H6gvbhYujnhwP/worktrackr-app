@@ -42,6 +42,8 @@ import OrdersList from './OrdersList.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
 import CommissionRules from './CommissionRules.jsx';
+import EngineerWage from './EngineerWage.jsx';
+import EngineerWageAdmin from './EngineerWageAdmin.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -382,6 +384,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'commission-rules' && <CommissionRules />}
+      {currentView === 'my-wage'        && <EngineerWage />}
+      {currentView === 'engineer-wages' && <EngineerWageAdmin />}
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}

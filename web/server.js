@@ -211,6 +211,8 @@ const ordersRoutes = require('./routes/orders');
 app.use('/api/orders', authenticateToken, ordersRoutes);
 const commissionRoutes = require('./routes/commission');
 app.use('/api/commission', authenticateToken, commissionRoutes);
+const engineerWageRoutes = require('./routes/engineerWage');
+app.use('/api/engineer-wage', authenticateToken, engineerWageRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');
