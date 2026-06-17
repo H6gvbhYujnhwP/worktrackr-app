@@ -16,6 +16,7 @@ const VIEW_TO_PAGE = {
   'my-tasks':       'my-tasks',
   companies:        'companies',
   orders:           'orders',
+  'order-queues':   'order-queues',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',
@@ -55,7 +56,7 @@ const MobileHeader = ({ user, onMenuToggle }) => (
 );
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
-const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentView = 'tickets' }) => {
+const AppLayout = ({ children, user, isAdmin, isManager, onNavigate, lastUpdate, currentView = 'tickets' }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
@@ -106,6 +107,7 @@ const AppLayout = ({ children, user, isAdmin, onNavigate, lastUpdate, currentVie
           onNavigate={handleNavigation}
           user={user}
           isAdmin={isAdmin}
+          isManager={isManager}
           isCollapsed={isTablet}
         />
       </aside>

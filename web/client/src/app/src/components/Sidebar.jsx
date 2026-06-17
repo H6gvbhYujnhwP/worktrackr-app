@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -88,7 +88,7 @@ const SectionLabel = ({ label, isCollapsed }) => {
 };
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isCollapsed = false }) => {
+const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapsed = false }) => {
 
   const handleNav = (view) => {
     if (onNavigate) onNavigate(view);
@@ -125,6 +125,12 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isCollapsed = false }
         {SALES_ITEMS.map(item => (
           <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
+        {isManager && (
+          <NavItem
+            item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
+            isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
+          />
+        )}
 
         <SectionLabel label="Delivery" isCollapsed={isCollapsed} />
         {DELIVERY_ITEMS.map(item => (

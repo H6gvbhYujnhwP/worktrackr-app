@@ -39,6 +39,7 @@ import CompanyPipelineList from './CompanyPipelineList.jsx';
 import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
+import OrderQueues from './OrderQueues.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -376,6 +377,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
           : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
+      {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
