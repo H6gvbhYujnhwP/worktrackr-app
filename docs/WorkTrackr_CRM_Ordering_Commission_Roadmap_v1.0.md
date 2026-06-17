@@ -14,7 +14,8 @@ WorkTrackr is becoming a **company-centred CRM + ordering + commission system**,
 
 - **Company-centred.** The company/customer record is the centre of the CRM. Contacts, tasks, notes, history, orders, deals and services all link back to the company. (In the current DB a "company" is a `contacts` row of type `company` — the old `customers` table was dropped in the customers→contacts merge.)
 - **Pipeline-driven.** Companies move through sales stages: **Suspect → Prospect → Hot Prospect → Customer**. A salesperson can filter to their Hot Prospects and see who to revisit to get a deal over the line. Winning a deal converts it into a proper sale (an Order).
-- **Configurable / multi-sector.** Commission rules, the order form's purchasing fields, and per-role screens must be configurable and switch-off-able. Use neutral terms ("Orders", "Contracts") rather than IT-specific language. The Sweetbyte commission scheme is *one configured ruleset*, not hard-coded behaviour.
+- **🚫 NO HARDCODED MONEY RULES — NON-NEGOTIABLE.** This is a **production, multi-tenant app for many organisations**. **No** commission rate, bonus rate, profit-share, deduction/internal-cost, threshold, period boundary, or any other money figure is ever written into code. Every such value is **per-organisation configuration**, entered by that org in an admin area and stored in the database. The app ships **neutral** (everything zero/disabled); an org that hasn't configured a scheme gets zeros, never someone else's numbers. Any specific schedule (e.g. Sweetbyte's 15% / £350 / £7,500 / 25%) is **only an example an org may type in**, and must **never** appear as a default, constant, or fallback in code. Reviewers: a literal rate/amount in a `.js`/`.sql` file is a bug.
+- **Configurable / multi-sector.** Commission rules, the order form's purchasing fields, and per-role screens must be configurable and switch-off-able. Use neutral terms ("Orders", "Contracts") rather than IT-specific language. The Sweetbyte commission scheme is *one configured ruleset typed in by that org*, not hard-coded behaviour.
 - **Two delivery branches.** (A) **One-off jobs** = an Order Form created in WorkTrackr (purchasing/margin sheet). (B) **Recurring IT support/services** = Contracts that originate from IDYQ quotes.
 - **Role-appropriate visibility.** Sales staff see commission/bonus. Engineers must **never** see per-company deal profit — they see a wage-progression screen instead (see §8).
 
@@ -187,28 +188,31 @@ Four roles, selected per member in the Users screen. Mapped onto the existing `m
 ## 7. Commission & bonus engine
 
 ### 7.1 Principle
-A **configurable** rules engine (multi-sector). The Sweetbyte/TheGreenAgents schedule below is one configured ruleset. The whole module is switch-off-able.
+A **fully configurable** rules engine (multi-sector, multi-tenant). **NOTHING is hardcoded** (see §1 — non-negotiable). The app ships **neutral**: every rate, deduction, threshold, bonus % and the period boundary default to **zero / disabled**, so an org with no scheme configured gets **zeros**, never another org's numbers. Each organisation enters its **own** ruleset in the admin **Commission rules** area; the engine applies only what that org stored in `commission_settings.config`. The whole module is switch-off-able (`enabled` flag). The Sweetbyte schedule in §7.2 is **an example an org may type in** — it must never appear as a code default, constant or fallback.
 
-### 7.2 Sweetbyte / TheGreenAgents ruleset (canonical schedule, ex-VAT throughout)
-- **One-off sales:** 15% commission on **profit**, where profit = invoiced value − direct third-party delivery costs − a **fixed £350 customer-acquisition cost** per sale.
-- **Recurring contracts:** 5% of recurring monthly profit (recurring revenue − direct third-party recurring costs) while employed and while the customer remains active.
-- **SafeSurv referral:** 25% of any commission revenue Sweetbyte receives from a SafeSurv opportunity the employee introduced/generated/closed — **only** once the underlying customer invoice is paid in full **and** the corresponding commission has been received by Sweetbyte.
-- **Finance agreements (Sweetbyte):** 1% of financed value.
-- **Monthly performance bonus:** triggered when **personally-generated turnover exceeds £7,500** within the **25th–25th** commission period → bonus = **25% of total profit** generated in that period.
-- All commission/bonuses payable **only after customer invoices are fully settled**, paid via the next payroll run.
-- Commission **ceases on termination**.
-- Refunded/cancelled/unpaid sales may be **offset against future commission**.
-- Company may amend schemes on reasonable notice; company determines calculations acting reasonably and in good faith, final unless a clear error is identified.
-- Commission only where the employee was the **effective cause** of the sale/introduction.
+**Phase-4 scope decisions (locked this build):**
+- **Recurring (5%) deferred to Phase 5** — recurring commission belongs to Contracts, which don't exist yet. The `recurringRate` config field exists but is unused until Phase 5.
+- **Finance & referral handled now** via a per-order **commission category** (`standard` / `finance` / `referral`) chosen on the order form; the engine applies the org's configured `financeRate` / `referralRate`. `standard` uses `oneOffRate` on `(profit − deductionPerSale)`.
+- **Internal cost-before-profit (`deductionPerSale`)** is a **per-org configurable £**, not a fixed £350. Applied per standard order, floored at zero.
+- **Roles skipped this phase** — no `memberships.role` widening, no role selector. The two screens are reachable from the **Finance** menu (My commission) and admin area (Commission rules); role-based home routing is deferred (§14.5 migration still pending for that).
 
-### 7.3 Engine rules to bake in (regardless of ruleset)
+### 7.2 Example ruleset an org could enter (Sweetbyte / TheGreenAgents — illustrative ONLY, ex-VAT)
+> ⚠️ These numbers are **not** in code. They are shown here purely as a worked example of how an org might fill in the Commission rules area.
+- **One-off sales:** 15% commission on **profit**, where profit = invoiced value − direct third-party delivery costs − the org's configured internal cost per sale (Sweetbyte: £350).
+- **Recurring contracts:** 5% of recurring monthly profit while employed and the customer remains active. *(Phase 5.)*
+- **SafeSurv referral:** 25% of commission revenue Sweetbyte receives from a referred opportunity — paid-gated.
+- **Finance agreements:** 1% of financed value.
+- **Monthly performance bonus:** when personally-generated turnover exceeds £7,500 within the period → 25% of total profit generated that period.
+- Payable only after invoices fully settled; ceases on termination; refunds/cancellations offset future commission; employer determines calculations in good faith; commission only where the employee was the effective cause.
+
+### 7.3 Engine rules (apply to whatever ruleset an org configures)
 - **All figures ex-VAT.**
 - **Paid-gated:** nothing becomes payable until the order's invoice is flagged **Paid**.
-- **Manager-approved:** the engine **calculates a suggestion**; a manager approves each period before payroll. (Required by the "company determines… final unless clear error" clause — not fully automatic payout.)
-- **Period = 25th–25th.**
-- **Offsets** for refunds/cancellations carry into future periods.
-- **Termination** stops accrual.
-- **Admin "Commission rules" area:** set % of profit, fixed amounts, recurring %, referral %, finance %, thresholds/bonus %, the acquisition-cost deduction, and per-order/per-contract overrides (fixed amount or custom %).
+- **Manager-approved:** the engine **calculates a suggestion**; a manager approves each period before payroll (per-period lock).
+- **Period boundary is configurable** (`periodStartDay`, 1–28). Sweetbyte's 25th–25th is just `periodStartDay = 25` typed into config — not a constant.
+- **Manual £ override per order** (`commission_overrides`) always wins over the computed suggestion.
+- **Offsets / termination:** offsets for refunds/cancellations and termination handling are future enhancements; not in the v1 engine.
+- **Admin "Commission rules" area:** the org sets `oneOffRate`, `deductionPerSale`, `financeRate`, `referralRate`, `recurringRate`, `thresholdTurnover`, `bonusRate`, `periodStartDay`, and the `enabled` switch. All blank/zero by default.
 
 ### 7.4 Bonus screen (sales)  (mockup: `user_commission_bonus_screen`)
 Per-user. Always shows the live 25th–25th period:
@@ -289,6 +293,9 @@ UX is designed before coding each phase.
 - Phase 1 complete: IA regroup (Sales/Delivery/Finance/Contacts/Settings), company pipeline list + company profile hub. ✅
 - Phase 2 complete: `tasks` table + API, My-Tasks dashboard, editable company contacts, per-company tasks, history timeline (CRM events + completed tasks). ✅
 - Phase 3 complete: Orders module — `orders`/`order_lines`/`order_approvals` tables + API, order form (manual lines + IDYQ pull, cost+profit economics), orders list, "New order" from company profile, manager Approval/Purchasing/Fulfilment queues, full Draft→Submitted→Approved→Ordered→Invoiced→Paid lifecycle (paid-gating ready for commission). ✅
+- **NO HARDCODED MONEY RULES (non-negotiable, §1):** no commission/bonus/share/deduction/threshold/period figure is ever in code. All per-org config in `commission_settings`; app ships neutral (zeros/disabled). Any specific schedule is example-only. ✅
+- Phase 4 scope: recurring (5%) **deferred to Phase 5** (needs Contracts); finance/referral via per-order **commission_category** + configured rates; internal cost-before-profit is a **per-org configurable £** (not £350); **roles skipped** this phase (screens reachable from Finance menu; no role-constraint widening). ✅
+- Phase 4 engine: configurable `periodStartDay` (default 1; Sweetbyte = 25 is config not code), manual £ override per order wins over suggestion, manager per-period lock, computed live from paid orders. ✅
 
 ---
 
@@ -340,3 +347,10 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 
 ### 14.5 memberships.role CHECK — STILL OUTSTANDING (blocks Phase 4 roles UI)
 `database/schema.sql` still has `CHECK (role IN ('admin','manager','staff'))`. The new **Salesman** and **Engineer** roles need an `ALTER ... DROP CONSTRAINT / ADD CONSTRAINT` migration widening this to include `'salesman'` and `'engineer'` **before** the roles toggle UI is built. Manager-gating in Phase 3 keys off `admin`/`manager`/`partner_admin`, so it works today; Salesman/Engineer home screens (Phase 4) need the constraint widened first.
+
+### 14.6 Phase 4 file map — commission engine (Batch A BUILT; B/C pending)
+**Principle enforced: zero hardcoded money values (see §1, §7.1).** App ships neutral; each org configures its own scheme.
+- `web/migrations/phase4_commission_tables.sql` (NEW) — `commission_settings` (per-org `config` JSONB, neutral defaults), `commission_overrides` (manual £ per order, the per-order override field), `commission_period_locks` (manager per-period approval); `ALTER orders ADD commission_category`. Filename `phase4_` sorts after `create_orders_tables.sql`.
+- `web/routes/commission.js` (NEW) — inline engine + API. `DEFAULTS` are all 0/false (no scheme baked in). Config shape: `enabled, oneOffRate, deductionPerSale, financeRate, referralRate, recurringRate, thresholdTurnover, bonusRate, periodStartDay`. Endpoints: `GET/PUT /settings` (PUT manager-only), `GET /me?offset=` (bonus screen: confirmed/pending/bonus/threshold/breakdown/history, paid-gated), `GET /period?offset=` + `POST /period/approve` (manager), `PUT /override/:orderId` (manager). Period math = `periodStartDay`-based 1-month windows, year-cross safe; verified (25th→25th, Dec→Jan).
+- `web/server.js` — mounts `/api/commission`.
+- **Pending Batch B:** `CommissionRules.jsx` (admin: org enters its own numbers; blank by default), `BonusScreen.jsx` (per-user "My commission", reads `/me`), commission-category selector on the order form, Finance-menu nav. **Pending Batch C:** engineer wage-progression (also fully configurable: stage length + deal-count target per org, manual £ rise per stage, neutral delivered-deal count, never profit).
