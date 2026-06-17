@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WorkTrackr — approved UX designs (v1.0)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<style>
+:root{
+ --color-background-primary:#ffffff;--color-background-secondary:#f4f3ee;--color-background-tertiary:#ebe9e2;--color-background-info:#e6f1fb;
+ --color-text-primary:#1a1a18;--color-text-secondary:#6b6a64;--color-text-tertiary:#9c9a92;
+ --color-text-info:#185fa5;--color-text-success:#0f6e56;--color-text-danger:#a32d2d;--color-text-warning:#854f0b;
+ --color-border-tertiary:rgba(0,0,0,.12);--color-border-secondary:rgba(0,0,0,.22);--color-border-info:#378add;
+ --border-radius-md:8px;--border-radius-lg:12px;
+ --p:var(--color-text-primary);--s:var(--color-text-secondary);--t:var(--color-text-tertiary);--bg2:var(--color-background-secondary);--b:var(--color-border-tertiary);
+}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--color-text-primary);background:#faf9f5;margin:0;padding:24px 16px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto}
+.note{background:#fff;border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:14px 18px;font-size:14px;color:var(--color-text-secondary);margin-bottom:28px}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+h2{font-size:18px;font-weight:500;margin:34px 0 4px}
+.cap{font-size:13px;color:var(--color-text-secondary);margin:0 0 12px}
+.sheet{background:#fff;border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:18px}
+button{font:inherit;background:transparent;border:.5px solid var(--color-border-secondary);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--color-text-primary)}
+svg .t{font-size:14px;fill:var(--color-text-primary)}
+svg .ts{font-size:12px;fill:var(--color-text-secondary)}
+svg .th{font-size:14px;font-weight:500;fill:var(--color-text-primary)}
+svg .arr{stroke:var(--color-text-tertiary);stroke-width:1.5;fill:none}
+svg .c-gray rect{fill:#F1EFE8;stroke:#5F5E5A}svg .c-gray .th{fill:#2C2C2A}svg .c-gray .ts{fill:#444441}
+svg .c-coral rect{fill:#FAECE7;stroke:#993C1D}svg .c-coral .th{fill:#712B13}svg .c-coral .ts{fill:#993C1D}
+svg .c-teal rect{fill:#E1F5EE;stroke:#0F6E56}svg .c-teal .th{fill:#085041}svg .c-teal .ts{fill:#0F6E56}
+svg .c-amber rect{fill:#FAEEDA;stroke:#854F0B}svg .c-amber .th{fill:#633806}svg .c-amber .ts{fill:#854F0B}
+svg .c-blue rect{fill:#E6F1FB;stroke:#185FA5}svg .c-blue .th{fill:#0C447C}svg .c-blue .ts{fill:#185FA5}
+svg .c-green rect{fill:#EAF3DE;stroke:#3B6D11}svg .c-green .th{fill:#27500A}svg .c-green .ts{fill:#3B6D11}
+</style>
+<script>function sendPrompt(){}function openLink(){}</script>
+</head>
+<body>
+<div class="wrap">
+<h1>WorkTrackr — approved UX designs (v1.0)</h1>
+<div class="note">The four screens approved in principle for the CRM / ordering / commission redesign. These are layout/flow references — final styling matches the live WorkTrackr app (white cards, gold accent <code>#d4a017</code>). See <code>WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md</code> §3, §5.2, §5.3, §7.4. A fresh Claude chat can re-render any of these by opening this file.</div>
+
+<h2>1. Sales pipeline flow</h2>
+<p class="cap">Prospect → meeting → opportunity, then two branches (coral = one-off order in WorkTrackr; teal = recurring contract from IdoYourQuotes) that rejoin one finance pipeline.</p>
+<div class="sheet">
+<svg width="100%" viewBox="0 0 680 760" role="img"><title>Proposed WorkTrackr sales flow</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g class="c-gray"><rect x="215" y="24" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="45" text-anchor="middle" dominant-baseline="central">Prospect</text><text class="ts" x="340" y="63" text-anchor="middle" dominant-baseline="central">Telesales — James</text></g>
+<line x1="340" y1="76" x2="340" y2="100" class="arr" marker-end="url(#arrow)"/>
+<g class="c-gray"><rect x="215" y="100" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="121" text-anchor="middle" dominant-baseline="central">Meeting</text><text class="ts" x="340" y="139" text-anchor="middle" dominant-baseline="central">Notes, recording → IDYQ</text></g>
+<line x1="340" y1="152" x2="340" y2="176" class="arr" marker-end="url(#arrow)"/>
+<g class="c-gray"><rect x="215" y="176" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="197" text-anchor="middle" dominant-baseline="central">Opportunity</text><text class="ts" x="340" y="215" text-anchor="middle" dominant-baseline="central">Company + sales rep</text></g>
+<path d="M340 228 L340 250 L195 250 L195 270" class="arr" fill="none" marker-end="url(#arrow)"/>
+<path d="M340 228 L340 250 L485 250 L485 270" class="arr" fill="none" marker-end="url(#arrow)"/>
+<g class="c-coral"><rect x="70" y="270" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="195" y="291" text-anchor="middle" dominant-baseline="central">One-off job</text><text class="ts" x="195" y="309" text-anchor="middle" dominant-baseline="central">Order form: cost + profit</text></g>
+<g class="c-teal"><rect x="360" y="270" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="485" y="291" text-anchor="middle" dominant-baseline="central">Recurring contract</text><text class="ts" x="485" y="309" text-anchor="middle" dominant-baseline="central">From IdoYourQuotes</text></g>
+<path d="M195 322 L195 350 L340 350 L340 372" class="arr" fill="none" marker-end="url(#arrow)"/>
+<path d="M485 322 L485 350 L340 350 L340 372" class="arr" fill="none" marker-end="url(#arrow)"/>
+<g class="c-amber"><rect x="215" y="372" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="393" text-anchor="middle" dominant-baseline="central">Manager approval</text><text class="ts" x="340" y="411" text-anchor="middle" dominant-baseline="central">Approve / order</text></g>
+<line x1="340" y1="424" x2="340" y2="448" class="arr" marker-end="url(#arrow)"/>
+<g class="c-gray"><rect x="215" y="448" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="469" text-anchor="middle" dominant-baseline="central">Purchase / provision</text><text class="ts" x="340" y="487" text-anchor="middle" dominant-baseline="central">Buy or set up</text></g>
+<line x1="340" y1="500" x2="340" y2="524" class="arr" marker-end="url(#arrow)"/>
+<g class="c-blue"><rect x="215" y="524" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="545" text-anchor="middle" dominant-baseline="central">Invoice raised</text><text class="ts" x="340" y="563" text-anchor="middle" dominant-baseline="central">Xero / QuickBooks</text></g>
+<line x1="340" y1="576" x2="340" y2="600" class="arr" marker-end="url(#arrow)"/>
+<g class="c-blue"><rect x="215" y="600" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="621" text-anchor="middle" dominant-baseline="central">Paid</text><text class="ts" x="340" y="639" text-anchor="middle" dominant-baseline="central">Marked in WorkTrackr</text></g>
+<line x1="340" y1="652" x2="340" y2="676" class="arr" marker-end="url(#arrow)"/>
+<g class="c-green"><rect x="215" y="676" width="250" height="52" rx="8" stroke-width="0.5"/><text class="th" x="340" y="697" text-anchor="middle" dominant-baseline="central">Commission</text><text class="ts" x="340" y="715" text-anchor="middle" dominant-baseline="central">Calculated when paid</text></g>
+</svg>
+</div>
+
+<h2>2. Company pipeline list</h2>
+<p class="cap">The salesperson's home: filter by stage, see Hot Prospects to revisit with next action + monthly value.</p>
+<div class="sheet">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+  <div><div style="font-size:18px;font-weight:500">Companies</div><div style="font-size:13px;color:var(--color-text-secondary)">Your pipeline · 4 owned by James Edgar</div></div>
+  <div style="display:flex;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px;border:0.5px solid var(--color-border-secondary);border-radius:8px;padding:0 10px;height:36px;color:var(--color-text-secondary);font-size:13px"><i class="ti ti-search"></i> Search name, contact, postcode</div>
+    <button style="height:36px"><i class="ti ti-plus" style="font-size:16px;vertical-align:-2px"></i> Add company</button>
+  </div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+  <div style="background:#F1EFE8;color:#2C2C2A;border-radius:8px;padding:6px 12px;font-size:13px">Suspect <span style="opacity:.6">5</span></div>
+  <div style="background:#E6F1FB;color:#0C447C;border-radius:8px;padding:6px 12px;font-size:13px">Prospect <span style="opacity:.6">3</span></div>
+  <div style="background:#FAEEDA;color:#854F0B;border-radius:8px;padding:6px 12px;font-size:13px;outline:2px solid #EF9F27">Hot prospect <span style="opacity:.6">4</span></div>
+  <div style="background:#E1F5EE;color:#085041;border-radius:8px;padding:6px 12px;font-size:13px">Customer <span style="opacity:.6">12</span></div>
+</div>
+<div style="border:0.5px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden">
+  <div style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) minmax(0,1fr) 28px;gap:8px;padding:10px 16px;background:var(--color-background-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary)"><div>Company</div><div>Next action</div><div style="text-align:right">Monthly value</div><div></div></div>
+  <div id="rows"></div>
+</div>
+</div>
+
+<h2>3. Company profile</h2>
+<p class="cap">The hub — status, account manager, services &amp; monthly profit (from IDYQ), contacts, history. "New order" turns a won deal into a sale.</p>
+<div class="sheet">
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px;font-weight:500">Harbour Dental Care</span><span style="background:#FAEEDA;color:#854F0B;border-radius:6px;padding:3px 10px;font-size:12px">Hot prospect <i class="ti ti-chevron-down"></i></span></div>
+      <div style="font-size:13px;color:var(--color-text-secondary);margin-top:4px">Account manager: James Edgar · Source: referral · Plymouth PL1</div>
+    </div>
+    <div style="display:flex;gap:8px"><button><i class="ti ti-check" style="font-size:16px;vertical-align:-2px"></i> Mark won</button><button style="border-color:var(--color-border-info);color:var(--color-text-info)"><i class="ti ti-plus" style="font-size:16px;vertical-align:-2px"></i> New order</button></div>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Monthly profit</div><div style="font-size:24px;font-weight:500">£312</div></div>
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Active services</div><div style="font-size:24px;font-weight:500">4</div></div>
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Open tasks</div><div style="font-size:24px;font-weight:500">2</div></div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:16px;font-weight:500">Services &amp; monthly profit</span><span style="background:#EEEDFE;color:#3C3489;border-radius:6px;padding:2px 8px;font-size:11px"><i class="ti ti-lock"></i> from IdoYourQuotes</span></div>
+  <table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px">
+    <thead><tr style="color:var(--color-text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left"><th style="padding:6px 0;width:46%">Service</th><th style="text-align:right">Charge</th><th style="text-align:right">Cost</th><th style="text-align:right">Profit /mo</th></tr></thead>
+    <tbody>
+      <tr style="border-top:0.5px solid var(--color-border-tertiary)"><td style="padding:8px 0">Silver IT Support (5 users)</td><td style="text-align:right">£90</td><td style="text-align:right">£0</td><td style="text-align:right;color:var(--color-text-success)">£90</td></tr>
+      <tr style="border-top:0.5px solid var(--color-border-tertiary)"><td style="padding:8px 0">M365 Business Standard ×5</td><td style="text-align:right">£57.60</td><td style="text-align:right">£48.95</td><td style="text-align:right;color:var(--color-text-success)">£8.65</td></tr>
+      <tr style="border-top:0.5px solid var(--color-border-tertiary)"><td style="padding:8px 0">Managed WordPress hosting</td><td style="text-align:right">£35</td><td style="text-align:right">£8</td><td style="text-align:right;color:var(--color-text-success)">£27</td></tr>
+      <tr style="border-top:0.5px solid var(--color-border-tertiary)"><td style="padding:8px 0">Email protection ×5</td><td style="text-align:right">£10</td><td style="text-align:right">£5.75</td><td style="text-align:right;color:var(--color-text-success)">£4.25</td></tr>
+    </tbody>
+    <tfoot><tr style="border-top:0.5px solid var(--color-border-secondary)"><td style="padding:8px 0;font-weight:500">Total recurring</td><td></td><td></td><td style="text-align:right;font-weight:500">£312/mo</td></tr></tfoot>
+  </table>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem">
+    <div style="font-size:16px;font-weight:500;margin-bottom:10px">Contacts</div>
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-top:0.5px solid var(--color-border-tertiary)"><div style="width:34px;height:34px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500">SD</div><div><div style="font-size:13px;font-weight:500">Sarah Doyle <span style="background:#E1F5EE;color:#085041;border-radius:4px;padding:1px 6px;font-size:10px">decision maker</span></div><div style="font-size:12px;color:var(--color-text-secondary)">Practice Manager</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-top:0.5px solid var(--color-border-tertiary)"><div style="width:34px;height:34px;border-radius:50%;background:var(--color-background-secondary);color:var(--color-text-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500">RH</div><div><div style="font-size:13px;font-weight:500">Rob Hale</div><div style="font-size:12px;color:var(--color-text-secondary)">Owner / Dentist</div></div></div>
+  </div>
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem">
+    <div style="font-size:16px;font-weight:500;margin-bottom:10px">Recent history</div>
+    <div style="font-size:13px;padding:6px 0;border-top:0.5px solid var(--color-border-tertiary)"><i class="ti ti-phone" style="color:var(--color-text-secondary);font-size:15px;vertical-align:-2px;margin-right:6px"></i>Call — verbal yes, needs owner sign-off <span style="color:var(--color-text-tertiary)">· 2d ago</span></div>
+    <div style="font-size:13px;padding:6px 0;border-top:0.5px solid var(--color-border-tertiary)"><i class="ti ti-mail" style="color:var(--color-text-secondary);font-size:15px;vertical-align:-2px;margin-right:6px"></i>Emailed support proposal <span style="color:var(--color-text-tertiary)">· 4d ago</span></div>
+    <div style="font-size:13px;padding:6px 0;border-top:0.5px solid var(--color-border-tertiary)"><i class="ti ti-users" style="color:var(--color-text-secondary);font-size:15px;vertical-align:-2px;margin-right:6px"></i>Meeting — on-site discovery <span style="color:var(--color-text-tertiary)">· 9d ago</span></div>
+  </div>
+</div>
+</div>
+
+<h2>4. Sales commission &amp; bonus screen (per user)</h2>
+<p class="cap">Live 25th–25th period. Confirmed (invoices paid) vs pending, £7,500 turnover threshold for the 25% bonus, full breakdown, running totals. Engineers get a different screen and never see this.</p>
+<div class="sheet">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+  <div><div style="font-size:18px;font-weight:500">My commission &amp; bonus</div><div style="font-size:13px;color:var(--color-text-secondary)">James Edgar · all figures ex-VAT</div></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:13px"><button style="height:32px;padding:0 8px"><i class="ti ti-chevron-left"></i></button><span style="border:0.5px solid var(--color-border-secondary);border-radius:8px;padding:6px 12px">25 May – 25 Jun</span><button style="height:32px;padding:0 8px"><i class="ti ti-chevron-right"></i></button></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:12px">
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Confirmed (payable)</div><div style="font-size:24px;font-weight:500;color:var(--color-text-success)">£131.60</div><div style="font-size:12px;color:var(--color-text-tertiary)">invoices paid</div></div>
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Pending payment</div><div style="font-size:24px;font-weight:500">£297.00</div><div style="font-size:12px;color:var(--color-text-tertiary)">awaiting settlement</div></div>
+  <div style="background:var(--color-background-secondary);border-radius:8px;padding:1rem"><div style="font-size:13px;color:var(--color-text-secondary)">Performance bonus</div><div style="font-size:24px;font-weight:500;color:var(--color-text-tertiary)">Locked</div><div style="font-size:12px;color:var(--color-text-tertiary)">turnover under £7,500</div></div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px">
+  <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:var(--color-text-secondary)">Turnover this period (toward 25% bonus)</span><span><span style="font-weight:500">£6,120</span> <span style="color:var(--color-text-tertiary)">/ £7,500</span></span></div>
+  <div style="height:8px;background:var(--color-background-secondary);border-radius:99px;overflow:hidden"><div style="width:81.6%;height:100%;background:#EF9F27;border-radius:99px"></div></div>
+  <div style="font-size:12px;color:var(--color-text-secondary);margin-top:8px">£1,380 more in personally-generated turnover unlocks a bonus of 25% of this period's profit.</div>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px">
+  <div style="font-size:16px;font-weight:500;margin-bottom:10px">This period's breakdown</div>
+  <table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px">
+    <thead><tr style="color:var(--color-text-secondary);font-size:11px;text-transform:uppercase;letter-spacing:.5px;text-align:left"><th style="padding:6px 0;width:42%">Source</th><th>Basis</th><th style="text-align:right">Amount</th><th style="text-align:right;width:84px">Status</th></tr></thead>
+    <tbody id="brk"></tbody>
+  </table>
+</div>
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.25rem">
+  <div style="font-size:16px;font-weight:500;margin-bottom:10px">Running monthly totals (paid)</div>
+  <div id="hist"></div>
+</div>
+<div style="font-size:12px;color:var(--color-text-tertiary);margin-top:10px;line-height:1.6">Calculated automatically from paid orders and active contracts. A manager approves each period before it flows to payroll. Refunds or cancellations offset future periods.</div>
+</div>
+
+</div>
+<script>
+(function(){
+ var pill=function(t){var m={hot:['#FAEEDA','#854F0B','Hot prospect'],prospect:['#E6F1FB','#0C447C','Prospect'],customer:['#E1F5EE','#085041','Customer'],suspect:['#F1EFE8','#2C2C2A','Suspect']};var a=m[t];return '<span style="background:'+a[0]+';color:'+a[1]+';border-radius:6px;padding:2px 8px;font-size:11px;white-space:nowrap">'+a[2]+'</span>';};
+ var data=[
+  {name:'Harbour Dental Care',stage:'hot',action:'Revisit — verbal yes, awaiting sign-off',due:'overdue 2d',val:'£420/mo',over:true},
+  {name:'Tasker Joinery Ltd',stage:'hot',action:'Send revised quote (x3 laptops)',due:'due today',val:'£2,940 one-off',over:false},
+  {name:'Mowbray Accountants',stage:'hot',action:'Call back re: M365 migration',due:'due tomorrow',val:'£280/mo',over:false},
+  {name:'Pinegrove Vets',stage:'hot',action:'Demo follow-up',due:'in 3 days',val:'£610/mo',over:false},
+  {name:'Castle Cars',stage:'prospect',action:'Book discovery meeting',due:'in 5 days',val:'—',over:false}];
+ document.getElementById('rows').innerHTML=data.map(function(d,i){return '<div onclick="sendPrompt(\'\')" style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) minmax(0,1fr) 28px;gap:8px;align-items:center;padding:12px 16px;cursor:pointer;border-top:0.5px solid var(--color-border-tertiary);'+(i%2?'background:var(--color-background-secondary)':'')+'"><div style="min-width:0"><div style="font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name+'</div><div style="margin-top:4px">'+pill(d.stage)+'</div></div><div style="min-width:0"><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.action+'</div><div style="font-size:12px;margin-top:2px;color:'+(d.over?'var(--color-text-danger)':'var(--color-text-secondary)')+'">'+d.due+'</div></div><div style="text-align:right;font-size:13px">'+d.val+'</div><div style="text-align:right;color:var(--color-text-tertiary)"><i class="ti ti-chevron-right"></i></div></div>';}).join('');
+})();
+(function(){
+ var sp=function(s){var m={paid:['#E1F5EE','#085041','paid'],pending:['#FAEEDA','#854F0B','pending'],locked:['#F1EFE8','#5F5E5A','locked']};var a=m[s];return '<span style="background:'+a[0]+';color:'+a[1]+';border-radius:6px;padding:2px 8px;font-size:11px">'+a[2]+'</span>';};
+ var rows=[
+  ['One-off — Castle Cars printer','15% of £210 profit','£31.50','paid'],
+  ['One-off — Tasker Joinery laptops','15% of £980 profit','£147.00','pending'],
+  ['Recurring — Harbour Dental','5% of £312/mo','£15.60','paid'],
+  ['Recurring — Pinegrove Vets','5% of £610/mo','£30.50','paid'],
+  ['Recurring — Mowbray Accountants','5% of £280/mo','£14.00','paid'],
+  ['Finance — Castle Cars','1% of £4,000 financed','£40.00','paid'],
+  ['Referral — SafeSurv','25% of £600 commission','£150.00','pending']];
+ document.getElementById('brk').innerHTML=rows.map(function(r){return '<tr style="border-top:0.5px solid var(--color-border-tertiary)"><td style="padding:9px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r[0]+'</td><td style="color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r[1]+'</td><td style="text-align:right">'+r[2]+'</td><td style="text-align:right">'+sp(r[3])+'</td></tr>';}).join('');
+ var hist=[['25 Apr – 25 May','£388.00'],['25 Mar – 25 Apr','£512.40'],['25 Feb – 25 Mar','£274.10']];
+ document.getElementById('hist').innerHTML=hist.map(function(h){return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:0.5px solid var(--color-border-tertiary)"><span style="color:var(--color-text-secondary)">'+h[0]+'</span><span style="font-weight:500">'+h[1]+'</span></div>';}).join('');
+})();
+</script>
+</body>
+</html>

@@ -278,7 +278,10 @@ UX is designed before coding each phase.
 
 ---
 
-## 13. Mockups produced (rendered in chat — descriptions for the record)
+## 13. Mockups produced
+
+**Saved in the repo: `docs/mockups/ux-design-mockups.html`** — a self-contained, browser-openable file containing all four approved designs below (the flow diagram + the three screens), with a CSS shim so they render outside Claude. A fresh Claude chat can open/read this file and re-render any screen for exact fidelity; failing that, the prose in §3 / §5.2 / §5.3 / §7.4 is enough to rebuild them.
+
 - **`worktrackr_sales_pipeline_flow`** — the §3 flow diagram (two branches → shared finance pipeline).
 - **`crm_company_pipeline_list`** — §5.2.
 - **`crm_company_profile`** — §5.3.
