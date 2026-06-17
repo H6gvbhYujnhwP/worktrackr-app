@@ -17,6 +17,12 @@
 - ✅ **AI Phase 3** — Smart Summaries (ticket + quote, inline amber display)
 - ✅ **AI Phase 4** — CRM Next-Action Suggestions (amber box after Mark Done, 2 quick-action buttons, dismiss)
 
+### IdoYourQuotes integration & CRM redesign (2026-06-17)
+- ✅ IdoYourQuotes read-only bridge (HMAC, per-org, mirror tables) — live in production
+- ✅ Catalogue live read-through + profit fields + collapsible categories
+- ✅ Sidebar readability fix
+- 🔜 CRM / ordering / commission redesign — designed (UX mockups approved), see `WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md`
+
 ### Core fixes
 - ✅ Auth cookie fix, dangerous public-auth stub replaced, admin audit log fix
 - ✅ Ticket Calendar full rewrite (DB-backed)

@@ -95,3 +95,18 @@ Wire the CRM page so that when `GET /api/idyq/connection` reports `enabled: true
 the Product Catalog and Quotes tabs render from `/api/idyq/...` in read-only mode
 (no add/edit/delete), Quote Templates is hidden, and a "Connect/Disconnect" control
 plus "Sync now" lives in CRM Settings. (Needs a read of the CRM component first.)
+
+
+---
+
+## Update — 2026-06-17 (post-launch)
+
+Built & deployed since the original write-up:
+
+- **Catalogue is now a LIVE read-through.** `GET /api/idyq/catalogue` fetches straight from IDYQ on every load (all pages, `fetchCatalogueLive`), so adds/edits/deletes show immediately. Falls back to the `idyq_products` mirror if IDYQ is unreachable (`live:false, stale:true`). The 30-min worker sync still runs to keep the mirror warm.
+- **Profit fields carried across:** `unit`, `cost_price` (buy-in ex-VAT), `install_hours`, `pricing_type` — in the bridge `mapProduct`, the `idyq_products` table (`idyq_catalogue_fields.sql`), the sync upsert and the read API. These feed the per-company "services & monthly profit" view that drives commission.
+- **Collapsible category grouping** in `IdyqCatalogView` (Expand/Collapse all, search, Refresh, live indicator). Category already flows in the feed — no IDYQ change was needed.
+- **CRM UI built & deployed** — supersedes the "needs a read of the CRM component first" note above. `IdyqIntegration.jsx` spliced into `CRMDashboard.jsx`; sidebar readability fix in `Sidebar.jsx`.
+
+Full record + the CRM/ordering/commission roadmap that builds on this: `WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md`.
+

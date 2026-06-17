@@ -17,6 +17,8 @@
 | CRM Contacts | ✅ Working | Full CRUD, snake_case normaliser applied |
 | CRM Calendar | ✅ Working | DB-backed, day/week/month views, Jobs integration, AI Next-Action Suggestions |
 | Quotes | ✅ Working | Line items redesign, buy/sell/margin, AI generation from ticket, PDF |
+| IdoYourQuotes integration | ✅ Working | Read-only bridge (HMAC, per-org). Catalogue live read-through + profit fields + collapsible categories; quotes read-only |
+| CRM / ordering / commission redesign | 🔜 Designed | UX mockups done; not yet built — see WorkTrackr_CRM_Ordering_Commission_Roadmap_v1.0.md |
 | Jobs (Projects) | ✅ Working | All user-facing labels say "Project/Projects"; internal ids/routes/API remain `jobs` |
 | Notes (Personal + Company) | ✅ Working | Dictation button, NewTicketFromNote, AddNoteToTicket |
 | Voice Assistant | ✅ Working | Full hands-free overhaul complete. 5 phases shipped: (1) CRM calendar company/contact fix, (2) voice confirm loop, (3) clarification rounds, (4) smart auto-save, (5) compound intents |

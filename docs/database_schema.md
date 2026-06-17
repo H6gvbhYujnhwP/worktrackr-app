@@ -242,3 +242,91 @@ graph TD
         D
     end
 ```
+
+
+## IdoYourQuotes (IDYQ) Integration Tables
+
+Read-only mirror of an organisation's IdoYourQuotes data, pulled server-to-server (see `IDYQ_INTEGRATION_README.md`). Kept separate from WorkTrackr's native products/quotes so re-pulling is idempotent. Created by `web/migrations/create_idyq_integration_tables.sql` (+ `idyq_add_org_ref.sql`, `idyq_catalogue_fields.sql`). Note: the catalogue *display* is now a live read-through; these tables are the warm fallback.
+
+#### `idyq_connection`
+
+Per-organisation on/off switch + status (the "Connect IdoYourQuotes" toggle).
+
+| Column | Type | Constraints | Description |
+| --- | --- | --- | --- |
+| `organisation_id` | `UUID` | `PRIMARY KEY REFERENCES organisations(id)` | The WorkTrackr org. |
+| `enabled` | `BOOLEAN` | `NOT NULL DEFAULT FALSE` | Whether the integration is on. |
+| `idyq_org_ref` | `TEXT` | | Which IDYQ org to read (slug or id). |
+| `connected_at` | `TIMESTAMPTZ` | | When connected. |
+| `connected_by` | `UUID` | `REFERENCES users(id)` | Who connected it. |
+| `last_catalogue_sync_at` | `TIMESTAMPTZ` | | Last catalogue mirror sync. |
+| `last_quotes_sync_at` | `TIMESTAMPTZ` | | Last quotes sync. |
+| `created_at` / `updated_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Timestamps. |
+
+#### `idyq_products`
+
+Mirror of the IDYQ product catalogue (fallback for the live read-through).
+
+| Column | Type | Constraints | Description |
+| --- | --- | --- | --- |
+| `id` | `UUID` | `PRIMARY KEY` | Row id. |
+| `organisation_id` | `UUID` | `NOT NULL REFERENCES organisations(id)` | Owning org. |
+| `idyq_id` | `TEXT` | `NOT NULL` | IDYQ's product id (upsert key). |
+| `sku` | `TEXT` | | (IDYQ has no SKU; usually null.) |
+| `name`, `description`, `unit` | `TEXT` | | Item fields. |
+| `unit_price` | `NUMERIC` | | Sell ex-VAT. |
+| `cost_price` | `NUMERIC` | | Buy-in ex-VAT. |
+| `install_hours` | `NUMERIC` | | Install time. |
+| `pricing_type` | `TEXT` | | 'standard' \| 'monthly'. |
+| `currency`, `category` | `TEXT` | | Currency (GBP), category. |
+| `active` | `BOOLEAN` | | Active flag. |
+| `source_updated_at` | `TIMESTAMPTZ` | | IDYQ's updated_at. |
+| `raw` | `JSONB` | | Full original payload. |
+| `synced_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Last sync. |
+| | | `UNIQUE (organisation_id, idyq_id)` | Upsert key. |
+
+#### `idyq_quotes`
+
+Mirror of IDYQ quote headers; customer flattened from IDYQ's nested object.
+
+| Column | Type | Constraints | Description |
+| --- | --- | --- | --- |
+| `id` | `UUID` | `PRIMARY KEY` | Row id. |
+| `organisation_id` | `UUID` | `NOT NULL REFERENCES organisations(id)` | Owning org. |
+| `idyq_id` | `TEXT` | `NOT NULL` | IDYQ's quote id (upsert key). |
+| `quote_number`, `status`, `currency` | `TEXT` | | Header fields. |
+| `total` | `NUMERIC` | | Quote total. |
+| `customer_name` / `customer_email` / `customer_company` | `TEXT` | | Flattened customer. |
+| `source_created_at` / `source_updated_at` | `TIMESTAMPTZ` | | IDYQ timestamps. |
+| `raw` | `JSONB` | | Full payload. |
+| `synced_at` | `TIMESTAMPTZ` | `DEFAULT NOW()` | Last sync. |
+| `linked_contact_id` | `UUID` | `REFERENCES contacts(id) ON DELETE SET NULL` | WorkTrackr-only link to a contact/company. Never sent back to IDYQ. |
+| | | `UNIQUE (organisation_id, idyq_id)` | Upsert key. |
+
+#### `idyq_quote_lines`
+
+Quote line items. IDYQ lines have no stable id, so the whole set is replaced per quote on each pull (in a transaction).
+
+| Column | Type | Constraints | Description |
+| --- | --- | --- | --- |
+| `id` | `UUID` | `PRIMARY KEY` | Row id. |
+| `idyq_quote_id` | `UUID` | `NOT NULL REFERENCES idyq_quotes(id) ON DELETE CASCADE` | Parent quote. |
+| `organisation_id` | `UUID` | `NOT NULL REFERENCES organisations(id)` | Owning org. |
+| `idyq_product_id` | `TEXT` | | Product id from the line (nullable). |
+| `sku`, `description` | `TEXT` | | Line fields. |
+| `qty`, `unit_price`, `line_total` | `NUMERIC` | | Amounts. |
+| `sort_order` | `INTEGER` | `DEFAULT 0` | Display order. |
+
+#### `idyq_sync_state`
+
+Incremental cursor per resource so we can pull only what changed.
+
+| Column | Type | Constraints | Description |
+| --- | --- | --- | --- |
+| `organisation_id` | `UUID` | `NOT NULL REFERENCES organisations(id)` | Owning org. |
+| `resource` | `TEXT` | `NOT NULL` | 'catalogue' \| 'quotes'. |
+| `last_cursor` | `TIMESTAMPTZ` | | Max `source_updated_at` seen. |
+| `last_run_at` | `TIMESTAMPTZ` | | Last run. |
+| `last_status` / `last_error` | `TEXT` | | 'ok' \| 'error' + message. |
+| | | `PRIMARY KEY (organisation_id, resource)` | |
+
