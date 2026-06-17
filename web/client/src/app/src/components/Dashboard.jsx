@@ -37,6 +37,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 import CompanyPipelineList from './CompanyPipelineList.jsx';
 import CompanyProfile from './CompanyProfile.jsx';
+import MyTasks from './MyTasks.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -371,6 +372,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
           ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)} />
           : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
       )}
+      {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
       {currentView === 'quotes'         && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="quotes" /></ErrorBoundary>}

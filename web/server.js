@@ -205,6 +205,8 @@ app.use('/api/summaries', authenticateToken, summariesRoutes);
 // Notes (personal + shared)
 const notesRoutes = require('./routes/notes');
 app.use('/api/notes', authenticateToken, notesRoutes);
+const tasksRoutes = require('./routes/tasks');
+app.use('/api/tasks', authenticateToken, tasksRoutes);
 
 // Email intake routes
 const emailIntakeRoutes = require('./routes/email-intake');

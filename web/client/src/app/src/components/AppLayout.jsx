@@ -13,6 +13,7 @@ import VoiceAssistant from './VoiceAssistant';
 const VIEW_TO_PAGE = {
   tickets:          'all-tickets',
   calendar:         'ticket-calendar',
+  'my-tasks':       'my-tasks',
   companies:        'companies',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
