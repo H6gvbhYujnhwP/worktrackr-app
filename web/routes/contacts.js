@@ -157,6 +157,44 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET /api/contacts/:id/history - activity timeline for a company
+// Aggregates CRM events (calls, meetings, etc.) and completed tasks, newest first.
+router.get('/:id/history', async (req, res) => {
+  try {
+    const { organizationId } = await getOrgContext(req.user.userId);
+    const { id } = req.params;
+
+    const events = await query(
+      `SELECT e.id, e.type, e.title, e.start_at AS at, u.name AS actor
+         FROM crm_events e
+         LEFT JOIN users u ON u.id = COALESCE(e.created_by, e.assigned_user_id)
+        WHERE e.contact_id = $1 AND e.organisation_id = $2`,
+      [id, organizationId]
+    );
+
+    const doneTasks = await query(
+      `SELECT t.id, t.title, t.completed_at AS at, u.name AS actor
+         FROM tasks t
+         LEFT JOIN users u ON u.id = COALESCE(t.assigned_user_id, t.created_by)
+        WHERE t.contact_id = $1 AND t.organisation_id = $2 AND t.status = 'done'`,
+      [id, organizationId]
+    );
+
+    const items = [
+      ...events.rows.map((r) => ({ id: `e_${r.id}`, kind: r.type || 'other', title: r.title, actor: r.actor || null, at: r.at })),
+      ...doneTasks.rows.map((r) => ({ id: `t_${r.id}`, kind: 'task', title: r.title, actor: r.actor || null, at: r.at })),
+    ]
+      .filter((x) => x.at)
+      .sort((a, b) => new Date(b.at) - new Date(a.at))
+      .slice(0, 50);
+
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching contact history:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
 // POST /api/contacts - Create a new contact
 router.post('/', async (req, res) => {
   try {
