@@ -13,11 +13,13 @@ import VoiceAssistant from './VoiceAssistant';
 const VIEW_TO_PAGE = {
   tickets:          'all-tickets',
   calendar:         'ticket-calendar',
+  companies:        'companies',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',
   quotes:           'quotes',
   jobs:             'jobs',
+  invoices:         'invoices',
   users:            'manage-users',
   'pricing-config': 'pricing-config',
   billing:          'billing',

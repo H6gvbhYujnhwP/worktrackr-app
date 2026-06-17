@@ -11,29 +11,35 @@ import {
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
-const MAIN_ITEMS = [
-  { id: 'all-tickets',     label: 'Tickets',       icon: Ticket,     view: 'tickets'        },
-  { id: 'ticket-calendar', label: 'Calendar',      icon: Calendar,   view: 'calendar'       },
-  { id: 'company-notes',   label: 'Company Notes', icon: BookOpen,   view: 'company-notes'  },
-  { id: 'my-notes',        label: 'My Notes',      icon: StickyNote, view: 'my-notes'       },
-];
-
-const CRM_ITEMS = [
+const SALES_ITEMS = [
   { id: 'companies',       label: 'Companies',    icon: Building2,  view: 'companies'      },
-  { id: 'contacts',        label: 'Contacts',     icon: UserCircle, view: 'contacts'       },
-  { id: 'product-catalog', label: 'Products',     icon: Package,    view: 'product-catalog' },
-  { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'          },
-  { id: 'jobs',            label: 'Projects',     icon: Briefcase,  view: 'jobs'            },
-  { id: 'invoices',        label: 'Invoices',     icon: Receipt,    view: 'invoices'        },
-  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'    },
+  { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'         },
 ];
 
-const ACCOUNT_ITEMS = [
-  { id: 'manage-users',   label: 'Users',    icon: UserCog,    view: 'users'          },
-  { id: 'billing',        label: 'Billing',  icon: CreditCard, view: 'billing'        },
-  { id: 'pricing-config', label: 'Pricing',  icon: DollarSign, view: 'pricing-config' },
-  { id: 'security',       label: 'Security', icon: Shield,     view: 'security'       },
-  { id: 'email-intake',   label: 'Email Intake', icon: Mail,   view: 'email-intake'   },
+const DELIVERY_ITEMS = [
+  { id: 'all-tickets',     label: 'Tickets',      icon: Ticket,     view: 'tickets'        },
+  { id: 'jobs',            label: 'Projects',     icon: Briefcase,  view: 'jobs'           },
+  { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,   view: 'calendar'       },
+  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'   },
+];
+
+const FINANCE_ITEMS = [
+  { id: 'invoices',        label: 'Invoices',     icon: Receipt,    view: 'invoices'       },
+];
+
+const CONTACTS_ITEMS = [
+  { id: 'contacts',        label: 'Contacts',     icon: UserCircle, view: 'contacts'       },
+  { id: 'company-notes',   label: 'Company Notes', icon: BookOpen,  view: 'company-notes'  },
+  { id: 'my-notes',        label: 'My Notes',     icon: StickyNote, view: 'my-notes'       },
+];
+
+const SETTINGS_ITEMS = [
+  { id: 'product-catalog', label: 'Catalogue',    icon: Package,    view: 'product-catalog' },
+  { id: 'manage-users',    label: 'Users',        icon: UserCog,    view: 'users'           },
+  { id: 'billing',         label: 'Billing',      icon: CreditCard, view: 'billing'         },
+  { id: 'pricing-config',  label: 'Pricing',      icon: DollarSign, view: 'pricing-config'  },
+  { id: 'security',        label: 'Security',     icon: Shield,     view: 'security'        },
+  { id: 'email-intake',    label: 'Email Intake', icon: Mail,       view: 'email-intake'    },
 ];
 
 // ─── NavItem ─────────────────────────────────────────────────────────────────
@@ -113,8 +119,13 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isCollapsed = false }
       {/* ── Navigation ── */}
       <nav className={`flex-1 overflow-y-auto py-3 ${isCollapsed ? 'px-2' : 'px-3'}`}>
 
-        <SectionLabel label="Main" isCollapsed={isCollapsed} />
-        {MAIN_ITEMS.map(item => (
+        <SectionLabel label="Sales" isCollapsed={isCollapsed} />
+        {SALES_ITEMS.map(item => (
+          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+        ))}
+
+        <SectionLabel label="Delivery" isCollapsed={isCollapsed} />
+        {DELIVERY_ITEMS.map(item => (
           <NavItem
             key={item.id}
             item={item}
@@ -125,28 +136,21 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isCollapsed = false }
           />
         ))}
 
-        <SectionLabel label="CRM" isCollapsed={isCollapsed} />
-        {CRM_ITEMS.map(item => (
-          <NavItem
-            key={item.id}
-            item={item}
-            isActive={currentPage === item.id}
-            isCollapsed={isCollapsed}
-            onClick={handleNav}
-          />
+        <SectionLabel label="Finance" isCollapsed={isCollapsed} />
+        {FINANCE_ITEMS.map(item => (
+          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+        ))}
+
+        <SectionLabel label="Contacts" isCollapsed={isCollapsed} />
+        {CONTACTS_ITEMS.map(item => (
+          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
 
         {isAdmin && (
           <>
-            <SectionLabel label="Account" isCollapsed={isCollapsed} />
-            {ACCOUNT_ITEMS.map(item => (
-              <NavItem
-                key={item.id}
-                item={item}
-                isActive={currentPage === item.id}
-                isCollapsed={isCollapsed}
-                onClick={handleNav}
-              />
+            <SectionLabel label="Settings" isCollapsed={isCollapsed} />
+            {SETTINGS_ITEMS.map(item => (
+              <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
             ))}
           </>
         )}
