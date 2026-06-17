@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is next** (IDYQ act-on-quote + recurring Contracts). Phases 5–6 not yet built. See §15 "Current state / start here" for the exact deploy position.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is in progress** (IDYQ act-on-quote + recurring Contracts): UX signed off, decisions locked, and **batch 1 (contracts backend foundation) is built** — see §14.8 and §15. Phase 6 not yet built. See §15 "Current state / start here" for the exact deploy position.
 
 **Last updated:** 2026-06-17
 
@@ -297,6 +297,8 @@ UX is designed before coding each phase.
 - Phase 4 scope: recurring (5%) **deferred to Phase 5** (needs Contracts); finance/referral via per-order **commission_category** + configured rates; internal cost-before-profit is a **per-org configurable £** (not £350); **roles skipped** this phase (screens reachable from Finance menu; no role-constraint widening). ✅
 - Phase 4 engine: configurable `periodStartDay` (default 1; Sweetbyte = 25 is config not code), manual £ override per order wins over suggestion, manager per-period lock, computed live from paid orders. ✅
 - Phase 4 COMPLETE: commission backend + admin **Commission rules** + **My commission** bonus screen + per-order commission category; engineer wage backend + **My wage** (engineer, read-only, no profit) + **Engineer wages** (manager) + per-org scheme settings. All per-org configurable; zero hardcoded money. ✅
+- Phase 5 decisions LOCKED: recurring commission **automatic while a contract is active** (no per-month toggle; gate = active + existing per-period manager approval); basis = **clear monthly profit**, annual ÷ 12; **mid-period start = full month**; recurring charge **counts toward the bonus threshold**; **mixed quotes auto-sort by line type** (monthly/annual → contract, one-off/untagged → auto-created linked Order, one screen); **new Contracts page** in Sales + "New contract" on the company; company **Monthly profit auto-calculated** from active contracts. ✅
+- Phase 5 BATCH 1 built: `contracts`/`contract_lines`/`contract_commission_overrides` tables + `contracts.js` (incl. auto-sorting `pull-quote`) + `idyq.js` `mapLine` fix + `/api/contracts` mount. ✅
 
 ---
 
@@ -363,6 +365,14 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - `web/server.js` — mounts `/api/engineer-wage`.
 - Frontend (`web/client/src/app/src/components/`): `EngineerWage.jsx` (NEW; "My wage", engineer read-only — current rate, neutral deal count vs target, review date, manager-set rise, history; never profit), `EngineerWageAdmin.jsx` (NEW; manager — scheme settings, start a stage, enter count, set/confirm £ rise). Nav: **My wage** in Delivery (all users), **Engineer wages** manager-only in Delivery; views wired in `Dashboard.jsx`, `AppLayout.jsx`, `Sidebar.jsx`.
 
+### 14.8 Phase 5 file map — BATCH 1 (contracts backend foundation, BUILT)
+**Same no-hardcode rule (§1): no money figure in code; contract figures come from the pulled quote (read-only) or manual in-app entry.**
+- `web/migrations/phase5_contracts_tables.sql` (NEW) — `contracts` (status draft/active/paused/cancelled, `source_idyq_quote_id`, `started_at`/`cancelled_at`, `salesperson_user_id`), `contract_lines` (recurring only; `unit_cost`/`unit_profit` at the line's own `billing_interval` monthly|annual, `source` manual|idyq), `contract_commission_overrides` (manager manual £ per contract per period — used by batch 2). Filename `phase5_` sorts after orders + idyq migrations. Validated against the real Postgres grammar.
+- `web/routes/contracts.js` (NEW) — list (`?status`/`?contactId`/`?mine`), get, create, PUT (header + replace lines, not while cancelled), **`/:id/pull-quote`** (auto-sorts a mirrored quote: monthly/annual lines → this contract; one-off/untagged → a linked draft Order created automatically — one action), `/:id/activate` (draft|paused→active, stamps `started_at` once), `/:id/pause` (manager), `/:id/cancel` (manager), delete (draft only). Per-month figures normalise annual ÷ 12 in SQL. Manager-gating = admin/manager/owner/partner_admin.
+- `web/routes/idyq.js` (EDITED) — `mapLine` now exposes `buyInCost`/`profit`/`type` from the mirror, so the order form's IDYQ pull shows real cost/profit + type and the contract pull can sort by type. (Small additive fix flagged in design; the order-form pull previously came across cost £0/no type.)
+- `web/server.js` (EDITED) — mounts `/api/contracts` (after `/api/orders`).
+- Dependency: the type-based sort needs the IDYQ-side `pricing_type`/`line_type` tag live + a sync (verify `worktrackrBridge.ts` in `idoyourquotes-main`). Untagged lines default to one-off (safe — never invents recurring profit).
+
 ---
 
 ## 15. Current state / START HERE (for a fresh session)
@@ -373,9 +383,9 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 
 **Verified against the user's uploaded repo (post-Phase-4):** every delivered route, migration, component, `server.js`, the roadmap and the canonical mockup are present, in the right folders, and current — EXCEPT the two items below.
 
-**⚠ Two repo fixes the user must apply (flagged from the zip check):**
-1. **`phase4_engineer_wage_tables.sql` was misplaced** into `web/client/src/app/src/components/`. It MUST live in **`web/migrations/`** or the engineer-wage tables never get created and `/api/engineer-wage` 500s (the route is already mounted). Move it; delete the components-folder copy.
-2. **Delete the orphan `web/routes/idyq.routes.js`** — leftover from a renamed delivery; the live file is `idyq.js`. Nothing requires the orphan.
+**⚠ Two repo fixes (status after the Phase-5 batch-1 zip check):**
+1. **`phase4_engineer_wage_tables.sql`** is now correctly present in **`web/migrations/`** (tables will be created). An identical orphan copy still sits in `web/client/src/app/src/components/` — **delete that one copy** (a local file deletion; nothing to redeploy).
+2. **Orphan `web/routes/idyq.routes.js`** — RESOLVED. It no longer exists anywhere; the live file is `idyq.js`.
 
 **Deploy/verify notes:**
 - **IDYQ quote cost/profit/type pull:** WorkTrackr side is deployed (`idyq_quote_line_cost_fields.sql`, `idyq.js`, `shared/idyq/idyqSync.js` all present). The **IDYQ-repo** file `server/_core/worktrackrBridge.ts` (mapLine emitting `cost_price`/`profit`/`pricing_type`) must also be live in the *other* repo (`idoyourquotes-main`) for cost/profit to actually populate; then run a sync. Until then, pulled order lines carry sell price with zero cost.
@@ -387,5 +397,15 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - Xero/QuickBooks connector (later).
 
 **Phase 5 scope when ready:** "act on quote" from a mirrored IDYQ quote → create a recurring **Contract** (new tables: contracts + contract_lines, recurring monthly profit); surface recurring profit on the company profile's "Services & monthly profit" panel; wire **recurring 5%** commission (the `recurringRate` config field already exists in `commission_settings`) into the existing commission engine, paid-gated like one-off. Design UX first per the working cadence.
+
+**Phase 5 — UX signed off + decisions LOCKED (2026-06-17):**
+- **Recurring commission is automatic** — while a contract is `active` it earns recurring commission each period; no per-month "collected" toggle. The gate is contract status `active` + the existing manager per-period approval (WorkTrackr is not the accounts package, so there is no per-month paid flag — "active customer" is the gate, matching §7.2). Recurring basis = **clear monthly profit** (annual lines ÷ 12).
+- **Mid-period start = full month** (no pro-rating in v1).
+- **Recurring monthly charge counts toward the bonus threshold.**
+- **Mixed quotes auto-sort by each line's own type tag** (Decision 3): monthly/annual lines → the contract; one-off (or untagged, safe default) lines → a linked draft **Order**, created automatically in the same action. One screen, no manual splitting, no separate pages. *(Depends on the IDYQ-side `pricing_type`/`line_type` tag actually flowing — see the bridge verify note above + the batch-1 `mapLine` fix.)*
+- **New Contracts page** under Sales (list + form, quote-driven) + "New contract" on the company profile; an "act on quote" button on the IDYQ quote view is a later batch.
+- **Company "Monthly profit" is auto-calculated** from the company's active contracts (manual `crm.totalProfit` retained as an optional override).
+
+**Phase 5 — BATCH 1 BUILT (backend foundation, 2026-06-17):** see §14.8. Validated (`node --check` + real Postgres-grammar parse). Remaining batches: 2 commission-engine recurring wiring → 3 Contracts list + form + nav → 4 company-profile services panel + cards → 5 act-on-quote button + final roadmap pass.
 
 **Working cadence (unchanged):** UX/design per phase first, then build ONE phase at a time, ONE batch per turn, each file validated (`node --check` for JS, `esbuild --jsx=automatic` for JSX) and handed over as a downloadable file with a short `filename → folder` list (no jargon). Keep this roadmap updated as the single source of truth.

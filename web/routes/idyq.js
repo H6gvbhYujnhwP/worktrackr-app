@@ -100,6 +100,12 @@ const mapLine = (r) => ({
   qty: r.qty,
   unitPrice: r.unit_price,
   lineTotal: r.line_total,
+  // Phase 5: carry the quote's own per-line economics + type tag across so the
+  // order form's IDYQ pull shows real cost/profit and the contract pull can sort
+  // monthly vs one-off. Read-only mirror (edited in IdoYourQuotes).
+  buyInCost: r.cost_price,
+  profit: r.line_profit,
+  type: r.line_type,
   sortOrder: r.sort_order,
 });
 
