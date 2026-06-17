@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -26,6 +26,7 @@ const DELIVERY_ITEMS = [
 ];
 
 const FINANCE_ITEMS = [
+  { id: 'my-commission',   label: 'My commission', icon: Wallet,    view: 'my-commission'  },
   { id: 'invoices',        label: 'Invoices',     icon: Receipt,    view: 'invoices'       },
 ];
 
@@ -148,6 +149,12 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
         {FINANCE_ITEMS.map(item => (
           <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
+        {isManager && (
+          <NavItem
+            item={{ id: 'commission-rules', label: 'Commission rules', icon: SlidersHorizontal, view: 'commission-rules' }}
+            isActive={currentPage === 'commission-rules'} isCollapsed={isCollapsed} onClick={handleNav}
+          />
+        )}
 
         <SectionLabel label="Contacts" isCollapsed={isCollapsed} />
         {CONTACTS_ITEMS.map(item => (

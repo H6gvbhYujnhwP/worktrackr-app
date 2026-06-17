@@ -19,6 +19,7 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
   const [status, setStatus] = useState('draft');
   const [contactId, setContactId] = useState(initialCompanyId || '');
   const [notes, setNotes] = useState('');
+  const [commissionCategory, setCommissionCategory] = useState('standard');
   const [lines, setLines] = useState([]);
   const [pulledQuotes, setPulledQuotes] = useState([]);
   const [pickQuote, setPickQuote] = useState('');
@@ -40,6 +41,7 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const o = await r.json();
           setId(o.id); setStatus(o.status); setContactId(o.contactId || ''); setNotes(o.notes || '');
+          setCommissionCategory(o.commissionCategory || 'standard');
           setLines((o.lines || []).map((l) => ({ ...l, _key: l.id })));
           setPulledQuotes([...new Set((o.lines || []).filter((l) => l.idyqQuoteId).map((l) => l.idyqQuoteId))]);
         } catch (e) { setError(e.message); }
@@ -80,6 +82,7 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
     const payload = {
       contactId: contactId || null,
       notes: notes || null,
+      commissionCategory,
       lines: lines.map((l) => ({
         description: l.description || 'Item', qty: Number(l.qty) || 1, supplierUrl: l.supplierUrl || null,
         unitCost: Number(l.unitCost) || 0, unitProfit: Number(l.unitProfit) || 0,
@@ -170,6 +173,17 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
               {pulledQuotes.length > 0 && <div className="text-[11px] text-[#3C3489] mt-1">Pulled: {pulledQuotes.join(', ')}</div>}
             </div>
           )}
+        </div>
+
+        <div className="mb-3">
+          <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Commission category</div>
+          <select value={commissionCategory} onChange={(e) => setCommissionCategory(e.target.value)} disabled={!editable}
+            className="w-full sm:w-64 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white disabled:bg-gray-50">
+            <option value="standard">Standard (one-off)</option>
+            <option value="finance">Finance</option>
+            <option value="referral">Referral</option>
+          </select>
+          <div className="text-[11px] text-gray-400 mt-1">Determines which configured commission rate applies. Rates are set per organisation in Commission rules.</div>
         </div>
 
         {/* Lines */}

@@ -17,6 +17,8 @@ const VIEW_TO_PAGE = {
   companies:        'companies',
   orders:           'orders',
   'order-queues':   'order-queues',
+  'my-commission':  'my-commission',
+  'commission-rules': 'commission-rules',
   contacts:         'contacts',
   'product-catalog':'product-catalog',
   'crm-calendar':   'crm-calendar',

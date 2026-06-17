@@ -19,6 +19,7 @@ const orderSchema = z.object({
   contactId: z.string().uuid().optional().nullable(),
   salespersonUserId: z.string().uuid().optional().nullable(),
   notes: z.string().optional().nullable(),
+  commissionCategory: z.enum(['standard', 'finance', 'referral']).optional().nullable(),
   lines: z.array(lineSchema).optional(),
 });
 
@@ -53,6 +54,7 @@ function mapOrder(r) {
     salespersonName: r.salesperson_name || null,
     status: r.status,
     notes: r.notes || '',
+    commissionCategory: r.commission_category || 'standard',
     invoicedAt: r.invoiced_at,
     paidAt: r.paid_at,
     totals: { cost, profit, value: cost + profit },
@@ -141,9 +143,9 @@ router.post('/', async (req, res) => {
     const ctx = await getOrgContext(req.user.userId);
     const data = orderSchema.parse(req.body);
     const ins = await query(
-      `INSERT INTO orders (organisation_id, contact_id, salesperson_user_id, notes, created_by)
-       VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-      [ctx.organizationId, data.contactId ?? null, data.salespersonUserId ?? req.user.userId, data.notes ?? null, req.user.userId]
+      `INSERT INTO orders (organisation_id, contact_id, salesperson_user_id, notes, commission_category, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [ctx.organizationId, data.contactId ?? null, data.salespersonUserId ?? req.user.userId, data.notes ?? null, data.commissionCategory ?? null, req.user.userId]
     );
     const id = ins.rows[0].id;
     if (data.lines && data.lines.length) await replaceLines(id, ctx.organizationId, data.lines);
@@ -171,6 +173,7 @@ router.put('/:id', async (req, res) => {
     if (present.has('contactId')) set('contact_id', data.contactId ?? null);
     if (present.has('salespersonUserId')) set('salesperson_user_id', data.salespersonUserId ?? null);
     if (present.has('notes')) set('notes', data.notes ?? null);
+    if (present.has('commissionCategory')) set('commission_category', data.commissionCategory ?? null);
     fields.push('updated_at = NOW()');
     values.push(req.params.id, ctx.organizationId);
     await query(`UPDATE orders SET ${fields.join(', ')} WHERE id = $${i++} AND organisation_id = $${i}`, values);

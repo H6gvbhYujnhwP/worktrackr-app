@@ -40,6 +40,8 @@ import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import OrderQueues from './OrderQueues.jsx';
+import BonusScreen from './BonusScreen.jsx';
+import CommissionRules from './CommissionRules.jsx';
 import SecuritySettings from './SecuritySettings.jsx';
 import EmailIntakeSettings from './EmailIntakeSettings.jsx';
 import TicketsTableView from './TicketsTableView.jsx';
@@ -378,6 +380,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
       {currentView === 'order-queues'   && <OrderQueues />}
+      {currentView === 'my-commission'  && <BonusScreen />}
+      {currentView === 'commission-rules' && <CommissionRules />}
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
