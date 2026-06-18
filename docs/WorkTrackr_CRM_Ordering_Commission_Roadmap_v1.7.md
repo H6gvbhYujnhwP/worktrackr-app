@@ -1,8 +1,8 @@
-# WorkTrackr — CRM, Ordering & Commission Roadmap (v1.5)
+# WorkTrackr — CRM, Ordering & Commission Roadmap (v1.7)
 
 **Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is COMPLETE** (IDYQ act-on-quote + recurring Contracts): all 5 batches built plus the menu consolidation (Workspace/Delivery/Sales/Finance/Settings; My Pay merged; CRM page left intact for non-IDYQ orgs). All example commission figures have been scrubbed from this document. See §14.8–§14.13 and §15. Phase 6 not yet started.
 
-**Last updated:** 2026-06-18 · **Version history:** v1.0 baseline → v1.1 (menu-consolidation analysis) → v1.2 (revised IA) → v1.3 (IA consolidation) → v1.4 (company-profile services panel) → **v1.5** (act-on-quote buttons; Phase 5 COMPLETE)
+**Last updated:** 2026-06-18 · **Version history:** v1.0 baseline → v1.1 (menu-consolidation analysis) → v1.2 (revised IA) → v1.3 (IA consolidation) → v1.4 (company-profile services panel) → v1.5 (Phase 5 complete) → v1.6 (Phase 6 design) → **v1.7** (Phase 6 SLIMMED; Deals built)
 
 **Purpose:** Single source of truth for the WorkTrackr sales/CRM redesign and the IdoYourQuotes (IDYQ) integration. Captures everything discussed so the work survives any loss of chat history. Nothing here should be assumed "done" unless it is under "Phase 0 — already built".
 
@@ -273,8 +273,8 @@ Decision: **neither now**, possibly later. WorkTrackr will **not** be the accoun
 2. ✅ **DONE — Contacts, history timeline, tasks** (+ tasks dashboard).
 3. ✅ **DONE — Orders module** — blank order form (+ supplier/cost/profit columns, IDYQ quote pull), approval queue, purchasing queue, fulfilment (invoiced/paid) flags.
 4. ✅ **DONE — Commission engine** — fully-configurable rules area (per-org, nothing hardcoded) + live calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
-5. **NEXT — IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking; recurring commission gets its home here).
-6. **Deals forecast + CSV import** last.
+5. ✅ **DONE — IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking; recurring commission home).
+6. **Deals forecast + CSV import** — IN DESIGN (v1.6, §16).
 7. **(Later)** Xero/QuickBooks connector; IDYQ org allow-list before any 3rd-party onboarding.
 
 UX is designed before coding each phase.
@@ -326,6 +326,7 @@ UX is designed before coding each phase.
 - IA consolidation (v1.2) — confirmed by user: section order **Workspace → Delivery → Sales → Finance → Settings**; **keep two calendars** (CRM Calendar → Sales, tickets Calendar → Delivery; verified distinct in code); **one shared customer hub** (Companies, shared by Sales + Delivery via `tickets.contact_id`).
 - Phase 5 BATCH 4 built: company profile **Services & monthly profit** panel + **Monthly profit** / **Active services** cards now auto-fill from the company's active contracts (`CompanyProfile.jsx`); manual `crm.totalProfit` kept only as a fallback. ✅
 - Phase 5 BATCH 5 built + **PHASE 5 COMPLETE**: act-on-quote buttons on the IDYQ quote view (`IdyqIntegration.jsx`) — Create contract / Create order from a quote — plus a new `orders` pull-quote endpoint (`orders.js`). ✅ sidebar regrouped (Workspace/Delivery/Sales/Finance/Settings), **My Pay** merges My wage + My commission, pay-admin (Commission rules, Engineer wages) + Catalogue + CRM settings moved into Settings (manager tier + admin tier), CRM Calendar moved to Sales, Contacts + Company Notes top-level items removed. **CRM page left fully intact** to protect native (non-IDYQ) Quotes/Catalogue/Quote-Templates — consolidation done at sidebar level only. Every menu item verified to resolve to a screen. See §14.11. ✅
+- Phase 6 SLIMMED at user request (v1.7): dropped probability/weighting/win-rate/quarter-forecast/auto-convert/linked-quote. Kept a simple deals list (Open/In progress/Won/Lost) with an "open pipeline" total, + a simple CSV company import. **Deals half BUILT** (`deals` table + `deals.js` + DealsList/DealForm + nav); CSV import next. ✅
 
 ---
 
@@ -471,3 +472,16 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 **Phase 5 — COMPLETE (all 5 batches + IA consolidation, 2026-06-18):** batch 1 contracts backend (§14.8); batch 2 recurring commission engine, org-rate only (§14.9); batch 3 Contracts list + form + nav (§14.10); IA consolidation — menus regrouped, My Pay merged, CRM page preserved for non-IDYQ orgs (§14.11); batch 4 company-profile services panel + cards (§14.12); batch 5 act-on-quote buttons on the IDYQ quote view + an orders pull-quote endpoint (§14.13). All validated (`node --check`, `esbuild --jsx`, real Postgres-grammar parse; every menu item resolves to a screen). **Next: Phase 6** (not started). Outstanding non-blockers: confirm the IDYQ-side tag/bridge is live + run a sync; the CRM "Customers" tab + a ticket→company click-through are deferred; keep only the latest roadmap file in docs.
 
 **Working cadence (unchanged):** UX/design per phase first, then build ONE phase at a time, ONE batch per turn, each file validated (`node --check` for JS, `esbuild --jsx=automatic` for JSX) and handed over as a downloadable file with a short `filename → folder` list (no jargon). Keep this roadmap updated as the single source of truth.
+
+---
+
+## 16. Phase 6 (SLIMMED per user — v1.7) — Deals + CSV import
+
+Scope was cut right back at the user's request: keep only the essentials, drop the extras.
+
+**Deals (BUILT, batch 1):** a lightweight deal = company, title, value (£), stage (**Open → In progress → Won → Lost**), expected close date, owner, notes. The Deals page lists them with one headline number — **open pipeline = Σ value of Open + In-progress deals**. That single number is the "forecast". **Dropped:** probability/weighting, weighted forecast, closing-this-quarter, win-rate, kanban board, auto-convert to order/contract, linked-quote value. `value` is user-entered deal data (not a commission figure).
+- Files: `web/migrations/phase6_deals_tables.sql` (NEW — `deals` table), `web/routes/deals.js` (NEW — CRUD + stage changes; owner defaults to creator; won/lost stamped), `web/server.js` (mounts `/api/deals`), `web/client/src/app/src/components/DealsList.jsx` + `DealForm.jsx` (NEW), nav wired (Sidebar **Deals** in Sales after Companies, AppLayout map, Dashboard render). Validated (`node --check`, `esbuild --jsx`, real Postgres-grammar parse; menu item resolves).
+
+**CSV import (NEXT, batch 2):** import companies from a spreadsheet — upload → map columns → import — skipping obvious duplicates (by name/email). Kept deliberately simple.
+
+*Status: Deals built; CSV import is the remaining half.*

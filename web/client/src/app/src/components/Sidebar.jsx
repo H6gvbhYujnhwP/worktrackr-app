@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target,
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -25,6 +25,7 @@ const DELIVERY_ITEMS = [
 
 const SALES_ITEMS = [
   { id: 'companies',    label: 'Companies',    icon: Building2,     view: 'companies'    },
+  { id: 'deals',        label: 'Deals',        icon: Target,        view: 'deals'        },
   { id: 'quotes',       label: 'Quotes',       icon: FileText,      view: 'quotes'       },
   { id: 'orders',       label: 'Orders',       icon: ClipboardList, view: 'orders'       },
   { id: 'contracts',    label: 'Contracts',    icon: Repeat,        view: 'contracts'    },

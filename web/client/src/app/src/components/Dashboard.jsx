@@ -40,6 +40,7 @@ import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
+import DealsList from './DealsList.jsx';
 import MyPay from './MyPay.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
@@ -387,6 +388,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
+      {currentView === 'deals'          && <DealsList />}
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'my-pay'         && <MyPay />}
