@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link2, RefreshCw, Unplug, Plug, Lock, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
+import { Link2, RefreshCw, Unplug, Plug, Lock, ChevronDown, ChevronRight, AlertCircle, Repeat, FilePlus } from 'lucide-react';
 
 // ── shared styles (match the CRM look) ──────────────────────────────────────
 const GOLD_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-white text-[13px] font-medium hover:bg-[#b8901a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
@@ -201,6 +201,36 @@ function QuoteRow({ quote }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [acting, setActing] = useState(false);
+  const [actMsg, setActMsg] = useState(null);
+
+  // "Act on this quote" — create a recurring Contract or a one-off Order from it.
+  // Both create a draft then pull this quote server-side (contact + lines come
+  // across from the quote; the contract pull also spins one-off lines into an order).
+  const createFromQuote = async (kind) => {
+    setActing(true); setActMsg(null);
+    const base = kind === 'contract' ? '/api/contracts' : '/api/orders';
+    try {
+      const cr = await fetch(base, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!cr.ok) throw new Error('Could not create.');
+      const created = await cr.json();
+      const pr = await fetch(`${base}/${created.id}/pull-quote`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idyqQuoteId: quote.idyqId }),
+      });
+      const pulled = await pr.json().catch(() => ({}));
+      if (!pr.ok) throw new Error(pulled.error || 'Could not pull the quote.');
+      if (kind === 'contract') {
+        let m = 'Draft contract created — open Contracts to review and activate.';
+        if (pulled.linkedOrder) m += ` ${pulled.linkedOrder.lineCount} one-off item${pulled.linkedOrder.lineCount === 1 ? '' : 's'} also started as an order.`;
+        setActMsg({ ok: true, text: m });
+      } else {
+        setActMsg({ ok: true, text: 'Draft order created — open Orders to review.' });
+      }
+    } catch (e) {
+      setActMsg({ ok: false, text: e.message || 'Could not act on this quote.' });
+    } finally { setActing(false); }
+  };
 
   const toggle = async () => {
     const next = !open;
@@ -230,6 +260,19 @@ function QuoteRow({ quote }) {
       {open && (
         <tr className="bg-[#fafbfc] border-b border-[#f3f4f6]">
           <td colSpan={5} className="px-4 py-3">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="text-[12px] font-medium text-[#374151]">Act on this quote:</span>
+              <button onClick={() => createFromQuote('contract')} disabled={acting}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#0F6E56] text-[#085041] px-2.5 py-1 text-[12px] hover:bg-[#E1F5EE] disabled:opacity-50">
+                <Repeat className="w-3.5 h-3.5" /> Create contract
+              </button>
+              <button onClick={() => createFromQuote('order')} disabled={acting}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#d4a017] text-[#8a6a0f] px-2.5 py-1 text-[12px] hover:bg-[rgba(212,160,23,0.08)] disabled:opacity-50">
+                <FilePlus className="w-3.5 h-3.5" /> Create order
+              </button>
+              {acting && <span className="text-[12px] text-[#9ca3af]">Working…</span>}
+              {actMsg && <span className={`text-[12px] ${actMsg.ok ? 'text-[#0f6e56]' : 'text-red-700'}`}>{actMsg.text}</span>}
+            </div>
             {loading ? (
               <p className="text-[12px] text-[#9ca3af]">Loading line items…</p>
             ) : (
