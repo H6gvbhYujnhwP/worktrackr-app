@@ -11,38 +11,41 @@ import {
 } from 'lucide-react';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
-const SALES_ITEMS = [
-  { id: 'my-tasks',        label: 'My Tasks',     icon: ListChecks, view: 'my-tasks'       },
-  { id: 'companies',       label: 'Companies',    icon: Building2,  view: 'companies'      },
-  { id: 'orders',          label: 'Orders',       icon: ClipboardList, view: 'orders'      },
-  { id: 'contracts',       label: 'Contracts',    icon: Repeat,     view: 'contracts'      },
-  { id: 'quotes',          label: 'Quotes',       icon: FileText,   view: 'quotes'         },
+const WORKSPACE_ITEMS = [
+  { id: 'my-tasks',  label: 'My Tasks', icon: ListChecks, view: 'my-tasks' },
+  { id: 'my-pay',    label: 'My Pay',   icon: Wallet,     view: 'my-pay'   },
+  { id: 'my-notes',  label: 'My Notes', icon: StickyNote, view: 'my-notes' },
 ];
 
 const DELIVERY_ITEMS = [
-  { id: 'all-tickets',     label: 'Tickets',      icon: Ticket,     view: 'tickets'        },
-  { id: 'jobs',            label: 'Projects',     icon: Briefcase,  view: 'jobs'           },
-  { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,   view: 'calendar'       },
-  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,   view: 'crm-calendar'   },
-  { id: 'my-wage',         label: 'My wage',      icon: TrendingUp, view: 'my-wage'        },
+  { id: 'all-tickets',     label: 'Tickets',  icon: Ticket,    view: 'tickets'  },
+  { id: 'jobs',            label: 'Projects', icon: Briefcase, view: 'jobs'     },
+  { id: 'ticket-calendar', label: 'Calendar', icon: Calendar,  view: 'calendar' },
+];
+
+const SALES_ITEMS = [
+  { id: 'companies',    label: 'Companies',    icon: Building2,     view: 'companies'    },
+  { id: 'quotes',       label: 'Quotes',       icon: FileText,      view: 'quotes'       },
+  { id: 'orders',       label: 'Orders',       icon: ClipboardList, view: 'orders'       },
+  { id: 'contracts',    label: 'Contracts',    icon: Repeat,        view: 'contracts'    },
+  { id: 'crm-calendar', label: 'CRM Calendar', icon: Calendar,      view: 'crm-calendar' },
 ];
 
 const FINANCE_ITEMS = [
-  { id: 'my-commission',   label: 'My commission', icon: Wallet,    view: 'my-commission'  },
-  { id: 'invoices',        label: 'Invoices',     icon: Receipt,    view: 'invoices'       },
+  { id: 'invoices', label: 'Invoices', icon: Receipt, view: 'invoices' },
 ];
 
-const CONTACTS_ITEMS = [
-  { id: 'contacts',        label: 'Contacts',     icon: UserCircle, view: 'contacts'       },
-  { id: 'company-notes',   label: 'Company Notes', icon: BookOpen,  view: 'company-notes'  },
-  { id: 'my-notes',        label: 'My Notes',     icon: StickyNote, view: 'my-notes'       },
+// Settings shows to managers and admins: manager-level tools first, then admin-only.
+const SETTINGS_MANAGER_ITEMS = [
+  { id: 'commission-rules', label: 'Commission rules', icon: SlidersHorizontal, view: 'commission-rules' },
+  { id: 'engineer-wages',   label: 'Engineer wages',   icon: Gauge,             view: 'engineer-wages'   },
+  { id: 'crm-settings',     label: 'CRM settings',     icon: Building2,          view: 'crm-settings'     },
 ];
-
-const SETTINGS_ITEMS = [
+const SETTINGS_ADMIN_ITEMS = [
   { id: 'product-catalog', label: 'Catalogue',    icon: Package,    view: 'product-catalog' },
+  { id: 'pricing-config',  label: 'Pricing',      icon: DollarSign, view: 'pricing-config'  },
   { id: 'manage-users',    label: 'Users',        icon: UserCog,    view: 'users'           },
   { id: 'billing',         label: 'Billing',      icon: CreditCard, view: 'billing'         },
-  { id: 'pricing-config',  label: 'Pricing',      icon: DollarSign, view: 'pricing-config'  },
   { id: 'security',        label: 'Security',     icon: Shield,     view: 'security'        },
   { id: 'email-intake',    label: 'Email Intake', icon: Mail,       view: 'email-intake'    },
 ];
@@ -124,16 +127,10 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
       {/* ── Navigation ── */}
       <nav className={`flex-1 overflow-y-auto py-3 ${isCollapsed ? 'px-2' : 'px-3'}`}>
 
-        <SectionLabel label="Sales" isCollapsed={isCollapsed} />
-        {SALES_ITEMS.map(item => (
+        <SectionLabel label="Workspace" isCollapsed={isCollapsed} />
+        {WORKSPACE_ITEMS.map(item => (
           <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
-        {isManager && (
-          <NavItem
-            item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
-            isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
-          />
-        )}
 
         <SectionLabel label="Delivery" isCollapsed={isCollapsed} />
         {DELIVERY_ITEMS.map(item => (
@@ -146,10 +143,15 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
             badge={item.id === 'all-tickets' ? openBadge : 0}
           />
         ))}
+
+        <SectionLabel label="Sales" isCollapsed={isCollapsed} />
+        {SALES_ITEMS.map(item => (
+          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+        ))}
         {isManager && (
           <NavItem
-            item={{ id: 'engineer-wages', label: 'Engineer wages', icon: Gauge, view: 'engineer-wages' }}
-            isActive={currentPage === 'engineer-wages'} isCollapsed={isCollapsed} onClick={handleNav}
+            item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
+            isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
           />
         )}
 
@@ -157,22 +159,14 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
         {FINANCE_ITEMS.map(item => (
           <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
-        {isManager && (
-          <NavItem
-            item={{ id: 'commission-rules', label: 'Commission rules', icon: SlidersHorizontal, view: 'commission-rules' }}
-            isActive={currentPage === 'commission-rules'} isCollapsed={isCollapsed} onClick={handleNav}
-          />
-        )}
 
-        <SectionLabel label="Contacts" isCollapsed={isCollapsed} />
-        {CONTACTS_ITEMS.map(item => (
-          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
-        ))}
-
-        {isAdmin && (
+        {(isManager || isAdmin) && (
           <>
             <SectionLabel label="Settings" isCollapsed={isCollapsed} />
-            {SETTINGS_ITEMS.map(item => (
+            {isManager && SETTINGS_MANAGER_ITEMS.map(item => (
+              <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+            ))}
+            {isAdmin && SETTINGS_ADMIN_ITEMS.map(item => (
               <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
             ))}
           </>

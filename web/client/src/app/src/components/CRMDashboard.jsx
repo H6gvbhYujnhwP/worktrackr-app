@@ -64,7 +64,7 @@ const worldCurrencies = [
   { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
 ];
 
-export default function CRMDashboard({ defaultTab = 'customers' }) {
+export default function CRMDashboard({ defaultTab = 'customers', singleSection = false }) {
   console.log('[CRMDashboard] Component mounting...');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -456,6 +456,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
     <div className="space-y-5">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {!singleSection && (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-[20px] font-bold text-[#111113] flex items-center gap-2">
@@ -468,8 +469,10 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
           <Plus className="w-4 h-4" /> Add Customer
         </button>
       </div>
+      )}
 
       {/* ── Stat strip ──────────────────────────────────────────────────────── */}
+      {!singleSection && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { icon: Building2,    bg: 'bg-[#dbeafe]', color: 'text-[#2563eb]', val: contacts.length,      label: 'Customers'      },
@@ -488,10 +491,12 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
           </div>
         ))}
       </div>
+      )}
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {!singleSection && (
           <TabsList className="flex border-b border-[#e5e7eb] bg-transparent h-auto p-0 w-full rounded-none overflow-x-auto">
             {[
               { value: 'customers', label: 'Customers'       },
@@ -512,6 +517,7 @@ export default function CRMDashboard({ defaultTab = 'customers' }) {
               </TabsTrigger>
             ))}
           </TabsList>
+          )}
 
           {/* ── Customers tab ─────────────────────────────────────────────── */}
           <TabsContent value="customers" className="p-5 space-y-4">

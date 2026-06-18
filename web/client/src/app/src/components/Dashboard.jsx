@@ -40,6 +40,7 @@ import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
+import MyPay from './MyPay.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
 import CommissionRules from './CommissionRules.jsx';
@@ -388,6 +389,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
+      {currentView === 'my-pay'         && <MyPay />}
       {currentView === 'commission-rules' && <CommissionRules />}
       {currentView === 'my-wage'        && <EngineerWage />}
       {currentView === 'engineer-wages' && <EngineerWageAdmin />}
@@ -395,6 +397,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
       {currentView === 'quotes'         && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="quotes" /></ErrorBoundary>}
+      {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" /></ErrorBoundary>}
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}
       {currentView === 'email-intake'   && <EmailIntakeSettings />}
