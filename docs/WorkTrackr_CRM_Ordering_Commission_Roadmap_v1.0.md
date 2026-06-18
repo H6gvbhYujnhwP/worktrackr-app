@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is in progress** (IDYQ act-on-quote + recurring Contracts): UX signed off, decisions locked, and **batch 1 (contracts backend foundation) is built** — see §14.8 and §15. Phase 6 not yet built. See §15 "Current state / start here" for the exact deploy position.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is in progress** (IDYQ act-on-quote + recurring Contracts): UX signed off, decisions locked, and **batches 1–2 are built** — contracts backend foundation + recurring commission wired into the engine (reading only the org-entered recurring rate). All example commission figures have been scrubbed from this document. See §14.8–§14.9 and §15. Phase 6 not yet built.
 
 **Last updated:** 2026-06-17
 
@@ -14,8 +14,8 @@ WorkTrackr is becoming a **company-centred CRM + ordering + commission system**,
 
 - **Company-centred.** The company/customer record is the centre of the CRM. Contacts, tasks, notes, history, orders, deals and services all link back to the company. (In the current DB a "company" is a `contacts` row of type `company` — the old `customers` table was dropped in the customers→contacts merge.)
 - **Pipeline-driven.** Companies move through sales stages: **Suspect → Prospect → Hot Prospect → Customer**. A salesperson can filter to their Hot Prospects and see who to revisit to get a deal over the line. Winning a deal converts it into a proper sale (an Order).
-- **🚫 NO HARDCODED MONEY RULES — NON-NEGOTIABLE.** This is a **production, multi-tenant app for many organisations**. **No** commission rate, bonus rate, profit-share, deduction/internal-cost, threshold, period boundary, or any other money figure is ever written into code. Every such value is **per-organisation configuration**, entered by that org in an admin area and stored in the database. The app ships **neutral** (everything zero/disabled); an org that hasn't configured a scheme gets zeros, never someone else's numbers. Any specific schedule (e.g. Sweetbyte's 15% / £350 / £7,500 / 25%) is **only an example an org may type in**, and must **never** appear as a default, constant, or fallback in code. Reviewers: a literal rate/amount in a `.js`/`.sql` file is a bug.
-- **Configurable / multi-sector.** Commission rules, the order form's purchasing fields, and per-role screens must be configurable and switch-off-able. Use neutral terms ("Orders", "Contracts") rather than IT-specific language. The Sweetbyte commission scheme is *one configured ruleset typed in by that org*, not hard-coded behaviour.
+- **🚫 NO HARDCODED MONEY RULES — NON-NEGOTIABLE.** This is a **production, multi-tenant app for many organisations**. **No** commission rate, bonus rate, profit-share, deduction/internal-cost, threshold, period boundary, or any other money figure is ever written into code. Every such value is **per-organisation configuration**, entered by that org in an admin area and stored in the database. The app ships **neutral** (everything zero/disabled); an org that hasn't configured a scheme gets zeros, never someone else's numbers. Any specific schedule an organisation uses is **only an example it types in**, and must **never** appear as a default, constant, or fallback in code. Reviewers: a literal rate/amount in a `.js`/`.sql` file is a bug.
+- **Configurable / multi-sector.** Commission rules, the order form's purchasing fields, and per-role screens must be configurable and switch-off-able. Use neutral terms ("Orders", "Contracts") rather than IT-specific language. Any organisation's commission scheme is *one configured ruleset typed in by that org*, not hard-coded behaviour.
 - **Two delivery branches.** (A) **One-off jobs** = an Order Form created in WorkTrackr (purchasing/margin sheet). (B) **Recurring IT support/services** = Contracts that originate from IDYQ quotes.
 - **Role-appropriate visibility.** Sales staff see commission/bonus. Engineers must **never** see per-company deal profit — they see a wage-progression screen instead (see §8).
 
@@ -149,7 +149,7 @@ The hub. Header: name, **changeable status pill**, account manager, source; acti
 New module — the coral branch. A new order:
 - **Always starts blank** (DECISION — no pre-import of existing deals/customers; James starts fresh).
 - Picks a Company, then line items with columns: **item, quantity, supplier URL (where we buy it), unit cost, total cost, unit profit, total profit** (auto-calculated).
-- **Pull from IdoYourQuotes (DECISION):** an order can pull one or several IDYQ quotes; each pulled line brings its **buy-in cost, profit and type (one-off/annual) straight from that quote**, read-only in WorkTrackr. Margins are changed by editing the quote in IDYQ (the single source of truth, where the customer quote lives) and re-pulling — WorkTrackr never writes back. Manually-added lines are costed in WorkTrackr (editable). The pulled type sets the commission basis (one-off 15% vs recurring 5%). This is distinct from a recurring **Contract** (§5.7): pulling a quote into an order is a one-off snapshot; a Contract tracks ongoing monthly profit.
+- **Pull from IdoYourQuotes (DECISION):** an order can pull one or several IDYQ quotes; each pulled line brings its **buy-in cost, profit and type (one-off/annual) straight from that quote**, read-only in WorkTrackr. Margins are changed by editing the quote in IDYQ (the single source of truth, where the customer quote lives) and re-pulling — WorkTrackr never writes back. Manually-added lines are costed in WorkTrackr (editable). The pulled type sets the commission basis (one-off vs recurring), each at the org's own configured rate. This is distinct from a recurring **Contract** (§5.7): pulling a quote into an order is a one-off snapshot; a Contract tracks ongoing monthly profit.
 - Records the salesperson (for commission).
 - Status workflow: **Draft → Submitted → Approved → Ordered → Invoiced → Paid**, with explicit invoiced and paid flags.
 - Purchasing fields (supplier URL, cost) are **optional** (multi-sector — a consultancy has no "where we buy it").
@@ -188,28 +188,28 @@ Four roles, selected per member in the Users screen. Mapped onto the existing `m
 ## 7. Commission & bonus engine
 
 ### 7.1 Principle
-A **fully configurable** rules engine (multi-sector, multi-tenant). **NOTHING is hardcoded** (see §1 — non-negotiable). The app ships **neutral**: every rate, deduction, threshold, bonus % and the period boundary default to **zero / disabled**, so an org with no scheme configured gets **zeros**, never another org's numbers. Each organisation enters its **own** ruleset in the admin **Commission rules** area; the engine applies only what that org stored in `commission_settings.config`. The whole module is switch-off-able (`enabled` flag). The Sweetbyte schedule in §7.2 is **an example an org may type in** — it must never appear as a code default, constant or fallback.
+A **fully configurable** rules engine (multi-sector, multi-tenant). **NOTHING is hardcoded** (see §1 — non-negotiable). The app ships **neutral**: every rate, deduction, threshold, bonus % and the period boundary default to **zero / disabled**, so an org with no scheme configured gets **zeros**, never another org's numbers. Each organisation enters its **own** ruleset in the admin **Commission rules** area; the engine applies only what that org stored in `commission_settings.config`. The whole module is switch-off-able (`enabled` flag). The rule types in §7.2 carry **no figures**; whatever an org types in is its own, and no rate or amount ever appears as a code default, constant or fallback.
 
 **Phase-4 scope decisions (locked this build):**
-- **Recurring (5%) deferred to Phase 5** — recurring commission belongs to Contracts, which don't exist yet. The `recurringRate` config field exists but is unused until Phase 5.
+- **Recurring commission deferred to Phase 5** — recurring commission belongs to Contracts, which don't exist yet. The `recurringRate` config field exists but is unused until Phase 5.
 - **Finance & referral handled now** via a per-order **commission category** (`standard` / `finance` / `referral`) chosen on the order form; the engine applies the org's configured `financeRate` / `referralRate`. `standard` uses `oneOffRate` on `(profit − deductionPerSale)`.
-- **Internal cost-before-profit (`deductionPerSale`)** is a **per-org configurable £**, not a fixed £350. Applied per standard order, floored at zero.
+- **Internal cost-before-profit (`deductionPerSale`)** is a **per-org configurable £**, not a fixed amount. Applied per standard order, floored at zero.
 - **Roles skipped this phase** — no `memberships.role` widening, no role selector. The two screens are reachable from the **Finance** menu (My commission) and admin area (Commission rules); role-based home routing is deferred (§14.5 migration still pending for that).
 
-### 7.2 Example ruleset an org could enter (Sweetbyte / TheGreenAgents — illustrative ONLY, ex-VAT)
-> ⚠️ These numbers are **not** in code. They are shown here purely as a worked example of how an org might fill in the Commission rules area.
-- **One-off sales:** 15% commission on **profit**, where profit = invoiced value − direct third-party delivery costs − the org's configured internal cost per sale (Sweetbyte: £350).
-- **Recurring contracts:** 5% of recurring monthly profit while employed and the customer remains active. *(Phase 5.)*
-- **SafeSurv referral:** 25% of commission revenue Sweetbyte receives from a referred opportunity — paid-gated.
-- **Finance agreements:** 1% of financed value.
-- **Monthly performance bonus:** when personally-generated turnover exceeds £7,500 within the period → 25% of total profit generated that period.
+### 7.2 The kinds of rule an org can configure (no figures — every value is entered by the org)
+> ⚠️ No rate, amount or threshold is shown here or stored in code. The list below is only the **types** of rule the Commission rules area supports; each organisation enters its own values (all blank/zero until they do).
+- **One-off sales:** a rate the org sets, applied to **profit** (= invoiced value − direct third-party delivery costs − the org's configured internal cost per sale).
+- **Recurring contracts:** a rate the org sets, applied to recurring monthly profit while employed and the customer remains active.
+- **Referral:** a rate the org sets, applied to commission revenue from a referred opportunity — paid-gated.
+- **Finance agreements:** a rate the org sets, applied to financed value.
+- **Performance bonus:** when personally-generated turnover exceeds the org's configured threshold within the period → the org's configured bonus rate applied to total profit generated that period.
 - Payable only after invoices fully settled; ceases on termination; refunds/cancellations offset future commission; employer determines calculations in good faith; commission only where the employee was the effective cause.
 
 ### 7.3 Engine rules (apply to whatever ruleset an org configures)
 - **All figures ex-VAT.**
 - **Paid-gated:** nothing becomes payable until the order's invoice is flagged **Paid**.
 - **Manager-approved:** the engine **calculates a suggestion**; a manager approves each period before payroll (per-period lock).
-- **Period boundary is configurable** (`periodStartDay`, 1–28). Sweetbyte's 25th–25th is just `periodStartDay = 25` typed into config — not a constant.
+- **Period boundary is configurable** (`periodStartDay`, 1–28). The period boundary is whatever day-of-month the org enters into config — not a constant.
 - **Manual £ override per order** (`commission_overrides`) always wins over the computed suggestion.
 - **Offsets / termination:** offsets for refunds/cancellations and termination handling are future enhancements; not in the v1 engine.
 - **Admin "Commission rules" area:** the org sets `oneOffRate`, `deductionPerSale`, `financeRate`, `referralRate`, `recurringRate`, `thresholdTurnover`, `bonusRate`, `periodStartDay`, and the `enabled` switch. All blank/zero by default.
@@ -217,7 +217,7 @@ A **fully configurable** rules engine (multi-sector, multi-tenant). **NOTHING is
 ### 7.4 Bonus screen (sales)  (mockup: `user_commission_bonus_screen`)
 Per-user. Always shows the live 25th–25th period:
 - Metric cards: **Confirmed (payable — invoices paid)**, **Pending (awaiting settlement)**, **Performance bonus** status (locked/unlocked).
-- **Threshold progress bar:** personally-generated turnover toward £7,500 (unlocks the 25% performance bonus).
+- **Threshold progress bar:** personally-generated turnover toward the org's configured threshold (unlocks the performance bonus).
 - **Breakdown** by source (one-off / recurring / finance / referral) with basis, rate, amount, and a paid/pending status pill.
 - **Running monthly totals** for previous periods (paid).
 - Footnote: calculated automatically, manager-approved before payroll, offsets noted.
@@ -251,7 +251,7 @@ Decision: **neither now**, possibly later. WorkTrackr will **not** be the accoun
 2. ✅ **DONE — Contacts, history timeline, tasks** (+ tasks dashboard).
 3. ✅ **DONE — Orders module** — blank order form (+ supplier/cost/profit columns, IDYQ quote pull), approval queue, purchasing queue, fulfilment (invoiced/paid) flags.
 4. ✅ **DONE — Commission engine** — fully-configurable rules area (per-org, nothing hardcoded) + live calculator (ex-VAT, paid-gated, manager-approved) + **sales bonus screen** + **engineer wage-progression screen**.
-5. **NEXT — IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking; recurring 5% commission gets its home here).
+5. **NEXT — IDYQ "act on quote" actions + Contracts** (mark won → Contract; recurring profit tracking; recurring commission gets its home here).
 6. **Deals forecast + CSV import** last.
 7. **(Later)** Xero/QuickBooks connector; IDYQ org allow-list before any 3rd-party onboarding.
 
@@ -294,11 +294,12 @@ UX is designed before coding each phase.
 - Phase 2 complete: `tasks` table + API, My-Tasks dashboard, editable company contacts, per-company tasks, history timeline (CRM events + completed tasks). ✅
 - Phase 3 complete: Orders module — `orders`/`order_lines`/`order_approvals` tables + API, order form (manual lines + IDYQ pull, cost+profit economics), orders list, "New order" from company profile, manager Approval/Purchasing/Fulfilment queues, full Draft→Submitted→Approved→Ordered→Invoiced→Paid lifecycle (paid-gating ready for commission). ✅
 - **NO HARDCODED MONEY RULES (non-negotiable, §1):** no commission/bonus/share/deduction/threshold/period figure is ever in code. All per-org config in `commission_settings`; app ships neutral (zeros/disabled). Any specific schedule is example-only. ✅
-- Phase 4 scope: recurring (5%) **deferred to Phase 5** (needs Contracts); finance/referral via per-order **commission_category** + configured rates; internal cost-before-profit is a **per-org configurable £** (not £350); **roles skipped** this phase (screens reachable from Finance menu; no role-constraint widening). ✅
-- Phase 4 engine: configurable `periodStartDay` (default 1; Sweetbyte = 25 is config not code), manual £ override per order wins over suggestion, manager per-period lock, computed live from paid orders. ✅
+- Phase 4 scope: recurring **deferred to Phase 5** (needs Contracts); finance/referral via per-order **commission_category** + configured rates; internal cost-before-profit is a **per-org configurable £** (not a fixed amount); **roles skipped** this phase (screens reachable from Finance menu; no role-constraint widening). ✅
+- Phase 4 engine: configurable `periodStartDay` (default 1; the start day is config, not code), manual £ override per order wins over suggestion, manager per-period lock, computed live from paid orders. ✅
 - Phase 4 COMPLETE: commission backend + admin **Commission rules** + **My commission** bonus screen + per-order commission category; engineer wage backend + **My wage** (engineer, read-only, no profit) + **Engineer wages** (manager) + per-org scheme settings. All per-org configurable; zero hardcoded money. ✅
 - Phase 5 decisions LOCKED: recurring commission **automatic while a contract is active** (no per-month toggle; gate = active + existing per-period manager approval); basis = **clear monthly profit**, annual ÷ 12; **mid-period start = full month**; recurring charge **counts toward the bonus threshold**; **mixed quotes auto-sort by line type** (monthly/annual → contract, one-off/untagged → auto-created linked Order, one screen); **new Contracts page** in Sales + "New contract" on the company; company **Monthly profit auto-calculated** from active contracts. ✅
 - Phase 5 BATCH 1 built: `contracts`/`contract_lines`/`contract_commission_overrides` tables + `contracts.js` (incl. auto-sorting `pull-quote`) + `idyq.js` `mapLine` fix + `/api/contracts` mount. ✅
+- Phase 5 BATCH 2 built: recurring commission wired into `commission.js` (active contracts → Confirmed + breakdown + threshold + bonus base + history; per-contract per-period manual £; rate read only from the org's `recurringRate`, 0 by default), `BonusScreen.jsx` + `CommissionRules.jsx` updated (recurring field enabled). **All example commission figures removed from the docs and mockups** per the no-example-numbers rule — §7.2 now lists rule types only. ✅
 
 ---
 
@@ -373,6 +374,13 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - `web/server.js` (EDITED) — mounts `/api/contracts` (after `/api/orders`).
 - Dependency: the type-based sort needs the IDYQ-side `pricing_type`/`line_type` tag live + a sync (verify `worktrackrBridge.ts` in `idoyourquotes-main`). Untagged lines default to one-off (safe — never invents recurring profit).
 
+### 14.9 Phase 5 file map — BATCH 2 (recurring commission wiring, BUILT)
+**Reads only the org-entered recurring rate; no figure in code (rate defaults to 0).**
+- `web/routes/commission.js` (EDITED — full rewrite preserving the one-off engine) — adds recurring: `userContracts` (per-month profit/charge, annual ÷ 12 in SQL), `contractOverrides`, `contractEarnsInPeriod` (active + start/cancel dates; draft/paused don't earn), `contractAmount` (monthly profit × the org's `recurringRate`, or a manager manual £), `contractRow` (breakdown row, `category:'recurring'`). `computeForUser` now folds active contracts into Confirmed, the breakdown, the bonus threshold turnover **and** the bonus profit base (Decision 5), and into the 3-period history. `/period` now lists salespeople from orders **or** contracts. New endpoint `PUT /contract-override/:contractId {amount,note,offset}` (manager) — manual £ per contract per period. Every breakdown row now carries a unique `key`.
+- `web/client/src/app/src/components/BonusScreen.jsx` (EDITED) — keys breakdown rows by the new `key` (recurring rows have no order id), header "Order" → "Source", footnote mentions active contracts. Recurring rows render via the pre-existing `recurring` category.
+- `web/client/src/app/src/components/CommissionRules.jsx` (EDITED) — the **Recurring rate** field is now enabled (was disabled pending Phase 5); help text is neutral; the example day-of-month was removed from the period-start help. (No example values anywhere; fields load from saved config, zero by default.)
+- **Docs scrub (this batch):** every example commission figure removed from the roadmap (§1, §5.5, §7.1, §7.2, §7.3, §7.4, build order, decisions log) and from `docs/mockups/ux-design-mockups-phase5.html` (rates/amounts/threshold shown as "—", read from config). §7.2 now lists rule *types* only, no numbers.
+
 ---
 
 ## 15. Current state / START HERE (for a fresh session)
@@ -396,7 +404,7 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - IDYQ **org allow-list** on the bridge before onboarding third-party customers (security).
 - Xero/QuickBooks connector (later).
 
-**Phase 5 scope when ready:** "act on quote" from a mirrored IDYQ quote → create a recurring **Contract** (new tables: contracts + contract_lines, recurring monthly profit); surface recurring profit on the company profile's "Services & monthly profit" panel; wire **recurring 5%** commission (the `recurringRate` config field already exists in `commission_settings`) into the existing commission engine, paid-gated like one-off. Design UX first per the working cadence.
+**Phase 5 scope when ready:** "act on quote" from a mirrored IDYQ quote → create a recurring **Contract** (new tables: contracts + contract_lines, recurring monthly profit); surface recurring profit on the company profile's "Services & monthly profit" panel; wire **recurring** commission (the `recurringRate` config field already exists in `commission_settings`) into the existing commission engine, paid-gated like one-off. Design UX first per the working cadence.
 
 **Phase 5 — UX signed off + decisions LOCKED (2026-06-17):**
 - **Recurring commission is automatic** — while a contract is `active` it earns recurring commission each period; no per-month "collected" toggle. The gate is contract status `active` + the existing manager per-period approval (WorkTrackr is not the accounts package, so there is no per-month paid flag — "active customer" is the gate, matching §7.2). Recurring basis = **clear monthly profit** (annual lines ÷ 12).
@@ -406,6 +414,6 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - **New Contracts page** under Sales (list + form, quote-driven) + "New contract" on the company profile; an "act on quote" button on the IDYQ quote view is a later batch.
 - **Company "Monthly profit" is auto-calculated** from the company's active contracts (manual `crm.totalProfit` retained as an optional override).
 
-**Phase 5 — BATCH 1 BUILT (backend foundation, 2026-06-17):** see §14.8. Validated (`node --check` + real Postgres-grammar parse). Remaining batches: 2 commission-engine recurring wiring → 3 Contracts list + form + nav → 4 company-profile services panel + cards → 5 act-on-quote button + final roadmap pass.
+**Phase 5 — BATCHES 1–2 BUILT (2026-06-17):** batch 1 = contracts backend foundation (§14.8); batch 2 = recurring commission wired into the engine reading only the org-entered recurring rate (§14.9). All example commission figures scrubbed from the docs. Validated (`node --check`, `esbuild --jsx`, real Postgres-grammar parse). Remaining batches: 3 Contracts list + form + nav → 4 company-profile services panel + cards → 5 act-on-quote button + final roadmap pass.
 
 **Working cadence (unchanged):** UX/design per phase first, then build ONE phase at a time, ONE batch per turn, each file validated (`node --check` for JS, `esbuild --jsx=automatic` for JSX) and handed over as a downloadable file with a short `filename → folder` list (no jargon). Keep this roadmap updated as the single source of truth.

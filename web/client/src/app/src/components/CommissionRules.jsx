@@ -11,10 +11,10 @@ const FIELDS = [
   { key: 'deductionPerSale',  label: 'Internal cost per sale',  prefix: '£', help: 'Your cost deducted before profit on a standard order (e.g. acquisition cost). Set 0 for none.' },
   { key: 'financeRate',       label: 'Finance rate',            suffix: '%', help: 'Applied to order value when an order is categorised “Finance”.' },
   { key: 'referralRate',      label: 'Referral rate',           suffix: '%', help: 'Applied to profit when an order is categorised “Referral”.' },
-  { key: 'recurringRate',     label: 'Recurring rate',          suffix: '%', help: 'For recurring Contracts — available once Contracts ship (Phase 5).', disabled: true },
+  { key: 'recurringRate',     label: 'Recurring rate',          suffix: '%', help: 'Applied to a contract’s clear monthly profit while the contract is active. Set 0 for none.' },
   { key: 'thresholdTurnover', label: 'Performance-bonus threshold', prefix: '£', help: 'Paid turnover in a period that unlocks the performance bonus. Set 0 to disable the bonus.' },
   { key: 'bonusRate',         label: 'Performance-bonus rate',  suffix: '%', help: 'Percentage of the period’s paid profit awarded once the threshold is exceeded.' },
-  { key: 'periodStartDay',    label: 'Period start day',        suffix: '', help: 'Day of month each commission period begins (1–28). E.g. 25 gives a 25th–25th period.' },
+  { key: 'periodStartDay',    label: 'Period start day',        suffix: '', help: 'Day of month each commission period begins (1–28).' },
 ];
 
 export default function CommissionRules() {

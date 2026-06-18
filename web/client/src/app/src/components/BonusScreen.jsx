@@ -103,11 +103,11 @@ export default function BonusScreen() {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
         <div className="px-4 py-2.5 bg-gray-50 text-[14px] font-medium text-gray-900">Breakdown</div>
         <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_60px_minmax(0,1fr)_80px] gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500 border-t border-gray-100">
-          <div>Order</div><div>Type</div><div className="text-right">Rate</div><div className="text-right">Amount</div><div className="text-right">Status</div>
+          <div>Source</div><div>Type</div><div className="text-right">Rate</div><div className="text-right">Amount</div><div className="text-right">Status</div>
         </div>
         {breakdown.length === 0 && <div className="px-4 py-8 text-center text-[13px] text-gray-500">No commission activity in this period.</div>}
         {breakdown.map((b) => (
-          <div key={b.orderId} className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_60px_minmax(0,1fr)_80px] gap-2 px-4 py-2.5 items-center border-t border-gray-100 text-[13px]">
+          <div key={b.key || b.orderId} className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_60px_minmax(0,1fr)_80px] gap-2 px-4 py-2.5 items-center border-t border-gray-100 text-[13px]">
             <div className="truncate text-gray-900">{b.company}{b.overridden && <span className="ml-1 text-[10px] text-[#3C3489]">(manual)</span>}</div>
             <div className="text-gray-600">{CAT[b.category] || b.category}</div>
             <div className="text-right text-gray-500">{b.rate}%</div>
@@ -127,7 +127,7 @@ export default function BonusScreen() {
         ))}
       </div>
 
-      <div className="text-[12px] text-gray-400">Calculated automatically from your paid orders and your organisation’s configured rates; a manager approves each period before payroll. Manual adjustments a manager makes to an order show as “manual”.</div>
+      <div className="text-[12px] text-gray-400">Calculated automatically from your paid orders and active contracts, using your organisation’s configured rates; a manager approves each period before payroll. Manual adjustments a manager makes show as “manual”.</div>
     </div>
   );
 }

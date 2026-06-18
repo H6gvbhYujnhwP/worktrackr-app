@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WorkTrackr — Phase 5 UX design pass (Contracts + recurring commission)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<style>
+:root{
+ --color-background-primary:#ffffff;--color-background-secondary:#f4f3ee;--color-background-tertiary:#ebe9e2;--color-background-info:#e6f1fb;
+ --color-text-primary:#1a1a18;--color-text-secondary:#6b6a64;--color-text-tertiary:#9c9a92;
+ --color-text-info:#185fa5;--color-text-success:#0f6e56;--color-text-danger:#a32d2d;--color-text-warning:#854f0b;
+ --color-border-tertiary:rgba(0,0,0,.12);--color-border-secondary:rgba(0,0,0,.22);--color-border-info:#378add;
+ --border-radius-md:8px;--border-radius-lg:12px;
+ --p:var(--color-text-primary);--s:var(--color-text-secondary);--t:var(--color-text-tertiary);--bg2:var(--color-background-secondary);--b:var(--color-border-tertiary);
+ --teal-bg:#E1F5EE;--teal-bd:#0F6E56;--teal-tx:#085041;
+ --idyq-bg:#EEEDFE;--idyq-tx:#3C3489;
+ --gold:#d4a017;--gold-tx:#8a6a0f;
+}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--color-text-primary);background:#faf9f5;margin:0;padding:24px 16px;line-height:1.5}
+.wrap{max-width:780px;margin:0 auto}
+.note{background:#fff;border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:14px 18px;font-size:14px;color:var(--color-text-secondary);margin-bottom:28px}
+.decisions{background:#FFFBEE;border:.5px solid #E0C76B;border-radius:12px;padding:16px 18px;font-size:13.5px;color:#5b4a13;margin:28px 0}
+.decisions h3{margin:0 0 8px;font-size:15px;color:#3f340d;font-weight:600}
+.decisions ol{margin:0;padding-left:20px}
+.decisions li{margin-bottom:9px}
+.decisions b{color:#2f2708}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+h2{font-size:18px;font-weight:500;margin:34px 0 4px}
+.cap{font-size:13px;color:var(--color-text-secondary);margin:0 0 12px}
+.sheet{background:#fff;border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:18px}
+button{font:inherit;background:transparent;border:.5px solid var(--color-border-secondary);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--color-text-primary)}
+.btn-teal{border-color:var(--teal-bd);color:var(--teal-tx)}
+.btn-gold{border-color:var(--gold);color:var(--gold-tx)}
+.pill{border-radius:8px;padding:3px 9px;font-size:12px;display:inline-block}
+.pill-teal{background:var(--teal-bg);color:var(--teal-tx)}
+.pill-amber{background:#FAEEDA;color:#854F0B}
+.pill-gray{background:#F1EFE8;color:#2C2C2A}
+.pill-red{background:#FAECE7;color:#993C1D}
+.badge-idyq{background:var(--idyq-bg);color:var(--idyq-tx);border-radius:6px;padding:2px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px}
+.row{display:grid;gap:8px;align-items:center;padding:11px 16px;border-top:.5px solid var(--color-border-tertiary);font-size:13px}
+.hdr{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);background:var(--bg2)}
+.tbl{border:.5px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden}
+.card{background:var(--bg2);border-radius:8px;padding:14px}
+.card .k{font-size:13px;color:var(--s)}
+.card .v{font-size:22px;font-weight:500;margin-top:2px}
+.muted{color:var(--t)}
+.green{color:var(--color-text-success)}
+.flx{display:flex;align-items:center;gap:8px}
+.sb{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+small{font-size:12px;color:var(--s)}
+.tag{font-size:9.5px;font-weight:600;border-radius:4px;padding:1px 5px;background:var(--idyq-bg);color:var(--idyq-tx)}
+.tag-mo{background:var(--teal-bg);color:var(--teal-tx)}
+.tag-yr{background:#E6F1FB;color:#0C447C}
+.tag-1{background:#FAECE7;color:#993C1D}
+</style>
+<script>function sendPrompt(){}function openLink(){}</script>
+</head>
+<body>
+<div class="wrap">
+
+<h1>WorkTrackr — Phase 5 UX design pass</h1>
+<div class="note">
+<b>Phase 5 = IDYQ "act on quote" → recurring <b>Contracts</b>, recurring profit on the company profile, and recurring commission wired into the existing engine.</b>
+These are layout / flow references in the live app's visual language (white cards, teal = recurring, gold accent <code>#d4a017</code>, indigo "from IdoYourQuotes" badge). Decision points are flagged inline and summarised in the gold box at the end. Once signed off, these screens fold into <code>ux-design-mockups.html</code> as screens 10–14. Nothing here introduces a hardcoded money figure — no rate is shown; all rates are read from the org's <code>commission_settings</code>.
+</div>
+
+<!-- ───────────────────────── 10. CONTRACTS LIST ───────────────────────── -->
+<h2>10. Contracts list <span class="pill pill-teal" style="font-size:11px;vertical-align:2px">Sales</span></h2>
+<p class="cap">New sidebar item under <b>Sales</b>, directly below Orders. The recurring counterpart to the orders list — teal accent throughout to signal "recurring", mirroring the coral/gold one-off order branch.</p>
+<div class="sheet">
+  <div class="sb" style="margin-bottom:14px">
+    <div><div style="font-size:18px;font-weight:500">Contracts</div><small>3 active · 1 paused — total recurring profit <b class="green">£1,930/mo</b></small></div>
+    <button class="btn-teal" style="height:34px"><i class="ti ti-plus" style="vertical-align:-2px"></i> New contract</button>
+  </div>
+  <div class="flx" style="gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <span class="pill pill-gray">All <span class="muted">4</span></span>
+    <span class="pill pill-teal" style="outline:2px solid #4FB99B">Active <span style="opacity:.6">3</span></span>
+    <span class="pill pill-amber">Paused <span style="opacity:.6">1</span></span>
+    <span class="pill pill-red">Cancelled <span style="opacity:.6">0</span></span>
+  </div>
+  <div class="tbl">
+    <div class="row hdr" style="grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) 24px">
+      <div>Company</div><div>Salesperson</div><div style="text-align:right">Monthly charge</div><div style="text-align:right">Monthly profit</div><div></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) 24px">
+      <div><div style="font-weight:500">Acme Joinery Ltd</div><span class="pill pill-teal" style="margin-top:4px;font-size:11px">Active</span> <span class="badge-idyq" style="margin-left:4px"><i class="ti ti-lock"></i> IDYQ #2041</span></div>
+      <div class="muted">James Edgar</div><div style="text-align:right">£820</div><div style="text-align:right;color:var(--color-text-success)">£610</div><div class="muted"><i class="ti ti-chevron-right"></i></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) 24px;background:#fbfbf9">
+      <div><div style="font-weight:500">Harbour Dental</div><span class="pill pill-teal" style="margin-top:4px;font-size:11px">Active</span> <span class="badge-idyq" style="margin-left:4px"><i class="ti ti-lock"></i> IDYQ #2038</span></div>
+      <div class="muted">James Edgar</div><div style="text-align:right">£1,140</div><div style="text-align:right;color:var(--color-text-success)">£890</div><div class="muted"><i class="ti ti-chevron-right"></i></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2fr) minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) 24px">
+      <div><div style="font-weight:500">Lockton & Co</div><span class="pill pill-amber" style="margin-top:4px;font-size:11px">Paused</span></div>
+      <div class="muted">A. Rao</div><div style="text-align:right">£540</div><div style="text-align:right" class="muted">£430 <span style="font-size:11px">(not accruing)</span></div><div class="muted"><i class="ti ti-chevron-right"></i></div>
+    </div>
+  </div>
+  <small style="display:block;margin-top:10px"><i class="ti ti-info-circle" style="vertical-align:-1px"></i> "Monthly profit" is the recurring profit that feeds the recurring commission while a contract is <b>Active</b>. Paused/cancelled contracts stop accruing.</small>
+</div>
+
+<!-- ───────────────────────── 11. NEW CONTRACT FROM QUOTE ───────────────────────── -->
+<h2>11. New contract — act on an IdoYourQuotes quote</h2>
+<p class="cap">Mirrors the order form, but recurring. Primary creation path = pull a won IDYQ quote: its <b>recurring</b> lines (monthly / annual) become the contract; cost/profit/type ride across read-only from the quote (single source of truth in IDYQ). One-off lines are split out — they belong on an Order, not a Contract.</p>
+<div class="sheet">
+  <div class="sb" style="margin-bottom:14px">
+    <div style="font-size:16px;font-weight:500">New contract</div>
+    <span class="pill pill-gray">Draft</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--s);margin-bottom:4px">Company</div>
+      <div style="border:.5px solid var(--color-border-secondary);border-radius:8px;padding:8px 10px;font-size:13px">Acme Joinery Ltd <i class="ti ti-chevron-down muted" style="float:right"></i></div>
+      <small>Auto-filled from the quote's linked company; editable.</small>
+    </div>
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--s);margin-bottom:4px">Pull from IdoYourQuotes</div>
+      <div class="flx"><div style="flex:1;border:.5px solid var(--color-border-secondary);border-radius:8px;padding:8px 10px;font-size:13px">#2041 · Acme Joinery <i class="ti ti-chevron-down muted" style="float:right"></i></div><button class="btn-idyq" style="border-color:var(--idyq-tx);color:var(--idyq-tx)">Pull</button></div>
+      <small style="color:var(--idyq-tx)">Pulled: #2041</small>
+    </div>
+  </div>
+
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--s);margin-bottom:6px">Recurring services <span class="muted">(from the quote, read-only)</span></div>
+  <div class="tbl" style="margin-bottom:6px">
+    <div class="row hdr" style="grid-template-columns:minmax(0,2.2fr) 52px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Service</div><div style="text-align:right">Qty</div><div style="text-align:right">Cost /mo</div><div style="text-align:right">Profit /mo</div><div style="text-align:right">Charge /mo</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.2fr) 52px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Managed IT support <span class="tag tag-mo">monthly</span> <span class="badge-idyq"><i class="ti ti-lock"></i> IDYQ</span></div>
+      <div style="text-align:right">1</div><div style="text-align:right">£140</div><div style="text-align:right green">£360</div><div style="text-align:right">£500</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.2fr) 52px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);background:#fbfbf9">
+      <div>Microsoft 365 licences <span class="tag tag-mo">monthly</span> <span class="badge-idyq"><i class="ti ti-lock"></i> IDYQ</span></div>
+      <div style="text-align:right">12</div><div style="text-align:right">£60</div><div style="text-align:right green">£120</div><div style="text-align:right">£180</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.2fr) 52px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Cyber-essentials renewal <span class="tag tag-yr">annual</span> <span class="badge-idyq"><i class="ti ti-lock"></i> IDYQ</span></div>
+      <div style="text-align:right">1</div><div style="text-align:right">£20</div><div style="text-align:right green">£130</div><div style="text-align:right">£150</div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr auto;background:var(--teal-bg);font-weight:500">
+      <div style="color:var(--teal-tx)">Total recurring — normalised to /month</div>
+      <div style="color:var(--teal-tx)">cost £232 &nbsp;·&nbsp; <span style="color:var(--color-text-success)">profit £610</span> &nbsp;·&nbsp; charge £842 /mo</div>
+    </div>
+  </div>
+  <small style="display:block;margin-bottom:14px"><i class="ti ti-calendar-repeat" style="vertical-align:-1px"></i> Annual lines are shown at their native interval but <b>normalised ÷12</b> into the monthly totals and the commission basis. <b>[Decision 2]</b></small>
+
+  <div style="border:.5px dashed #C98B6B;background:#FCF3EF;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#7A3A1C">
+    <i class="ti ti-arrow-ramp-right-2" style="vertical-align:-1px"></i> Quote #2041 also has <b>2 one-off lines</b> (Firewall hardware £900, Install £300). These don't belong on a recurring contract.
+    <span style="display:inline-block;margin-top:6px"><button style="border-color:#993C1D;color:#993C1D;font-size:12px;padding:4px 10px"><i class="ti ti-file-plus"></i> Create a linked Order for the one-off lines</button> <span class="muted">or ignore</span> <b>[Decision 3]</b></span>
+  </div>
+
+  <div class="sb">
+    <small>Salesperson: <b>James Edgar</b> (drives recurring commission) · Commission basis: <b>recurring</b> @ org rate</small>
+    <div class="flx"><button>Save draft</button><button class="btn-teal"><i class="ti ti-circle-check" style="vertical-align:-2px"></i> Activate contract</button></div>
+  </div>
+</div>
+
+<!-- ───────────────────────── 12. COMPANY PROFILE — SERVICES PANEL ───────────────────────── -->
+<h2>12. Company profile — Services &amp; monthly profit (now populated)</h2>
+<p class="cap">The placeholder panel becomes live: it aggregates the company's <b>active contract</b> lines into a per-service profit table, and the two metric cards fill from the same source.</p>
+<div class="sheet">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+    <div class="card"><div class="k">Monthly profit</div><div class="v green">£610</div><small>from active contracts <b>[Decision 7]</b></small></div>
+    <div class="card"><div class="k">Active services</div><div class="v">3</div><small>across 1 contract</small></div>
+    <div class="card"><div class="k">Open tasks</div><div class="v">2</div></div>
+  </div>
+
+  <div class="tbl">
+    <div class="row" style="grid-template-columns:1fr auto;background:#fff;border-top:none">
+      <div style="font-weight:500">Services &amp; monthly profit</div>
+      <div class="badge-idyq"><i class="ti ti-lock"></i> from IdoYourQuotes</div>
+    </div>
+    <div class="row hdr" style="grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Service</div><div style="text-align:right">Charge</div><div style="text-align:right">Cost</div><div style="text-align:right">Profit</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Managed IT support <span class="tag tag-mo">/mo</span></div><div style="text-align:right">£500</div><div style="text-align:right">£140</div><div style="text-align:right green">£360</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);background:#fbfbf9">
+      <div>Microsoft 365 licences <span class="tag tag-mo">/mo</span></div><div style="text-align:right">£180</div><div style="text-align:right">£60</div><div style="text-align:right green">£120</div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)">
+      <div>Cyber-essentials renewal <span class="tag tag-yr">/yr ÷12</span></div><div style="text-align:right">£150</div><div style="text-align:right">£20</div><div style="text-align:right green">£130</div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr auto;background:var(--teal-bg);font-weight:500">
+      <div style="color:var(--teal-tx)">Total recurring / month</div><div style="color:var(--color-text-success)">£610 profit</div>
+    </div>
+  </div>
+  <small style="display:block;margin-top:10px"><i class="ti ti-lock" style="vertical-align:-1px"></i> Read-only — margins are edited on the quote in IdoYourQuotes and re-pulled. Header gains a "New contract" button alongside "New order".</small>
+</div>
+
+<!-- ───────────────────────── 13. COMMISSION & BONUS — RECURRING ───────────────────────── -->
+<h2>13. My commission &amp; bonus — recurring rows added</h2>
+<p class="cap">The existing bonus screen already supports a "Recurring" category — Phase 5 makes the engine emit those rows. Each active contract contributes <b>one month</b> of recurring profit × the org's <code>recurringRate</code> to the live period.</p>
+<div class="sheet">
+  <div class="sb" style="margin-bottom:12px">
+    <div style="font-size:16px;font-weight:500">My commission &amp; bonus</div>
+    <small><i class="ti ti-chevron-left"></i> 25 May – 25 Jun <i class="ti ti-chevron-right"></i></small>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+    <div class="card"><div class="k">Confirmed (payable)</div><div class="v green">—</div><small>invoices paid + active contracts</small></div>
+    <div class="card"><div class="k">Pending</div><div class="v">—</div><small>awaiting settlement</small></div>
+    <div class="card"><div class="k">Performance bonus</div><div class="v"><span class="pill pill-amber" style="font-size:13px">Locked</span></div><small>turnover vs your threshold</small></div>
+  </div>
+
+  <div class="tbl">
+    <div class="row hdr" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,1fr) 56px minmax(0,1fr) 64px">
+      <div>Company</div><div>Source</div><div style="text-align:right">Basis</div><div style="text-align:right">Rate</div><div style="text-align:right">Amount</div><div></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,1fr) 56px minmax(0,1fr) 64px">
+      <div>Byte Cafe</div><div><span class="pill pill-gray" style="font-size:11px">One-off</span></div><div style="text-align:right">£1,400</div><div style="text-align:right">—</div><div style="text-align:right">—</div><div style="text-align:right"><span class="pill pill-teal" style="font-size:11px">Paid</span></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,1fr) 56px minmax(0,1fr) 64px;background:#fbfbf9">
+      <div>Acme Joinery <span class="badge-idyq"><i class="ti ti-repeat"></i> contract</span></div><div><span class="pill pill-teal" style="font-size:11px">Recurring</span></div><div style="text-align:right">£610/mo</div><div style="text-align:right">—</div><div style="text-align:right">—</div><div style="text-align:right"><span class="pill pill-teal" style="font-size:11px">Active</span></div>
+    </div>
+    <div class="row" style="grid-template-columns:minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,1fr) 56px minmax(0,1fr) 64px">
+      <div>Harbour Dental <span class="badge-idyq"><i class="ti ti-repeat"></i> contract</span></div><div><span class="pill pill-teal" style="font-size:11px">Recurring</span></div><div style="text-align:right">£890/mo</div><div style="text-align:right">—</div><div style="text-align:right">—</div><div style="text-align:right"><span class="pill pill-teal" style="font-size:11px">Active</span></div>
+    </div>
+  </div>
+  <small style="display:block;margin-top:10px"><i class="ti ti-info-circle" style="vertical-align:-1px"></i> Recurring lines are gated on the contract being <b>Active</b> (the customer is paying their monthly bill) rather than a one-off Paid flag, and are still <b>manager-approved per period</b> before payroll. A manager can set a manual £ for any month. <b>[Decision 1]</b> Recurring monthly charge counts toward the bonus threshold. <b>[Decision 5]</b></small>
+</div>
+
+<!-- ───────────────────────── 14. ACT ON QUOTE PANEL ───────────────────────── -->
+<h2>14. Act on quote — IdoYourQuotes quote detail (secondary entry)</h2>
+<p class="cap">The read-only quote view gains a small "Act on this quote" panel. Quote text stays in IDYQ; WorkTrackr adds the link + the won/contract action. (This is the §2.11 "act on quote" promise.)</p>
+<div class="sheet">
+  <div class="sb" style="margin-bottom:10px">
+    <div><div style="font-size:16px;font-weight:500">Quote #2041 <span class="badge-idyq" style="vertical-align:2px"><i class="ti ti-lock"></i> from IdoYourQuotes</span></div><small>Acme Joinery Ltd · total £1,200 + £842/mo recurring</small></div>
+    <span class="pill pill-teal">Accepted</span>
+  </div>
+  <div style="border:.5px solid var(--color-border-tertiary);border-radius:8px;padding:12px;background:var(--bg2)">
+    <div style="font-weight:500;margin-bottom:8px;font-size:13px">Act on this quote</div>
+    <div class="flx" style="flex-wrap:wrap;gap:8px">
+      <button><i class="ti ti-link" style="vertical-align:-2px"></i> Linked to: Acme Joinery Ltd</button>
+      <button class="btn-teal"><i class="ti ti-repeat" style="vertical-align:-2px"></i> Create recurring contract</button>
+      <button class="btn-gold"><i class="ti ti-file-plus" style="vertical-align:-2px"></i> Create one-off order</button>
+    </div>
+    <small style="display:block;margin-top:8px">"Create contract" pulls the recurring lines; "Create order" pulls the one-off lines. Both pre-fill the linked company and salesperson. <b>[Decision 6]</b></small>
+  </div>
+</div>
+
+<!-- ───────────────────────── DECISIONS ───────────────────────── -->
+<div class="decisions">
+<h3><i class="ti ti-help-hexagon" style="vertical-align:-2px"></i> Decisions needed before the build (my recommendation in each)</h3>
+<ol>
+<li><b>Recurring paid-gating model.</b> WorkTrackr isn't the accounts package (§9), so there's no per-month "paid" flag for contracts. <b>Recommend:</b> accrue one month of recurring commission per <b>Active</b> contract per commission period; the gate is contract status <code>active</code> + the existing manager per-period approval. This matches §7.2 "while … the customer remains active." Alternative: a manager "collected this period" toggle per contract (more accurate, much more admin).</li>
+<li><b>Annual line normalisation.</b> <b>Recommend:</b> store each line at its native interval (monthly/annual); annual ÷ 12 for the monthly-profit figure and the commission basis. Shown as <code>/yr ÷12</code>.</li>
+<li><b>Mixed quotes (one-off + recurring lines).</b> <b>Recommend:</b> a contract takes only the recurring lines; offer a one-click "create a linked Order for the one-off lines" (or ignore). Confirm that's the right split vs. forcing both onto one record.</li>
+<li><b>Mid-period start / cancel.</b> <b>Recommend v1:</b> count a full month if the contract is Active at the period boundary; no pro-rating (a later enhancement). OK?</li>
+<li><b>Bonus threshold.</b> Should recurring monthly <b>charge</b> count toward the personal performance-bonus turnover threshold? <b>Recommend:</b> yes (it's turnover they generated).</li>
+<li><b>Primary entry point.</b> <b>Recommend:</b> a new <b>Contracts</b> item in Sales (list + form, quote-driven), plus "New contract" on the company profile; with the "act on quote" panel (screen 14) as a secondary entry built in a later batch. OK?</li>
+<li><b>Company-profile "Monthly profit" card source.</b> <b>Recommend:</b> compute it from active contracts (replaces the manual <code>crm.totalProfit</code> field as the displayed figure). Keep the manual field as an optional manual override, or retire it? Your call.</li>
+</ol>
+<div style="margin-top:10px;padding-top:10px;border-top:.5px solid #E0C76B">
+<b>Two findings to confirm (not decisions):</b>
+<div style="margin-top:6px"><b>A.</b> <code>mapLine</code> in <code>web/routes/idyq.js</code> doesn't expose <code>buyInCost</code>/<code>profit</code>/<code>type</code>, so the <i>order form's</i> IDYQ pull currently brings cost £0 / no type (the backend <code>/pull-quote</code> path is fine — it reads the mirror directly). I'll fix <code>mapLine</code> in Phase-5 batch 1 (tiny additive change) and have contract pulling go backend-side so it's correct regardless.</div>
+<div style="margin-top:6px"><b>B.</b> I can't see the other repo here (<code>idoyourquotes-main</code>), so I can't verify <code>server/_core/worktrackrBridge.ts</code> emits <code>cost_price/profit/pricing_type</code>. Until that's live + a sync runs, pulled recurring lines carry charge with zero cost. Exact check listed in the chat.</div>
+</div>
+</div>
+
+<p class="cap" style="margin-top:20px"><b>Proposed build order (one batch per turn):</b> &nbsp;1 schema + <code>contracts.js</code> backend + <code>mapLine</code> fix → 2 commission-engine recurring wiring → 3 Contracts list + form + nav → 4 company-profile services panel + cards → 5 act-on-quote panel + roadmap update.</p>
+
+</div>
+</body>
+</html>
