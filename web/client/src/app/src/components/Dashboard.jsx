@@ -39,6 +39,7 @@ import CompanyPipelineList from './CompanyPipelineList.jsx';
 import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
+import ContractsList from './ContractsList.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
 import CommissionRules from './CommissionRules.jsx';
@@ -84,6 +85,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   const [activeTab, setActiveTab]             = useState('all_open');
   const [openCompanyId, setOpenCompanyId]     = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
+  const [contractsInitial, setContractsInitial] = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
   const [priorityFilter, setPriorityFilter]   = useState('all');
   const [assigneeFilter, setAssigneeFilter]   = useState('all');
@@ -119,6 +121,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   }
 
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
+  const isManager = ['admin', 'manager', 'owner', 'partner_admin'].includes(membership?.role);
 
   // ── Ticket counts ──────────────────────────────────────────────────────────
   const ticketCounts = {
@@ -377,10 +380,12 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'companies'      && (
         openCompanyId
           ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
-              onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }} />
+              onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
+              onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
           : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
+      {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'commission-rules' && <CommissionRules />}

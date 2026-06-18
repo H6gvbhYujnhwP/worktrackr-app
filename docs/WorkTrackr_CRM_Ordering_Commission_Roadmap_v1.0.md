@@ -1,6 +1,6 @@
 # WorkTrackr — CRM, Ordering & Commission Roadmap (v1.0)
 
-**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is in progress** (IDYQ act-on-quote + recurring Contracts): UX signed off, decisions locked, and **batches 1–2 are built** — contracts backend foundation + recurring commission wired into the engine (reading only the org-entered recurring rate). All example commission figures have been scrubbed from this document. See §14.8–§14.9 and §15. Phase 6 not yet built.
+**Status:** Living document. Phase 0 (IdoYourQuotes integration) is built, deployed and working in production. All nine UX mockups are produced, approved and folded into the single canonical mockup file. The quote→order **cost/profit/type pull** is **deployed on the WorkTrackr side** (the IDYQ-repo `worktrackrBridge.ts` change must also be live for it to populate — verify in that repo). **Phases 1, 2, 3 and 4 are BUILT** (company-centred records + IA regroup; contacts/history/tasks; the full Orders module with approval/purchasing/fulfilment queues; the fully-configurable commission engine + engineer wage progression). **Phase 5 is in progress** (IDYQ act-on-quote + recurring Contracts): UX signed off, decisions locked, and **batches 1–3 are built** — contracts backend foundation, recurring commission wired into the engine (reading only the org-entered recurring rate), and the visible Contracts page (list + form + nav, auto-sorting quote pull). All example commission figures have been scrubbed from this document. See §14.8–§14.10 and §15. Phase 6 not yet built.
 
 **Last updated:** 2026-06-17
 
@@ -300,6 +300,7 @@ UX is designed before coding each phase.
 - Phase 5 decisions LOCKED: recurring commission **automatic while a contract is active** (no per-month toggle; gate = active + existing per-period manager approval); basis = **clear monthly profit**, annual ÷ 12; **mid-period start = full month**; recurring charge **counts toward the bonus threshold**; **mixed quotes auto-sort by line type** (monthly/annual → contract, one-off/untagged → auto-created linked Order, one screen); **new Contracts page** in Sales + "New contract" on the company; company **Monthly profit auto-calculated** from active contracts. ✅
 - Phase 5 BATCH 1 built: `contracts`/`contract_lines`/`contract_commission_overrides` tables + `contracts.js` (incl. auto-sorting `pull-quote`) + `idyq.js` `mapLine` fix + `/api/contracts` mount. ✅
 - Phase 5 BATCH 2 built: recurring commission wired into `commission.js` (active contracts → Confirmed + breakdown + threshold + bonus base + history; per-contract per-period manual £; rate read only from the org's `recurringRate`, 0 by default), `BonusScreen.jsx` + `CommissionRules.jsx` updated (recurring field enabled). **All example commission figures removed from the docs and mockups** per the no-example-numbers rule — §7.2 now lists rule types only. ✅
+- Phase 5 BATCH 3 built: `ContractsList.jsx` + `ContractForm.jsx` (auto-sorting quote pull, monthly/annual lines, status actions) + nav (Sidebar Contracts in Sales, Dashboard view, AppLayout map) + "New contract" on the company profile. Manager-only pause/cancel via `isManager`. ✅
 
 ---
 
@@ -381,6 +382,15 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - `web/client/src/app/src/components/CommissionRules.jsx` (EDITED) — the **Recurring rate** field is now enabled (was disabled pending Phase 5); help text is neutral; the example day-of-month was removed from the period-start help. (No example values anywhere; fields load from saved config, zero by default.)
 - **Docs scrub (this batch):** every example commission figure removed from the roadmap (§1, §5.5, §7.1, §7.2, §7.3, §7.4, build order, decisions log) and from `docs/mockups/ux-design-mockups-phase5.html` (rates/amounts/threshold shown as "—", read from config). §7.2 now lists rule *types* only, no numbers.
 
+### 14.10 Phase 5 file map — BATCH 3 (Contracts UI + nav, BUILT)
+**No money figure in any field; all values come from the quote (read-only) or are typed in.**
+- `web/client/src/app/src/components/ContractsList.jsx` (NEW) — recurring contracts list (teal accent), filters all/draft/active/paused/cancelled, columns Company / Salesperson / Charge·mo / Profit·mo, "active recurring profit £/mo" summary, hosts the form. Mirrors `OrdersList.jsx`.
+- `web/client/src/app/src/components/ContractForm.jsx` (NEW) — create/edit a draft, **Pull from IdoYourQuotes** (calls the backend `pull-quote`; saves a draft first if new, then shows "N one-off items started as a separate order"), recurring line table with a monthly/annual interval picker and a per-line **Profit / mo** column (annual ÷ 12), monthly totals, status pill + actions Save / Activate·Resume (all) / Pause·Cancel (manager only, via `isManager` prop; backend also enforces). IDYQ lines read-only.
+- `web/client/src/app/src/components/Sidebar.jsx` (EDITED) — **Contracts** item in Sales under Orders (Repeat icon).
+- `web/client/src/app/src/components/AppLayout.jsx` (EDITED) — `contracts → 'contracts'` in VIEW_TO_PAGE.
+- `web/client/src/app/src/components/Dashboard.jsx` (EDITED) — imports + renders `<ContractsList>`; derives `isManager` from membership role; `contractsInitial` state; passes `onNewContract` to the company profile.
+- `web/client/src/app/src/components/CompanyProfile.jsx` (EDITED) — **New contract** button beside New order (Repeat icon), `onNewContract` prop.
+
 ---
 
 ## 15. Current state / START HERE (for a fresh session)
@@ -414,6 +424,6 @@ Verified gap: the bridge previously emitted quote lines sell-only (`product_id, 
 - **New Contracts page** under Sales (list + form, quote-driven) + "New contract" on the company profile; an "act on quote" button on the IDYQ quote view is a later batch.
 - **Company "Monthly profit" is auto-calculated** from the company's active contracts (manual `crm.totalProfit` retained as an optional override).
 
-**Phase 5 — BATCHES 1–2 BUILT (2026-06-17):** batch 1 = contracts backend foundation (§14.8); batch 2 = recurring commission wired into the engine reading only the org-entered recurring rate (§14.9). All example commission figures scrubbed from the docs. Validated (`node --check`, `esbuild --jsx`, real Postgres-grammar parse). Remaining batches: 3 Contracts list + form + nav → 4 company-profile services panel + cards → 5 act-on-quote button + final roadmap pass.
+**Phase 5 — BATCHES 1–3 BUILT (2026-06-17):** batch 1 = contracts backend foundation (§14.8); batch 2 = recurring commission wired into the engine, reading only the org-entered recurring rate (§14.9); batch 3 = Contracts list + form + nav, with the auto-sorting quote pull and a "New contract" button on the company profile (§14.10). All example commission figures scrubbed from the docs + mockups. Validated (`node --check`, `esbuild --jsx`, real Postgres-grammar parse). Remaining batches: 4 company-profile services panel + metric cards → 5 act-on-quote button on the IDYQ quote view + final roadmap pass.
 
 **Working cadence (unchanged):** UX/design per phase first, then build ONE phase at a time, ONE batch per turn, each file validated (`node --check` for JS, `esbuild --jsx=automatic` for JSX) and handed over as a downloadable file with a short `filename → folder` list (no jargon). Keep this roadmap updated as the single source of truth.

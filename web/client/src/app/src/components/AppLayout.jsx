@@ -16,6 +16,7 @@ const VIEW_TO_PAGE = {
   'my-tasks':       'my-tasks',
   companies:        'companies',
   orders:           'orders',
+  contracts:        'contracts',
   'order-queues':   'order-queues',
   'my-commission':  'my-commission',
   'commission-rules': 'commission-rules',

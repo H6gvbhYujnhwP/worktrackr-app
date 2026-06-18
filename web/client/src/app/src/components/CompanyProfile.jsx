@@ -8,7 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Check, Plus, Lock, X, Pencil,
-  Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck,
+  Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck, Repeat,
 } from 'lucide-react';
 
 const STAGES = [
@@ -42,7 +42,7 @@ const timeAgo = (iso) => {
 };
 const emptyPerson = { name: '', role: '', email: '', phone: '', isDecisionMaker: false, editIndex: -1 };
 
-export default function CompanyProfile({ companyId, onBack, onNewOrder }) {
+export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewContract }) {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -195,6 +195,10 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder }) {
             <button onClick={() => onNewOrder && onNewOrder(company)}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#378add] text-[#185fa5] px-3 py-1.5 text-[13px] hover:bg-[#e6f1fb]">
               <Plus className="w-4 h-4" /> New order
+            </button>
+            <button onClick={() => onNewContract && onNewContract(company)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#0F6E56] text-[#085041] px-3 py-1.5 text-[13px] hover:bg-[#E1F5EE]">
+              <Repeat className="w-4 h-4" /> New contract
             </button>
           </div>
         </div>
