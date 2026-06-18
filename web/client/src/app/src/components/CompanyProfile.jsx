@@ -53,6 +53,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
   const [personForm, setPersonForm] = useState(null); // null = closed
   const [taskForm, setTaskForm] = useState(null);      // null = closed
+  const [services, setServices] = useState({ loading: true, lines: [], monthlyProfit: 0, count: 0 });
 
   const loadCompany = async () => {
     const r = await fetch(`/api/contacts/${companyId}`, { credentials: 'include' });
@@ -65,6 +66,21 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const loadHistory = () =>
     fetch(`/api/contacts/${companyId}/history`, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : [])).then((d) => setHistory(Array.isArray(d) ? d : [])).catch(() => {});
+  // Active recurring services for this company = the lines of its active contracts.
+  const loadServices = async () => {
+    try {
+      const r = await fetch(`/api/contracts?contactId=${companyId}&status=active`, { credentials: 'include' });
+      const list = r.ok ? await r.json() : [];
+      const details = await Promise.all(
+        list.map((c) => fetch(`/api/contracts/${c.id}`, { credentials: 'include' }).then((rr) => (rr.ok ? rr.json() : null)).catch(() => null))
+      );
+      const lines = details.filter(Boolean).flatMap((c) => c.lines || []);
+      const monthlyProfit = lines.reduce((s, l) => s + (Number(l.monthlyProfit) || 0), 0);
+      setServices({ loading: false, lines, monthlyProfit, count: lines.length });
+    } catch {
+      setServices({ loading: false, lines: [], monthlyProfit: 0, count: 0 });
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -75,6 +91,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     })();
     loadTasks();
     loadHistory();
+    loadServices();
     return () => { alive = false; };
   }, [companyId]);
 
@@ -160,7 +177,11 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
   const crm = company.crm || {};
   const people = Array.isArray(company.contactPersons) ? company.contactPersons : [];
-  const monthly = Number(crm.totalProfit);
+  // Decision 7: monthly profit is auto-calculated from active contracts; the
+  // manual crm.totalProfit is kept only as a fallback when there are none.
+  const computedMonthly = services.monthlyProfit;
+  const monthly = computedMonthly > 0 ? computedMonthly : (Number(crm.totalProfit) || 0);
+  const money0 = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   const stagePill = STAGES.find((s) => s.key === crm.salesStage)?.pill || 'bg-gray-100 text-gray-700';
   const openTasks = tasks.filter((t) => t.status === 'open');
   const today = new Date().toISOString().slice(0, 10);
@@ -212,7 +233,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
         </div>
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-[13px] text-gray-500">Active services</div>
-          <div className="text-2xl font-medium text-gray-900">—</div>
+          <div className="text-2xl font-medium text-gray-900">{services.loading ? '…' : services.count}</div>
         </div>
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="text-[13px] text-gray-500">Open tasks</div>
@@ -220,17 +241,50 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
         </div>
       </div>
 
-      {/* Services & monthly profit (from IdoYourQuotes) */}
+      {/* Services & monthly profit (from active contracts) */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5 mb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-base font-medium text-gray-900">Services &amp; monthly profit</span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-[#EEEDFE] text-[#3C3489] px-2 py-0.5 text-[11px]">
-            <Lock className="w-3 h-3" /> from IdoYourQuotes
-          </span>
+          {services.lines.some((l) => l.source === 'idyq') && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-[#EEEDFE] text-[#3C3489] px-2 py-0.5 text-[11px]">
+              <Lock className="w-3 h-3" /> from IdoYourQuotes
+            </span>
+          )}
         </div>
-        <div className="text-[13px] text-gray-500 py-6 text-center border-t border-gray-100">
-          Linked IdoYourQuotes services will appear here once a quote is linked to this company.
-        </div>
+        {services.loading ? (
+          <div className="text-[13px] text-gray-500 py-6 text-center border-t border-gray-100">Loading services…</div>
+        ) : services.lines.length === 0 ? (
+          <div className="text-[13px] text-gray-500 py-6 text-center border-t border-gray-100">
+            No active services yet. Activate a contract for this company to see recurring services and monthly profit here.
+          </div>
+        ) : (
+          <div className="border-t border-gray-100">
+            <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 text-[11px] uppercase tracking-wide text-gray-500">
+              <div>Service</div><div className="text-right">Charge</div><div className="text-right">Cost</div><div className="text-right">Profit</div>
+            </div>
+            {services.lines.map((l) => {
+              const charge = (Number(l.monthlyCost) || 0) + (Number(l.monthlyProfit) || 0);
+              return (
+                <div key={l.id} className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 border-t border-gray-50 text-[13px] items-center">
+                  <div className="text-gray-900 truncate">
+                    {l.description}
+                    <span className="ml-1 text-[10px] text-gray-400">{l.billingInterval === 'annual' ? '/yr ÷12' : '/mo'}</span>
+                    {l.source === 'idyq' && <span className="ml-1 align-middle inline-block bg-[#EEEDFE] text-[#3C3489] rounded px-1 text-[9.5px] font-semibold">IDYQ</span>}
+                  </div>
+                  <div className="text-right text-gray-700">{money0(charge)}</div>
+                  <div className="text-right text-gray-500">{money0(l.monthlyCost)}</div>
+                  <div className="text-right text-[#0f6e56]">{money0(l.monthlyProfit)}</div>
+                </div>
+              );
+            })}
+            <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 mt-1 border-t border-gray-200 text-[13px] font-medium bg-[#E1F5EE] rounded-lg px-2">
+              <div className="text-[#085041]">Total recurring / month</div>
+              <div /><div />
+              <div className="text-right text-[#0f6e56]">{money0(services.monthlyProfit)}</div>
+            </div>
+            <div className="text-[11px] text-gray-400 mt-2">Read-only — from this company's active contracts. Edit margins on the quote in IdoYourQuotes and re-pull, or in the contract for manual lines.</div>
+          </div>
+        )}
       </div>
 
       {/* Contacts + Tasks */}
