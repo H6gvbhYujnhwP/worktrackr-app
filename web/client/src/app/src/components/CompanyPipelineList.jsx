@@ -7,7 +7,8 @@
 //   onOpenCompany(id)  — open the company profile
 //   onAddCompany()     — open the add-company flow
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Plus, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronRight, Upload } from 'lucide-react';
+import CsvImport from './CsvImport.jsx';
 
 const STAGES = [
   { key: 'suspect',      label: 'Suspect',      pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
@@ -29,6 +30,8 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
   const [error, setError] = useState(null);
   const [activeStage, setActiveStage] = useState(null); // null = all
   const [search, setSearch] = useState('');
+  const [showImport, setShowImport] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -46,7 +49,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [reload]);
 
   const counts = useMemo(() => {
     const c = {};
@@ -74,6 +77,10 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
   };
   const nextAction = (co) => co?.crm?.nextCRMEvent || '—';
 
+  if (showImport) {
+    return <CsvImport onBack={() => setShowImport(false)} onDone={() => setReload((n) => n + 1)} />;
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       {/* Header */}
@@ -94,6 +101,12 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
               className="text-[13px] outline-none w-48 bg-transparent"
             />
           </div>
+          <button
+            onClick={() => setShowImport(true)}
+            className="h-9 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 text-gray-700 px-3 text-[13px] hover:bg-gray-50"
+          >
+            <Upload className="w-4 h-4" /> Import
+          </button>
           <button
             onClick={() => onAddCompany && onAddCompany()}
             className="h-9 inline-flex items-center gap-1.5 rounded-lg border border-[#d4a017] text-[#8a6a0f] px-3 text-[13px] hover:bg-[rgba(212,160,23,0.08)]"

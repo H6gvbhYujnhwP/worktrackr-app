@@ -196,6 +196,64 @@ router.get('/:id/history', async (req, res) => {
 });
 
 // POST /api/contacts - Create a new contact
+// POST /api/contacts/import — bulk-create companies/people from a parsed CSV.
+// Body: { type: 'company'|'individual', rows: [{name,email,phone,primaryContact,website,notes,salesStage}] }
+// Skips duplicates by name or email (against existing org contacts and within the file).
+router.post('/import', async (req, res) => {
+  try {
+    const orgContext = await getOrgContext(req.user.userId);
+    const organizationId = orgContext.organizationId;
+    const type = req.body?.type === 'individual' ? 'individual' : 'company';
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
+    if (rows.length === 0) return res.status(400).json({ error: 'No rows to import' });
+    if (rows.length > 5000) return res.status(400).json({ error: 'Too many rows (max 5000)' });
+
+    const existing = await query('SELECT lower(name) AS name, lower(email) AS email FROM contacts WHERE organisation_id = $1', [organizationId]);
+    const haveName = new Set(existing.rows.map((r) => r.name).filter(Boolean));
+    const haveEmail = new Set(existing.rows.map((r) => r.email).filter(Boolean));
+    const seenName = new Set();
+    const seenEmail = new Set();
+    const VALID_STAGES = ['suspect', 'prospect', 'hot_prospect', 'customer'];
+
+    let created = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i] || {};
+      const name = String(row.name || '').trim();
+      const email = String(row.email || '').trim();
+      const emailKey = email.toLowerCase();
+      const nameKey = name.toLowerCase();
+      if (!name) { errors.push({ row: i + 1, error: 'Missing name' }); continue; }
+      const dup = haveName.has(nameKey) || (emailKey && haveEmail.has(emailKey)) || seenName.has(nameKey) || (emailKey && seenEmail.has(emailKey));
+      if (dup) { skipped++; continue; }
+      seenName.add(nameKey);
+      if (emailKey) seenEmail.add(emailKey);
+
+      const crm = {};
+      const stage = String(row.salesStage || '').trim().toLowerCase().replace(/\s+/g, '_');
+      if (VALID_STAGES.includes(stage)) crm.salesStage = stage;
+
+      try {
+        await query(
+          `INSERT INTO contacts (organisation_id, "type", name, display_name, primary_contact, email, phone, website, crm, notes, created_by)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [organizationId, type, name, name, String(row.primaryContact || ''), email, String(row.phone || ''), String(row.website || ''), JSON.stringify(crm), String(row.notes || ''), req.user.userId]
+        );
+        created++;
+      } catch (e) {
+        errors.push({ row: i + 1, error: 'Could not save' });
+      }
+    }
+
+    res.json({ created, skipped, errors, total: rows.length });
+  } catch (error) {
+    console.error('Error importing contacts:', error);
+    res.status(500).json({ error: 'Failed to import contacts' });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const orgContext = await getOrgContext(req.user.userId);
