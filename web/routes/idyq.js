@@ -283,6 +283,18 @@ router.get('/quotes', async (req, res) => {
     const { organizationId } = req.orgContext;
     const conn = await getConnection(organizationId);
     if (!requireEnabled(conn, res)) return;
+
+    // ?refresh=1 — re-sync quotes from IdoYourQuotes before reading the mirror so
+    // brand-new quotes show up in the picker without waiting for the 30-min sweep.
+    // Best-effort: if IDYQ is unreachable we just serve the existing mirror.
+    if (req.query.refresh === '1' || req.query.refresh === 'true') {
+      try {
+        await pullQuotes({ organisationId: organizationId });
+      } catch (e) {
+        console.warn('[idyq/quotes] refresh sync failed, serving mirror:', e.message);
+      }
+    }
+
     const { search, status, page = 1, limit = 50 } = req.query;
 
     let where = 'WHERE organisation_id = $1';

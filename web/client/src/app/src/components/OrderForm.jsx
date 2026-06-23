@@ -34,6 +34,10 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
       .then((r) => (r.ok ? r.json() : [])).then((d) => setCompanies(Array.isArray(d) ? d : [])).catch(() => {});
     fetch('/api/idyq/quotes', { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : { quotes: [] })).then((d) => setQuotes(d.quotes || [])).catch(() => {});
+    // Then re-sync from IdoYourQuotes in the background so brand-new quotes appear
+    // in the picker without a manual sync (the cached list shows instantly above).
+    fetch('/api/idyq/quotes?refresh=1', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && d.quotes) setQuotes(d.quotes); }).catch(() => {});
     if (orderId) {
       (async () => {
         try {
