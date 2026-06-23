@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/CompanyPipelineList.jsx
 // Phase 1 — the salesperson's home: companies by sales stage.
 // Reads live data from GET /api/contacts?type=company (cookie auth). Sales stage
-// lives in contact.crm.salesStage (suspect|prospect|hot_prospect|customer);
+// lives in contact.crm.salesStage (new|prospect|hot_prospect|customer);
 // account manager in contact.crm.assignedTo. Matches the approved
 // `crm_company_pipeline_list` mockup. Self-contained; optional callbacks:
 //   onOpenCompany(id)  — open the company profile
@@ -11,7 +11,7 @@ import { Search, Plus, ChevronRight, Upload } from 'lucide-react';
 import CsvImport from './CsvImport.jsx';
 
 const STAGES = [
-  { key: 'suspect',      label: 'Suspect',      pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
+  { key: 'new',          label: 'New',          pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
   { key: 'prospect',     label: 'Prospect',     pill: 'bg-[#E6F1FB] text-[#0C447C]' },
   { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[#FAEEDA] text-[#854F0B]' },
   { key: 'customer',     label: 'Customer',     pill: 'bg-[#E1F5EE] text-[#085041]' },

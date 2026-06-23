@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const STAGES = [
-  { key: 'suspect',      label: 'Suspect',      pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
+  { key: 'new',          label: 'New',          pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
   { key: 'prospect',     label: 'Prospect',     pill: 'bg-[#E6F1FB] text-[#0C447C]' },
   { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[#FAEEDA] text-[#854F0B]' },
   { key: 'customer',     label: 'Customer',     pill: 'bg-[#E1F5EE] text-[#085041]' },

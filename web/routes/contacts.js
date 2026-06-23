@@ -26,8 +26,14 @@ const contactSchema = z.object({
   crm: z.object({
     status: z.enum(['active', 'inactive', 'at_risk', 'prospect', 'archived']).default('prospect'),
     // Sales pipeline stage (Phase 1) — kept separate from `status` (customer health).
-    // Suspect → Prospect → Hot Prospect → Customer.
-    salesStage: z.enum(['suspect', 'prospect', 'hot_prospect', 'customer']).optional(),
+    // New → Prospect → Hot Prospect → Customer.
+    salesStage: z.enum(['new', 'prospect', 'hot_prospect', 'customer']).optional(),
+    // Leads workflow fields (stored on the company's crm JSONB, like salesStage).
+    firstContact: z.string().optional().nullable(),   // date first actually spoke (yyyy-mm-dd)
+    chaseDate: z.string().optional().nullable(),       // date to next chase (yyyy-mm-dd)
+    nextAction: z.string().optional(),                 // free text, e.g. "Call back"
+    archived: z.boolean().optional().default(false),   // archived leads are hidden from salesmen
+    archivedAt: z.string().optional().nullable(),
     lastActivity: z.string().optional().nullable(),
     nextCRMEvent: z.string().optional().nullable(),
     renewalsCount: z.number().optional().default(0),
@@ -77,7 +83,7 @@ function mapContact(row) {
 }
 
 // GET /api/contacts - Get all contacts for the organization
-// Optional filters: ?type=company|individual  ?stage=suspect|prospect|hot_prospect|customer
+// Optional filters: ?type=company|individual  ?stage=new|prospect|hot_prospect|customer
 router.get('/', async (req, res) => {
   try {
     const orgContext = await getOrgContext(req.user.userId);
@@ -213,7 +219,7 @@ router.post('/import', async (req, res) => {
     const haveEmail = new Set(existing.rows.map((r) => r.email).filter(Boolean));
     const seenName = new Set();
     const seenEmail = new Set();
-    const VALID_STAGES = ['suspect', 'prospect', 'hot_prospect', 'customer'];
+    const VALID_STAGES = ['new', 'prospect', 'hot_prospect', 'customer'];
 
     let created = 0;
     let skipped = 0;
@@ -232,7 +238,8 @@ router.post('/import', async (req, res) => {
       if (emailKey) seenEmail.add(emailKey);
 
       const crm = {};
-      const stage = String(row.salesStage || '').trim().toLowerCase().replace(/\s+/g, '_');
+      let stage = String(row.salesStage || '').trim().toLowerCase().replace(/\s+/g, '_');
+      if (stage === 'suspect') stage = 'new'; // legacy alias from older imports/spreadsheets
       if (VALID_STAGES.includes(stage)) crm.salesStage = stage;
 
       try {
