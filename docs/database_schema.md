@@ -1,3 +1,11 @@
+> **⚠️ OUTDATED — superseded by `WorkTrackr_CRM_Ordering_Commission_Roadmap_v2.0.md` (2026-06-23).**
+> This is a pre-redesign snapshot from April 2026. It does NOT reflect the current app: company-centred CRM,
+> the Orders module, the configurable Commission/Wage engine, Contracts, **Leads** (the reframed "Deals"),
+> the consolidated **tabbed Sales** sidebar, **Approvals** in Workspace, or the single **blended Calendar**.
+> Trust the **v2.0 roadmap** and the **code** over this file. Kept for history only.
+
+---
+
 # WorkTrackr Database Schema & Architecture
 
 This document outlines the complete database schema and architecture for the WorkTrackr application. The goal is to create a robust, scalable, and secure database that eliminates all mock data and localStorage dependencies, ensuring data integrity and isolation between organizations.
