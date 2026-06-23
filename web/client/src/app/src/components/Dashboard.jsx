@@ -41,6 +41,7 @@ import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
 import LeadsList from './LeadsList.jsx';
+import SalesQuotes from './SalesQuotes.jsx';
 import SalesTabs from './SalesTabs.jsx';
 import MyPay from './MyPay.jsx';
 import OrderQueues from './OrderQueues.jsx';
@@ -411,7 +412,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
-      {currentView === 'quotes'         && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="quotes" /></ErrorBoundary>}
+      {currentView === 'quotes'         && <ErrorBoundary><SalesQuotes /></ErrorBoundary>}
       {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" /></ErrorBoundary>}
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}

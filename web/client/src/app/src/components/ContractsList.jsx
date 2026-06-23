@@ -97,6 +97,7 @@ export default function ContractsList({ initialNewCompanyId, onConsumeInitial, i
           pillClass={STATUS[f]}
           count={counts[f] || 0}
           onClick={() => setFilter(filter === f ? 'all' : f)}
+          capitalize
         >
           {f}
         </SalesFilterPill>

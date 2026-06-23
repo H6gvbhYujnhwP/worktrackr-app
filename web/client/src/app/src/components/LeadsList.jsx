@@ -7,17 +7,22 @@
 // NO money figures anywhere — a lead is a pure chase record.
 //   Row actions: Convert to customer (guided), Delete (confirmed → archive).
 //   Managers also get an Archived view (Restore / permanent Delete).
+// Chrome (header / pills / table shell) comes from SalesPageLayout so every Sales
+// tab shares one look (see SalesPageLayout.jsx). This is the wide variant.
 // Optional callbacks:
 //   onOpenCompany(id) — open the company profile
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Search, Plus, Upload, ArrowUp, ArrowDown, ChevronsUpDown, AlertCircle,
+  Upload, ArrowUp, ArrowDown, ChevronsUpDown, AlertCircle,
   UserPlus, Trash2, RotateCcw, Archive, MessageSquare,
 } from 'lucide-react';
 import CsvImport from './CsvImport.jsx';
 import AddLeadModal from './AddLeadModal.jsx';
 import ConvertToCustomerModal from './ConvertToCustomerModal.jsx';
 import LeadNotesPanel from './LeadNotesPanel.jsx';
+import SalesPageLayout, {
+  SalesSearch, SalesPrimaryButton, SalesSecondaryButton, SalesAllPill, SalesFilterPill,
+} from './SalesPageLayout.jsx';
 
 // Lead stages only (customers are not leads).
 const LEAD_STAGES = [
@@ -195,8 +200,50 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
     return <CsvImport onBack={() => setShowImport(false)} onDone={() => setReload((n) => n + 1)} />;
   }
 
+  // Header actions (none in the archived view).
+  const actions = archivedView ? null : (
+    <>
+      <SalesSearch value={search} onChange={setSearch} placeholder="Search name, contact, email" />
+      <SalesSecondaryButton active={mineOnly} onClick={() => setMineOnly((v) => !v)}>Mine only</SalesSecondaryButton>
+      <SalesSecondaryButton icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
+      <SalesPrimaryButton onClick={() => setShowAdd(true)}>Add lead</SalesPrimaryButton>
+    </>
+  );
+
+  // Filter row: stage chips + manager Archived entry + overdue counter (active view);
+  // a back-to-active button (archived view).
+  const filters = archivedView ? (
+    <SalesSecondaryButton onClick={() => setMode('active')}>← Active leads</SalesSecondaryButton>
+  ) : (
+    <>
+      <SalesAllPill active={activeStage === null} count={leads.length} onClick={() => setActiveStage(null)} />
+      {LEAD_STAGES.map((s) => (
+        <SalesFilterPill
+          key={s.key}
+          active={activeStage === s.key}
+          pillClass={s.pill}
+          count={counts[s.key] || 0}
+          onClick={() => setActiveStage(activeStage === s.key ? null : s.key)}
+        >
+          {s.label}
+        </SalesFilterPill>
+      ))}
+      {isManager && (
+        <button onClick={() => { setMode('archived'); setActiveStage(null); }}
+          className="rounded-full px-3 py-1.5 text-[13px] border border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200 inline-flex items-center gap-1.5">
+          <Archive className="w-3.5 h-3.5" /> Archived
+        </button>
+      )}
+      {overdueCount > 0 && (
+        <span className="ml-auto inline-flex items-center gap-1 text-[12px] text-[#993C1D]">
+          <AlertCircle className="w-3.5 h-3.5" /> {overdueCount} {overdueCount === 1 ? 'chase' : 'chases'} overdue
+        </span>
+      )}
+    </>
+  );
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <>
       {showAdd && (
         <AddLeadModal currentUser={currentUser} onClose={() => setShowAdd(false)}
           onCreated={() => { setShowAdd(false); setReload((n) => n + 1); }} />
@@ -210,71 +257,13 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
         <LeadNotesPanel lead={notesLead} onClose={() => setNotesLead(null)} />
       )}
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div>
-          <div className="text-lg font-medium text-gray-900">{archivedView ? 'Archived leads' : 'Leads'}</div>
-          <div className="text-[13px] text-gray-500">{archivedView ? 'Hidden leads — restore or remove' : 'Companies you’re chasing'}</div>
-        </div>
-        {!archivedView && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 h-9 bg-white">
-              <Search className="w-4 h-4 text-gray-400" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, contact, email" className="text-[13px] outline-none w-48 bg-transparent" />
-            </div>
-            <button onClick={() => setMineOnly((v) => !v)}
-              className={`h-9 inline-flex items-center rounded-lg border px-3 text-[13px] ${mineOnly ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
-              Mine only
-            </button>
-            <button onClick={() => setShowImport(true)}
-              className="h-9 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 text-gray-700 px-3 text-[13px] hover:bg-gray-50">
-              <Upload className="w-4 h-4" /> Import
-            </button>
-            <button onClick={() => setShowAdd(true)}
-              className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-[#1D9E75] text-white px-3.5 text-[13px] hover:bg-[#16835f]">
-              <Plus className="w-4 h-4" /> Add lead
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Chips row */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {!archivedView ? (
-          <>
-            <button onClick={() => setActiveStage(null)}
-              className={`rounded-full px-3 py-1.5 text-[13px] border ${activeStage === null ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-transparent bg-gray-100 text-gray-700'}`}>
-              All <span className="opacity-60">{leads.length}</span>
-            </button>
-            {LEAD_STAGES.map((s) => (
-              <button key={s.key} onClick={() => setActiveStage(activeStage === s.key ? null : s.key)}
-                className={`rounded-full px-3 py-1.5 text-[13px] ${s.pill} ${activeStage === s.key ? 'outline outline-2 outline-[#EF9F27]' : ''}`}>
-                {s.label} <span className="opacity-60">{counts[s.key] || 0}</span>
-              </button>
-            ))}
-            {isManager && (
-              <button onClick={() => { setMode('archived'); setActiveStage(null); }}
-                className="rounded-full px-3 py-1.5 text-[13px] border border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200 inline-flex items-center gap-1.5">
-                <Archive className="w-3.5 h-3.5" /> Archived
-              </button>
-            )}
-            {overdueCount > 0 && (
-              <span className="ml-auto inline-flex items-center gap-1 text-[12px] text-[#993C1D]">
-                <AlertCircle className="w-3.5 h-3.5" /> {overdueCount} {overdueCount === 1 ? 'chase' : 'chases'} overdue
-              </span>
-            )}
-          </>
-        ) : (
-          <button onClick={() => setMode('active')}
-            className="rounded-full px-3 py-1.5 text-[13px] border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5">
-            ← Active leads
-          </button>
-        )}
-      </div>
-
-      {/* List */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+      <SalesPageLayout
+        title={archivedView ? 'Archived leads' : 'Leads'}
+        subtitle={archivedView ? 'Hidden leads — restore or remove' : 'Companies you’re chasing'}
+        actions={actions}
+        filters={filters}
+        maxWidth="max-w-7xl"
+      >
         <div className="overflow-x-auto">
           <div className="min-w-[1184px]">
             <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
@@ -348,7 +337,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
             ))}
           </div>
         </div>
-      </div>
-    </div>
+      </SalesPageLayout>
+    </>
   );
 }

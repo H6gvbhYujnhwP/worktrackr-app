@@ -84,12 +84,14 @@ export function SalesAllPill({ active, count, onClick, label = 'All' }) {
 }
 
 // A semantic filter pill (stage/status). `pillClass` carries the page's own colour
-// (e.g. the STAGES/STATUS map); the shape + amber active-ring are shared.
-export function SalesFilterPill({ active, pillClass = 'bg-gray-100 text-gray-700', count, onClick, children }) {
+// (e.g. the STAGES/STATUS map); the shape + amber active-ring are shared. Pass
+// `capitalize` for lowercase keys used as labels (e.g. order statuses "draft");
+// leave it off for already-cased labels (e.g. "Hot prospect").
+export function SalesFilterPill({ active, pillClass = 'bg-gray-100 text-gray-700', count, onClick, capitalize = false, children }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-[13px] capitalize ${pillClass} ${
+      className={`rounded-full px-3 py-1.5 text-[13px] ${capitalize ? 'capitalize' : ''} ${pillClass} ${
         active ? 'outline outline-2 outline-[#EF9F27]' : ''
       }`}
     >
