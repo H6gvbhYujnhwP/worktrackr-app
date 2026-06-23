@@ -100,6 +100,17 @@ router.get('/', async (req, res) => {
       conditions.push(`crm->>'salesStage' = $${params.length}`);
     }
 
+    // Archive visibility: archived records are hidden from everyone by default;
+    // only managers/admins can request the archived set (?archived=only).
+    const role = orgContext.role;
+    const isManager = ['admin', 'manager', 'owner', 'partner_admin'].includes(role);
+    if (req.query.archived === 'only') {
+      if (!isManager) return res.json([]); // non-managers never see archived
+      conditions.push(`crm->>'archived' = 'true'`);
+    } else {
+      conditions.push(`(crm->>'archived' IS DISTINCT FROM 'true')`);
+    }
+
     const result = await query(
       `SELECT * FROM contacts WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC`,
       params

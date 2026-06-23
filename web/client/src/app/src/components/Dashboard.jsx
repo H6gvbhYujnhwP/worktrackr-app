@@ -394,8 +394,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
           ? <CompanyProfile companyId={openLeadCompanyId} onBack={() => setOpenLeadCompanyId(null)}
               onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
               onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
-          : <LeadsList onOpenCompany={setOpenLeadCompanyId} currentUser={user} />
-      )}
+          : <LeadsList onOpenCompany={setOpenLeadCompanyId} currentUser={user} isManager={isManager} />)}
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'my-pay'         && <MyPay />}
