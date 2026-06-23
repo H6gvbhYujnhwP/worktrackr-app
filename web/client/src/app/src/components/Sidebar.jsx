@@ -18,18 +18,14 @@ const WORKSPACE_ITEMS = [
 ];
 
 const DELIVERY_ITEMS = [
-  { id: 'all-tickets',     label: 'Tickets',  icon: Ticket,    view: 'tickets'  },
-  { id: 'jobs',            label: 'Projects', icon: Briefcase, view: 'jobs'     },
-  { id: 'ticket-calendar', label: 'Calendar', icon: Calendar,  view: 'calendar' },
+  { id: 'all-tickets',     label: 'Tickets',      icon: Ticket,    view: 'tickets'  },
+  { id: 'jobs',            label: 'Projects',     icon: Briefcase, view: 'jobs'     },
+  { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,  view: 'calendar' },
+  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,  view: 'crm-calendar' },
 ];
 
 const SALES_ITEMS = [
-  { id: 'companies',    label: 'Companies',    icon: Building2,     view: 'companies'    },
-  { id: 'leads',        label: 'Leads',        icon: Target,        view: 'leads'        },
-  { id: 'quotes',       label: 'Quotes',       icon: FileText,      view: 'quotes'       },
-  { id: 'orders',       label: 'Orders',       icon: ClipboardList, view: 'orders'       },
-  { id: 'contracts',    label: 'Contracts',    icon: Repeat,        view: 'contracts'    },
-  { id: 'crm-calendar', label: 'CRM Calendar', icon: Calendar,      view: 'crm-calendar' },
+  { id: 'sales', label: 'Sales', icon: TrendingUp, view: 'companies' },
 ];
 
 const FINANCE_ITEMS = [
@@ -129,9 +125,21 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
       <nav className={`flex-1 overflow-y-auto py-3 ${isCollapsed ? 'px-2' : 'px-3'}`}>
 
         <SectionLabel label="Workspace" isCollapsed={isCollapsed} />
-        {WORKSPACE_ITEMS.map(item => (
-          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
-        ))}
+        {WORKSPACE_ITEMS.flatMap(item => {
+          const els = [
+            <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+          ];
+          if (item.id === 'my-tasks' && isManager) {
+            els.push(
+              <NavItem
+                key="order-queues"
+                item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
+                isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
+              />
+            );
+          }
+          return els;
+        })}
 
         <SectionLabel label="Delivery" isCollapsed={isCollapsed} />
         {DELIVERY_ITEMS.map(item => (
@@ -149,12 +157,6 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
         {SALES_ITEMS.map(item => (
           <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
         ))}
-        {isManager && (
-          <NavItem
-            item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
-            isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
-          />
-        )}
 
         <SectionLabel label="Finance" isCollapsed={isCollapsed} />
         {FINANCE_ITEMS.map(item => (

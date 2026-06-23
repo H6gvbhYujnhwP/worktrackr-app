@@ -41,6 +41,7 @@ import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
 import LeadsList from './LeadsList.jsx';
+import SalesTabs from './SalesTabs.jsx';
 import MyPay from './MyPay.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
@@ -367,8 +368,15 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   );
 
   // ── Render by view ─────────────────────────────────────────────────────────
+  const SALES_VIEWS = ['companies', 'leads', 'quotes', 'orders', 'contracts'];
+  const salesProfileOpen =
+    (currentView === 'companies' && openCompanyId) ||
+    (currentView === 'leads' && openLeadCompanyId);
   return (
     <div className="space-y-0">
+      {SALES_VIEWS.includes(currentView) && !salesProfileOpen && (
+        <SalesTabs current={currentView} onChange={onViewChange} />
+      )}
       {currentView === 'tickets'        && ticketsViewJSX}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
       {currentView === 'calendar'       && (
