@@ -411,9 +411,9 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'engineer-wages' && <EngineerWageAdmin />}
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
-      {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" /></ErrorBoundary>}
+      {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" singleSection /></ErrorBoundary>}
       {currentView === 'quotes'         && <ErrorBoundary><SalesQuotes /></ErrorBoundary>}
-      {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" /></ErrorBoundary>}
+      {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" singleSection /></ErrorBoundary>}
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}
       {currentView === 'email-intake'   && <EmailIntakeSettings />}

@@ -9,6 +9,7 @@ import {
   FileText, UserCog, CreditCard, Shield, Mail,
   DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target,
 } from 'lucide-react';
+import { useIdyqConnection } from './IdyqIntegration.jsx';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
 const WORKSPACE_ITEMS = [
@@ -92,6 +93,15 @@ const SectionLabel = ({ label, isCollapsed }) => {
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapsed = false }) => {
 
+  // When IdoYourQuotes is connected the WorkTrackr Catalogue is just a read-only
+  // window onto IDYQ's catalogue (managed in IDYQ), so we hide that menu item for
+  // connected orgs. Non-IDYQ orgs keep it — it's their product price-book. If the
+  // check fails it defaults to not-connected, so the item stays visible (safe).
+  const { connected: idyqConnected } = useIdyqConnection();
+  const adminItems = SETTINGS_ADMIN_ITEMS.filter(
+    (item) => !(item.id === 'product-catalog' && idyqConnected)
+  );
+
   const handleNav = (view) => {
     if (onNavigate) onNavigate(view);
   };
@@ -168,7 +178,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
             {isManager && SETTINGS_MANAGER_ITEMS.map(item => (
               <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
             ))}
-            {isAdmin && SETTINGS_ADMIN_ITEMS.map(item => (
+            {isAdmin && adminItems.map(item => (
               <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
             ))}
           </>
