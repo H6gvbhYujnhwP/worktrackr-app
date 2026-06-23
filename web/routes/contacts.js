@@ -197,9 +197,34 @@ router.get('/:id/history', async (req, res) => {
       [id, organizationId]
     );
 
+    // Notes + logged emails (own store; also shown on the profile timeline).
+    // Wrapped so a missing table (pre-migration) never breaks history.
+    let noteRows = [];
+    try {
+      const notes = await query(
+        `SELECT n.id, n.kind, n.subject, n.body, n.created_at AS at, u.name AS actor
+           FROM contact_notes n
+           LEFT JOIN users u ON u.id = n.created_by
+          WHERE n.contact_id = $1 AND n.organisation_id = $2`,
+        [id, organizationId]
+      );
+      noteRows = notes.rows;
+    } catch (e) {
+      noteRows = [];
+    }
+
     const items = [
       ...events.rows.map((r) => ({ id: `e_${r.id}`, kind: r.type || 'other', title: r.title, actor: r.actor || null, at: r.at })),
       ...doneTasks.rows.map((r) => ({ id: `t_${r.id}`, kind: 'task', title: r.title, actor: r.actor || null, at: r.at })),
+      ...noteRows.map((r) => ({
+        id: `n_${r.id}`,
+        kind: r.kind,
+        title: r.kind === 'email' ? (r.subject || 'Email') : (r.body || ''),
+        body: r.body || '',
+        subject: r.subject || '',
+        actor: r.actor || null,
+        at: r.at,
+      })),
     ]
       .filter((x) => x.at)
       .sort((a, b) => new Date(b.at) - new Date(a.at))
@@ -209,6 +234,30 @@ router.get('/:id/history', async (req, res) => {
   } catch (error) {
     console.error('Error fetching contact history:', error);
     res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+// POST /api/contacts/:id/notes - add a note or logged email to a company.
+// Body: { kind?: 'note'|'email', body?, subject? }. Appears in the timeline.
+router.post('/:id/notes', async (req, res) => {
+  try {
+    const { organizationId } = await getOrgContext(req.user.userId);
+    const { id } = req.params;
+    const kind = req.body?.kind === 'email' ? 'email' : 'note';
+    const body = String(req.body?.body || '').trim();
+    const subject = String(req.body?.subject || '').trim();
+    if (!body && !subject) return res.status(400).json({ error: 'Nothing to save' });
+
+    const r = await query(
+      `INSERT INTO contact_notes (organisation_id, contact_id, kind, subject, body, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, created_at`,
+      [organizationId, id, kind, subject || null, body, req.user.userId]
+    );
+    res.status(201).json({ id: r.rows[0].id, created_at: r.rows[0].created_at });
+  } catch (error) {
+    console.error('Error adding contact note:', error);
+    res.status(500).json({ error: 'Failed to add note' });
   }
 });
 

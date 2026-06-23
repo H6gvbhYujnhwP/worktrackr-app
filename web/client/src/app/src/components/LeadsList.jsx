@@ -12,11 +12,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search, Plus, Upload, ArrowUp, ArrowDown, ChevronsUpDown, AlertCircle,
-  UserPlus, Trash2, RotateCcw, Archive,
+  UserPlus, Trash2, RotateCcw, Archive, MessageSquare,
 } from 'lucide-react';
 import CsvImport from './CsvImport.jsx';
 import AddLeadModal from './AddLeadModal.jsx';
 import ConvertToCustomerModal from './ConvertToCustomerModal.jsx';
+import LeadNotesPanel from './LeadNotesPanel.jsx';
 
 // Lead stages only (customers are not leads).
 const LEAD_STAGES = [
@@ -58,7 +59,7 @@ function isOverdue(iso) {
 }
 function timeVal(iso) { const d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? d.getTime() : Infinity; }
 
-const GRID = 'grid grid-cols-[minmax(140px,1.2fr)_minmax(100px,0.95fr)_minmax(100px,0.9fr)_minmax(140px,1.4fr)_minmax(100px,1fr)_minmax(80px,0.75fr)_minmax(80px,0.8fr)_minmax(110px,1.05fr)_minmax(100px,0.85fr)_minmax(86px,0.7fr)] gap-2';
+const GRID = 'grid grid-cols-[minmax(140px,1.2fr)_minmax(100px,0.95fr)_minmax(100px,0.9fr)_minmax(140px,1.4fr)_minmax(100px,1fr)_minmax(80px,0.75fr)_minmax(80px,0.8fr)_minmax(110px,1.05fr)_minmax(100px,0.85fr)_minmax(108px,0.8fr)] gap-2';
 
 function SortHead({ label, sortKey, active, dir, onSort, className = '' }) {
   const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
@@ -81,6 +82,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
   const [showImport, setShowImport] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [convertLead, setConvertLead] = useState(null);
+  const [notesLead, setNotesLead] = useState(null);
   const [reload, setReload] = useState(0);
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
@@ -204,6 +206,9 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
           onClose={() => setConvertLead(null)}
           onConverted={() => { setConvertLead(null); setReload((n) => n + 1); }} />
       )}
+      {notesLead && (
+        <LeadNotesPanel lead={notesLead} onClose={() => setNotesLead(null)} />
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
@@ -271,7 +276,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
       {/* List */}
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
         <div className="overflow-x-auto">
-          <div className="min-w-[1160px]">
+          <div className="min-w-[1184px]">
             <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
               <SortHead label="Company"     sortKey="name"    active={sortKey === 'name'}    dir={sortDir} onSort={toggleSort} />
               <SortHead label="Contact"     sortKey="contact" active={sortKey === 'contact'} dir={sortDir} onSort={toggleSort} />
@@ -318,6 +323,9 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
                 <div className="min-w-0 flex items-center justify-end gap-3">
                   {!archivedView ? (
                     <>
+                      <button title="Notes" aria-label="Notes"
+                        onClick={(e) => { e.stopPropagation(); setNotesLead(co); }}
+                        className="text-gray-400 hover:text-[#0C447C]"><MessageSquare className="w-4 h-4" /></button>
                       <button title="Convert to customer" aria-label="Convert to customer"
                         onClick={(e) => { e.stopPropagation(); setConvertLead(co); }}
                         className="text-[#0F6E56] hover:text-[#0a4f3e]"><UserPlus className="w-4 h-4" /></button>
