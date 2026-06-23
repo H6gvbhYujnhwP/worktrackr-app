@@ -334,6 +334,26 @@ async function pullQuoteByNumber({ organisationId, quoteNumber } = {}) {
   return { found: false, quoteNumber };
 }
 
+/**
+ * On-demand refresh of a single quote by its IDYQ id (the numeric id WorkTrackr
+ * stores as idyq_quotes.idyq_id). Fetches the live quote from the bridge and
+ * upserts it — which also replaces its mirrored line items with current
+ * cost/profit/type. Used by the order/contract "pull" so a pulled quote is always
+ * current without waiting for the 30-min scheduled sweep. Best-effort: callers
+ * should ignore failures and fall back to the existing mirror.
+ */
+async function pullQuoteById({ organisationId, idyqId } = {}) {
+  if (!organisationId || idyqId == null || idyqId === '') {
+    throw new Error('organisationId and idyqId are required');
+  }
+  const orgRef = await getOrgRef(organisationId);
+  const full = await idyqGet(`/api/external/quotes/${encodeURIComponent(idyqId)}`, {}, { orgRef });
+  const quote = full && full.quote ? full.quote : full; // accept {quote:{...}} or bare {...}
+  if (!quote) return { found: false, idyqId };
+  await upsertQuote(organisationId, quote);
+  return { found: true, idyqId };
+}
+
 // ---- run for all connected orgs (used by the scheduled worker) --------------
 
 async function syncAllConnectedOrgs() {
@@ -357,6 +377,7 @@ module.exports = {
   fetchCatalogueLive,
   pullQuotes,
   pullQuoteByNumber,
+  pullQuoteById,
   syncAllConnectedOrgs,
   // exported for reuse/testing
   upsertProduct,

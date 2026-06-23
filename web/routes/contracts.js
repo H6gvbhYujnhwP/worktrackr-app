@@ -17,6 +17,7 @@ const express = require('express');
 const router = express.Router();
 const { z } = require('zod');
 const { query, getOrgContext } = require('@worktrackr/shared/db');
+const { pullQuoteById } = require('@worktrackr/shared/idyq');
 
 // Manager gating per the roadmap: admin / manager / owner / partner_admin.
 const isManager = (ctx) => ctx.type === 'partner_admin' || ['admin', 'manager', 'owner'].includes(ctx.role);
@@ -213,6 +214,15 @@ router.post('/:id/pull-quote', async (req, res) => {
     const contract = cur.rows[0];
     if (!['draft', 'active'].includes(contract.status)) {
       return res.status(409).json({ error: 'Lines can only be pulled into a draft or active contract' });
+    }
+
+    // Refresh this quote from IdoYourQuotes first so the pull is always current
+    // (no waiting for the 30-min sweep / no manual "Sync quotes"). Best-effort:
+    // if IDYQ is unreachable we fall back to the existing mirror below.
+    try {
+      await pullQuoteById({ organisationId: ctx.organizationId, idyqId: idyqQuoteId });
+    } catch (e) {
+      console.warn('[contracts pull-quote] live refresh failed, using mirror:', e.message);
     }
 
     // The mirrored quote header (for the company link + quote number) and lines.

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { z } = require('zod');
 const { query, getOrgContext } = require('@worktrackr/shared/db');
+const { pullQuoteById } = require('@worktrackr/shared/idyq');
 
 const isManager = (ctx) => ctx.type === 'partner_admin' || ['admin', 'manager'].includes(ctx.role);
 
@@ -251,6 +252,15 @@ router.post('/:id/pull-quote', async (req, res) => {
     const order = await query('SELECT status FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
     if (order.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
     if (!['draft', 'rejected'].includes(order.rows[0].status)) return res.status(409).json({ error: 'Lines can only be pulled into a draft' });
+
+    // Refresh this quote from IdoYourQuotes first so the pull is always current
+    // (no waiting for the 30-min sweep / no manual "Sync quotes"). Best-effort:
+    // if IDYQ is unreachable we fall back to the existing mirror below.
+    try {
+      await pullQuoteById({ organisationId: ctx.organizationId, idyqId: idyqQuoteId });
+    } catch (e) {
+      console.warn('[orders pull-quote] live refresh failed, using mirror:', e.message);
+    }
 
     // Read the mirrored IDYQ quote lines (cost/profit/type added by the bridge pull).
     const q = await query(
