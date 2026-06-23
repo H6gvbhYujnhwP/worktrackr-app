@@ -12,11 +12,12 @@ const TABS = [
   { view: 'quotes',    label: 'Quotes' },
   { view: 'orders',    label: 'Orders' },
   { view: 'contracts', label: 'Contracts' },
+  { view: 'sales-calendar', label: 'Calendar' },
 ];
 
 export default function SalesTabs({ current, onChange }) {
   return (
-    <div className="px-4 md:px-6 max-w-7xl mx-auto pt-4">
+    <div className="px-4 md:px-6 max-w-5xl mx-auto pt-4">
       <div className="text-lg font-medium text-gray-900 mb-2">Sales</div>
       <div className="flex gap-5 border-b border-gray-200 overflow-x-auto">
         {TABS.map((t) => {

@@ -93,7 +93,7 @@ function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
   );
 }
 
-export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick }) {
+export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick, defaultSources }) {
   const { tickets = [] } = useSimulation() || {};
 
   const navigate = useNavigate();
@@ -134,7 +134,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick 
   const [events, setEvents] = useState([]);
   const [jobEvents, setJobEvents] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
-  const [sources, setSources] = useState({ sales: true, projects: true, schedule: true });
+  // Source toggles. Defaults to all-on (the Delivery blended calendar). The Sales
+  // Calendar tab passes defaultSources to open pre-scoped to sales activity; the
+  // user can still switch Projects/Schedule on — it's the same calendar.
+  const [sources, setSources] = useState({ sales: true, projects: true, schedule: true, ...(defaultSources || {}) });
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);

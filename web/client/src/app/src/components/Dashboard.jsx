@@ -369,7 +369,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   );
 
   // ── Render by view ─────────────────────────────────────────────────────────
-  const SALES_VIEWS = ['companies', 'leads', 'quotes', 'orders', 'contracts'];
+  const SALES_VIEWS = ['companies', 'leads', 'quotes', 'orders', 'contracts', 'sales-calendar'];
   const salesProfileOpen =
     (currentView === 'companies' && openCompanyId) ||
     (currentView === 'leads' && openLeadCompanyId);
@@ -383,6 +383,13 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'calendar'       && (
         <CRMCalendar
           timezone={selectedTimezone}
+          onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
+        />
+      )}
+      {currentView === 'sales-calendar' && (
+        <CRMCalendar
+          timezone={selectedTimezone}
+          defaultSources={{ sales: true, projects: false, schedule: false }}
           onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />
       )}
