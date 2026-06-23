@@ -211,8 +211,6 @@ const ordersRoutes = require('./routes/orders');
 app.use('/api/orders', authenticateToken, ordersRoutes);
 const contractsRoutes = require('./routes/contracts');
 app.use('/api/contracts', authenticateToken, contractsRoutes);
-const dealsRoutes = require('./routes/deals');
-app.use('/api/deals', authenticateToken, dealsRoutes);
 const commissionRoutes = require('./routes/commission');
 app.use('/api/commission', authenticateToken, commissionRoutes);
 const engineerWageRoutes = require('./routes/engineerWage');

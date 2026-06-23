@@ -53,7 +53,7 @@ CREATE TABLE memberships (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'manager', 'staff')),
+    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'manager', 'staff', 'salesman', 'engineer')),
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'pending', 'disabled')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(organisation_id, user_id)
