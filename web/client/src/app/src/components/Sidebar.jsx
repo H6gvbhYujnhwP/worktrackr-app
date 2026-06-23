@@ -18,10 +18,9 @@ const WORKSPACE_ITEMS = [
 ];
 
 const DELIVERY_ITEMS = [
-  { id: 'all-tickets',     label: 'Tickets',      icon: Ticket,    view: 'tickets'  },
-  { id: 'jobs',            label: 'Projects',     icon: Briefcase, view: 'jobs'     },
-  { id: 'ticket-calendar', label: 'Calendar',     icon: Calendar,  view: 'calendar' },
-  { id: 'crm-calendar',    label: 'CRM Calendar', icon: Calendar,  view: 'crm-calendar' },
+  { id: 'all-tickets',     label: 'Tickets',  icon: Ticket,    view: 'tickets'  },
+  { id: 'jobs',            label: 'Projects', icon: Briefcase, view: 'jobs'     },
+  { id: 'ticket-calendar', label: 'Calendar', icon: Calendar,  view: 'calendar' },
 ];
 
 const SALES_ITEMS = [

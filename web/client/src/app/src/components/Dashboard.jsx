@@ -380,8 +380,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'tickets'        && ticketsViewJSX}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
       {currentView === 'calendar'       && (
-        <IntegratedCalendar
-          currentUser={user}
+        <CRMCalendar
           timezone={selectedTimezone}
           onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />

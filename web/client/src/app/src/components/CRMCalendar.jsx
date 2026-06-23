@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, Briefcase, ExternalLink,
   Sparkles, Ticket, FileText, CalendarPlus
 } from 'lucide-react';
+import { useSimulation } from '../App.jsx';
 
 // FIX 1: type values are lowercase to match backend Zod schema
 const eventTypes = [
@@ -17,6 +18,8 @@ const eventTypes = [
   { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[#f3e8ff] text-[#7e22ce]' },
   { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[#ffedd5] text-[#c2410c]' },
   { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
+  { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[#e0e7ff] text-[#4338ca]' },
+  { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[#f1f5f9] text-[#475569]' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +93,8 @@ function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
   );
 }
 
-export default function CRMCalendar({ timezone = 'Europe/London' }) {
+export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick }) {
+  const { tickets = [] } = useSimulation() || {};
 
   const navigate = useNavigate();
 
@@ -129,6 +133,8 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
 
   const [events, setEvents] = useState([]);
   const [jobEvents, setJobEvents] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [sources, setSources] = useState({ sales: true, projects: true, schedule: true });
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -189,6 +195,17 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
       } catch (err) {
         console.error('[CRMCalendar] Failed to load job events:', err);
       }
+
+      // Load work/ticket calendar events (read-only) for the blended view
+      try {
+        const calRes = await fetch('/api/calendar/events', { credentials: 'include' });
+        if (calRes.ok) {
+          const calData = await calRes.json();
+          setCalendarEvents(calData.events || []);
+        }
+      } catch (err) {
+        console.error('[CRMCalendar] Failed to load calendar events:', err);
+      }
     };
     init();
   }, []);
@@ -222,22 +239,56 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
   // FIX 5: returns real contact names from API
   const getAvailableUsers = () => contacts.map(c => c.name).filter(Boolean);
 
+  // Blended read-only "Schedule" stream: standalone calendar events + scheduled tickets.
+  const scheduleItems = React.useMemo(() => {
+    const cal = (calendarEvents || []).map((e) => {
+      const raw = e.eventDate || '';
+      const dateStr = raw.includes('T') ? raw.split('T')[0] : raw.substring(0, 10);
+      const t = (e.startTime || '00:00').substring(0, 5);
+      return {
+        id: `cal-${e.id}`, _isSchedule: true, title: e.title, type: 'schedule',
+        start_at: `${dateStr}T${t}:00`, end_at: `${dateStr}T${(e.endTime || t).substring(0, 5)}:00`,
+        company: '', contact: '', notes: e.notes || e.description || '',
+      };
+    });
+    const tkt = (tickets || []).filter((t) => t.scheduled_date).map((t) => {
+      const raw = String(t.scheduled_date);
+      const dateStr = raw.includes('T') ? raw.split('T')[0] : raw.substring(0, 10);
+      const tm = raw.includes('T') ? raw.split('T')[1].substring(0, 5) : '09:00';
+      return {
+        id: `tkt-${t.id}`, _isTicket: true, _ticket: t, ticketId: t.id, title: t.title, type: 'ticket',
+        start_at: `${dateStr}T${tm}:00`, end_at: `${dateStr}T${tm}:00`,
+        company: t.contactDetails?.company_name || '', contact: '', status: t.status, notes: t.description || '',
+      };
+    });
+    return [...cal, ...tkt];
+  }, [calendarEvents, tickets]);
+
   // FIX 7: check start_at (snake_case — what backend returns)
   const getEventsForDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    const crm = events.filter(event => {
+    const crm = sources.sales ? events.filter(event => {
       const ts = event.start_at || event.startAt;
       if (ts) return ts.split('T')[0] === dateStr;
       return event.date === dateStr;
-    });
-    const jobs = jobEvents.filter(j => j.start_at && j.start_at.split('T')[0] === dateStr);
-    return [...crm, ...jobs];
+    }) : [];
+    const jobs = sources.projects ? jobEvents.filter(j => j.start_at && j.start_at.split('T')[0] === dateStr) : [];
+    const sched = sources.schedule ? scheduleItems.filter(s => s.start_at && s.start_at.split('T')[0] === dateStr) : [];
+    return [...crm, ...jobs, ...sched];
   };
 
   const getEventTypeConfig = (type) => eventTypes.find(t => t.value === type) || eventTypes[0];
+
+  // Read-only blended items don't open the CRM edit modal: tickets open the
+  // ticket; schedule (work calendar) entries are display-only.
+  const openEvent = (event) => {
+    if (event._isTicket) { if (onTicketClick && event._ticket) onTicketClick(event._ticket); return; }
+    if (event._isSchedule) return;
+    setSelectedEvent(event);
+  };
 
   const formatTime = (dateTimeStr) => {
     if (!dateTimeStr) return '';
@@ -495,9 +546,9 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
         <div>
           <h1 className="text-[22px] font-bold text-[#111113] flex items-center gap-2">
             <Calendar className="w-5 h-5 text-[#9ca3af]" />
-            CRM Calendar
+            Calendar
           </h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Schedule follow-ups, calls, meetings, and renewal reminders</p>
+          <p className="text-[13px] text-[#9ca3af] mt-0.5">Jobs, tickets, meetings and follow-ups — all in one place</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={viewMode} onValueChange={setViewMode}>
@@ -564,12 +615,28 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
             <ChevronRight className="w-4 h-4 text-[#374151]" />
           </button>
         </div>
-        <button
-          onClick={() => setSelectedDate(new Date())}
-          className="px-3 py-1.5 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
-        >
-          Today
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { key: 'sales',    label: 'Sales',    dot: '#15803d' },
+            { key: 'projects', label: 'Projects', dot: '#b8860b' },
+            { key: 'schedule', label: 'Schedule', dot: '#4338ca' },
+          ].map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSources((prev) => ({ ...prev, [s.key]: !prev[s.key] }))}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] rounded-lg border transition-colors ${sources[s.key] ? 'border-[#e5e7eb] text-[#374151] bg-white' : 'border-transparent text-[#9ca3af] bg-[#f5f5f7]'}`}
+            >
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: sources[s.key] ? s.dot : '#cbd5e1' }} />
+              {s.label}
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className="px-3 py-1.5 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
+          >
+            Today
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -608,7 +675,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                     return (
                       <div
                         key={event.id}
-                        onClick={() => setSelectedEvent(event)}
+                        onClick={() => openEvent(event)}
                         className="p-4 border border-[#e5e7eb] rounded-lg hover:bg-[#fef9ee] cursor-pointer transition-colors"
                       >
                         <div className="flex items-center justify-between">
@@ -652,7 +719,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                           return (
                             <div
                               key={event.id}
-                              onClick={() => setSelectedEvent(event)}
+                              onClick={() => openEvent(event)}
                               className={`text-[10px] p-1 rounded cursor-pointer truncate ${tc.color}`}
                               title={`${event.title} — ${ts && formatTime(ts)}`}
                             >
@@ -740,7 +807,7 @@ export default function CRMCalendar({ timezone = 'Europe/London' }) {
                     return (
                       <div
                         key={event.id}
-                        onClick={() => setSelectedEvent(event)}
+                        onClick={() => openEvent(event)}
                         className="border border-[#e5e7eb] rounded-lg p-3 hover:bg-[#fef9ee] cursor-pointer transition-colors"
                       >
                         <div className="flex items-start justify-between">
