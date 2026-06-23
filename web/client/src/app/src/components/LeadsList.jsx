@@ -1,0 +1,285 @@
+// web/client/src/app/src/components/LeadsList.jsx
+// Phase 7 (Leads) — the salesperson's chase list: companies not yet won.
+// A "lead" is a contacts row type='company' whose crm.salesStage is one of
+// new | prospect | hot_prospect (customers graduate out of this list). Lead
+// detail (first contact, chase date, next action) lives on contact.crm, like
+// salesStage. Reads live data from GET /api/contacts?type=company (cookie auth).
+// NO money figures anywhere — a lead is a pure chase record.
+// Convert-to-customer and Delete→archive row actions arrive in the next batch.
+// Optional callbacks:
+//   onOpenCompany(id) — open the company profile
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, Plus, Upload, ArrowUp, ArrowDown, ChevronsUpDown, AlertCircle } from 'lucide-react';
+import CsvImport from './CsvImport.jsx';
+import AddLeadModal from './AddLeadModal.jsx';
+
+// Lead stages only (customers are not leads).
+const LEAD_STAGES = [
+  { key: 'new',          label: 'New',          pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
+  { key: 'prospect',     label: 'Prospect',     pill: 'bg-[#E6F1FB] text-[#0C447C]' },
+  { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[#FAEEDA] text-[#854F0B]' },
+];
+const STAGE_BY_KEY = Object.fromEntries(LEAD_STAGES.map((s) => [s.key, s]));
+const STAGE_ORDER = { new: 0, prospect: 1, hot_prospect: 2 };
+const LEAD_KEYS = new Set(['new', 'prospect', 'hot_prospect']);
+
+function StagePill({ stageKey }) {
+  const s = STAGE_BY_KEY[stageKey];
+  if (!s) return <span className="text-[11px] text-gray-400">—</span>;
+  return <span className={`inline-block rounded-md px-2 py-0.5 text-[11px] ${s.pill}`}>{s.label}</span>;
+}
+
+// Date helpers. First contact = friendly "12 May"; chase date = full UK DD/MM/YYYY.
+function startOfToday() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+function fmtFirst(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+function fmtChase(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+function isOverdue(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  return d < startOfToday();
+}
+function timeVal(iso) { const d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? d.getTime() : Infinity; }
+
+const GRID = 'grid grid-cols-[minmax(150px,1.3fr)_minmax(110px,1fr)_minmax(110px,1fr)_minmax(150px,1.5fr)_minmax(110px,1fr)_minmax(90px,0.8fr)_minmax(90px,0.8fr)_minmax(120px,1.1fr)_minmax(110px,0.9fr)] gap-2';
+
+function SortHead({ label, sortKey, active, dir, onSort, className = '' }) {
+  const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <button
+      onClick={() => onSort(sortKey)}
+      className={`inline-flex items-center gap-1 text-left ${active ? 'text-gray-700' : ''} ${className}`}
+    >
+      {label}
+      <Icon className={`w-3 h-3 ${active ? 'text-[#0F6E56]' : 'text-gray-400'}`} />
+    </button>
+  );
+}
+
+export default function LeadsList({ onOpenCompany, currentUser }) {
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeStage, setActiveStage] = useState(null); // null = all leads
+  const [search, setSearch] = useState('');
+  const [mineOnly, setMineOnly] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
+
+  const me = (currentUser?.name || currentUser?.email || '').toLowerCase();
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const r = await fetch('/api/contacts?type=company', { credentials: 'include' });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        if (alive) setCompanies(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (alive) setError(e.message || 'Failed to load leads');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [reload]);
+
+  // Only companies that are leads (a lead stage) and not archived.
+  const leads = useMemo(
+    () => companies.filter((co) => LEAD_KEYS.has(co?.crm?.salesStage) && co?.crm?.archived !== true),
+    [companies]
+  );
+
+  const counts = useMemo(() => {
+    const c = {};
+    for (const co of leads) {
+      const k = co?.crm?.salesStage;
+      if (k) c[k] = (c[k] || 0) + 1;
+    }
+    return c;
+  }, [leads]);
+
+  const overdueCount = useMemo(
+    () => leads.filter((co) => isOverdue(co?.crm?.chaseDate)).length,
+    [leads]
+  );
+
+  function toggleSort(key) {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  }
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let rows = leads.filter((co) => {
+      if (activeStage && co?.crm?.salesStage !== activeStage) return false;
+      if (mineOnly && (co?.crm?.assignedTo || '').toLowerCase() !== me) return false;
+      if (!q) return true;
+      const hay = [co.name, co.primaryContact, co.email, co.phone, co?.crm?.assignedTo]
+        .filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const keyOf = (co) => {
+      switch (sortKey) {
+        case 'contact': return (co.primaryContact || '').toLowerCase();
+        case 'stage':   return STAGE_ORDER[co?.crm?.salesStage] ?? 99;
+        case 'first':   return timeVal(co?.crm?.firstContact);
+        case 'chase':   return timeVal(co?.crm?.chaseDate);
+        case 'name':
+        default:        return (co.name || '').toLowerCase();
+      }
+    };
+    rows = [...rows].sort((a, b) => {
+      const ka = keyOf(a), kb = keyOf(b);
+      if (ka < kb) return -1 * dir;
+      if (ka > kb) return 1 * dir;
+      return 0;
+    });
+    return rows;
+  }, [leads, activeStage, mineOnly, me, search, sortKey, sortDir]);
+
+  if (showImport) {
+    return <CsvImport onBack={() => setShowImport(false)} onDone={() => setReload((n) => n + 1)} />;
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+      {showAdd && (
+        <AddLeadModal
+          currentUser={currentUser}
+          onClose={() => setShowAdd(false)}
+          onCreated={() => { setShowAdd(false); setReload((n) => n + 1); }}
+        />
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+        <div>
+          <div className="text-lg font-medium text-gray-900">Leads</div>
+          <div className="text-[13px] text-gray-500">Companies you’re chasing</div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 h-9 bg-white">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, contact, email"
+              className="text-[13px] outline-none w-48 bg-transparent"
+            />
+          </div>
+          <button
+            onClick={() => setMineOnly((v) => !v)}
+            className={`h-9 inline-flex items-center rounded-lg border px-3 text-[13px] ${mineOnly ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          >
+            Mine only
+          </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="h-9 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 text-gray-700 px-3 text-[13px] hover:bg-gray-50"
+          >
+            <Upload className="w-4 h-4" /> Import
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-[#1D9E75] text-white px-3.5 text-[13px] hover:bg-[#16835f]"
+          >
+            <Plus className="w-4 h-4" /> Add lead
+          </button>
+        </div>
+      </div>
+
+      {/* Stage chips + overdue nudge */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <button
+          onClick={() => setActiveStage(null)}
+          className={`rounded-full px-3 py-1.5 text-[13px] border ${activeStage === null ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-transparent bg-gray-100 text-gray-700'}`}
+        >
+          All <span className="opacity-60">{leads.length}</span>
+        </button>
+        {LEAD_STAGES.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setActiveStage(activeStage === s.key ? null : s.key)}
+            className={`rounded-full px-3 py-1.5 text-[13px] ${s.pill} ${activeStage === s.key ? 'outline outline-2 outline-[#EF9F27]' : ''}`}
+          >
+            {s.label} <span className="opacity-60">{counts[s.key] || 0}</span>
+          </button>
+        ))}
+        {overdueCount > 0 && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[12px] text-[#993C1D]">
+            <AlertCircle className="w-3.5 h-3.5" /> {overdueCount} {overdueCount === 1 ? 'chase' : 'chases'} overdue
+          </span>
+        )}
+      </div>
+
+      {/* List (wide; scrolls sideways on narrow screens) */}
+      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+        <div className="overflow-x-auto">
+          <div className="min-w-[1040px]">
+            <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
+              <SortHead label="Company"     sortKey="name"    active={sortKey === 'name'}    dir={sortDir} onSort={toggleSort} />
+              <SortHead label="Contact"     sortKey="contact" active={sortKey === 'contact'} dir={sortDir} onSort={toggleSort} />
+              <div>Phone</div>
+              <div>Email</div>
+              <SortHead label="Stage"       sortKey="stage"   active={sortKey === 'stage'}   dir={sortDir} onSort={toggleSort} />
+              <div>Owner</div>
+              <SortHead label="1st contact" sortKey="first"   active={sortKey === 'first'}   dir={sortDir} onSort={toggleSort} />
+              <div>Next action</div>
+              <SortHead label="Chase date"  sortKey="chase"   active={sortKey === 'chase'}   dir={sortDir} onSort={toggleSort} />
+            </div>
+
+            {loading && <div className="px-4 py-8 text-center text-[13px] text-gray-500">Loading leads…</div>}
+            {error && !loading && (
+              <div className="px-4 py-8 text-center text-[13px] text-red-700">Couldn’t load leads: {error}</div>
+            )}
+            {!loading && !error && visible.length === 0 && (
+              <div className="px-4 py-10 text-center text-[13px] text-gray-500">
+                No leads {activeStage ? `at stage “${STAGE_BY_KEY[activeStage]?.label}”` : 'yet'}. Add one or import a list to start chasing.
+              </div>
+            )}
+
+            {!loading && !error && visible.map((co, i) => (
+              <button
+                key={co.id}
+                onClick={() => onOpenCompany && onOpenCompany(co.id)}
+                className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50 ${i % 2 ? 'bg-gray-50/40' : ''}`}
+              >
+                <div className="min-w-0 text-sm font-medium text-gray-900 truncate">{co.name}</div>
+                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.primaryContact || '—'}</div>
+                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.phone || '—'}</div>
+                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.email || '—'}</div>
+                <div className="min-w-0"><StagePill stageKey={co?.crm?.salesStage} /></div>
+                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co?.crm?.assignedTo || '—'}</div>
+                <div className="min-w-0 text-[13px] text-gray-600 truncate">{fmtFirst(co?.crm?.firstContact)}</div>
+                <div className="min-w-0 text-[13px] text-gray-700 truncate">{co?.crm?.nextAction || '—'}</div>
+                <div className={`min-w-0 text-[13px] truncate ${isOverdue(co?.crm?.chaseDate) ? 'text-[#993C1D] font-medium' : 'text-gray-600'}`}>
+                  {fmtChase(co?.crm?.chaseDate)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

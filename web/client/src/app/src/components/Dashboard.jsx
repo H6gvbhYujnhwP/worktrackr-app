@@ -40,7 +40,7 @@ import CompanyProfile from './CompanyProfile.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
-import DealsList from './DealsList.jsx';
+import LeadsList from './LeadsList.jsx';
 import MyPay from './MyPay.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
@@ -86,6 +86,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   const [activeTab, setActiveTab]             = useState('all_open');
   const [openCompanyId, setOpenCompanyId]     = useState(null);
+  const [openLeadCompanyId, setOpenLeadCompanyId] = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
   const [contractsInitial, setContractsInitial] = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
@@ -388,7 +389,13 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
-      {currentView === 'deals'          && <DealsList />}
+      {currentView === 'leads'          && (
+        openLeadCompanyId
+          ? <CompanyProfile companyId={openLeadCompanyId} onBack={() => setOpenLeadCompanyId(null)}
+              onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
+              onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
+          : <LeadsList onOpenCompany={setOpenLeadCompanyId} currentUser={user} />
+      )}
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'my-pay'         && <MyPay />}

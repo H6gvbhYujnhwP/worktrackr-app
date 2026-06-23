@@ -25,7 +25,7 @@ const DELIVERY_ITEMS = [
 
 const SALES_ITEMS = [
   { id: 'companies',    label: 'Companies',    icon: Building2,     view: 'companies'    },
-  { id: 'deals',        label: 'Deals',        icon: Target,        view: 'deals'        },
+  { id: 'leads',        label: 'Leads',        icon: Target,        view: 'leads'        },
   { id: 'quotes',       label: 'Quotes',       icon: FileText,      view: 'quotes'       },
   { id: 'orders',       label: 'Orders',       icon: ClipboardList, view: 'orders'       },
   { id: 'contracts',    label: 'Contracts',    icon: Repeat,        view: 'contracts'    },

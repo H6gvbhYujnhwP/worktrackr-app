@@ -17,7 +17,7 @@ const VIEW_TO_PAGE = {
   'my-pay':         'my-pay',
   'crm-settings':   'crm-settings',
   companies:        'companies',
-  deals:            'deals',
+  leads:            'leads',
   orders:           'orders',
   contracts:        'contracts',
   'order-queues':   'order-queues',
