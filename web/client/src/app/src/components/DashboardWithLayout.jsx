@@ -7,7 +7,13 @@ import Dashboard from './Dashboard.jsx';
 export default function DashboardWithLayout() {
   const { user, membership } = useAuth();
   const dashboardRef = useRef(null);
-  const [currentView, setCurrentView] = useState('tickets');
+
+  // Role-based home: a Salesman/Engineer lands on their personal pay page; everyone
+  // else lands on Tickets. Lazy-init covers the case where membership is already
+  // cached at mount; the one-shot effect below covers the async-load case.
+  const roleHome = (role) => (role === 'salesman' || role === 'engineer') ? 'my-pay' : 'tickets';
+  const [currentView, setCurrentView] = useState(() => roleHome(membership?.role));
+  const homeAppliedRef = useRef(false);
 
   // Check if user is admin
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
@@ -18,6 +24,17 @@ export default function DashboardWithLayout() {
 
   // Handle navigation state from routes (e.g., coming back from quote editing)
   const location = useLocation();
+
+  // Apply the role-based home exactly once, after membership resolves — unless the
+  // user arrived via a deep-link (location.state.view) or has already navigated.
+  useEffect(() => {
+    if (homeAppliedRef.current) return;
+    if (location.state?.view) { homeAppliedRef.current = true; return; }
+    if (membership === undefined) return; // still loading — wait for the role
+    homeAppliedRef.current = true;
+    setCurrentView(roleHome(membership?.role));
+  }, [membership, location.state]);
+
   useEffect(() => {
     if (location.state?.view) {
       console.log('[DashboardWithLayout] Received navigation state:', location.state.view);

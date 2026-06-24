@@ -249,7 +249,7 @@ router.post('/:id/pull-quote', async (req, res) => {
     const idyqQuoteId = String(req.body?.idyqQuoteId || '');
     if (!idyqQuoteId) return res.status(400).json({ error: 'idyqQuoteId is required' });
 
-    const order = await query('SELECT status FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
+    const order = await query('SELECT status, contact_id FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
     if (order.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
     if (!['draft', 'rejected'].includes(order.rows[0].status)) return res.status(409).json({ error: 'Lines can only be pulled into a draft' });
 
@@ -262,7 +262,9 @@ router.post('/:id/pull-quote', async (req, res) => {
       console.warn('[orders pull-quote] live refresh failed, using mirror:', e.message);
     }
 
-    // Read the mirrored IDYQ quote lines (cost/profit/type added by the bridge pull).
+    // Mirrored quote header (for the company link) + lines (cost/profit/type from the bridge pull).
+    const qh = await query('SELECT * FROM idyq_quotes WHERE idyq_id = $1 AND organisation_id = $2', [idyqQuoteId, ctx.organizationId]);
+    const quote = qh.rows[0] || null;
     const q = await query(
       `SELECT ql.* FROM idyq_quote_lines ql
        JOIN idyq_quotes qq ON qq.id = ql.idyq_quote_id
@@ -287,7 +289,11 @@ router.post('/:id/pull-quote', async (req, res) => {
         [req.params.id, ctx.organizationId, l.description || 'Item', qty, unitCost, unitProfit, idyqQuoteId, l.line_type ?? null, sort++]
       );
     }
-    res.json(await fetchOrder(req.params.id, ctx.organizationId));
+    // If the draft has no company yet, adopt the quote's linked contact (act-on-quote flow).
+    if (!order.rows[0].contact_id && quote?.linked_contact_id) {
+      await query('UPDATE orders SET contact_id = $3, updated_at = NOW() WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId, quote.linked_contact_id]);
+    }
+    res.json({ ...(await fetchOrder(req.params.id, ctx.organizationId)), pulled: q.rows.length });
   } catch (err) {
     console.error('Order pull-quote error:', err);
     res.status(500).json({ error: 'Failed to pull quote' });
@@ -309,55 +315,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/pull-quote { idyqQuoteId }
-// Snapshot a mirrored IdoYourQuotes quote into this draft order: adds all of the
-// quote's lines (cost/profit/type from the mirror, read-only) and fills the
-// company from the quote's linked contact if the order doesn't have one yet.
-router.post('/:id/pull-quote', async (req, res) => {
-  try {
-    const ctx = await getOrgContext(req.user.userId);
-    const idyqQuoteId = String(req.body?.idyqQuoteId || '');
-    if (!idyqQuoteId) return res.status(400).json({ error: 'idyqQuoteId is required' });
-
-    const cur = await query('SELECT * FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
-    if (cur.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-    const order = cur.rows[0];
-    if (!['draft', 'rejected'].includes(order.status)) return res.status(409).json({ error: 'Lines can only be pulled into a draft order' });
-
-    const qh = await query('SELECT * FROM idyq_quotes WHERE idyq_id = $1 AND organisation_id = $2', [idyqQuoteId, ctx.organizationId]);
-    const quote = qh.rows[0] || null;
-    const ql = await query(
-      `SELECT l.* FROM idyq_quote_lines l
-       JOIN idyq_quotes q ON q.id = l.idyq_quote_id
-       WHERE q.idyq_id = $1 AND l.organisation_id = $2 ORDER BY l.sort_order`,
-      [idyqQuoteId, ctx.organizationId]
-    );
-    if (ql.rows.length === 0) return res.status(404).json({ error: 'No mirrored lines for that quote. Sync IdoYourQuotes first.' });
-
-    const existing = await query('SELECT COALESCE(MAX(sort_order),-1) AS m FROM order_lines WHERE order_id = $1', [req.params.id]);
-    let sort = num(existing.rows[0].m) + 1;
-    for (const l of ql.rows) {
-      const qty = num(l.qty) || 1;
-      const unitCost = l.cost_price != null ? num(l.cost_price) : 0;
-      let unitProfit;
-      if (l.line_profit != null) unitProfit = num(l.line_profit) / qty;
-      else if (l.unit_price != null) unitProfit = num(l.unit_price) - unitCost;
-      else unitProfit = 0;
-      await query(
-        `INSERT INTO order_lines
-           (order_id, organisation_id, description, qty, supplier_url, unit_cost, unit_profit, source, idyq_quote_id, line_type, sort_order)
-         VALUES ($1,$2,$3,$4,NULL,$5,$6,'idyq',$7,$8,$9)`,
-        [req.params.id, ctx.organizationId, l.description || 'Item', qty, unitCost, unitProfit, idyqQuoteId, l.line_type || null, sort++]
-      );
-    }
-    if (!order.contact_id && quote?.linked_contact_id) {
-      await query('UPDATE orders SET contact_id = $3, updated_at = NOW() WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId, quote.linked_contact_id]);
-    }
-    res.json({ ...(await fetchOrder(req.params.id, ctx.organizationId)), pulled: ql.rows.length });
-  } catch (err) {
-    console.error('Order pull-quote error:', err);
-    res.status(500).json({ error: 'Failed to pull quote' });
-  }
-});
+// POST /api/orders/:id/pull-quote — see the single handler above (refresh-on-pull
+// + company-autofill). The earlier duplicate snapshot handler was removed in v2.5.
 
 module.exports = router;

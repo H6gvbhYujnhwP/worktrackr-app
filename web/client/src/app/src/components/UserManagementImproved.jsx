@@ -10,6 +10,16 @@ import {
   User, Edit, Save, AlertTriangle, Phone, Settings
 } from 'lucide-react';
 
+// Assignable membership roles (must match the server whitelist + DB CHECK).
+const ROLE_OPTIONS = [
+  { value: 'admin',    label: 'Admin' },
+  { value: 'manager',  label: 'Manager' },
+  { value: 'staff',    label: 'Staff' },
+  { value: 'salesman', label: 'Salesman' },
+  { value: 'engineer', label: 'Engineer' },
+];
+const roleLabel = (role) => (ROLE_OPTIONS.find((r) => r.value === role)?.label) || 'Staff';
+
 export default function UserManagementImproved({ users, currentUser }) {
   const { setUsers, organization, updateOrganization, emailService } = useSimulation();
   const {
@@ -72,10 +82,6 @@ export default function UserManagementImproved({ users, currentUser }) {
   const handleDeleteUser = (userId) => {
     if (userId === currentUser.id) return;
     setUsers(prev => prev.filter(u => u.id !== userId));
-  };
-
-  const handleToggleRole = (userId) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: u.role === 'admin' ? 'staff' : 'admin' } : u));
   };
 
   const handleToggleEmailNotifications = (userId) => {
@@ -215,6 +221,20 @@ export default function UserManagementImproved({ users, currentUser }) {
                           <div><label className={labelClass}>Email</label><input className={inputClass} value={editingUser.email} onChange={e => setEditingUser(p => ({...p, email: e.target.value}))} /></div>
                           <div><label className={labelClass}>Mobile</label><input className={inputClass} value={editingUser.mobile || ''} onChange={e => setEditingUser(p => ({...p, mobile: e.target.value}))} /></div>
                           <div><label className={labelClass}>Department</label><input className={inputClass} value={editingUser.department || ''} onChange={e => setEditingUser(p => ({...p, department: e.target.value}))} /></div>
+                          <div>
+                            <label className={labelClass}>Role</label>
+                            <select
+                              className={inputClass}
+                              value={editingUser.role || 'staff'}
+                              disabled={editingUser.isOrgOwner || editingUser.id === currentUser.id}
+                              onChange={e => setEditingUser(p => ({...p, role: e.target.value}))}
+                            >
+                              {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                            </select>
+                            {(editingUser.isOrgOwner || editingUser.id === currentUser.id) && (
+                              <p className="text-[11px] text-[#9ca3af] mt-1">{editingUser.isOrgOwner ? "The owner's role can't be changed." : "You can't change your own role."}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-lg p-4 space-y-2">
                           <div className="flex items-center gap-2">
@@ -257,8 +277,7 @@ export default function UserManagementImproved({ users, currentUser }) {
                         <div className="flex flex-wrap items-center gap-4">
                           <div className="flex flex-col items-center gap-1">
                             <span className={labelClass + " mb-0"}>Role</span>
-                            <Switch checked={user.role === 'admin'} onCheckedChange={() => handleToggleRole(user.id)} disabled={user.isOrgOwner || user.id === currentUser.id} />
-                            <span className="text-[11px] text-[#374151] font-medium">{user.role === 'admin' ? 'Admin' : 'Staff'}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f3f4f6] text-[#374151]">{user.isOrgOwner ? 'Owner' : roleLabel(user.role)}</span>
                           </div>
                           <div className="flex flex-col items-center gap-1">
                             <span className={labelClass + " mb-0"}>Emails</span>
@@ -331,8 +350,7 @@ export default function UserManagementImproved({ users, currentUser }) {
               <div>
                 <label className={labelClass}>Role</label>
                 <select className={inputClass} value={newUser.role} onChange={e => setNewUser(p => ({...p, role: e.target.value}))}>
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
+                  {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
               <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4 space-y-3">

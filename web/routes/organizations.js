@@ -4,6 +4,11 @@ const { query } = require('@worktrackr/shared/db');
 
 const router = express.Router();
 
+// Assignable membership roles (must match the memberships.role CHECK in
+// database/schema.sql + web/migrations/phase9_widen_membership_roles.sql).
+// 'owner'/'partner_admin' are NOT assignable here — they are derived/special.
+const ALLOWED_MEMBERSHIP_ROLES = ['admin', 'manager', 'staff', 'salesman', 'engineer'];
+
 // Validation schemas
 const brandingSchema = z.object({
   product_name: z.string().min(1).max(255),
@@ -277,6 +282,9 @@ router.put('/:id/users/:userId', async (req, res) => {
 
     // Update role in membership if provided
     if (role !== undefined) {
+      if (!ALLOWED_MEMBERSHIP_ROLES.includes(role)) {
+        return res.status(400).json({ error: `Invalid role. Allowed roles: ${ALLOWED_MEMBERSHIP_ROLES.join(', ')}` });
+      }
       await query(
         'UPDATE memberships SET role = $1 WHERE user_id = $2 AND organisation_id = $3',
         [role, userId, id]
@@ -310,6 +318,11 @@ router.post('/:id/users/invite', async (req, res) => {
       }
     } else if (id !== organizationId || !['admin', 'manager'].includes(userRole)) {
       return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Reject unknown roles up front (cleaner than a DB CHECK failure).
+    if (!ALLOWED_MEMBERSHIP_ROLES.includes(role)) {
+      return res.status(400).json({ error: `Invalid role. Allowed roles: ${ALLOWED_MEMBERSHIP_ROLES.join(', ')}` });
     }
 
     // Check user limit based on subscription plan
