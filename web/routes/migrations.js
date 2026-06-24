@@ -10,7 +10,8 @@ router.post('/run', async (req, res) => {
     const { adminKey } = req.body;
     
     // Check admin key
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       console.log('❌ Invalid admin key for migration');
       return res.status(403).json({ error: 'Invalid admin key' });

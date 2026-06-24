@@ -823,7 +823,10 @@ router.post('/portal', async (req, res) => {
     const existingCustomer = await checkExistingStripeCustomer(orgId);
     
     if (!existingCustomer || !existingCustomer.customerId) {
-      return res.status(400).json({ error: 'No Stripe customer found' });
+      // No Stripe customer yet (e.g. trial-only org). Tell the frontend to start
+      // checkout instead of dead-ending — this is what fixes "Manage Billing"
+      // doing nothing for orgs that never completed a paid checkout.
+      return res.json({ needsCheckout: true });
     }
 
     const session = await stripe.billingPortal.sessions.create({

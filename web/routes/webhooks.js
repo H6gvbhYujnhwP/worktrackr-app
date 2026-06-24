@@ -120,6 +120,7 @@ async function handleCheckoutCompleted(session) {
     `UPDATE organisations 
        SET stripe_customer_id = $1, 
            stripe_subscription_id = $2,
+           subscription_status = 'active',
            trial_start = NULL,
            trial_end = NULL
      WHERE id = $3`,
@@ -167,7 +168,7 @@ async function handleCheckoutCompleted(session) {
 
 async function handleSubscriptionUpdated(subscription) {
   // FIX: must be 'let' because we may set it later
-  let orgId = subscription.metadata?.orgId;
+  let orgId = subscription.metadata?.orgId || subscription.metadata?.organisation_id;
   if (!orgId) {
     const orgResult = await query(
       'SELECT id FROM organisations WHERE stripe_customer_id = $1',
@@ -192,14 +193,16 @@ async function handleSubscriptionUpdated(subscription) {
             plan_price_id       = $2,
             current_period_end  = $3,
             trial_start         = $4,
-            trial_end           = $5
-      WHERE id = $6`,
+            trial_end           = $5,
+            subscription_status = $6
+      WHERE id = $7`,
     [
       subscription.id,
       planPriceId,
       new Date(subscription.current_period_end * 1000),
       clearTrial ? null : (subscription.trial_start ? new Date(subscription.trial_start * 1000) : null),
       clearTrial ? null : (subscription.trial_end ? new Date(subscription.trial_end * 1000) : null),
+      subscription.status || null,
       orgId,
     ]
   );
@@ -242,6 +245,7 @@ async function handleSubscriptionDeleted(subscription) {
         SET stripe_subscription_id = NULL,
             plan_price_id          = NULL,
             current_period_end     = NULL,
+            subscription_status    = 'canceled',
             trial_start            = NULL,
             trial_end              = NULL
       WHERE id = $1`,
@@ -254,11 +258,30 @@ async function handleSubscriptionDeleted(subscription) {
 }
 
 async function handlePaymentSucceeded(invoice) {
+  // A successful (renewal) payment clears any past_due flag.
+  if (invoice.subscription) {
+    await query(
+      `UPDATE organisations
+          SET subscription_status = 'active'
+        WHERE stripe_subscription_id = $1`,
+      [invoice.subscription]
+    );
+  }
   console.log(`Payment succeeded for subscription ${invoice.subscription}`);
 }
 
 async function handlePaymentFailed(invoice) {
-  console.log(`Payment failed for subscription ${invoice.subscription}`);
+  // Per business rule: a failed payment blocks access immediately (the customer
+  // must add/update a card). The wall treats 'past_due' as blocked.
+  if (invoice.subscription) {
+    await query(
+      `UPDATE organisations
+          SET subscription_status = 'past_due'
+        WHERE stripe_subscription_id = $1`,
+      [invoice.subscription]
+    );
+  }
+  console.log(`Payment failed for subscription ${invoice.subscription} — org marked past_due`);
 }
 
 module.exports = router;

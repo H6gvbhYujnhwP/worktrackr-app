@@ -17,6 +17,7 @@ import JobFormWithLayout from './components/JobFormWithLayout.jsx';
 import InvoiceDetailWithLayout from './components/InvoiceDetailWithLayout.jsx';
 import InvoicesListWithLayout from './components/InvoicesListWithLayout.jsx';
 import Login from '../../Login.jsx';
+import PlanManagement from './components/PlanManagement.jsx';
 import './App.css';
 
 // ✅ Corrected imports: api.ts and map.ts live one level up from /src/
@@ -458,29 +459,81 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// ---------------- Billing gate ----------------
+// Shows the Plan & Billing pay screen full-screen when the org is blocked, so a
+// blocked account lands somewhere it can pay rather than on broken pages.
+// Triggers two ways: (1) the global 402 catch in main.jsx fires an event;
+// (2) a proactive status check once logged in. Exempt orgs read as 'active'
+// and never see this.
+const BillingGate = ({ children }) => {
+  const { user } = useAuth();
+  const [blocked, setBlocked] = useState(false);
+
+  useEffect(() => {
+    const onBlocked = () => setBlocked(true);
+    window.addEventListener('wt:subscription-blocked', onBlocked);
+    return () => window.removeEventListener('wt:subscription-blocked', onBlocked);
+  }, []);
+
+  useEffect(() => {
+    if (!user) { setBlocked(false); return; }
+    let cancelled = false;
+    fetch('/api/trial/status', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        if (['trial_expired', 'past_due', 'canceled', 'no_subscription'].includes(d.status)) {
+          setBlocked(true);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (blocked && user) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, overflowY: 'auto', background: 'rgba(249,250,251,0.98)', zIndex: 9999, padding: '24px' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#b91c1c', margin: '0 0 4px' }}>Access paused</h1>
+            <p style={{ color: '#374151', margin: 0 }}>
+              Your subscription isn’t active. Add or update payment below to continue using WorkTrackr.
+            </p>
+          </div>
+          <PlanManagement />
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+};
+
 // ---------------- Main App (NO BrowserRouter here) ----------------
 export default function App() {
   return (
     <AuthProvider>
       <SimulationProvider>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            <Route path="dashboard" element={<DashboardWithLayout />} />
-            <Route path="workflow-builder" element={<WorkflowBuilder />} />
-            <Route path="crm/quotes" element={<Navigate to="/app/dashboard" state={{ view: 'quotes' }} replace />} />
-            <Route path="crm/quotes/new" element={<QuoteFormWithLayout mode="create" />} />
-            <Route path="crm/quotes/:id" element={<QuoteDetailsWithLayout />} />
-            <Route path="crm/quotes/:id/edit" element={<QuoteFormWithLayout mode="edit" />} />
-            <Route path="jobs/new" element={<JobFormWithLayout />} />
-            <Route path="jobs/:id" element={<JobDetailWithLayout />} />
-            <Route path="jobs/:id/edit" element={<JobFormWithLayout />} />
-            <Route path="invoices" element={<InvoicesListWithLayout />} />
-            <Route path="invoices/:id" element={<InvoiceDetailWithLayout />} />
-            <Route path="settings/pricing-config" element={<PricingConfigWithLayout />} />
-            <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-          </Routes>
-        </div>
+        <BillingGate>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              <Route path="dashboard" element={<DashboardWithLayout />} />
+              <Route path="workflow-builder" element={<WorkflowBuilder />} />
+              <Route path="crm/quotes" element={<Navigate to="/app/dashboard" state={{ view: 'quotes' }} replace />} />
+              <Route path="crm/quotes/new" element={<QuoteFormWithLayout mode="create" />} />
+              <Route path="crm/quotes/:id" element={<QuoteDetailsWithLayout />} />
+              <Route path="crm/quotes/:id/edit" element={<QuoteFormWithLayout mode="edit" />} />
+              <Route path="jobs/new" element={<JobFormWithLayout />} />
+              <Route path="jobs/:id" element={<JobDetailWithLayout />} />
+              <Route path="jobs/:id/edit" element={<JobFormWithLayout />} />
+              <Route path="invoices" element={<InvoicesListWithLayout />} />
+              <Route path="invoices/:id" element={<InvoiceDetailWithLayout />} />
+              <Route path="settings/pricing-config" element={<PricingConfigWithLayout />} />
+              <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+            </Routes>
+          </div>
+        </BillingGate>
       </SimulationProvider>
     </AuthProvider>
   );

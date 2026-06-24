@@ -10,7 +10,12 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 
 const { getOrgContext } = require('@worktrackr/shared/db');
-const { checkTrialStatus, getTrialStatus } = require('./middleware/trialCheck');
+const { assertAccess, getTrialStatus } = require('./middleware/trialCheck');
+
+// Paths that must stay reachable even when an org is blocked, so a blocked
+// account can still log in, see its status, and pay. Matched against the FULL
+// request URL (req.originalUrl), which keeps its /api prefix.
+const ACCESS_EXEMPT_PREFIXES = ['/api/auth', '/api/billing', '/api/trial'];
 
 // Routes
 const authRoutes = require('./routes/auth');                // includes /api/auth/stripe/webhook
@@ -120,6 +125,18 @@ async function authenticateToken(req, res, next) {
 
     const activeOrgId = req.headers['x-org-id'] || req.query.orgId;
     req.orgContext = await getOrgContext(decoded.userId, activeOrgId);
+
+    // Subscription / trial wall. Runs on every protected request (so it can't be
+    // bypassed by route mount order), reads the real URL (so exemptions work), and
+    // lets auth/billing/trial-status through so a blocked org can still pay.
+    const isExempt = ACCESS_EXEMPT_PREFIXES.some((p) => req.originalUrl.startsWith(p));
+    if (!isExempt) {
+      const decision = await assertAccess(req.orgContext?.organizationId);
+      if (!decision.allowed) {
+        return res.status(decision.status).json(decision.body);
+      }
+    }
+
     next();
   } catch (error) {
     console.error('Auth error:', error.message);
@@ -151,8 +168,10 @@ app.use('/api/billing', authenticateToken, billingRoutes);
 // Trial status endpoint
 app.get('/api/trial/status', authenticateToken, getTrialStatus);
 
-// Apply trial check middleware to protected routes (after auth)
-app.use('/api/', authenticateToken, checkTrialStatus);
+// NOTE: the subscription/trial wall now runs INSIDE authenticateToken (above),
+// so it applies to every protected route regardless of mount order. The old
+// global `app.use('/api/', checkTrialStatus)` mount was removed — it ran too
+// late (after several data routes) and its path checks misfired.
 app.use('/api/auth/user', require('./routes/user.js'));
 app.use('/api/customers', authenticateToken, customersRoutes);
 app.use('/api/products', authenticateToken, productsRoutes);

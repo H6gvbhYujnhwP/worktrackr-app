@@ -246,6 +246,31 @@ export default function PlanManagement({ totalUsers }) {
     }
   };
 
+  const handleManageBilling = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/billing/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (data && data.url) {
+        // Existing Stripe customer -> open the billing portal.
+        window.location.href = data.url;
+        return;
+      }
+      // No Stripe customer yet -> start checkout to add payment.
+      setLoading(false);
+      await handleConvertTrial();
+    } catch (error) {
+      console.error('Manage billing failed:', error);
+      setLoading(false);
+      alert('Could not open billing. Please try "Add Payment Now".');
+    }
+  };
+
   const handleConvertTrial = async () => {
     setLoading(true);
     try {
@@ -363,7 +388,7 @@ export default function PlanManagement({ totalUsers }) {
             <CreditCard className="w-5 h-5" />
             <CardTitle>Plan & Billing</CardTitle>
           </div>
-          <Button variant="outline" size="sm" onClick={() => alert('Redirecting to billing portal...')}>
+          <Button variant="outline" size="sm" disabled={loading} onClick={handleManageBilling}>
             Manage Billing
           </Button>
         </div>

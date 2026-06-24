@@ -30,7 +30,8 @@ router.post('/update-plan', async (req, res) => {
     const { email, plan, adminKey } = req.body;
     
     // Check admin key (for testing/development)
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       console.log('❌ Invalid admin key provided');
       return res.status(403).json({ error: 'Invalid admin key' });
@@ -137,7 +138,8 @@ router.post('/migrate-organisations', async (req, res) => {
     const { adminKey } = req.body;
     
     // Check admin key
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       return res.status(403).json({ error: 'Invalid admin key' });
     }
@@ -195,7 +197,8 @@ router.post('/migrate-admin-system', async (req, res) => {
     const { adminKey } = req.body;
     
     // Check admin key
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       return res.status(403).json({ error: 'Invalid admin key' });
     }
@@ -268,7 +271,8 @@ router.post('/set-master-admin', async (req, res) => {
     const { adminKey, email } = req.body;
     
     // Check admin key
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       return res.status(403).json({ error: 'Invalid admin key' });
     }
@@ -316,7 +320,8 @@ router.post('/create-master-admin', async (req, res) => {
     const { adminKey, email, password, name } = req.body;
     
     // Check admin key
-    const expectedKey = process.env.ADMIN_API_KEY || 'worktrackr-admin-2025';
+    const expectedKey = process.env.ADMIN_API_KEY;
+    if (!expectedKey) return res.status(503).json({ error: 'Admin API not configured. Set ADMIN_API_KEY in the environment.' });
     if (adminKey !== expectedKey) {
       return res.status(403).json({ error: 'Invalid admin key' });
     }
