@@ -91,7 +91,7 @@ const SectionLabel = ({ label, isCollapsed }) => {
 };
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapsed = false }) => {
+const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer, isCollapsed = false }) => {
 
   // When IdoYourQuotes is connected the WorkTrackr Catalogue is just a read-only
   // window onto IDYQ's catalogue (managed in IDYQ), so we hide that menu item for
@@ -162,15 +162,21 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isCollapse
           />
         ))}
 
-        <SectionLabel label="Sales" isCollapsed={isCollapsed} />
-        {SALES_ITEMS.map(item => (
-          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
-        ))}
+        {/* Engineers are delivery-only: no Sales (company/order/quote profit) or
+            Finance (invoices). Salesmen, managers and admins see these as before. */}
+        {!isEngineer && (
+          <>
+            <SectionLabel label="Sales" isCollapsed={isCollapsed} />
+            {SALES_ITEMS.map(item => (
+              <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+            ))}
 
-        <SectionLabel label="Finance" isCollapsed={isCollapsed} />
-        {FINANCE_ITEMS.map(item => (
-          <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
-        ))}
+            <SectionLabel label="Finance" isCollapsed={isCollapsed} />
+            {FINANCE_ITEMS.map(item => (
+              <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+            ))}
+          </>
+        )}
 
         {(isManager || isAdmin) && (
           <>

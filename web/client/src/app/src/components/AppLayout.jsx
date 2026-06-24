@@ -65,7 +65,7 @@ const MobileHeader = ({ user, onMenuToggle }) => (
 );
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
-const AppLayout = ({ children, user, isAdmin, isManager, onNavigate, lastUpdate, currentView = 'tickets' }) => {
+const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate, lastUpdate, currentView = 'tickets' }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
@@ -117,6 +117,7 @@ const AppLayout = ({ children, user, isAdmin, isManager, onNavigate, lastUpdate,
           user={user}
           isAdmin={isAdmin}
           isManager={isManager}
+          isEngineer={isEngineer}
           isCollapsed={isTablet}
         />
       </aside>

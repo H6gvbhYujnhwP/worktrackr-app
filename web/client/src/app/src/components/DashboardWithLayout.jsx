@@ -18,6 +18,7 @@ export default function DashboardWithLayout() {
   // Check if user is admin
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
   const isManager = ['admin', 'owner', 'manager'].includes(membership?.role);
+  const isEngineer = membership?.role === 'engineer';
 
   // lastUpdate removed — was triggering a full DashboardWithLayout re-render every
   // 10 seconds for no visible purpose. Nothing in AppLayout uses it meaningfully.
@@ -69,6 +70,7 @@ export default function DashboardWithLayout() {
       user={user}
       isAdmin={isAdmin}
       isManager={isManager}
+      isEngineer={isEngineer}
       onNavigate={handleSidebarNavigation}
       currentView={currentView}
     >

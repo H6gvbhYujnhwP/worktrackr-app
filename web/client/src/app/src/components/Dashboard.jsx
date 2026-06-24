@@ -82,6 +82,12 @@ const StatCard = ({ label, count, iconBg, iconColor, Icon, onClick, active }) =>
 );
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+// Engineers get a delivery-only app: they may only reach these views. Everything
+// else (Sales/Finance/Settings — anything that can show company/order/contract/
+// quote/invoice profit) is bounced to Tickets. Deny-by-default keeps the rule safe
+// if new views are added later.
+const ENGINEER_ALLOWED_VIEWS = ['tickets', 'jobs', 'calendar', 'my-tasks', 'my-pay', 'my-wage', 'my-notes'];
+
 const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
@@ -113,6 +119,15 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
     clearViewingTicket: () => setViewingTicketId(null)
   }));
 
+  // Engineer route guard: if an engineer somehow lands on a non-allowed view
+  // (deep-link, click-through, role resolving after navigation), send them to
+  // Tickets. The render below also refuses to draw blocked content.
+  useEffect(() => {
+    if (membership?.role === 'engineer' && !ENGINEER_ALLOWED_VIEWS.includes(currentView)) {
+      onViewChange('tickets');
+    }
+  }, [membership, currentView]);
+
   // Loading guard
   if (user === undefined || membership === undefined) {
     return (
@@ -127,6 +142,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   const isAdmin = membership?.role === 'admin' || membership?.role === 'owner';
   const isManager = ['admin', 'manager', 'owner', 'partner_admin'].includes(membership?.role);
+  const isEngineer = membership?.role === 'engineer';
 
   // ── Ticket counts ──────────────────────────────────────────────────────────
   const ticketCounts = {
@@ -370,6 +386,15 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   // ── Render by view ─────────────────────────────────────────────────────────
   const SALES_VIEWS = ['companies', 'leads', 'quotes', 'orders', 'contracts', 'sales-calendar'];
+
+  // Hard stop: never render a profit-bearing/blocked screen for an engineer (the
+  // effect above is already redirecting them to Tickets).
+  if (isEngineer && !ENGINEER_ALLOWED_VIEWS.includes(currentView)) {
+    return (
+      <div className="p-6 text-[13px] text-gray-500">This area isn't available for your role. Taking you to Tickets…</div>
+    );
+  }
+
   const salesProfileOpen =
     (currentView === 'companies' && openCompanyId) ||
     (currentView === 'leads' && openLeadCompanyId);
