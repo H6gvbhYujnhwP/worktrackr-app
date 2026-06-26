@@ -1,3 +1,4 @@
+import PageHero from './PageHero.jsx';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -5,16 +6,16 @@ import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench, StickyNote, S
 import QuickAddContactModal from './QuickAddContactModal';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
-const LABEL_CLS   = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
-const SECTION_WRAP = 'bg-white rounded-xl border border-[#e5e7eb] overflow-hidden mb-5';
-const SECTION_HEAD = 'px-6 py-4 border-b border-[#e5e7eb]';
+const INPUT_CLS   = 'w-full rounded-md border border-[#2e2e4a] bg-[#242438] px-3 py-2 text-[13px] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] transition-colors';
+const LABEL_CLS   = 'block text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1.5';
+const SECTION_WRAP = 'bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden mb-5';
+const SECTION_HEAD = 'px-6 py-4 border-b border-[#2e2e4a]';
 const SECTION_BODY = 'px-6 py-5';
-const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors disabled:opacity-50';
+const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#2e2e4a] bg-[#242438] text-[#cbd5e1] text-[13px] font-medium hover:bg-[#1a1a2e] transition-colors disabled:opacity-50';
 
 const STATUS_BADGE = {
-  draft:    'bg-[#f3f4f6] text-[#6b7280]',
+  draft:    'bg-[#1f1f33] text-[#94a3b8]',
   sent:     'bg-[#dbeafe] text-[#1e40af]',
   accepted: 'bg-[#dcfce7] text-[#166534]',
   declined: 'bg-[#fee2e2] text-[#991b1b]',
@@ -76,8 +77,8 @@ function VatPill({ enabled, onChange }) {
       title={enabled ? 'VAT included — click to remove' : 'No VAT — click to add 20%'}
       className={`inline-flex items-center justify-center w-full px-1.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
         enabled
-          ? 'bg-[#d4a017] text-[#111113] hover:bg-[#b8860b]'
-          : 'bg-[#f3f4f6] text-[#9ca3af] hover:bg-[#e5e7eb]'
+          ? 'bg-[#f59e0b] text-white hover:bg-[#b8860b]'
+          : 'bg-[#1f1f33] text-[#6b7280] hover:bg-[#e5e7eb]'
       }`}
     >
       {enabled ? '+VAT' : 'Ex'}
@@ -85,7 +86,7 @@ function VatPill({ enabled, onChange }) {
   );
 }
 
-const CELL_IN   = 'w-full bg-transparent text-[13px] text-[#111113] placeholder-[#d1d5db] focus:outline-none p-0 min-w-0';
+const CELL_IN   = 'w-full bg-transparent text-[13px] text-white placeholder-[#d1d5db] focus:outline-none p-0 min-w-0';
 const CELL_IN_R = `${CELL_IN} text-right`;
 
 // Returns a React Fragment with a data row + optional notes sub-row
@@ -98,13 +99,13 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
 
   return (
     <>
-      <tr className="border-b border-[#f3f4f6] hover:bg-[#fefcf5] group transition-colors">
+      <tr className="border-b border-[#2e2e4a] hover:bg-[#fefcf5] group transition-colors">
         {/* Description — includes AI / Catalogue badges when present */}
         <td className="px-3 py-2 min-w-[140px]">
           {hasBadges && (
             <div className="flex items-center gap-1 mb-1">
               {item.ai_generated && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-[#fef9ee] text-[#b8860b] border border-[#d4a017]/30 px-1.5 py-0.5 rounded"
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-[rgba(245,158,11,0.08)] text-[#f59e0b] border border-[#f59e0b]/30 px-1.5 py-0.5 rounded"
                   title="AI-generated — edit any field to clear">
                   <Sparkles className="w-2.5 h-2.5" /> AI
                 </span>
@@ -136,7 +137,7 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
         {/* Type */}
         <td className="px-2 py-2 w-28 hidden md:table-cell">
           <select
-            className="w-full bg-transparent text-[12px] text-[#374151] focus:outline-none cursor-pointer"
+            className="w-full bg-transparent text-[12px] text-[#cbd5e1] focus:outline-none cursor-pointer"
             value={item.item_type}
             onChange={e => onUpdate(globalIndex, 'item_type', e.target.value)}
           >
@@ -198,7 +199,7 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
           />
         </td>
         {/* Total */}
-        <td className="px-2 py-2 w-20 text-right text-[13px] font-semibold text-[#111113] select-none">
+        <td className="px-2 py-2 w-20 text-right text-[13px] font-semibold text-white select-none">
           £{lineTotal.toFixed(2)}
         </td>
         {/* Profit */}
@@ -223,8 +224,8 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
               title="Toggle line notes"
               className={`p-1 rounded transition-colors ${
                 hasNotes || item._showNotes
-                  ? 'text-[#d4a017] hover:bg-[#fef9ee]'
-                  : 'opacity-0 group-hover:opacity-100 text-[#9ca3af] hover:bg-[#f3f4f6]'
+                  ? 'text-[#f59e0b] hover:bg-[rgba(245,158,11,0.08)]'
+                  : 'opacity-0 group-hover:opacity-100 text-[#6b7280] hover:bg-[#2a2a48]'
               }`}
             >
               <StickyNote className="w-3.5 h-3.5" />
@@ -233,7 +234,7 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
               <button
                 type="button"
                 onClick={() => onRemove(globalIndex)}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#9ca3af] hover:text-red-500 hover:bg-[#fee2e2] transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#6b7280] hover:text-red-500 hover:bg-[#fee2e2] transition-all"
                 title="Remove line"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -245,10 +246,10 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
 
       {/* Notes sub-row */}
       {item._showNotes && (
-        <tr className="border-b border-[#f3f4f6] bg-[#fffdf5]">
+        <tr className="border-b border-[#2e2e4a] bg-[#fffdf5]">
           <td colSpan={20} className="px-3 pb-2 pt-0">
             <textarea
-              className="w-full text-[12px] text-[#374151] bg-transparent border border-[#e5e7eb] rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#d4a017]/40 focus:border-[#d4a017] resize-none placeholder-[#c9cdd6]"
+              className="w-full text-[12px] text-[#cbd5e1] bg-transparent border border-[#2e2e4a] rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#f59e0b]/40 focus:border-[#f59e0b] resize-none placeholder-[#c9cdd6]"
               rows={2}
               placeholder="Line notes — shown on quote and PDF (e.g. installation details, part numbers, access requirements)"
               value={item.line_notes}
@@ -263,12 +264,12 @@ function LineItemRows({ item, globalIndex, onUpdate, onRemove, canRemove }) {
 
 function SectionHeaderRow({ icon: Icon, title, count, onAdd, addLabel }) {
   return (
-    <tr className="bg-[#fafafa] border-y border-[#e5e7eb]">
+    <tr className="bg-[#1f1f33] border-y border-[#2e2e4a]">
       <td colSpan={20} className="px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Icon className="w-3.5 h-3.5 text-[#9ca3af]" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280]">{title}</span>
+            <Icon className="w-3.5 h-3.5 text-[#6b7280]" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8]">{title}</span>
             {count > 0 && (
               <span className="text-[11px] text-[#b0b7c3]">{count} item{count !== 1 ? 's' : ''}</span>
             )}
@@ -276,7 +277,7 @@ function SectionHeaderRow({ icon: Icon, title, count, onAdd, addLabel }) {
           <button
             type="button"
             onClick={onAdd}
-            className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#d4a017] hover:text-[#b8860b] hover:bg-[#fef9ee] rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#f59e0b] hover:text-[#f59e0b] hover:bg-[rgba(245,158,11,0.08)] rounded transition-colors"
           >
             <Plus className="w-3 h-3" />
             {addLabel}
@@ -308,22 +309,22 @@ function QuoteTotals({ lineItems }) {
 
   return (
     <div className="mt-5 flex justify-end">
-      <div className="w-full sm:w-80 bg-[#fafafa] rounded-xl border border-[#e5e7eb] overflow-hidden text-[13px]">
+      <div className="w-full sm:w-80 bg-[#1f1f33] rounded-xl border border-[#2e2e4a] overflow-hidden text-[13px]">
         {hasBuyPrices && (
-          <div className="px-4 py-2.5 border-b border-[#e5e7eb] flex justify-between text-[#9ca3af]">
+          <div className="px-4 py-2.5 border-b border-[#2e2e4a] flex justify-between text-[#6b7280]">
             <span>Total buy-in</span>
             <span>£{totalBuyIn.toFixed(2)}</span>
           </div>
         )}
-        <div className="px-4 py-2.5 border-b border-[#e5e7eb] flex justify-between text-[#374151]">
+        <div className="px-4 py-2.5 border-b border-[#2e2e4a] flex justify-between text-[#cbd5e1]">
           <span>Subtotal ex VAT</span>
           <span className="font-medium">£{subtotalExVat.toFixed(2)}</span>
         </div>
-        <div className="px-4 py-2.5 border-b border-[#e5e7eb] flex justify-between text-[#9ca3af]">
+        <div className="px-4 py-2.5 border-b border-[#2e2e4a] flex justify-between text-[#6b7280]">
           <span>VAT (20%)</span>
           <span>£{vatTotal.toFixed(2)}</span>
         </div>
-        <div className="px-4 py-3 border-b border-[#e5e7eb] flex justify-between font-bold text-[15px] text-[#111113]">
+        <div className="px-4 py-3 border-b border-[#2e2e4a] flex justify-between font-bold text-[15px] text-white">
           <span>Total inc VAT</span>
           <span>£{totalIncVat.toFixed(2)}</span>
         </div>
@@ -633,13 +634,14 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-12 text-center">
-        <div className="w-8 h-8 border-2 border-[#d4a017] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-[#9ca3af] text-sm">Loading quote…</p>
+        <div className="w-8 h-8 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-[#6b7280] text-sm">Loading quote…</p>
       </div>
     );
   }
 
   return (
+    <div className="min-h-full bg-[#1a1a2e]">
     <div className="max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
 
       {/* ── Page header ───────────────────────────────────────────────────── */}
@@ -649,16 +651,16 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-[20px] font-bold text-[#111113]">
+            <h1 className="text-[20px] font-bold text-white">
               {isEditMode ? 'Edit Quote' : 'Create New Quote'}
             </h1>
             {isEditMode && quoteNumber && (
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${STATUS_BADGE[formData.status] || 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${STATUS_BADGE[formData.status] || 'bg-[#1f1f33] text-[#94a3b8]'}`}>
                 {quoteNumber}
               </span>
             )}
           </div>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">
+          <p className="text-[13px] text-[#6b7280] mt-0.5">
             {isEditMode ? 'Update quote details and line items' : 'Fill in the details below to create a quote for your contact'}
           </p>
         </div>
@@ -667,8 +669,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       {/* ── Quote Information ──────────────────────────────────────────────── */}
       <div className={SECTION_WRAP}>
         <div className={SECTION_HEAD}>
-          <h2 className="text-[15px] font-semibold text-[#111113]">Quote Information</h2>
-          <p className="text-[12px] text-[#9ca3af] mt-0.5">Basic quote details and contact selection</p>
+          <h2 className="text-[15px] font-semibold text-white">Quote Information</h2>
+          <p className="text-[12px] text-[#6b7280] mt-0.5">Basic quote details and contact selection</p>
         </div>
         <div className={SECTION_BODY}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -677,21 +679,21 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
                 <label className={LABEL_CLS} style={{ marginBottom: 0 }}>Contact *</label>
                 {!isEditMode && (
                   <button type="button" onClick={() => setShowCreateContact(true)}
-                    className="text-[12px] font-medium text-[#d4a017] hover:text-[#b8860b] transition-colors">
+                    className="text-[12px] font-medium text-[#f59e0b] hover:text-[#f59e0b] transition-colors">
                     + Create New Contact
                   </button>
                 )}
               </div>
               {isEditMode ? (
-                <input className={`${INPUT_CLS} bg-[#fafafa] cursor-not-allowed`} value={contactName} disabled />
+                <input className={`${INPUT_CLS} bg-[#1f1f33] cursor-not-allowed`} value={contactName} disabled />
               ) : (
                 <Select value={formData.contact_id} onValueChange={v => setFormData({ ...formData, contact_id: v })}>
-                  <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
+                  <SelectTrigger className="focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]">
                     <SelectValue placeholder="Select a contact" />
                   </SelectTrigger>
                   <SelectContent>
                     {contacts.length === 0
-                      ? <div className="p-2 text-[12px] text-[#9ca3af]">No contacts found. Create one first.</div>
+                      ? <div className="p-2 text-[12px] text-[#6b7280]">No contacts found. Create one first.</div>
                       : contacts.map(c => (
                         <SelectItem key={c.id} value={c.id}>
                           {c.company_name || c.contact_name || c.name}
@@ -725,7 +727,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
               <div>
                 <label className={LABEL_CLS}>Status</label>
                 <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
-                  <SelectTrigger className="focus:ring-[#d4a017]/30 focus:border-[#d4a017]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
@@ -743,8 +745,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       <div className={SECTION_WRAP}>
         <div className={`${SECTION_HEAD} flex items-center justify-between`}>
           <div>
-            <h2 className="text-[15px] font-semibold text-[#111113]">Line Items</h2>
-            <p className="text-[12px] text-[#9ca3af] mt-0.5">
+            <h2 className="text-[15px] font-semibold text-white">Line Items</h2>
+            <p className="text-[12px] text-[#6b7280] mt-0.5">
               Materials &amp; parts · Labour &amp; other charges ·
               <span className="text-[#c9cdd6] ml-1">🗒 note icon per row · sell price turns red if below buy-in</span>
             </p>
@@ -757,18 +759,18 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
         <div className="overflow-x-auto">
           <table className="w-full min-w-[580px] border-collapse">
             <thead>
-              <tr className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-                <th className="px-3 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af]">Description</th>
-                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20  hidden sm:table-cell">Supplier</th>
-                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-28  hidden md:table-cell">Type</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12">Qty</th>
-                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-16  hidden sm:table-cell">Unit</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-18  hidden lg:table-cell">Buy £</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-18">Sell £</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12  hidden md:table-cell">Disc%</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20">Total</th>
-                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-20  hidden lg:table-cell">Profit</th>
-                <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] w-12  hidden sm:table-cell">VAT</th>
+              <tr className="bg-[#1a1a2e] border-b border-[#2e2e4a]">
+                <th className="px-3 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#6b7280]">Description</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-20  hidden sm:table-cell">Supplier</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-28  hidden md:table-cell">Type</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-12">Qty</th>
+                <th className="px-2 py-2 text-left   text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-16  hidden sm:table-cell">Unit</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-18  hidden lg:table-cell">Buy £</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-18">Sell £</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-12  hidden md:table-cell">Disc%</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-20">Total</th>
+                <th className="px-2 py-2 text-right  text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-20  hidden lg:table-cell">Profit</th>
+                <th className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-[#6b7280] w-12  hidden sm:table-cell">VAT</th>
                 <th className="w-14"></th>
               </tr>
             </thead>
@@ -798,21 +800,21 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
 
         <div className={SECTION_BODY}>
           {showTemplateSelector && (
-            <div className="mb-5 border border-[#e5e7eb] rounded-xl bg-[#fafafa] p-4">
-              <h4 className="text-[13px] font-semibold text-[#111113] mb-3">Select a Template</h4>
+            <div className="mb-5 border border-[#2e2e4a] rounded-xl bg-[#1f1f33] p-4">
+              <h4 className="text-[13px] font-semibold text-white mb-3">Select a Template</h4>
               {templates.length === 0 ? (
-                <p className="text-[13px] text-[#9ca3af]">No templates available. Create templates in CRM → Quote Templates.</p>
+                <p className="text-[13px] text-[#6b7280]">No templates available. Create templates in CRM → Quote Templates.</p>
               ) : (
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {templates.map(template => (
                     <button key={template.id} type="button" onClick={() => handleLoadTemplate(template.id)}
-                      className="w-full text-left p-3 hover:bg-[#fef9ee] rounded-lg border border-[#e5e7eb] flex items-center justify-between transition-colors">
+                      className="w-full text-left p-3 hover:bg-[rgba(245,158,11,0.08)] rounded-lg border border-[#2e2e4a] flex items-center justify-between transition-colors">
                       <div>
-                        <p className="text-[13px] font-medium text-[#111113]">{template.name}</p>
-                        {template.sector && <p className="text-[12px] text-[#9ca3af]">{template.sector}</p>}
-                        <p className="text-[11px] text-[#9ca3af] mt-0.5">{template.default_line_items?.length || 0} items</p>
+                        <p className="text-[13px] font-medium text-white">{template.name}</p>
+                        {template.sector && <p className="text-[12px] text-[#6b7280]">{template.sector}</p>}
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">{template.default_line_items?.length || 0} items</p>
                       </div>
-                      <FileText className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
+                      <FileText className="w-4 h-4 text-[#6b7280] flex-shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -826,8 +828,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       {/* ── Terms & Conditions ─────────────────────────────────────────────── */}
       <div className={SECTION_WRAP}>
         <div className={SECTION_HEAD}>
-          <h2 className="text-[15px] font-semibold text-[#111113]">Terms & Conditions</h2>
-          <p className="text-[12px] text-[#9ca3af] mt-0.5">Standard terms that will appear on the quote</p>
+          <h2 className="text-[15px] font-semibold text-white">Terms & Conditions</h2>
+          <p className="text-[12px] text-[#6b7280] mt-0.5">Standard terms that will appear on the quote</p>
         </div>
         <div className={SECTION_BODY}>
           <textarea rows={4} className={`${INPUT_CLS} min-h-[100px] resize-y`}
@@ -839,8 +841,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
       {/* ── Internal Notes ─────────────────────────────────────────────────── */}
       <div className={SECTION_WRAP}>
         <div className={SECTION_HEAD}>
-          <h2 className="text-[15px] font-semibold text-[#111113]">Internal Notes</h2>
-          <p className="text-[12px] text-[#9ca3af] mt-0.5">Staff only — not visible to the contact</p>
+          <h2 className="text-[15px] font-semibold text-white">Internal Notes</h2>
+          <p className="text-[12px] text-[#6b7280] mt-0.5">Staff only — not visible to the contact</p>
         </div>
         <div className={SECTION_BODY}>
           <textarea rows={3} className={`${INPUT_CLS} min-h-[80px] resize-y`}
@@ -887,6 +889,7 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
           } catch (e) { console.error('Error refreshing contacts:', e); }
         }}
       />
+    </div>
     </div>
   );
 }

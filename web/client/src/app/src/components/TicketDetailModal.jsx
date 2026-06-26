@@ -91,7 +91,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
   if (!ticket) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg p-8 flex items-center gap-3">
+        <div className="bg-[#242438] rounded-lg p-8 flex items-center gap-3">
           <Loader2 className="w-5 h-5 animate-spin" />
           Loading ticket…
         </div>
@@ -101,10 +101,10 @@ export default function TicketDetailModal({ ticketId, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#242438] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">Ticket: {ticket.title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-[#242438] rounded"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-4 grid md:grid-cols-2 gap-4">

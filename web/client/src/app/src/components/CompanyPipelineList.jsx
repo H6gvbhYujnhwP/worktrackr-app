@@ -22,7 +22,7 @@
 //
 // Props (unchanged): onOpenCompany(id), onAddCompany().
 import React, { useEffect, useMemo, useState } from 'react';
-import { Upload, MoreHorizontal, Clock, List, Columns3, Phone, Mail, ChevronDown } from 'lucide-react';
+import { Upload, MoreHorizontal, Clock, List, Columns3, Phone, Mail, ChevronDown, Building2 } from 'lucide-react';
 import CsvImport from './CsvImport.jsx';
 import SalesPageLayout, {
   SalesSearch, SalesPrimaryButton, SalesSecondaryButton,
@@ -426,6 +426,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
       bare={viewMode === 'pipeline'}
       title="Companies"
       subtitle={subtitle}
+      icon={Building2}
       actions={actions}
       filters={filters}
     >

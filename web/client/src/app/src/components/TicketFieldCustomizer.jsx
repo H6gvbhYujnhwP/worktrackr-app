@@ -463,7 +463,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0 pr-2">
                                       <div className="flex items-center space-x-2 mb-2">
-                                        <field.icon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 flex-shrink-0" />
+                                        <field.icon className="w-3 h-3 sm:w-4 sm:h-4 text-[#94a3b8] flex-shrink-0" />
                                         <span className="font-medium text-xs sm:text-sm">{field.label}</span>
                                         {field.required && fieldKey !== 'assignedUser' && (
                                           <Badge variant="destructive" className="text-xs px-1 py-0 flex-shrink-0">
@@ -471,7 +471,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                                           </Badge>
                                         )}
                                       </div>
-                                      <p className="text-xs text-gray-600 mb-2">{field.description}</p>
+                                      <p className="text-xs text-[#94a3b8] mb-2">{field.description}</p>
                                       <Badge variant="outline" className="text-xs">
                                         {field.type.replace('_', ' ')}
                                       </Badge>
@@ -480,7 +480,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                                       {selectedFields.includes(fieldKey) ? (
                                         <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                       ) : (
-                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-300 rounded"></div>
+                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#2e2e4a] rounded"></div>
                                       )}
                                     </div>
                                   </div>
@@ -499,14 +499,14 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Arrange Field Order</h3>
-                    <p className="text-sm text-gray-600">Drag fields to reorder them in your ticket form</p>
+                    <p className="text-sm text-[#94a3b8]">Drag fields to reorder them in your ticket form</p>
                   </div>
 
                   {fieldOrder.length === 0 ? (
                     <Card className="p-8 text-center">
-                      <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No fields selected</h3>
-                      <p className="text-gray-600">Go to the "Available Fields" tab to select fields for your ticket form</p>
+                      <Settings className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-white mb-2">No fields selected</h3>
+                      <p className="text-[#94a3b8]">Go to the "Available Fields" tab to select fields for your ticket form</p>
                     </Card>
                   ) : (
                     <div className="space-y-3">
@@ -519,8 +519,8 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                             <CardContent className="p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
-                                  <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
-                                  <field.icon className="w-5 h-5 text-gray-600" />
+                                  <GripVertical className="w-5 h-5 text-[#94a3b8] cursor-move" />
+                                  <field.icon className="w-5 h-5 text-[#94a3b8]" />
                                   <div>
                                     <span className="font-medium">{field.label}</span>
                                     {field.required && fieldKey !== 'assignedUser' && (
@@ -528,7 +528,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                                         Required
                                       </Badge>
                                     )}
-                                    <p className="text-sm text-gray-600">{field.description}</p>
+                                    <p className="text-sm text-[#94a3b8]">{field.description}</p>
                                   </div>
                                 </div>
                                 
@@ -765,9 +765,9 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
                   {selectedFields.filter(field => ['category', 'equipment_id', 'work_type', 'service_category'].includes(field)).length === 0 && (
                     <Card>
                       <CardContent className="p-6 text-center">
-                        <Settings className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Configurable Fields Selected</h3>
-                        <p className="text-gray-600">
+                        <Settings className="w-12 h-12 mx-auto text-[#94a3b8] mb-4" />
+                        <h3 className="text-lg font-medium text-white mb-2">No Configurable Fields Selected</h3>
+                        <p className="text-[#94a3b8]">
                           Select Category, Equipment ID, Work Type, or Service Category fields from the Available Fields tab to configure their options here.
                         </p>
                       </CardContent>
@@ -779,8 +779,8 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
           )}
         </CardContent>
         
-        <div className="border-t p-4 flex items-center justify-between bg-gray-50">
-          <div className="text-sm text-gray-600">
+        <div className="border-t p-4 flex items-center justify-between bg-[#1f1f33]">
+          <div className="text-sm text-[#94a3b8]">
             {selectedFields.filter(fieldKey => availableFields[fieldKey]?.category !== 'hidden').length} fields selected • Form ready for use
           </div>
           <div className="flex items-center space-x-3">
@@ -814,7 +814,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
       {/* Category Configuration Modal */}
       {showCategoryModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[#242438] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center">
                 <Tag className="w-5 h-5 mr-2 text-blue-600" />
@@ -829,7 +829,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
               </Button>
             </div>
             
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[#94a3b8] mb-4">
               Add your own categories that will appear as dropdown options when creating tickets.
             </p>
             
@@ -886,7 +886,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
       {/* Equipment ID Configuration Modal */}
       {showEquipmentIdModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[#242438] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center">
                 <Wrench className="w-5 h-5 mr-2 text-indigo-600" />
@@ -901,7 +901,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
               </Button>
             </div>
             
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[#94a3b8] mb-4">
               Add your own equipment IDs that will appear as dropdown options when creating tickets.
             </p>
             
@@ -958,7 +958,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
       {/* Work Type Configuration Modal */}
       {showWorkTypeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[#242438] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center">
                 <Building className="w-5 h-5 mr-2 text-indigo-600" />
@@ -973,7 +973,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
               </Button>
             </div>
             
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[#94a3b8] mb-4">
               Add your own work types that will appear as dropdown options when creating tickets.
             </p>
             
@@ -1032,7 +1032,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
       {/* Service Category Configuration Modal */}
       {showServiceCategoryModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-[#242438] rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center">
                 <Star className="w-5 h-5 mr-2 text-yellow-600" />
@@ -1047,7 +1047,7 @@ const TicketFieldCustomizer = ({ isOpen, onClose }) => {
               </Button>
             </div>
             
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-[#94a3b8] mb-4">
               Add your own service categories that will appear as dropdown options when creating tickets.
             </p>
             

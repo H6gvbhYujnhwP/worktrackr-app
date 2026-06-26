@@ -15,7 +15,8 @@
 // Status is DERIVED from the real model (open/done) — Done / Overdue / To do —
 // with no invented "in progress" state the backend can't store.
 import React, { useEffect, useState } from 'react';
-import { Plus, Calendar, Building2, Check, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Plus, Calendar, Building2, Check, ChevronDown, CheckCircle2, ListChecks } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 const PRIORITY = {
   high:   'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
@@ -179,28 +180,31 @@ export default function MyTasks() {
 
   const inputCls = 'border border-[#2e2e4a] bg-[#242438] text-white rounded-lg px-3 py-2 text-[13px] outline-none placeholder:text-[#6b7280]';
 
+  const heroActions = (
+    <>
+      <div className="relative">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none">
+          <option value="all">All tasks</option>
+          <option value="todo">To do</option>
+          <option value="completed">Completed</option>
+        </select>
+        <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
+      <HeroButtonPrimary icon={Plus} onClick={() => setAdding((v) => !v)}>New task</HeroButtonPrimary>
+    </>
+  );
+
   return (
     <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div>
-          <div className="text-2xl font-semibold text-white">My Tasks</div>
-          <div className="text-[13px] text-[#94a3b8]">{counts.all} {counts.all === 1 ? 'task' : 'tasks'} · {counts.overdue} overdue</div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none">
-              <option value="all">All tasks</option>
-              <option value="todo">To do</option>
-              <option value="completed">Completed</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-          <button onClick={() => setAdding((v) => !v)}
-            className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-[#f59e0b] text-[#1a1a2e] px-3.5 text-[13px] font-medium hover:bg-[#d97706]">
-            <Plus className="w-4 h-4" /> New task
-          </button>
-        </div>
+      <div className="mb-4">
+        <PageHero
+          title="My Tasks"
+          icon={ListChecks}
+          meta={[{ label: `${counts.all} ${counts.all === 1 ? 'task' : 'tasks'}` }, { label: `${counts.overdue} overdue` }]}
+          actions={heroActions}
+          compact
+        />
       </div>
 
       {/* tabs */}

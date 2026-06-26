@@ -119,23 +119,23 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
 
-  if (loading) return <div className="p-6 text-[13px] text-gray-500">Loading order…</div>;
+  if (loading) return <div className="p-6 text-[13px] text-[#94a3b8]">Loading order…</div>;
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <button onClick={() => onBack && onBack()} className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 mb-3">
+      <button onClick={() => onBack && onBack()} className="inline-flex items-center gap-1.5 text-[13px] text-[#94a3b8] hover:text-white mb-3">
         <ArrowLeft className="w-4 h-4" /> Back to orders
       </button>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5">
+      <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl p-4 md:px-5">
         <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
           <div>
-            <div className="text-lg font-medium text-gray-900">{id ? 'Order' : 'New order'}</div>
-            <div className="text-[13px] text-gray-500">One-off job · all figures ex-VAT</div>
+            <div className="text-lg font-medium text-white">{id ? 'Order' : 'New order'}</div>
+            <div className="text-[13px] text-[#94a3b8]">One-off job · all figures ex-VAT</div>
           </div>
           {editable && (
             <div className="flex gap-2">
-              <button onClick={saveDraft} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-[13px] hover:bg-gray-50">
+              <button onClick={saveDraft} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2e2e4a] px-3 py-1.5 text-[13px] hover:bg-[#1f1f33]">
                 <Save className="w-4 h-4" /> Save draft
               </button>
               <button onClick={submit} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#378add] text-[#185fa5] px-3 py-1.5 text-[13px] hover:bg-[#e6f1fb]">
@@ -150,25 +150,25 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
           {status === 'rejected'
             ? <span className="text-[12px] rounded-full px-3 py-1 bg-[#FAECE7] text-[#993C1D] border border-[#993C1D]">Rejected — edit and resubmit</span>
             : STEPS.map((s) => (
-                <span key={s} className={`text-[12px] rounded-full px-3 py-1 border ${s === status ? 'bg-[rgba(212,160,23,0.14)] text-[#8a6a0f] border-[#d4a017] font-medium' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>{STEP_LABEL[s]}</span>
+                <span key={s} className={`text-[12px] rounded-full px-3 py-1 border ${s === status ? 'bg-[rgba(212,160,23,0.14)] text-[#8a6a0f] border-[#f59e0b] font-medium' : 'bg-[#1f1f33] text-[#6b7280] border-[#2e2e4a]'}`}>{STEP_LABEL[s]}</span>
               ))}
         </div>
 
         {/* Company + IDYQ pull */}
         <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Company</div>
+            <div className="text-[11px] uppercase tracking-wide text-[#94a3b8] mb-1">Company</div>
             <select value={contactId} onChange={(e) => setContactId(e.target.value)} disabled={!editable}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white disabled:bg-gray-50">
+              className="w-full border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] bg-[#242438] disabled:bg-[#1f1f33]">
               <option value="">Select a company…</option>
               {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           {editable && (
             <div>
-              <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Pull from IdoYourQuotes</div>
+              <div className="text-[11px] uppercase tracking-wide text-[#94a3b8] mb-1">Pull from IdoYourQuotes</div>
               <div className="flex gap-2">
-                <select value={pickQuote} onChange={(e) => setPickQuote(e.target.value)} className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white">
+                <select value={pickQuote} onChange={(e) => setPickQuote(e.target.value)} className="flex-1 border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] bg-[#242438]">
                   <option value="">Choose a quote…</option>
                   {quotes.map((q) => <option key={q.idyqId} value={q.idyqId}>{q.quoteNumber || q.idyqId}{q.customer?.name ? ` · ${q.customer.name}` : ''}</option>)}
                 </select>
@@ -180,21 +180,21 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
         </div>
 
         <div className="mb-3">
-          <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Commission category</div>
+          <div className="text-[11px] uppercase tracking-wide text-[#94a3b8] mb-1">Commission category</div>
           <select value={commissionCategory} onChange={(e) => setCommissionCategory(e.target.value)} disabled={!editable}
-            className="w-full sm:w-64 border border-gray-300 rounded-lg px-3 py-2 text-[13px] bg-white disabled:bg-gray-50">
+            className="w-full sm:w-64 border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] bg-[#242438] disabled:bg-[#1f1f33]">
             <option value="standard">Standard (one-off)</option>
             <option value="finance">Finance</option>
             <option value="referral">Referral</option>
           </select>
-          <div className="text-[11px] text-gray-400 mt-1">Determines which configured commission rate applies. Rates are set per organisation in Commission rules.</div>
+          <div className="text-[11px] text-[#6b7280] mt-1">Determines which configured commission rate applies. Rates are set per organisation in Commission rules.</div>
         </div>
 
         {/* Lines */}
         <div className="overflow-x-auto">
           <table className="w-full text-[12.5px]" style={{ minWidth: 640 }}>
             <thead>
-              <tr className="text-gray-500 text-[11px] uppercase tracking-wide text-left">
+              <tr className="text-[#94a3b8] text-[11px] uppercase tracking-wide text-left">
                 <th className="py-1.5 pr-2">Item</th>
                 <th className="py-1.5 px-1 text-right w-14">Qty</th>
                 <th className="py-1.5 px-1 w-28">Supplier</th>
@@ -209,47 +209,47 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
                 const ro = l.source === 'idyq' || !editable;
                 const tp = (Number(l.unitProfit) || 0) * (Number(l.qty) || 0);
                 return (
-                  <tr key={l._key} className="border-t border-gray-100 align-top">
+                  <tr key={l._key} className="border-t border-[#2e2e4a] align-top">
                     <td className="py-1.5 pr-2">
                       <input value={l.description} disabled={ro} onChange={(e) => setLine(l._key, { description: e.target.value })}
-                        placeholder="Item" className="w-full border border-gray-200 rounded px-2 py-1 text-[12.5px] disabled:border-transparent disabled:bg-transparent disabled:px-0" />
+                        placeholder="Item" className="w-full border border-[#2e2e4a] rounded px-2 py-1 text-[12.5px] disabled:border-transparent disabled:bg-transparent disabled:px-0" />
                       {l.source === 'idyq' && <span className="inline-block mt-0.5 bg-[#EEEDFE] text-[#3C3489] rounded px-1.5 text-[9.5px] font-semibold">IDYQ{l.lineType ? ` · ${l.lineType}` : ''}</span>}
                     </td>
-                    <td className="py-1.5 px-1 text-right"><input type="number" value={l.qty} disabled={ro} onChange={(e) => setLine(l._key, { qty: e.target.value })} className="w-12 text-right border border-gray-200 rounded px-1 py-1 disabled:border-transparent disabled:bg-transparent" /></td>
-                    <td className="py-1.5 px-1">{l.source === 'idyq' ? <span className="text-gray-300">—</span> : <input value={l.supplierUrl} disabled={ro} onChange={(e) => setLine(l._key, { supplierUrl: e.target.value })} placeholder="URL" className="w-24 border border-gray-200 rounded px-1 py-1 disabled:border-transparent disabled:bg-transparent" />}</td>
-                    <td className="py-1.5 px-1 text-right">{ro ? money(l.unitCost) : <input type="number" value={l.unitCost} onChange={(e) => setLine(l._key, { unitCost: e.target.value })} className="w-20 text-right border border-gray-200 rounded px-1 py-1" />}</td>
-                    <td className="py-1.5 px-1 text-right">{ro ? <span className="text-[#0f6e56]">{money(l.unitProfit)}</span> : <input type="number" value={l.unitProfit} onChange={(e) => setLine(l._key, { unitProfit: e.target.value })} className="w-20 text-right border border-gray-200 rounded px-1 py-1" />}</td>
+                    <td className="py-1.5 px-1 text-right"><input type="number" value={l.qty} disabled={ro} onChange={(e) => setLine(l._key, { qty: e.target.value })} className="w-12 text-right border border-[#2e2e4a] rounded px-1 py-1 disabled:border-transparent disabled:bg-transparent" /></td>
+                    <td className="py-1.5 px-1">{l.source === 'idyq' ? <span className="text-[#6b7280]">—</span> : <input value={l.supplierUrl} disabled={ro} onChange={(e) => setLine(l._key, { supplierUrl: e.target.value })} placeholder="URL" className="w-24 border border-[#2e2e4a] rounded px-1 py-1 disabled:border-transparent disabled:bg-transparent" />}</td>
+                    <td className="py-1.5 px-1 text-right">{ro ? money(l.unitCost) : <input type="number" value={l.unitCost} onChange={(e) => setLine(l._key, { unitCost: e.target.value })} className="w-20 text-right border border-[#2e2e4a] rounded px-1 py-1" />}</td>
+                    <td className="py-1.5 px-1 text-right">{ro ? <span className="text-[#0f6e56]">{money(l.unitProfit)}</span> : <input type="number" value={l.unitProfit} onChange={(e) => setLine(l._key, { unitProfit: e.target.value })} className="w-20 text-right border border-[#2e2e4a] rounded px-1 py-1" />}</td>
                     <td className="py-1.5 px-1 text-right text-[#0f6e56]">{money(tp)}</td>
-                    <td className="py-1.5">{editable && <button onClick={() => removeLine(l._key)} className="text-gray-300 hover:text-red-700"><Trash2 className="w-4 h-4" /></button>}</td>
+                    <td className="py-1.5">{editable && <button onClick={() => removeLine(l._key)} className="text-[#6b7280] hover:text-red-700"><Trash2 className="w-4 h-4" /></button>}</td>
                   </tr>
                 );
               })}
               {editable && (
-                <tr className="border-t border-dashed border-gray-200">
+                <tr className="border-t border-dashed border-[#2e2e4a]">
                   <td colSpan={7} className="py-2"><button onClick={() => setLines((p) => [...p, blankLine()])} className="text-[#185fa5] text-[13px] inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Add line</button></td>
                 </tr>
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t border-gray-300 font-medium">
+              <tr className="border-t border-[#2e2e4a] font-medium">
                 <td className="py-2" colSpan={3}>Totals</td>
                 <td className="py-2 px-1 text-right">{money(totals.cost)}</td>
                 <td />
                 <td className="py-2 px-1 text-right text-[#0f6e56]">{money(totals.profit)}</td>
                 <td />
               </tr>
-              <tr><td className="text-gray-500" colSpan={3}>Order value (ex-VAT)</td><td className="px-1 text-right font-medium" colSpan={4}>{money(orderValue)}</td></tr>
+              <tr><td className="text-[#94a3b8]" colSpan={3}>Order value (ex-VAT)</td><td className="px-1 text-right font-medium" colSpan={4}>{money(orderValue)}</td></tr>
             </tfoot>
           </table>
         </div>
 
         <div className="mt-3">
-          <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Notes</div>
+          <div className="text-[11px] uppercase tracking-wide text-[#94a3b8] mb-1">Notes</div>
           <textarea value={notes} disabled={!editable} onChange={(e) => setNotes(e.target.value)} rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] disabled:bg-gray-50" placeholder="Optional notes for this order" />
+            className="w-full border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] disabled:bg-[#1f1f33]" placeholder="Optional notes for this order" />
         </div>
 
-        <div className="text-[12px] text-gray-400 mt-3 flex items-center gap-1">
+        <div className="text-[12px] text-[#6b7280] mt-3 flex items-center gap-1">
           <Lock className="w-3 h-3" /> IdoYourQuotes lines are read-only here — edit margins on the quote in IdoYourQuotes. Total profit feeds commission once the order is marked Paid.
         </div>
         {error && <div className="text-[12px] text-red-700 mt-2">{error}</div>}

@@ -1,11 +1,12 @@
+import PageHero from './PageHero.jsx';
 // web/client/src/app/src/components/JobForm.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Loader2, Save } from 'lucide-react';
 
 // ── Design system constants ────────────────────────────────────────────────────
-const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]';
-const LABEL_CLS = 'block text-[12px] font-semibold text-[#374151] mb-1';
+const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]';
+const LABEL_CLS = 'block text-[12px] font-semibold text-[#cbd5e1] mb-1';
 
 const JOB_STATUSES = [
   { value: 'scheduled',   label: 'Scheduled'   },
@@ -185,13 +186,14 @@ export default function JobForm() {
 
   if (loadingJob) {
     return (
-      <div className="flex items-center justify-center h-64 text-[13px] text-[#9ca3af]">
+      <div className="flex items-center justify-center h-64 text-[13px] text-[#6b7280]">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading project…
       </div>
     );
   }
 
   return (
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
     <div className="space-y-5">
 
       {/* Header */}
@@ -199,20 +201,20 @@ export default function JobForm() {
         <div className="flex items-center gap-3">
           <button
             onClick={backTarget}
-            className="p-2 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]"
+            className="p-2 rounded-lg border border-[#2e2e4a] hover:bg-[#1f1f33] text-[#94a3b8]"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-[#d4a017]" />
-              <h1 className="text-[20px] font-bold text-[#111113]">
+              <Briefcase className="w-5 h-5 text-[#f59e0b]" />
+              <h1 className="text-[20px] font-bold text-white">
                 {isEditMode
                   ? (jobNumber ? `Edit Project — ${jobNumber}` : 'Edit Project')
                   : 'Create Project'}
               </h1>
             </div>
-            <p className="text-[13px] text-[#9ca3af] mt-0.5">
+            <p className="text-[13px] text-[#6b7280] mt-0.5">
               {isEditMode
                 ? 'Update the fields below and save your changes'
                 : 'Fill in the details below to create a new project'}
@@ -222,7 +224,7 @@ export default function JobForm() {
         <button
           onClick={handleSubmit}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-white bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving
@@ -237,10 +239,10 @@ export default function JobForm() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Job details */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Project Details</h3>
-              <p className="text-[12px] text-[#9ca3af] mt-0.5">Core project information</p>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Project Details</h3>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">Core project information</p>
             </div>
             <div className="p-5 space-y-4">
 
@@ -287,10 +289,10 @@ export default function JobForm() {
           </div>
 
           {/* Scheduling */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Scheduling</h3>
-              <p className="text-[12px] text-[#9ca3af] mt-0.5">When is this job planned?</p>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Scheduling</h3>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">When is this job planned?</p>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -316,10 +318,10 @@ export default function JobForm() {
           </div>
 
           {/* Notes */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Internal Notes</h3>
-              <p className="text-[12px] text-[#9ca3af] mt-0.5">Staff only — not visible to the contact</p>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Internal Notes</h3>
+              <p className="text-[12px] text-[#6b7280] mt-0.5">Staff only — not visible to the contact</p>
             </div>
             <div className="p-5">
               <textarea
@@ -337,9 +339,9 @@ export default function JobForm() {
         <div className="space-y-5">
 
           {/* Contact */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Contact</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Contact</h3>
             </div>
             <div className="p-5">
               <label className={LABEL_CLS}>Link to Contact</label>
@@ -356,15 +358,15 @@ export default function JobForm() {
                 ))}
               </select>
               {contacts.length === 0 && (
-                <p className="text-[12px] text-[#9ca3af] mt-2">No contacts found. Create one in the Contacts section first.</p>
+                <p className="text-[12px] text-[#6b7280] mt-2">No contacts found. Create one in the Contacts section first.</p>
               )}
             </div>
           </div>
 
           {/* Assignment */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Assignment</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Assignment</h3>
             </div>
             <div className="p-5">
               <label className={LABEL_CLS}>Assigned To</label>
@@ -387,7 +389,7 @@ export default function JobForm() {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-medium text-white bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving
@@ -396,12 +398,13 @@ export default function JobForm() {
           </button>
           <button
             onClick={backTarget}
-            className="w-full px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
+            className="w-full px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33] transition-colors"
           >
             Cancel
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }

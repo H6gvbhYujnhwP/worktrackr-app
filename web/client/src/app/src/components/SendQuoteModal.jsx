@@ -114,15 +114,15 @@ export default function SendQuoteModal({ quote, onClose, onSend }) {
     }
   };
 
-  const inputCls = "w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]";
+  const inputCls = "w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#f59e0b]";
   const labelCls = "block text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
           <h3 className="text-[15px] font-semibold text-[#111113]">Send Quote</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280] transition-colors">
             <X className="w-4 h-4" />
@@ -137,7 +137,7 @@ export default function SendQuoteModal({ quote, onClose, onSend }) {
           )}
 
           {/* Copy-to-clipboard banner */}
-          <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
+          <div className="bg-[rgba(245,158,11,0.08)] border border-[#f59e0b]/30 rounded-lg px-4 py-3 flex items-start justify-between gap-3">
             <p className="text-[12px] text-[#b8860b] leading-relaxed">
               <span className="font-semibold">Copy-paste ready.</span> The email body below is pre-filled from your quote. Edit it as needed, then copy and paste into your email client — or use the Send button if SMTP is configured.
             </p>
@@ -189,22 +189,22 @@ export default function SendQuoteModal({ quote, onClose, onSend }) {
             />
           </div>
 
-          <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg px-4 py-3">
+          <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg px-4 py-3">
             <p className="text-[12px] text-[#6b7280]">
-              <span className="font-medium text-[#374151]">PDF attachment:</span> A PDF of the quote will be attached automatically when using the Send button. Copy-paste mode: attach the PDF manually from the Download button on the quote.
+              <span className="font-medium text-[#cbd5e1]">PDF attachment:</span> A PDF of the quote will be attached automatically when using the Send button. Copy-paste mode: attach the PDF manually from the Download button on the quote.
               {quote?.status === 'draft' && ' The quote status will be changed to "Sent" on dispatch.'}
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
           <button onClick={onClose} disabled={sending}
-            className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors disabled:opacity-50">
+            className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33] transition-colors disabled:opacity-50">
             Cancel
           </button>
           <button onClick={handleCopy}
             className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-colors ${
-              copied ? 'bg-emerald-600 text-white' : 'border border-[#d4a017] text-[#b8860b] hover:bg-[#fef9ee]'
+              copied ? 'bg-emerald-600 text-white' : 'border border-[#f59e0b] text-[#b8860b] hover:bg-[rgba(245,158,11,0.08)]'
             }`}>
             {copied ? '✓ Copied!' : 'Copy to Clipboard'}
           </button>

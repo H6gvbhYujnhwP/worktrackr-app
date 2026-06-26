@@ -7,6 +7,7 @@ import {
   Shield, ShieldCheck, ShieldAlert, Key, Mail,
   AlertTriangle, CheckCircle, Loader2
 } from 'lucide-react';
+import PageHero from './PageHero.jsx';
 
 export default function SecuritySettings() {
   const { user } = useAuth();
@@ -137,40 +138,39 @@ export default function SecuritySettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8 text-[13px] text-[#9ca3af]">
+      <div className="flex items-center justify-center p-8 text-[13px] text-[#94a3b8] bg-[#1a1a2e] min-h-full">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         Loading security settings...
       </div>
     );
   }
 
-  const sectionClass = "bg-white rounded-xl border border-[#e5e7eb] overflow-hidden";
-  const sectionHeaderClass = "px-6 py-4 border-b border-[#e5e7eb]";
-  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] text-center text-2xl tracking-widest";
+  const sectionClass = "bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden";
+  const sectionHeaderClass = "px-6 py-4 border-b border-[#2e2e4a]";
+  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg bg-[#1a1a2e] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] text-center text-2xl tracking-widest";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
       {/* Page header */}
-      <div className="flex items-center gap-3">
-        <Shield className="w-6 h-6 text-[#9ca3af]" />
-        <div>
-          <h2 className="text-[22px] font-bold text-[#111113]">Security Settings</h2>
-          <p className="text-[13px] text-[#9ca3af]">Manage your account security and authentication preferences</p>
-        </div>
-      </div>
+      <PageHero
+        title="Security Settings"
+        icon={Shield}
+        meta={[{ label: 'Manage your account security and authentication preferences' }]}
+        compact
+      />
 
       {/* Status messages */}
       {error && (
-        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-          <p className="text-[13px] text-red-800">{error}</p>
+        <div className="flex items-start gap-3 bg-[rgba(239,68,68,0.12)] border border-[rgba(239,68,68,0.4)] rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-[#fca5a5] mt-0.5 flex-shrink-0" />
+          <p className="text-[13px] text-[#fca5a5]">{error}</p>
         </div>
       )}
       {success && (
-        <div className="flex items-start gap-3 bg-[#dcfce7] border border-green-200 rounded-xl px-4 py-3">
-          <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-          <p className="text-[13px] text-green-800">{success}</p>
+        <div className="flex items-start gap-3 bg-[rgba(16,185,129,0.12)] border border-[rgba(16,185,129,0.4)] rounded-xl px-4 py-3">
+          <CheckCircle className="w-4 h-4 text-[#6ee7b7] mt-0.5 flex-shrink-0" />
+          <p className="text-[13px] text-[#6ee7b7]">{success}</p>
         </div>
       )}
 
@@ -180,17 +180,17 @@ export default function SecuritySettings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {mfaEnabled
-                ? <ShieldCheck className="w-5 h-5 text-green-600" />
-                : <ShieldAlert className="w-5 h-5 text-[#d4a017]" />
+                ? <ShieldCheck className="w-5 h-5 text-[#6ee7b7]" />
+                : <ShieldAlert className="w-5 h-5 text-[#f59e0b]" />
               }
               <div>
-                <h3 className="text-[14px] font-semibold text-[#111113]">Two-Factor Authentication</h3>
-                <p className="text-[12px] text-[#9ca3af] mt-0.5">Add an extra layer of security to your account</p>
+                <h3 className="text-[14px] font-semibold text-white">Two-Factor Authentication</h3>
+                <p className="text-[12px] text-[#94a3b8] mt-0.5">Add an extra layer of security to your account</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                mfaEnabled ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#f3f4f6] text-[#6b7280]'
+                mfaEnabled ? 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' : 'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]'
               }`}>
                 {mfaEnabled ? 'Enabled' : 'Disabled'}
               </span>
@@ -205,10 +205,10 @@ export default function SecuritySettings() {
           {!testingMfa ? (
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <Mail className="w-4 h-4 text-[#9ca3af] mt-0.5" />
+                <Mail className="w-4 h-4 text-[#94a3b8] mt-0.5" />
                 <div>
-                  <p className="text-[13px] font-medium text-[#374151]">Email-based verification</p>
-                  <p className="text-[12px] text-[#9ca3af] mt-0.5">
+                  <p className="text-[13px] font-medium text-white">Email-based verification</p>
+                  <p className="text-[12px] text-[#94a3b8] mt-0.5">
                     When enabled, you'll receive a 6-digit code via email each time you log in.
                   </p>
                 </div>

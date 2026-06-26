@@ -28,11 +28,11 @@ const getStatusIcon = (status) => {
 
 const getPriorityColor = (priority) => {
   switch (priority) {
-    case 'low': return 'bg-green-100 text-green-800 border-green-200';
+    case 'low': return 'bg-[rgba(16,185,129,0.15)] text-green-800 border-green-200';
     case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     case 'high': return 'bg-red-100 text-red-800 border-red-200';
     case 'critical': return 'bg-red-200 text-red-900 border-red-300';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    default: return 'bg-[#242438] text-white border-[#2e2e4a]';
   }
 };
 
@@ -42,10 +42,10 @@ const getStatusColor = (status) => {
     case 'assigned': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     case 'in_progress': return 'bg-orange-100 text-orange-800 border-orange-200';
     case 'waiting_approval': return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'parked': return 'bg-gray-100 text-gray-800 border-gray-200';
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+    case 'parked': return 'bg-[#242438] text-white border-[#2e2e4a]';
+    case 'completed': return 'bg-[rgba(16,185,129,0.15)] text-green-800 border-green-200';
     case 'closed': return 'bg-slate-100 text-slate-800 border-slate-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    default: return 'bg-[#242438] text-white border-[#2e2e4a]';
   }
 };
 
@@ -69,10 +69,10 @@ export default function TicketCard({ ticket, users, currentUser, onClick }) {
           {/* Left side - Title and ID */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
-              <h3 className="font-medium text-gray-900 truncate text-sm">
+              <h3 className="font-medium text-white truncate text-sm">
                 {ticket.title}
               </h3>
-              <span className="text-xs text-gray-500 flex-shrink-0">#{ticket.id}</span>
+              <span className="text-xs text-[#94a3b8] flex-shrink-0">#{ticket.id}</span>
             </div>
           </div>
 
@@ -80,7 +80,7 @@ export default function TicketCard({ ticket, users, currentUser, onClick }) {
           <div className="flex items-center space-x-2 flex-shrink-0">
             {/* Assignment info - only show if assigned */}
             {assignee && (
-              <span className={`text-xs px-2 py-1 rounded ${isAssignedToMe ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+              <span className={`text-xs px-2 py-1 rounded ${isAssignedToMe ? 'bg-blue-100 text-blue-800' : 'bg-[#242438] text-[#cbd5e1]'}`}>
                 {assignee.name}
               </span>
             )}

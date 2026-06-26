@@ -15,6 +15,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, ChevronDown, Briefcase, PauseCircle, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 const STATUS = {
   scheduled:   { label: 'Scheduled',   pill: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]' },
@@ -120,35 +121,41 @@ export default function JobsList() {
     );
   }
 
+  const heroActions = (
+    <>
+      <div className="flex items-center gap-2 border border-[#2e2e4a] rounded-lg px-3 h-9 bg-[#242438]">
+        <Search className="w-4 h-4 text-[#6b7280]" />
+        <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search projects…"
+          className="text-[13px] outline-none w-40 bg-transparent text-white placeholder:text-[#6b7280]" />
+      </div>
+      <div className="relative">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none">
+          <option value="all">All status</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="in_progress">In progress</option>
+          <option value="on_hold">On hold</option>
+          <option value="completed">Completed</option>
+          <option value="invoiced">Invoiced</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
+      <HeroButtonPrimary icon={Plus} onClick={() => navigate('/app/jobs/new')}>New project</HeroButtonPrimary>
+    </>
+  );
+
   return (
     <div className="min-h-full bg-[#1a1a2e] p-5 md:p-7">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div className="text-2xl font-semibold text-white">Projects</div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 border border-[#2e2e4a] rounded-lg px-3 h-9 bg-[#242438]">
-            <Search className="w-4 h-4 text-[#6b7280]" />
-            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search projects…"
-              className="text-[13px] outline-none w-48 bg-transparent text-white placeholder:text-[#6b7280]" />
-          </div>
-          <div className="relative">
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none">
-              <option value="all">All status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="in_progress">In progress</option>
-              <option value="on_hold">On hold</option>
-              <option value="completed">Completed</option>
-              <option value="invoiced">Invoiced</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-          <button onClick={() => navigate('/app/jobs/new')}
-            className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-[#f59e0b] text-[#1a1a2e] px-3.5 text-[13px] font-medium hover:bg-[#d97706]">
-            <Plus className="w-4 h-4" /> New project
-          </button>
-        </div>
+      {/* Hero header */}
+      <div className="mb-4">
+        <PageHero
+          title="Projects"
+          icon={Briefcase}
+          meta={[{ label: `${jobs.length} ${jobs.length === 1 ? 'project' : 'projects'}` }]}
+          actions={heroActions}
+          compact
+        />
       </div>
 
       {/* Tabs + sort */}

@@ -381,7 +381,7 @@ export default function PlanManagement({ totalUsers }) {
   };
 
   return (
-    <Card className="w-full bg-gray-50">
+    <Card className="w-full bg-[#1f1f33]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -465,7 +465,7 @@ export default function PlanManagement({ totalUsers }) {
                 <p className="text-3xl font-bold">£{config.price}<span className="text-sm font-normal">/month</span></p>
               </CardHeader>
               <CardContent className="flex-grow space-y-4">
-                <ul className="space-y-2 text-sm text-gray-600">
+                <ul className="space-y-2 text-sm text-[#94a3b8]">
                   {config.features.map((feature, i) => (
                     <li key={i} className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-green-500" />
@@ -591,10 +591,10 @@ export default function PlanManagement({ totalUsers }) {
                       </AlertDescription>
                     </Alert>
                     
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-[#cbd5e1]">
                       This will permanently delete:
                     </p>
-                    <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                    <ul className="text-sm text-[#94a3b8] list-disc list-inside space-y-1">
                       <li>Your account and all user data</li>
                       <li>All tickets and workflows</li>
                       <li>Team members and settings</li>
@@ -604,7 +604,7 @@ export default function PlanManagement({ totalUsers }) {
                     
                     <div className="pt-4">
                       <Label htmlFor="delete-confirm" className="text-sm font-semibold">
-                        Type <span className="font-mono bg-gray-100 px-1">DELETE</span> to confirm:
+                        Type <span className="font-mono bg-[#242438] px-1">DELETE</span> to confirm:
                       </Label>
                       <Input
                         id="delete-confirm"

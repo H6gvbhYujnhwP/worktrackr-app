@@ -241,7 +241,7 @@ Total: ${data.billing.totalAmount}`;
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl text-gray-900 flex items-center">
+              <CardTitle className="text-2xl text-white flex items-center">
                 <Edit className="w-8 h-8 mr-3 text-green-600" />
                 Manual Billing Processor
               </CardTitle>
@@ -250,7 +250,7 @@ Total: ${data.billing.totalAmount}`;
               </CardDescription>
             </div>
             <div className="flex items-center space-x-3">
-              <Badge className="bg-green-100 text-green-800 border-green-200 px-3 py-1">
+              <Badge className="bg-[rgba(16,185,129,0.15)] text-green-800 border-green-200 px-3 py-1">
                 {formatCurrency(editableData.billing.totalAmount)}
               </Badge>
             </div>
@@ -576,7 +576,7 @@ Total: ${data.billing.totalAmount}`;
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[#1f1f33] p-4 rounded-lg">
                 <pre className="text-xs whitespace-pre-wrap font-mono max-h-64 overflow-y-auto">
                   {generateExportData(exportFormat)}
                 </pre>

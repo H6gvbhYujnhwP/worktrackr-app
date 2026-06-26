@@ -9,6 +9,7 @@ import {
   X, Plus, Users, Mail, Trash2, Crown,
   User, Edit, Save, AlertTriangle, Phone, Settings
 } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 // Assignable membership roles (must match the server whitelist + DB CHECK).
 const ROLE_OPTIONS = [
@@ -112,27 +113,26 @@ export default function UserManagementImproved({ users, currentUser }) {
     }
   };
 
-  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]";
-  const labelClass = "block text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5";
+  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg bg-[#1a1a2e] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] placeholder:text-[#94a3b8]";
+  const labelClass = "block text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1.5";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
       {/* Page header */}
-      <div className="flex items-center gap-3">
-        <Users className="w-6 h-6 text-[#9ca3af]" />
-        <div>
-          <h2 className="text-[22px] font-bold text-[#111113]">User Management</h2>
-          <p className="text-[13px] text-[#9ca3af]">Manage team members and notification preferences</p>
-        </div>
-      </div>
+      <PageHero
+        title="User Management"
+        icon={Users}
+        meta={[{ label: 'Manage team members and notification preferences' }]}
+        compact
+      />
 
       {/* Plan management */}
       <PlanManagement currentPlan="pro" additionalSeats={0} totalUsers={users.length} />
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-        <div className="flex border-b border-[#e5e7eb]">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+        <div className="flex border-b border-[#2e2e4a]">
           {[
             { id: 'users', label: 'Team Members', icon: Users },
             { id: 'notifications', label: 'Notifications', icon: Mail },
@@ -142,8 +142,8 @@ export default function UserManagementImproved({ users, currentUser }) {
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-5 py-3 text-[13px] font-medium border-b-2 transition-colors ${
                 activeTab === id
-                  ? 'border-[#d4a017] text-[#d4a017]'
-                  : 'border-transparent text-[#6b7280] hover:text-[#374151]'
+                  ? 'border-[#f59e0b] text-[#f59e0b]'
+                  : 'border-transparent text-[#94a3b8] hover:text-[#cbd5e1]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -160,21 +160,21 @@ export default function UserManagementImproved({ users, currentUser }) {
 
               {/* Seat usage */}
               {!limitsLoading && (
-                <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4">
+                <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-[#9ca3af]" />
+                      <Users className="w-5 h-5 text-[#94a3b8]" />
                       <div>
-                        <p className="text-[13px] font-semibold text-[#374151]">
+                        <p className="text-[13px] font-semibold text-white">
                           {users.length} of {totalAllowedUsers === Infinity ? '∞' : totalAllowedUsers} users
                         </p>
-                        <p className="text-[12px] text-[#9ca3af]">
+                        <p className="text-[12px] text-[#94a3b8]">
                           {seatsRemaining === Infinity ? 'Unlimited seats available' : `${seatsRemaining} seats remaining`}
                         </p>
                       </div>
                     </div>
                     {(isAtLimit || isNearLimit) && (
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${isAtLimit ? 'bg-[#fee2e2] text-[#dc2626]' : 'bg-[#fef3c7] text-[#92400e]'}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${isAtLimit ? 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]' : 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]'}`}>
                         {isAtLimit ? 'Limit Reached' : 'Near Limit'}
                       </span>
                     )}
@@ -183,24 +183,24 @@ export default function UserManagementImproved({ users, currentUser }) {
               )}
 
               {isAtLimit && (
-                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                  <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-[13px] text-red-800">You've reached your user limit. Upgrade your plan or add additional seats above.</p>
+                <div className="flex items-start gap-3 bg-[rgba(239,68,68,0.10)] border border-[rgba(239,68,68,0.3)] rounded-lg px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 text-[#fca5a5] mt-0.5 flex-shrink-0" />
+                  <p className="text-[13px] text-[#fca5a5]">You've reached your user limit. Upgrade your plan or add additional seats above.</p>
                 </div>
               )}
               {isNearLimit && !isAtLimit && (
-                <div className="flex items-start gap-3 bg-[#fef3c7] border border-yellow-200 rounded-lg px-4 py-3">
-                  <AlertTriangle className="w-4 h-4 text-[#92400e] mt-0.5 flex-shrink-0" />
-                  <p className="text-[13px] text-[#92400e]">You're approaching your user limit ({seatsRemaining} seats remaining).</p>
+                <div className="flex items-start gap-3 bg-[rgba(245,158,11,0.10)] border border-[rgba(245,158,11,0.3)] rounded-lg px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 text-[#fcd34d] mt-0.5 flex-shrink-0" />
+                  <p className="text-[13px] text-[#fcd34d]">You're approaching your user limit ({seatsRemaining} seats remaining).</p>
                 </div>
               )}
 
               <div className="flex justify-between items-center">
-                <h3 className="text-[13px] font-semibold text-[#374151]">Team Members</h3>
+                <h3 className="text-[13px] font-semibold text-white">Team Members</h3>
                 <button
                   onClick={() => setShowAddUser(true)}
                   disabled={!canAddUsers || limitsLoading}
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   title={!canAddUsers ? "User limit reached." : ""}
                 >
                   <Plus className="w-4 h-4" />
@@ -212,7 +212,7 @@ export default function UserManagementImproved({ users, currentUser }) {
               {/* User list */}
               <div className="space-y-2">
                 {users.map((user) => (
-                  <div key={user.id} className="border border-[#e5e7eb] rounded-lg p-4">
+                  <div key={user.id} className="border border-[#2e2e4a] rounded-lg p-4 bg-[#1f1f33]">
                     {editingUser && editingUser.id === user.id ? (
                       // Edit mode
                       <div className="space-y-4">
@@ -232,13 +232,13 @@ export default function UserManagementImproved({ users, currentUser }) {
                               {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                             </select>
                             {(editingUser.isOrgOwner || editingUser.id === currentUser.id) && (
-                              <p className="text-[11px] text-[#9ca3af] mt-1">{editingUser.isOrgOwner ? "The owner's role can't be changed." : "You can't change your own role."}</p>
+                              <p className="text-[11px] text-[#6b7280] mt-1">{editingUser.isOrgOwner ? "The owner's role can't be changed." : "You can't change your own role."}</p>
                             )}
                           </div>
                         </div>
-                        <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-lg p-4 space-y-2">
+                        <div className="bg-[rgba(245,158,11,0.08)] border border-[#f59e0b]/30 rounded-lg p-4 space-y-2">
                           <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4 text-[#d4a017]" />
+                            <AlertTriangle className="w-4 h-4 text-[#f59e0b]" />
                             <label className={labelClass + " mb-0"}>Change Password</label>
                           </div>
                           <input
@@ -249,13 +249,13 @@ export default function UserManagementImproved({ users, currentUser }) {
                             placeholder="New password (min 8 chars — leave empty to keep current)"
                             minLength={8}
                           />
-                          <p className="text-[11px] text-[#9ca3af]">Leave empty to keep the current password.</p>
+                          <p className="text-[11px] text-[#6b7280]">Leave empty to keep the current password.</p>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={handleSaveUser} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg">
+                          <button onClick={handleSaveUser} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-white bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">
                             <Save className="w-4 h-4" /> Save
                           </button>
-                          <button onClick={() => setEditingUser(null)} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">
+                          <button onClick={() => setEditingUser(null)} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">
                             <X className="w-4 h-4" /> Cancel
                           </button>
                         </div>
@@ -264,28 +264,28 @@ export default function UserManagementImproved({ users, currentUser }) {
                       // View mode
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#fef9ee] border border-[#d4a017]/20 flex items-center justify-center flex-shrink-0">
-                            {user.isOrgOwner ? <Crown className="w-5 h-5 text-[#d4a017]" /> : <User className="w-5 h-5 text-[#9ca3af]" />}
+                          <div className="w-10 h-10 rounded-full bg-[rgba(245,158,11,0.08)] border border-[#f59e0b]/20 flex items-center justify-center flex-shrink-0">
+                            {user.isOrgOwner ? <Crown className="w-5 h-5 text-[#f59e0b]" /> : <User className="w-5 h-5 text-[#6b7280]" />}
                           </div>
                           <div>
-                            <p className="text-[13px] font-semibold text-[#111113]">{user.name}</p>
-                            <p className="text-[12px] text-[#9ca3af]">{user.email}</p>
-                            {user.mobile && <p className="text-[12px] text-[#9ca3af]">{user.mobile}</p>}
-                            <p className="text-[11px] text-[#9ca3af] uppercase tracking-wider">{user.department || 'General'}</p>
+                            <p className="text-[13px] font-semibold text-white">{user.name}</p>
+                            <p className="text-[12px] text-[#6b7280]">{user.email}</p>
+                            {user.mobile && <p className="text-[12px] text-[#6b7280]">{user.mobile}</p>}
+                            <p className="text-[11px] text-[#6b7280] uppercase tracking-wider">{user.department || 'General'}</p>
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-4">
                           <div className="flex flex-col items-center gap-1">
                             <span className={labelClass + " mb-0"}>Role</span>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f3f4f6] text-[#374151]">{user.isOrgOwner ? 'Owner' : roleLabel(user.role)}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#1f1f33] text-[#cbd5e1]">{user.isOrgOwner ? 'Owner' : roleLabel(user.role)}</span>
                           </div>
                           <div className="flex flex-col items-center gap-1">
                             <span className={labelClass + " mb-0"}>Emails</span>
                             <Switch checked={user.emailNotifications} onCheckedChange={() => handleToggleEmailNotifications(user.id)} />
-                            <span className="text-[11px] text-[#374151] font-medium">{user.emailNotifications ? 'On' : 'Off'}</span>
+                            <span className="text-[11px] text-[#cbd5e1] font-medium">{user.emailNotifications ? 'On' : 'Off'}</span>
                           </div>
                           <div className="flex gap-2">
-                            <button onClick={() => handleEditUser(user)} className="p-2 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]">
+                            <button onClick={() => handleEditUser(user)} className="p-2 rounded-lg border border-[#2e2e4a] hover:bg-[#1f1f33] text-[#94a3b8]">
                               <Edit className="w-4 h-4" />
                             </button>
                             {!user.isOrgOwner && user.id !== currentUser.id && (
@@ -295,7 +295,7 @@ export default function UserManagementImproved({ users, currentUser }) {
                             )}
                           </div>
                           {user.isOrgOwner && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#fef9ee] text-[#d4a017]">Owner</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[rgba(245,158,11,0.08)] text-[#f59e0b]">Owner</span>
                           )}
                         </div>
                       </div>
@@ -309,22 +309,22 @@ export default function UserManagementImproved({ users, currentUser }) {
           {/* Notifications tab */}
           {activeTab === 'notifications' && (
             <div className="space-y-3">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Email Notification Settings</h3>
-              <p className="text-[12px] text-[#9ca3af]">Manage email notification preferences for each team member.</p>
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Email Notification Settings</h3>
+              <p className="text-[12px] text-[#6b7280]">Manage email notification preferences for each team member.</p>
               {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between border border-[#e5e7eb] rounded-lg p-4">
+                <div key={user.id} className="flex items-center justify-between border border-[#2e2e4a] rounded-lg p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#f3f4f6] flex items-center justify-center">
-                      <User className="w-4 h-4 text-[#9ca3af]" />
+                    <div className="w-8 h-8 rounded-full bg-[#1f1f33] flex items-center justify-center">
+                      <User className="w-4 h-4 text-[#6b7280]" />
                     </div>
                     <div>
-                      <p className="text-[13px] font-medium text-[#374151]">{user.name}</p>
-                      <p className="text-[12px] text-[#9ca3af]">{user.email}</p>
+                      <p className="text-[13px] font-medium text-[#cbd5e1]">{user.name}</p>
+                      <p className="text-[12px] text-[#6b7280]">{user.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch checked={user.emailNotifications} onCheckedChange={() => handleToggleEmailNotifications(user.id)} />
-                    <span className="text-[12px] font-medium text-[#374151]">{user.emailNotifications ? 'Enabled' : 'Disabled'}</span>
+                    <span className="text-[12px] font-medium text-[#cbd5e1]">{user.emailNotifications ? 'Enabled' : 'Disabled'}</span>
                   </div>
                 </div>
               ))}
@@ -336,10 +336,10 @@ export default function UserManagementImproved({ users, currentUser }) {
       {/* Add User Modal */}
       {showAddUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Add New User</h3>
-              <button onClick={() => setShowAddUser(false)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">Add New User</h3>
+              <button onClick={() => setShowAddUser(false)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -353,16 +353,16 @@ export default function UserManagementImproved({ users, currentUser }) {
                   {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
-              <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4 space-y-3">
+              <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className={labelClass + " mb-0"}>Password Setup</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-[#9ca3af]">{newUser.sendInvitation ? 'Send invitation email' : 'Set password now'}</span>
+                    <span className="text-[12px] text-[#6b7280]">{newUser.sendInvitation ? 'Send invitation email' : 'Set password now'}</span>
                     <Switch checked={!newUser.sendInvitation} onCheckedChange={checked => setNewUser(p => ({...p, sendInvitation: !checked, password: ''}))} />
                   </div>
                 </div>
                 {newUser.sendInvitation ? (
-                  <p className="text-[12px] text-[#9ca3af]">User will receive an email with a link to set their password</p>
+                  <p className="text-[12px] text-[#6b7280]">User will receive an email with a link to set their password</p>
                 ) : (
                   <div>
                     <label className={labelClass}>Password *</label>
@@ -372,12 +372,12 @@ export default function UserManagementImproved({ users, currentUser }) {
               </div>
               <div className="flex items-center gap-3">
                 <Switch checked={newUser.emailNotifications} onCheckedChange={checked => setNewUser(p => ({...p, emailNotifications: checked}))} />
-                <label className="text-[13px] text-[#374151]">Enable email notifications</label>
+                <label className="text-[13px] text-[#cbd5e1]">Enable email notifications</label>
               </div>
             </div>
-            <div className="flex gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={handleAddUser} className="flex-1 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors">Add User</button>
-              <button onClick={() => setShowAddUser(false)} className="flex-1 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors">Cancel</button>
+            <div className="flex gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={handleAddUser} className="flex-1 py-2 text-[13px] font-medium text-white bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors">Add User</button>
+              <button onClick={() => setShowAddUser(false)} className="flex-1 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33] transition-colors">Cancel</button>
             </div>
           </div>
         </div>

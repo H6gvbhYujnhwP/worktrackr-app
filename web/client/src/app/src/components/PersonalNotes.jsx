@@ -19,6 +19,7 @@ import {
   TicketIcon, CornerUpRight, Search, Loader2, CheckCircle,
 } from 'lucide-react';
 import DictationButton from './DictationButton.jsx';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 // ── Design tokens (dark) ───────────────────────────────────────────────────
 const INPUT_CLS   = 'w-full rounded-md border border-[#2e2e4a] bg-[#242438] px-3 py-2 text-[13px] text-white placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] transition-colors';
@@ -490,17 +491,15 @@ const PersonalNotes = () => {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-white">My Notes</h2>
-            <p className="text-[13px] text-[#94a3b8] mt-0.5">Private — only you can see these</p>
-          </div>
-          {!showForm && (
-            <button className={GOLD_BTN} onClick={() => { setShowForm(true); setExpandedId(null); }}>
-              <Plus className="w-4 h-4" /> New note
-            </button>
-          )}
-        </div>
+        <PageHero
+          title="My Notes"
+          icon={StickyNote}
+          meta={[{ label: 'Private — only you can see these' }]}
+          actions={!showForm ? (
+            <HeroButtonPrimary icon={Plus} onClick={() => { setShowForm(true); setExpandedId(null); }}>New note</HeroButtonPrimary>
+          ) : null}
+          compact
+        />
 
         {/* Error */}
         {error && (

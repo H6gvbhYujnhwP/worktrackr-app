@@ -17,6 +17,7 @@ import {
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@/components/ui/select.jsx';
 import SafetyTab  from './SafetyTabComprehensive.jsx';
+import PageHero from './PageHero.jsx';
 import QuotesTab  from './QuotesTab.jsx';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -53,24 +54,24 @@ function statusToStageIndex(status) {
 }
 
 const PRIORITY_BADGE = {
-  urgent: 'bg-[#fee2e2] text-[#991b1b]',
-  high:   'bg-[#fef3c7] text-[#d97706]',
-  medium: 'bg-[#dbeafe] text-[#2563eb]',
-  low:    'bg-[#dcfce7] text-[#16a34a]',
+  urgent: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+  high:   'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  medium: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  low:    'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
 };
 const STATUS_BADGE = {
-  open:           'bg-[#dcfce7] text-[#166534]',
-  in_progress:    'bg-[#dbeafe] text-[#1e40af]',
-  pending:        'bg-[#fef3c7] text-[#92400e]',
-  resolved:       'bg-[#dbeafe] text-[#1e40af]',
-  closed:         'bg-[#f3f4f6] text-[#6b7280]',
-  new:            'bg-[#dbeafe] text-[#1e40af]',
-  scheduled:      'bg-[#ede9fe] text-[#6d28d9]',
-  invoiced:       'bg-[#d1fae5] text-[#065f46]',
-  cancelled:      'bg-[#fee2e2] text-[#991b1b]',
-  quote_sent:     'bg-[#fef3c7] text-[#92400e]',
-  quote_accepted: 'bg-[#dcfce7] text-[#166534]',
-  quote_declined: 'bg-[#fee2e2] text-[#991b1b]',
+  open:           'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  in_progress:    'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  pending:        'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  resolved:       'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  closed:         'bg-[rgba(107,114,128,0.20)] text-[#9ca3af]',
+  new:            'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  scheduled:      'bg-[rgba(109,40,217,0.20)] text-[#c4b5fd]',
+  invoiced:       'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  cancelled:      'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+  quote_sent:     'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  quote_accepted: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  quote_declined: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
 };
 
 const cap  = (s) => (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -104,14 +105,14 @@ function ContactPickerModal({ onSelect, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-2xl w-[480px] max-h-[70vh] flex flex-col border border-[#e5e7eb]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+      <div className="bg-[#242438] rounded-xl shadow-2xl w-[480px] max-h-[70vh] flex flex-col border border-[#2e2e4a]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
           <span className="text-[14px] font-semibold text-[#1d1d1f]">Link customer / contact</span>
           <button onClick={onClose} className="text-[#9ca3af] hover:text-[#6b7280]">
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="px-4 py-3 border-b border-[#e5e7eb]">
+        <div className="px-4 py-3 border-b border-[#2e2e4a]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
             <input
@@ -119,7 +120,7 @@ function ContactPickerModal({ onSelect, onClose }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by name, email…"
-              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#e5e7eb] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40 focus:border-[#d4a017]"
+              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#2e2e4a] rounded-md focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40 focus:border-[#f59e0b]"
             />
           </div>
         </div>
@@ -139,8 +140,8 @@ function ContactPickerModal({ onSelect, onClose }) {
               <button
                 key={c.id}
                 onClick={() => setSelected(c)}
-                className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-[#f3f4f6] last:border-b-0 transition-colors
-                  ${isSel ? 'bg-[#fef9ee]' : 'hover:bg-[#fafafa]'}`}
+                className={`w-full flex items-start gap-3 px-4 py-3 text-left border-b border-[#2e2e4a] last:border-b-0 transition-colors
+                  ${isSel ? 'bg-[rgba(245,158,11,0.08)]' : 'hover:bg-[#1f1f33]'}`}
               >
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0 mt-0.5
                   ${isSel ? 'bg-[#d4a017]' : 'bg-indigo-400'}`}>
@@ -160,10 +161,10 @@ function ContactPickerModal({ onSelect, onClose }) {
             );
           })}
         </div>
-        <div className="px-4 py-3 border-t border-[#e5e7eb] flex justify-end gap-2">
+        <div className="px-4 py-3 border-t border-[#2e2e4a] flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 text-[13px] text-[#6b7280] hover:text-[#374151] border border-[#e5e7eb] rounded-md transition-colors"
+            className="px-4 py-1.5 text-[13px] text-[#6b7280] hover:text-[#cbd5e1] border border-[#2e2e4a] rounded-md transition-colors"
           >
             Cancel
           </button>
@@ -185,7 +186,7 @@ function ContactPickerModal({ onSelect, onClose }) {
 function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, onUnlink, onDismissHint, onPickerOpen }) {
   if (matchState === 'loading') {
     return (
-      <div className="flex items-center gap-2 px-6 py-2 bg-[#fafafa] border-b border-[#e5e7eb]">
+      <div className="flex items-center gap-2 px-6 py-2 bg-[#1f1f33] border-b border-[#2e2e4a]">
         <Loader2 className="w-3 h-3 animate-spin text-[#9ca3af]" />
         <span className="text-[11px] text-[#9ca3af] italic">Searching for matching customer…</span>
       </div>
@@ -194,7 +195,7 @@ function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, on
 
   if (matchState === 'hint' && mentionedName && !linkedContact) {
     return (
-      <div className="flex items-center gap-3 px-6 py-2 bg-[#fffbeb] border-b border-[#fcd34d]">
+      <div className="flex items-center gap-3 px-6 py-2 bg-[rgba(245,158,11,0.08)] border-b border-[#f59e0b]">
         <Building2 className="w-3.5 h-3.5 text-[#d97706] flex-shrink-0" />
         <span className="text-[12px] text-[#92400e] flex-1">
           <span className="font-semibold">{mentionedName}</span> mentioned — not in your database.
@@ -219,7 +220,7 @@ function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, on
     const bizName = linkedContact.name    || linkedContact.contact_name  || '';
 
     return (
-      <div className="flex items-center gap-4 px-6 py-2 bg-white border-b border-[#e5e7eb] flex-wrap">
+      <div className="flex items-center gap-4 px-6 py-2 bg-[#1f1f33] border-b border-[#2e2e4a] flex-wrap">
         <div className="flex items-center gap-1.5 min-w-0">
           <Building2 className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" />
           <span className="text-[13px] font-semibold text-[#1d1d1f] truncate">{bizName}</span>
@@ -236,13 +237,13 @@ function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, on
           </div>
         )}
         {phone && (
-          <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#374151] transition-colors">
+          <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#cbd5e1] transition-colors">
             <Phone className="w-3 h-3 text-[#9ca3af]" />
             <span>{phone}</span>
           </a>
         )}
         {email && (
-          <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#374151] transition-colors">
+          <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-[12px] text-[#6b7280] hover:text-[#cbd5e1] transition-colors">
             <Mail className="w-3 h-3 text-[#9ca3af]" />
             <span className="truncate max-w-[180px]">{email}</span>
           </a>
@@ -250,7 +251,7 @@ function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, on
         <div className="ml-auto flex items-center gap-2 flex-shrink-0">
           <button
             onClick={onPickerOpen}
-            className="text-[11px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded px-2 py-0.5 transition-colors flex items-center gap-1"
+            className="text-[11px] text-[#9ca3af] hover:text-[#6b7280] border border-[#2e2e4a] rounded px-2 py-0.5 transition-colors flex items-center gap-1"
           >
             <Link2 className="w-3 h-3" /> Change
           </button>
@@ -263,7 +264,7 @@ function CustomerStrip({ linkedContact, matchState, mentionedName, aiMatched, on
   }
 
   return (
-    <div className="flex items-center gap-2 px-6 py-2 bg-white border-b border-[#e5e7eb]">
+    <div className="flex items-center gap-2 px-6 py-2 bg-[#1f1f33] border-b border-[#2e2e4a]">
       <button
         onClick={onPickerOpen}
         className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] hover:text-[#6b7280] border border-dashed border-[#d1d5db] rounded px-2.5 py-1 transition-colors"
@@ -283,7 +284,7 @@ function ThreadEntry({ comment, isCurrentUser }) {
   if (type === 'system') {
     return (
       <div className="flex items-center gap-3 py-0.5">
-        <div className="w-5 h-5 rounded-full bg-[#f3f4f6] flex items-center justify-center flex-shrink-0">
+        <div className="w-5 h-5 rounded-full bg-[#1f1f33] flex items-center justify-center flex-shrink-0">
           <div className="w-1.5 h-1.5 rounded-full bg-[#9ca3af]" />
         </div>
         <span className="text-[12px] text-[#9ca3af] italic flex-1">{comment.body}</span>
@@ -304,7 +305,7 @@ function ThreadEntry({ comment, isCurrentUser }) {
       sent:     { bg: 'bg-purple-50', border: 'border-purple-200', dot: 'bg-purple-400', text: 'text-purple-700' },
       accepted: { bg: 'bg-green-50',  border: 'border-green-200', dot: 'bg-green-500',  text: 'text-green-700' },
       declined: { bg: 'bg-red-50',    border: 'border-red-200',   dot: 'bg-red-400',    text: 'text-red-700'   },
-    }[event] || { bg: 'bg-[#f3f4f6]', border: 'border-[#e5e7eb]', dot: 'bg-[#9ca3af]', text: 'text-[#6b7280]' };
+    }[event] || { bg: 'bg-[#1f1f33]', border: 'border-[#2e2e4a]', dot: 'bg-[#9ca3af]', text: 'text-[#6b7280]' };
 
     return (
       <div className="flex items-center gap-3 py-0.5">
@@ -334,7 +335,7 @@ function ThreadEntry({ comment, isCurrentUser }) {
             </span>
           </div>
           <div className="bg-[#fefce8] border border-[#fcd34d] rounded-lg p-3">
-            <p className="text-[13px] text-[#78350f] leading-relaxed">{comment.body}</p>
+            <p className="text-[13px] text-[#fcd34d] leading-relaxed">{comment.body}</p>
             <div className="flex gap-2 mt-3">
               <button className="bg-[#16a34a] text-white text-[12px] font-medium px-3 py-1.5 rounded-md hover:bg-[#15803d] transition-colors">
                 ✓ Approve
@@ -371,8 +372,8 @@ function ThreadEntry({ comment, isCurrentUser }) {
             {new Date(comment.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-        <div className={`rounded-lg p-3 text-[13px] leading-relaxed text-[#374151] border ${
-          isInternal ? 'bg-[#fffbeb] border-[#fde68a]' : 'bg-white border-[#e5e7eb]'
+        <div className={`rounded-lg p-3 text-[13px] leading-relaxed text-[#cbd5e1] border ${
+          isInternal ? 'bg-[#fffbeb] border-[#fde68a]' : 'bg-[#242438] border-[#2e2e4a]'
         }`}>
           {comment.body}
         </div>
@@ -426,7 +427,7 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
           </span>
         </div>
         <div className="rounded-lg border border-[#ddd6fe] bg-[#faf5ff] overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#ddd6fe] bg-[#ede9fe]/40">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#3d2e6a] bg-[rgba(109,40,217,0.10)]">
             <Mic className="w-3.5 h-3.5 text-[#7c3aed]" />
             <span className="text-[12px] font-semibold text-[#6d28d9]">{title || '🎙️ Meeting Note'}</span>
           </div>
@@ -436,11 +437,11 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
                 <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${sectionBadgeColor[sec.heading] || 'text-[#6b7280]'}`}>
                   {sec.heading}
                 </div>
-                {sec.summary && <p className="text-[12px] text-[#374151] leading-relaxed">{sec.summary}</p>}
+                {sec.summary && <p className="text-[12px] text-[#cbd5e1] leading-relaxed">{sec.summary}</p>}
                 {sec.items.length > 0 && (
                   <ul className="space-y-0.5">
                     {sec.items.map((item, j) => (
-                      <li key={j} className="flex items-start gap-1.5 text-[12px] text-[#374151]">
+                      <li key={j} className="flex items-start gap-1.5 text-[12px] text-[#cbd5e1]">
                         <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span>
                         <span>{item}</span>
                       </li>
@@ -452,14 +453,14 @@ function AudioNoteEntry({ comment, avatarBg, initials }) {
           </div>
           <button
             onClick={() => setShowTranscript(v => !v)}
-            className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] text-[#9ca3af] hover:text-[#6b7280] border-t border-[#ddd6fe] transition-colors bg-white/50"
+            className="w-full flex items-center gap-1.5 px-3 py-2 text-[11px] text-[#94a3b8] hover:text-white border-t border-[#2e2e4a] transition-colors bg-transparent"
           >
             <FileText className="w-3 h-3" />
             {showTranscript ? 'Hide transcript' : 'Show full transcript'}
             {showTranscript ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
           </button>
           {showTranscript && transcript.trim() && (
-            <div className="px-3 py-3 border-t border-[#ddd6fe] bg-white/50">
+            <div className="px-3 py-3 border-t border-[#2e2e4a] bg-[#1a1a2e]">
               <p className="text-[11px] text-[#6b7280] leading-relaxed whitespace-pre-wrap">{transcript.trim()}</p>
             </div>
           )}
@@ -557,8 +558,8 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
     ].filter(s => s.items.length > 0);
 
     return (
-      <div className="bg-white">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#e5e7eb] bg-[#faf5ff]">
+      <div className="bg-[#242438]">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#2e2e4a] bg-[#faf5ff]">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-[#7c3aed]" />
             <span className="text-[13px] font-semibold text-[#6d28d9]">Review before posting</span>
@@ -570,9 +571,9 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
             <div key={i}>
               <div className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${sec.color}`}>{sec.label}</div>
               {sec.single
-                ? <p className="text-[13px] text-[#374151] leading-relaxed">{sec.items[0]}</p>
+                ? <p className="text-[13px] text-[#cbd5e1] leading-relaxed">{sec.items[0]}</p>
                 : <ul className="space-y-1">{sec.items.map((item, j) => (
-                    <li key={j} className="flex items-start gap-1.5 text-[13px] text-[#374151]">
+                    <li key={j} className="flex items-start gap-1.5 text-[13px] text-[#cbd5e1]">
                       <span className="text-[#9ca3af] flex-shrink-0 mt-0.5">•</span><span>{item}</span>
                     </li>
                   ))}</ul>}
@@ -587,13 +588,13 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
             {showTranscript ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           {showTranscript && (
-            <p className="text-[11px] text-[#6b7280] leading-relaxed bg-[#f9fafb] rounded p-3 whitespace-pre-wrap border border-[#e5e7eb]">
+            <p className="text-[11px] text-[#6b7280] leading-relaxed bg-[#1f1f33] rounded p-3 whitespace-pre-wrap border border-[#2e2e4a]">
               {transcript}
             </p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-[#e5e7eb] flex justify-end gap-2">
-          <button onClick={handleReset} className="px-3 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-md hover:bg-[#f9fafb] transition-colors">
+        <div className="px-5 py-3 border-t border-[#2e2e4a] flex justify-end gap-2">
+          <button onClick={handleReset} className="px-3 py-1.5 text-[13px] text-[#6b7280] border border-[#2e2e4a] rounded-md hover:bg-[#1f1f33] transition-colors">
             Re-do
           </button>
           <button
@@ -621,14 +622,14 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
   }
 
   return (
-    <div className="bg-white">
-      <div className="flex border-b border-[#e5e7eb]">
+    <div className="bg-[#242438]">
+      <div className="flex border-b border-[#2e2e4a]">
         {[{ id: 'upload', label: 'Upload audio', Icon: Upload }, { id: 'paste', label: 'Paste transcript', Icon: FileText }].map(({ id, label, Icon }) => (
           <button
             key={id}
             onClick={() => { setInputMode(id); setLocalError(''); }}
             className={`flex items-center gap-1.5 px-5 py-2.5 text-[12px] font-medium border-b-2 transition-colors
-              ${inputMode === id ? 'border-[#7c3aed] text-[#6d28d9] bg-white' : 'border-transparent text-[#9ca3af] hover:text-[#6b7280] bg-[#fafafa]'}`}
+              ${inputMode === id ? 'border-[#7c3aed] text-[#6d28d9] bg-[#242438]' : 'border-transparent text-[#9ca3af] hover:text-[#6b7280] bg-[#1f1f33]'}`}
           >
             <Icon className="w-3.5 h-3.5" />{label}
           </button>
@@ -643,7 +644,7 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors
-              ${dragOver ? 'border-[#7c3aed] bg-[#faf5ff]' : 'border-[#e5e7eb] hover:border-[#c4b5fd] hover:bg-[#faf5ff]'}`}
+              ${dragOver ? 'border-[#7c3aed] bg-[#faf5ff]' : 'border-[#2e2e4a] hover:border-[#c4b5fd] hover:bg-[#faf5ff]'}`}
           >
             <input ref={fileInputRef} type="file" accept={ACCEPTED_TYPES} onChange={e => handleFile(e.target.files[0])} className="hidden" />
             {audioFile ? (
@@ -671,7 +672,7 @@ function AudioComposePanel({ ticketId, onPost, setGlobalError }) {
             onChange={e => setPasteText(e.target.value)}
             placeholder="Paste your meeting transcript here…"
             rows={4}
-            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[13px] text-[#374151] placeholder-[#9ca3af] resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/40 focus:border-[#7c3aed]"
+            className="w-full border border-[#2e2e4a] rounded-lg px-3 py-2.5 text-[13px] text-[#cbd5e1] placeholder-[#9ca3af] resize-none focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/40 focus:border-[#7c3aed]"
           />
         )}
         <div className="flex justify-end">
@@ -713,7 +714,7 @@ function ReviewItemRow({ item, onRemove }) {
   };
 
   return (
-    <div className={`rounded-lg border px-4 py-3 ${item.flagged ? 'border-amber-300 bg-[#fffbeb]' : 'border-[#e5e7eb] bg-white'}`}>
+    <div className={`rounded-lg border px-4 py-3 ${item.flagged ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.08)]' : 'border-[#2e2e4a] bg-[#1f1f33]'}`}>
       <div className="flex items-start gap-2">
         <ConfidenceDot confidence={item.confidence} />
         <div className="flex-1 min-w-0">
@@ -721,7 +722,7 @@ function ReviewItemRow({ item, onRemove }) {
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-[#1d1d1f] leading-snug">{item.description}</p>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${typeCls[item.item_type] || 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${typeCls[item.item_type] || 'bg-[#1f1f33] text-[#6b7280]'}`}>
                   {typeLabel[item.item_type] || item.item_type}
                 </span>
                 <span className="text-[11px] text-[#9ca3af]">
@@ -746,7 +747,7 @@ function ReviewItemRow({ item, onRemove }) {
             </button>
           </div>
           {item.flagged && item.flag_reason && (
-            <div className="flex items-start gap-1.5 mt-2 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
+            <div className="flex items-start gap-1.5 mt-2 bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.3)] rounded px-2.5 py-1.5">
               <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-[11px] text-amber-800 leading-snug">{item.flag_reason}</p>
             </div>
@@ -840,9 +841,9 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
       <div className="flex-1 bg-black/30" onClick={onClose} />
 
       {/* Panel */}
-      <div className="w-full max-w-[480px] bg-white border-l border-[#e5e7eb] flex flex-col shadow-2xl">
+      <div className="w-full max-w-[480px] bg-[#242438] border-l border-[#2e2e4a] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between bg-[#fef9ee]">
+        <div className="px-5 py-4 border-b border-[#2e2e4a] flex items-center justify-between bg-[rgba(245,158,11,0.08)]">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#d4a017]" />
             <span className="text-[14px] font-semibold text-[#1d1d1f]">Generate quote</span>
@@ -859,7 +860,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
             <div className="flex flex-col items-center justify-center py-20 gap-4 px-6">
               <Loader2 className="w-8 h-8 animate-spin text-[#d4a017]" />
               <div className="text-center">
-                <p className="text-[13px] font-medium text-[#374151]">Reading ticket and generating suggestions…</p>
+                <p className="text-[13px] font-medium text-[#cbd5e1]">Reading ticket and generating suggestions…</p>
                 <p className="text-[12px] text-[#9ca3af] mt-1">Claude is reviewing the ticket, thread notes, and your product catalogue</p>
               </div>
             </div>
@@ -868,7 +869,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
           {panelState === 'error' && (
             <div className="px-5 py-8 text-center">
               <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-400" />
-              <p className="text-[13px] text-[#374151] font-medium mb-1">Generation failed</p>
+              <p className="text-[13px] text-[#cbd5e1] font-medium mb-1">Generation failed</p>
               <p className="text-[12px] text-[#9ca3af] mb-5">{panelError}</p>
               <button
                 onClick={callGenerate}
@@ -882,7 +883,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
           {panelState === 'review' && (
             <div className="px-5 py-4">
               {/* Confidence legend */}
-              <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#f3f4f6]">
+              <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#2e2e4a]">
                 <p className="text-[11px] text-[#9ca3af]">Confidence:</p>
                 {[['high','bg-emerald-500','High'], ['medium','bg-amber-400','Medium'], ['low','bg-red-400','Low']].map(([k, cls, label]) => (
                   <span key={k} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
@@ -917,7 +918,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
               </div>
 
               {suggestedItems.some(i => i.flagged && !removed.has(suggestedItems.indexOf(i))) && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="mt-4 p-3 bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.3)] rounded-lg">
                   <p className="text-[12px] text-amber-800">
                     <span className="font-semibold">⚠ Some items are flagged</span> — review them before confirming. Flagged items will open in the quote form with notes for you to fill in.
                   </p>
@@ -925,8 +926,8 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
               )}
 
               <div className="mt-4 p-3 bg-[#f0f9ff] border border-blue-100 rounded-lg">
-                <p className="text-[11px] text-[#374151]">
-                  <span className="font-semibold text-blue-700">All AI-generated items</span> will carry a gold <span className="font-mono bg-[#fef9ee] px-1 rounded">AI</span> badge in the quote form.
+                <p className="text-[11px] text-[#cbd5e1]">
+                  <span className="font-semibold text-blue-700">All AI-generated items</span> will carry a gold <span className="font-mono bg-[rgba(245,158,11,0.08)] px-1 rounded">AI</span> badge in the quote form.
                   Items matched from your <span className="font-mono bg-blue-50 px-1 rounded">Catalogue</span> carry a second badge. Editing any field permanently removes both badges.
                 </p>
               </div>
@@ -936,7 +937,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
 
         {/* Footer */}
         {panelState === 'review' && (
-          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center justify-between gap-3">
+          <div className="px-5 py-4 border-t border-[#2e2e4a] bg-[#1f1f33] flex items-center justify-between gap-3">
             <p className="text-[12px] text-[#9ca3af]">
               {activeCount} item{activeCount !== 1 ? 's' : ''} selected
               {removed.size > 0 && <span className="ml-1">({removed.size} removed)</span>}
@@ -944,7 +945,7 @@ function GenerateQuotePanel({ ticketId, ticketTitle, contactId, onClose }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+                className="px-4 py-1.5 text-[13px] text-[#94a3b8] border border-[#2e2e4a] rounded-lg hover:bg-[#2a2a48] transition-colors"
               >
                 Cancel
               </button>
@@ -1036,9 +1037,9 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-end">
       <div className="flex-1 bg-black/30" onClick={onClose} />
-      <div className="w-full max-w-[480px] bg-white border-l border-[#e5e7eb] flex flex-col shadow-2xl">
+      <div className="w-full max-w-[480px] bg-[#242438] border-l border-[#2e2e4a] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between bg-[#f0f9ff]">
+        <div className="px-5 py-4 border-b border-[#2e2e4a] flex items-center justify-between bg-[#f0f9ff]">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-500" />
             <div>
@@ -1060,7 +1061,7 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
             <div className="flex flex-col items-center justify-center py-20 gap-4 px-6">
               <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
               <div className="text-center">
-                <p className="text-[13px] font-medium text-[#374151]">Reading new notes…</p>
+                <p className="text-[13px] font-medium text-[#cbd5e1]">Reading new notes…</p>
                 <p className="text-[12px] text-[#9ca3af] mt-1">
                   Scanning notes added since {sinceLabel}
                 </p>
@@ -1071,7 +1072,7 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
           {panelState === 'error' && (
             <div className="px-5 py-8 text-center">
               <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-amber-400" />
-              <p className="text-[13px] text-[#374151] font-medium mb-1">Top-up failed</p>
+              <p className="text-[13px] text-[#cbd5e1] font-medium mb-1">Top-up failed</p>
               <p className="text-[12px] text-[#9ca3af] mb-5">{panelError}</p>
               <button
                 onClick={callTopUp}
@@ -1086,9 +1087,9 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
             <div className="px-5 py-4">
 
               {/* Since-date callout */}
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-[#f3f4f6]">
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-[#2e2e4a]">
                 <span className="text-[11px] text-[#9ca3af]">New notes since</span>
-                <span className="text-[11px] font-semibold text-[#374151] bg-[#f3f4f6] px-2 py-0.5 rounded">
+                <span className="text-[11px] font-semibold text-[#cbd5e1] bg-[#1f1f33] px-2 py-0.5 rounded">
                   {sinceLabel}
                 </span>
               </div>
@@ -1127,8 +1128,8 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
 
               {suggestedItems.length > 0 && (
                 <div className="mt-4 p-3 bg-[#f0f9ff] border border-blue-100 rounded-lg">
-                  <p className="text-[11px] text-[#374151]">
-                    <span className="font-semibold text-blue-700">New items will be appended</span> to the existing quote with gold <span className="font-mono bg-[#fef9ee] px-1 rounded">AI</span> badges. Editing any field permanently removes the badge.
+                  <p className="text-[11px] text-[#cbd5e1]">
+                    <span className="font-semibold text-blue-700">New items will be appended</span> to the existing quote with gold <span className="font-mono bg-[rgba(245,158,11,0.08)] px-1 rounded">AI</span> badges. Editing any field permanently removes the badge.
                   </p>
                 </div>
               )}
@@ -1138,7 +1139,7 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
 
         {/* Footer */}
         {panelState === 'review' && suggestedItems.length > 0 && (
-          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex items-center justify-between gap-3">
+          <div className="px-5 py-4 border-t border-[#2e2e4a] bg-[#1f1f33] flex items-center justify-between gap-3">
             <p className="text-[12px] text-[#9ca3af]">
               {activeCount} item{activeCount !== 1 ? 's' : ''} selected
               {removed.size > 0 && <span className="ml-1">({removed.size} removed)</span>}
@@ -1146,7 +1147,7 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+                className="px-4 py-1.5 text-[13px] text-[#94a3b8] border border-[#2e2e4a] rounded-lg hover:bg-[#2a2a48] transition-colors"
               >
                 Cancel
               </button>
@@ -1162,10 +1163,10 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
           </div>
         )}
         {panelState === 'review' && suggestedItems.length === 0 && (
-          <div className="px-5 py-4 border-t border-[#e5e7eb] bg-[#fafafa] flex justify-end">
+          <div className="px-5 py-4 border-t border-[#2e2e4a] bg-[#1f1f33] flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-1.5 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-white transition-colors"
+              className="px-4 py-1.5 text-[13px] text-[#94a3b8] border border-[#2e2e4a] rounded-lg hover:bg-[#2a2a48] transition-colors"
             >
               Close
             </button>
@@ -1180,9 +1181,9 @@ function TopUpPanel({ ticketId, quoteId, quoteNumber, sinceDate, onClose }) {
 function DateDivider({ label }) {
   return (
     <div className="flex items-center gap-3 py-1">
-      <div className="flex-1 h-px bg-[#f3f4f6]" />
+      <div className="flex-1 h-px bg-[#1f1f33]" />
       <span className="text-[11px] text-[#9ca3af] flex-shrink-0">{label}</span>
-      <div className="flex-1 h-px bg-[#f3f4f6]" />
+      <div className="flex-1 h-px bg-[#1f1f33]" />
     </div>
   );
 }
@@ -1458,7 +1459,8 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
   const isAudioTab        = composeTab === 'audio';
 
   return (
-    <div className="w-full bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+    <div className="w-full bg-[#1a1a2e] rounded-xl border border-[#2e2e4a] overflow-hidden">
 
       {showContactPicker && (
         <ContactPickerModal
@@ -1487,11 +1489,11 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       )}
 
       {/* ── Title bar ── */}
-      <div className="px-6 py-4 border-b border-[#e5e7eb]">
+      <div className="px-6 py-4 border-b border-[#2e2e4a]">
         <div className="flex items-center gap-2 mb-2">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 text-[13px] text-[#9ca3af] hover:text-[#6b7280] transition-colors"
+            className="flex items-center gap-1.5 text-[13px] text-[#94a3b8] hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Tickets
           </button>
@@ -1499,9 +1501,9 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
           <span className="text-[11px] text-[#9ca3af] font-mono">#{ticket.id?.slice(0, 8)}</span>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-xl font-bold text-[#1d1d1f]">{ticket.title}</h1>
+          <h1 className="text-xl font-bold text-white">{ticket.title}</h1>
           {pill(PRIORITY_BADGE[ticket.priority || 'medium'], cap(ticket.priority || 'medium'))}
-          {pill(STATUS_BADGE[ticket.status || 'open'] || 'bg-[#f3f4f6] text-[#6b7280]', cap(ticket.status || 'open'))}
+          {pill(STATUS_BADGE[ticket.status || 'open'] || 'bg-[#1f1f33] text-[#6b7280]', cap(ticket.status || 'open'))}
           <span className="text-[12px] text-[#9ca3af] ml-auto">
             Created {new Date(ticket.created_at).toLocaleDateString('en-GB')}
           </span>
@@ -1520,7 +1522,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       />
 
       {error && (
-        <div className="mx-6 mt-3 bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded-lg text-[13px]">
+        <div className="mx-6 mt-3 bg-[rgba(239,68,68,0.10)] border border-[rgba(239,68,68,0.3)] text-[#fca5a5] px-4 py-2 rounded-lg text-[13px]">
           {error}
         </div>
       )}
@@ -1529,10 +1531,10 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
       <div className="flex" style={{ minHeight: '640px' }}>
 
         {/* ── Main column ── */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-[#e5e7eb]">
+        <div className="flex-1 flex flex-col min-w-0 border-r border-[#2e2e4a]">
 
           {/* Job description — always pinned */}
-          <div className="bg-[#fffbeb] border-b-2 border-[#fcd34d] px-6 py-3">
+          <div className="bg-[rgba(245,158,11,0.08)] border-b-2 border-[#f59e0b] px-6 py-3">
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -1547,13 +1549,13 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                     onChange={onChange('description')}
                     rows={3}
                     autoFocus
-                    className="w-full text-[13px] text-[#78350f] leading-relaxed bg-white border border-[#fcd34d] rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+                    className="w-full text-[13px] text-[#fcd34d] leading-relaxed bg-[#1a1a2e] border border-[#f59e0b] rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
                   />
                 ) : (
-                  <p className="text-[13px] text-[#78350f] leading-relaxed">
+                  <p className="text-[13px] text-[#fcd34d] leading-relaxed">
                     {form.description
                       ? form.description
-                      : <span className="italic text-[#b45309]">No description — click the pencil to add one</span>}
+                      : <span className="italic text-[#f59e0b]">No description — click the pencil to add one</span>}
                   </p>
                 )}
               </div>
@@ -1569,18 +1571,18 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
 
           {/* ── Compose area — pinned ABOVE thread ── */}
           {mainView === 'thread' && (
-            <div className="border-b-2 border-[#e5e7eb] bg-white">
+            <div className="border-b-2 border-[#2e2e4a] bg-[#1a1a2e]">
               {/* Tab row + Generate quote button */}
-              <div className="flex items-stretch border-b border-[#e5e7eb]">
+              <div className="flex items-stretch border-b border-[#2e2e4a]">
                 <div className="flex flex-1">
                   {COMPOSE_TABS.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setComposeTab(tab.id)}
-                      className={`flex items-center gap-1.5 flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#e5e7eb] transition-colors
+                      className={`flex items-center gap-1.5 flex-1 py-2 text-[12px] font-medium border-r last:border-r-0 border-[#2e2e4a] transition-colors
                         ${composeTab === tab.id
-                          ? `bg-white text-[#1d1d1f] border-b-2 ${tab.id === 'audio' ? 'border-b-[#7c3aed]' : 'border-b-[#d4a017]'}`
-                          : 'bg-[#fafafa] text-[#9ca3af] hover:text-[#6b7280] border-b-0'}`}
+                          ? `bg-[#242438] text-white border-b-2 ${tab.id === 'audio' ? 'border-b-[#7c3aed]' : 'border-b-[#f59e0b]'}`
+                          : 'bg-[#1a1a2e] text-[#6b7280] hover:text-[#94a3b8] border-b-0'}`}
                     >
                       <span className="mx-auto flex items-center gap-1">
                         {tab.id === 'audio' && <Mic className="w-3 h-3" />}
@@ -1593,7 +1595,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 <button
                   onClick={handleGenerateQuote}
                   className="flex items-center gap-1.5 px-4 text-[12px] font-semibold text-[#b8860b]
-                             bg-[#fef9ee] border-l border-[#e5e7eb] hover:bg-[#fef3c7] transition-colors flex-shrink-0 whitespace-nowrap"
+                             bg-[rgba(245,158,11,0.08)] border-l border-[#2e2e4a] hover:bg-[#fef3c7] transition-colors flex-shrink-0 whitespace-nowrap"
                   title="Generate a quote from this ticket"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -1610,19 +1612,19 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 />
               ) : (
                 <div className={`${
-                  composeTab === 'internal'         ? 'bg-[#fffbeb]' :
-                  composeTab === 'approval_request' ? 'bg-[#fefce8]' : 'bg-white'
+                  composeTab === 'internal'         ? 'bg-[rgba(245,158,11,0.08)]' :
+                  composeTab === 'approval_request' ? 'bg-[rgba(245,158,11,0.05)]' : 'bg-[#1a1a2e]'
                 }`}>
                   <textarea
                     value={composeBody}
                     onChange={e => setComposeBody(e.target.value)}
                     placeholder={currentComposeTab?.placeholder}
                     rows={3}
-                    className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-[#374151] placeholder-[#9ca3af]"
+                    className="w-full px-4 pt-3 pb-1 text-[13px] bg-transparent resize-none focus:outline-none text-white placeholder-[#6b7280]"
                     onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) postComment(); }}
                   />
                   <div className="flex items-center justify-between px-4 pb-3">
-                    <button className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] hover:text-[#6b7280] border border-[#e5e7eb] rounded-md px-3 py-1.5 transition-colors bg-white">
+                    <button className="flex items-center gap-1.5 text-[12px] text-[#94a3b8] hover:text-white border border-[#2e2e4a] rounded-md px-3 py-1.5 transition-colors bg-[#242438]">
                       <Paperclip className="w-3.5 h-3.5" /> Attach
                     </button>
                     <div className="flex items-center gap-3">
@@ -1631,7 +1633,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                         onClick={postComment}
                         disabled={posting || !composeBody.trim()}
                         className="flex items-center gap-2 bg-[#d4a017] text-white text-[13px] font-semibold px-4 py-1.5 rounded-md
-                                   hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                   hover:bg-[#d97706] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                         {composeTab === 'approval_request' ? 'Send request' : 'Post update'}
@@ -1644,7 +1646,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
           )}
 
           {/* View toggle: Conversation / Quotes / Safety */}
-          <div className="flex border-b border-[#e5e7eb] bg-[#fafafa]">
+          <div className="flex border-b border-[#2e2e4a] bg-[#1a1a2e]">
             {[
               { id: 'thread', label: 'Conversation', Icon: MessageSquare },
               { id: 'quotes', label: 'Quotes',        Icon: DollarSign   },
@@ -1655,8 +1657,8 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 onClick={() => setMainView(id)}
                 className={`flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-medium border-b-2 transition-colors
                   ${mainView === id
-                    ? 'border-[#d4a017] text-[#1d1d1f] bg-white'
-                    : 'border-transparent text-[#9ca3af] hover:text-[#6b7280]'}`}
+                    ? 'border-[#f59e0b] text-white bg-[#242438]'
+                    : 'border-transparent text-[#6b7280] hover:text-[#94a3b8]'}`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
@@ -1674,7 +1676,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
               )}
               {!commentsLoading && comments.length === 0 && (
                 <div className="text-center py-14 text-[#9ca3af]">
-                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-[#e5e7eb]" />
+                  <MessageSquare className="w-8 h-8 mx-auto mb-2 text-[#2e2e4a]" />
                   <p className="text-[13px]">No updates yet — post the first one above</p>
                 </div>
               )}
@@ -1710,11 +1712,11 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
         </div>
 
         {/* ── Right sidebar ── */}
-        <div className="w-72 flex-shrink-0 bg-[#fafafa] overflow-y-auto flex flex-col divide-y divide-[#e5e7eb]">
+        <div className="w-72 flex-shrink-0 bg-[#1f1f33] overflow-y-auto flex flex-col divide-y divide-[#2e2e4a]">
 
           {/* Workflow */}
           <div className="px-5 py-4">
-            <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-3">Workflow</div>
+            <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-3">Workflow</div>
             <div className="space-y-2.5">
               {WORKFLOW_STAGES.map((stage, i) => {
                 const done   = i < stageIndex;
@@ -1736,25 +1738,25 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
 
           {/* Details */}
           <div className="px-5 py-4 space-y-3">
-            <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider">Details</div>
+            <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Details</div>
             <div>
-              <div className="text-[11px] text-[#9ca3af] mb-1">Priority</div>
+              <div className="text-[11px] text-[#6b7280] mb-1">Priority</div>
               <Select value={form.priority} onValueChange={onChange('priority')}>
-                <SelectTrigger className="border-[#e5e7eb] h-8 text-[12px] bg-white"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-[#2e2e4a] h-8 text-[12px] bg-[#242438] text-white"><SelectValue /></SelectTrigger>
                 <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{cap(p)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <div className="text-[11px] text-[#9ca3af] mb-1">Status</div>
+              <div className="text-[11px] text-[#6b7280] mb-1">Status</div>
               <Select value={form.status} onValueChange={onChange('status')}>
-                <SelectTrigger className="border-[#e5e7eb] h-8 text-[12px] bg-white"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="border-[#2e2e4a] h-8 text-[12px] bg-[#242438] text-white"><SelectValue /></SelectTrigger>
                 <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
-              <div className="text-[11px] text-[#9ca3af] mb-1">Sector</div>
+              <div className="text-[11px] text-[#6b7280] mb-1">Sector</div>
               <Select value={form.sector || 'none'} onValueChange={v => onChange('sector')(v === 'none' ? '' : v)}>
-                <SelectTrigger className="border-[#e5e7eb] h-8 text-[12px] bg-white"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectTrigger className="border-[#2e2e4a] h-8 text-[12px] bg-[#242438] text-white"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -1762,34 +1764,34 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
               </Select>
             </div>
             <div>
-              <div className="text-[11px] text-[#9ca3af] mb-1">Scheduled date</div>
+              <div className="text-[11px] text-[#6b7280] mb-1">Scheduled date</div>
               <input
                 type="date"
                 value={form.scheduled_date}
                 onChange={onChange('scheduled_date')}
-                className="w-full border border-[#e5e7eb] rounded-md h-8 px-2 text-[12px] text-[#374151] bg-white focus:outline-none focus:ring-1 focus:ring-[#d4a017]"
+                className="w-full border border-[#2e2e4a] rounded-md h-8 px-2 text-[12px] text-white bg-[#242438] focus:outline-none focus:ring-1 focus:ring-[#f59e0b]"
               />
             </div>
             <div>
-              <div className="text-[11px] text-[#9ca3af] mb-1">Duration (mins)</div>
+              <div className="text-[11px] text-[#6b7280] mb-1">Duration (mins)</div>
               <input
                 type="number"
                 value={form.scheduled_duration_mins}
                 onChange={onChange('scheduled_duration_mins')}
                 placeholder="e.g. 60"
-                className="w-full border border-[#e5e7eb] rounded-md h-8 px-2 text-[12px] text-[#374151] bg-white focus:outline-none focus:ring-1 focus:ring-[#d4a017]"
+                className="w-full border border-[#2e2e4a] rounded-md h-8 px-2 text-[12px] text-white bg-[#242438] focus:outline-none focus:ring-1 focus:ring-[#f59e0b]"
               />
             </div>
           </div>
 
           {/* Assignee */}
           <div className="px-5 py-4">
-            <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Assigned to</div>
+            <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-2">Assigned to</div>
             <Select
               value={form.assignee_id || 'unassigned'}
               onValueChange={v => onChange('assignee_id')(v === 'unassigned' ? '' : v)}
             >
-              <SelectTrigger className="border-[#e5e7eb] h-8 text-[12px] bg-white"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <SelectTrigger className="border-[#2e2e4a] h-8 text-[12px] bg-[#242438] text-white"><SelectValue placeholder="Unassigned" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {users?.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
@@ -1801,7 +1803,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                   {assignedUser.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="text-[12px] font-medium text-[#1d1d1f]">{assignedUser.name}</div>
+                  <div className="text-[12px] font-medium text-white">{assignedUser.name}</div>
                   <div className="text-[11px] text-[#9ca3af]">{assignedUser.email}</div>
                 </div>
               </div>
@@ -1810,29 +1812,29 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
 
           {/* Metadata */}
           <div className="px-5 py-4 space-y-1.5">
-            <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Metadata</div>
+            <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-2">Metadata</div>
             <div className="flex justify-between text-[12px]">
               <span className="text-[#9ca3af]">Ticket ID</span>
               <span className="font-mono text-[10px] text-[#9ca3af]">{ticket.id?.slice(0, 8)}</span>
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-[#9ca3af]">Created</span>
-              <span className="text-[#374151]">{new Date(ticket.created_at).toLocaleDateString('en-GB')}</span>
+              <span className="text-white">{new Date(ticket.created_at).toLocaleDateString('en-GB')}</span>
             </div>
             <div className="flex justify-between text-[12px]">
               <span className="text-[#9ca3af]">Updated</span>
-              <span className="text-[#374151]">{new Date(ticket.updated_at).toLocaleDateString('en-GB')}</span>
+              <span className="text-white">{new Date(ticket.updated_at).toLocaleDateString('en-GB')}</span>
             </div>
           </div>
 
           {/* Actions */}
           <div className="px-5 py-4 space-y-2">
-            <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-2">Actions</div>
+            <div className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-2">Actions</div>
             <button
               onClick={onSave}
               disabled={saving || !form.title}
-              className="w-full bg-[#d4a017] text-white font-semibold text-[13px] py-2 rounded-lg
-                         hover:bg-[#c4920f] disabled:opacity-50 disabled:cursor-not-allowed
+              className="w-full bg-[#f59e0b] text-[#1a1a2e] font-semibold text-[13px] py-2 rounded-lg
+                         hover:bg-[#d97706] disabled:opacity-50 disabled:cursor-not-allowed
                          flex items-center justify-center gap-2 transition-colors"
             >
               {saving
@@ -1843,7 +1845,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
               onClick={handleSummarise}
               disabled={summarising}
               className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[13px] font-medium
-                         rounded-lg border border-[#d4a017] text-[#b8860b] hover:bg-[#fef9ee]
+                         rounded-lg border border-[#f59e0b] text-[#f59e0b] hover:bg-[rgba(245,158,11,0.10)]
                          transition-colors disabled:opacity-50"
             >
               {summarising
@@ -1851,16 +1853,17 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
                 : <><Sparkles className="w-3.5 h-3.5" /> Summarise ticket</>}
             </button>
             {summary && (
-              <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-lg p-3">
+              <div className="bg-[rgba(245,158,11,0.10)] border border-[rgba(245,158,11,0.3)] rounded-lg p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[#b8860b] mb-1.5 flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> AI Summary
                 </p>
-                <p className="text-[12px] text-[#374151] leading-relaxed">{summary}</p>
+                <p className="text-[12px] text-[#cbd5e1] leading-relaxed">{summary}</p>
               </div>
             )}
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -41,12 +41,12 @@ const INTENT_META = {
 const COLOUR_CLASSES = {
   indigo: { badge: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
   red:    { badge: 'bg-red-100 text-red-700 border-red-200',          dot: 'bg-red-500'    },
-  amber:  { badge: 'bg-amber-100 text-amber-700 border-amber-200',    dot: 'bg-amber-500'  },
+  amber:  { badge: 'bg-[rgba(245,158,11,0.15)] text-[#fcd34d] border-[rgba(245,158,11,0.3)]',    dot: 'bg-[rgba(245,158,11,0.08)]0'  },
   orange: { badge: 'bg-orange-100 text-orange-700 border-orange-200', dot: 'bg-orange-500' },
   teal:   { badge: 'bg-teal-100 text-teal-700 border-teal-200',       dot: 'bg-teal-500'   },
   purple: { badge: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
   blue:   { badge: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500'   },
-  gray:   { badge: 'bg-gray-100 text-gray-600 border-gray-200',       dot: 'bg-gray-400'   },
+  gray:   { badge: 'bg-[#242438] text-[#94a3b8] border-[#2e2e4a]',       dot: 'bg-gray-400'   },
 };
 
 // ─── Phase 4: Required fields for auto-save check ─────────────────────────────
@@ -123,7 +123,7 @@ function stopSpeaking() {
 // ─── FieldLabel ───────────────────────────────────────────────────────────────
 function FieldLabel({ children }) {
   return (
-    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1">
+    <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1">
       {children}
     </label>
   );
@@ -147,34 +147,34 @@ function RecordingPanel({ elapsed, liveText, onStop, onCancel }) {
               className="transition-all duration-1000"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#374151]">
+          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-[#cbd5e1]">
             {remaining}s
           </span>
         </div>
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-ping" />
-            <span className="text-[13px] font-semibold text-[#111113]">Listening…</span>
+            <span className="text-[13px] font-semibold text-white">Listening…</span>
           </div>
-          <p className="text-[11px] text-[#6b7280] mt-0.5">Speak your command. Tap stop when done.</p>
+          <p className="text-[11px] text-[#94a3b8] mt-0.5">Speak your command. Tap stop when done.</p>
         </div>
       </div>
-      <div className="min-h-[52px] rounded-lg border border-[#d4a017]/40 bg-[#fffdf5] px-3 py-2.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#d4a017] mb-1">Hearing</p>
-        <p className="text-[13px] text-[#374151] leading-relaxed">
-          {liveText || <span className="text-[#9ca3af] italic">Start speaking…</span>}
+      <div className="min-h-[52px] rounded-lg border border-[#f59e0b]/40 bg-[#fffdf5] px-3 py-2.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#f59e0b] mb-1">Hearing</p>
+        <p className="text-[13px] text-[#cbd5e1] leading-relaxed">
+          {liveText || <span className="text-[#6b7280] italic">Start speaking…</span>}
         </p>
       </div>
       <div className="flex gap-2">
         <button
           onClick={onStop}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#d4a017] hover:bg-[#c4920f] text-[#111113] text-[13px] font-semibold transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#f59e0b] hover:bg-[#d97706] text-white text-[13px] font-semibold transition-colors"
         >
           <MicOff size={14} /> Stop recording
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-2.5 rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb] text-[13px] transition-colors"
+          className="px-3 py-2.5 rounded-lg border border-[#2e2e4a] text-[#94a3b8] hover:bg-[#1a1a2e] text-[13px] transition-colors"
         >
           <X size={14} />
         </button>
@@ -187,9 +187,9 @@ function RecordingPanel({ elapsed, liveText, onStop, onCancel }) {
 function ProcessingPanel() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-6">
-      <Loader2 size={28} className="text-[#d4a017] animate-spin" />
-      <p className="text-[13px] font-medium text-[#374151]">Understanding your request…</p>
-      <p className="text-[11px] text-[#9ca3af]">Claude is routing your voice command</p>
+      <Loader2 size={28} className="text-[#f59e0b] animate-spin" />
+      <p className="text-[13px] font-medium text-[#cbd5e1]">Understanding your request…</p>
+      <p className="text-[11px] text-[#6b7280]">Claude is routing your voice command</p>
     </div>
   );
 }
@@ -201,9 +201,9 @@ function ClarifyingPanel({ question, micActive, elapsed, liveText, onSkip }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Question box */}
-      <div className="px-3 py-3 rounded-lg bg-amber-50 border border-amber-200">
+      <div className="px-3 py-3 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.3)]">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 mb-1">Question</p>
-        <p className="text-[13px] text-[#374151] font-medium leading-snug">{question}</p>
+        <p className="text-[13px] text-[#cbd5e1] font-medium leading-snug">{question}</p>
       </div>
 
       {/* Mic state */}
@@ -220,22 +220,22 @@ function ClarifyingPanel({ question, micActive, elapsed, liveText, onSkip }) {
                 className="transition-all duration-1000"
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#374151]">
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[#cbd5e1]">
               {remaining}s
             </span>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#d4a017] animate-ping" />
-              <span className="text-[12px] font-semibold text-[#374151]">Listening for your answer…</span>
+              <span className="inline-block w-2 h-2 rounded-full bg-[#f59e0b] animate-ping" />
+              <span className="text-[12px] font-semibold text-[#cbd5e1]">Listening for your answer…</span>
             </div>
             {liveText && (
-              <p className="text-[12px] text-[#6b7280] mt-0.5 italic">{liveText}</p>
+              <p className="text-[12px] text-[#94a3b8] mt-0.5 italic">{liveText}</p>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-[12px] text-[#9ca3af]">
+        <div className="flex items-center gap-2 text-[12px] text-[#6b7280]">
           <Loader2 size={12} className="animate-spin" />
           Preparing to listen…
         </div>
@@ -243,7 +243,7 @@ function ClarifyingPanel({ question, micActive, elapsed, liveText, onSkip }) {
 
       <button
         onClick={onSkip}
-        className="text-[12px] text-[#9ca3af] hover:text-[#374151] underline self-start transition-colors"
+        className="text-[12px] text-[#6b7280] hover:text-[#cbd5e1] underline self-start transition-colors"
       >
         Skip and fill in manually →
       </button>
@@ -254,10 +254,10 @@ function ClarifyingPanel({ question, micActive, elapsed, liveText, onSkip }) {
 // ─── Phase 2: VoiceConfirmIndicator ──────────────────────────────────────────
 function VoiceConfirmIndicator({ countdown, onHearAgain }) {
   return (
-    <div className="mb-4 flex items-center justify-between px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200">
+    <div className="mb-4 flex items-center justify-between px-3 py-2.5 rounded-lg bg-[rgba(245,158,11,0.08)] border border-[rgba(245,158,11,0.3)]">
       <div className="flex items-center gap-2">
-        <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-ping flex-shrink-0" />
-        <span className="text-[12px] font-semibold text-amber-700">
+        <span className="inline-block w-2 h-2 rounded-full bg-[rgba(245,158,11,0.08)]0 animate-ping flex-shrink-0" />
+        <span className="text-[12px] font-semibold text-[#fcd34d]">
           Say yes or no — {countdown}s
         </span>
       </div>
@@ -297,7 +297,7 @@ function TicketNoteFields({ data, openTickets, onChange }) {
         <select
           value={data.ticket_id || ''}
           onChange={e => onChange({ ...data, ticket_id: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] bg-white focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white bg-[#242438] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         >
           <option value="">— Select ticket —</option>
           {openTickets.map(t => (
@@ -311,7 +311,7 @@ function TicketNoteFields({ data, openTickets, onChange }) {
           rows={3}
           value={data.body || ''}
           onChange={e => onChange({ ...data, body: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -324,8 +324,8 @@ function TicketNoteFields({ data, openTickets, onChange }) {
               onClick={() => onChange({ ...data, comment_type: t })}
               className={`px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-colors capitalize ${
                 (data.comment_type || 'internal') === t
-                  ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
-                  : 'border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb]'
+                  ? 'bg-[#f59e0b] border-[#f59e0b] text-white'
+                  : 'border-[#2e2e4a] text-[#94a3b8] hover:bg-[#1a1a2e]'
               }`}
             >
               {t}
@@ -346,7 +346,7 @@ function NewTicketFields({ data, onChange }) {
           type="text"
           value={data.title || ''}
           onChange={e => onChange({ ...data, title: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -355,7 +355,7 @@ function NewTicketFields({ data, onChange }) {
           rows={3}
           value={data.description || ''}
           onChange={e => onChange({ ...data, description: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -368,8 +368,8 @@ function NewTicketFields({ data, onChange }) {
               onClick={() => onChange({ ...data, priority: p })}
               className={`px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-colors capitalize ${
                 (data.priority || 'medium') === p
-                  ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
-                  : 'border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb]'
+                  ? 'bg-[#f59e0b] border-[#f59e0b] text-white'
+                  : 'border-[#2e2e4a] text-[#94a3b8] hover:bg-[#1a1a2e]'
               }`}
             >
               {p}
@@ -390,7 +390,7 @@ function PersonalNoteFields({ data, showDueDate, onChange }) {
           type="text"
           value={data.title || ''}
           onChange={e => onChange({ ...data, title: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -399,7 +399,7 @@ function PersonalNoteFields({ data, showDueDate, onChange }) {
           rows={3}
           value={data.body || ''}
           onChange={e => onChange({ ...data, body: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       {showDueDate && (
@@ -409,7 +409,7 @@ function PersonalNoteFields({ data, showDueDate, onChange }) {
             type="datetime-local"
             value={data.due_date ? data.due_date.slice(0, 16) : ''}
             onChange={e => onChange({ ...data, due_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
       )}
@@ -426,7 +426,7 @@ function CompanyNoteFields({ data, onChange }) {
           type="text"
           value={data.title || ''}
           onChange={e => onChange({ ...data, title: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -435,7 +435,7 @@ function CompanyNoteFields({ data, onChange }) {
           rows={3}
           value={data.body || ''}
           onChange={e => onChange({ ...data, body: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -448,8 +448,8 @@ function CompanyNoteFields({ data, onChange }) {
               onClick={() => onChange({ ...data, note_type: v })}
               className={`px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
                 (data.note_type || 'note') === v
-                  ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
-                  : 'border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb]'
+                  ? 'bg-[#f59e0b] border-[#f59e0b] text-white'
+                  : 'border-[#2e2e4a] text-[#94a3b8] hover:bg-[#1a1a2e]'
               }`}
             >
               {l}
@@ -473,7 +473,7 @@ function CrmCalendarFields({ data, onChange }) {
           type="text"
           value={data.title || ''}
           onChange={e => onChange({ ...data, title: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div>
@@ -486,8 +486,8 @@ function CrmCalendarFields({ data, onChange }) {
               onClick={() => onChange({ ...data, type: t })}
               className={`px-3 py-1.5 rounded-lg border text-[12px] font-medium transition-colors capitalize ${
                 (data.type || 'meeting') === t
-                  ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
-                  : 'border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb]'
+                  ? 'bg-[#f59e0b] border-[#f59e0b] text-white'
+                  : 'border-[#2e2e4a] text-[#94a3b8] hover:bg-[#1a1a2e]'
               }`}
             >
               {t.replace('_', ' ')}
@@ -504,7 +504,7 @@ function CrmCalendarFields({ data, onChange }) {
             placeholder="Optional"
             value={data.company || ''}
             onChange={e => onChange({ ...data, company: e.target.value })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
@@ -514,7 +514,7 @@ function CrmCalendarFields({ data, onChange }) {
             placeholder="Optional"
             value={data.contact || ''}
             onChange={e => onChange({ ...data, contact: e.target.value })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
       </div>
@@ -525,7 +525,7 @@ function CrmCalendarFields({ data, onChange }) {
             type="datetime-local"
             value={startLocal}
             onChange={e => onChange({ ...data, start_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[12px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[12px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
@@ -534,7 +534,7 @@ function CrmCalendarFields({ data, onChange }) {
             type="datetime-local"
             value={endLocal}
             onChange={e => onChange({ ...data, end_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[12px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[12px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
       </div>
@@ -544,7 +544,7 @@ function CrmCalendarFields({ data, onChange }) {
           rows={2}
           value={data.notes || ''}
           onChange={e => onChange({ ...data, notes: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
     </>
@@ -560,7 +560,7 @@ function TicketCalendarFields({ data, onChange }) {
           type="text"
           value={data.title || ''}
           onChange={e => onChange({ ...data, title: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -570,7 +570,7 @@ function TicketCalendarFields({ data, onChange }) {
             type="date"
             value={data.eventDate || ''}
             onChange={e => onChange({ ...data, eventDate: e.target.value })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
@@ -579,7 +579,7 @@ function TicketCalendarFields({ data, onChange }) {
             type="time"
             value={data.startTime || ''}
             onChange={e => onChange({ ...data, startTime: e.target.value })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
@@ -588,7 +588,7 @@ function TicketCalendarFields({ data, onChange }) {
             type="time"
             value={data.endTime || ''}
             onChange={e => onChange({ ...data, endTime: e.target.value })}
-            className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+            className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
       </div>
@@ -598,7 +598,7 @@ function TicketCalendarFields({ data, onChange }) {
           rows={2}
           value={data.description || ''}
           onChange={e => onChange({ ...data, description: e.target.value })}
-          className="w-full rounded-lg border border-[#e5e7eb] px-3 py-2 text-[13px] text-[#111113] resize-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/40"
+          className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white resize-none focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
         />
       </div>
     </>
@@ -624,7 +624,7 @@ function renderIntentFields(intent, data, onChange, openTickets) {
       return <TicketCalendarFields data={data} onChange={onChange} />;
     default:
       return (
-        <p className="text-[13px] text-[#6b7280]">
+        <p className="text-[13px] text-[#94a3b8]">
           Claude couldn't determine what to do. Please try again with a clearer command.
         </p>
       );
@@ -655,13 +655,13 @@ function ReviewPanel({
       {/* Intent badge + TTS confirmation */}
       <div>
         <IntentBadge intent={intent} confidence={confidence} />
-        <p className="mt-2 text-[13px] text-[#374151] leading-snug font-medium">
+        <p className="mt-2 text-[13px] text-[#cbd5e1] leading-snug font-medium">
           {confirmation_message}
         </p>
         {!confirmListening && (
           <button
             onClick={() => speak(confirmation_message, onTtsEnd)}
-            className="mt-1 text-[11px] text-[#9ca3af] hover:text-[#6b7280] underline transition-colors"
+            className="mt-1 text-[11px] text-[#6b7280] hover:text-[#94a3b8] underline transition-colors"
           >
             🔊 Hear again
           </button>
@@ -679,7 +679,7 @@ function ReviewPanel({
           <button
             onClick={() => onConfirm(editData)}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#d4a017] hover:bg-[#c4920f] disabled:opacity-60 text-[#111113] text-[13px] font-semibold transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#f59e0b] hover:bg-[#d97706] disabled:opacity-60 text-white text-[13px] font-semibold transition-colors"
           >
             {saving
               ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
@@ -690,14 +690,14 @@ function ReviewPanel({
         <button
           onClick={onRetry}
           disabled={saving}
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] disabled:opacity-50 text-[12px] transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] hover:bg-[#1a1a2e] disabled:opacity-50 text-[12px] transition-colors"
         >
           <RefreshCw size={13} /> Try again
         </button>
         <button
           onClick={onCancel}
           disabled={saving}
-          className="px-3 py-2.5 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f9fafb] disabled:opacity-50 transition-colors"
+          className="px-3 py-2.5 rounded-lg border border-[#2e2e4a] text-[#6b7280] hover:text-[#cbd5e1] hover:bg-[#1a1a2e] disabled:opacity-50 transition-colors"
         >
           <X size={14} />
         </button>
@@ -731,11 +731,11 @@ function CompoundReviewPanel({
       )}
 
       <div>
-        <p className="text-[13px] text-[#374151] leading-snug font-medium">{confirmation_message}</p>
+        <p className="text-[13px] text-[#cbd5e1] leading-snug font-medium">{confirmation_message}</p>
         {!confirmListening && (
           <button
             onClick={() => speak(confirmation_message)}
-            className="mt-1 text-[11px] text-[#9ca3af] hover:text-[#6b7280] underline transition-colors"
+            className="mt-1 text-[11px] text-[#6b7280] hover:text-[#94a3b8] underline transition-colors"
           >
             🔊 Hear again
           </button>
@@ -744,7 +744,7 @@ function CompoundReviewPanel({
 
       {/* Each compound item */}
       {editItems.map((item, idx) => (
-        <div key={idx} className="border border-[#e5e7eb] rounded-xl p-3 flex flex-col gap-3">
+        <div key={idx} className="border border-[#2e2e4a] rounded-xl p-3 flex flex-col gap-3">
           <IntentBadge intent={item.intent} confidence={confidence} />
           {renderIntentFields(item.intent, item.data, (d) => handleItemChange(idx, d), openTickets)}
         </div>
@@ -754,7 +754,7 @@ function CompoundReviewPanel({
         <button
           onClick={() => onConfirm(editItems)}
           disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#d4a017] hover:bg-[#c4920f] disabled:opacity-60 text-[#111113] text-[13px] font-semibold transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#f59e0b] hover:bg-[#d97706] disabled:opacity-60 text-white text-[13px] font-semibold transition-colors"
         >
           {saving
             ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
@@ -764,14 +764,14 @@ function CompoundReviewPanel({
         <button
           onClick={onRetry}
           disabled={saving}
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] disabled:opacity-50 text-[12px] transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] hover:bg-[#1a1a2e] disabled:opacity-50 text-[12px] transition-colors"
         >
           <RefreshCw size={13} /> Try again
         </button>
         <button
           onClick={onCancel}
           disabled={saving}
-          className="px-3 py-2.5 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:text-[#374151] hover:bg-[#f9fafb] disabled:opacity-50 transition-colors"
+          className="px-3 py-2.5 rounded-lg border border-[#2e2e4a] text-[#6b7280] hover:text-[#cbd5e1] hover:bg-[#1a1a2e] disabled:opacity-50 transition-colors"
         >
           <X size={14} />
         </button>
@@ -1456,20 +1456,20 @@ export default function VoiceAssistant({ currentView, user }) {
       {isOpen && (
         <div
           className="fixed bottom-20 right-4 md:right-6 z-[9999] w-[340px] max-w-[calc(100vw-2rem)]
-                     bg-white rounded-2xl shadow-2xl border border-[#e5e7eb] overflow-hidden"
+                     bg-[#242438] rounded-2xl shadow-2xl border border-[#2e2e4a] overflow-hidden"
           style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)' }}
         >
           {/* Panel header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#f3f4f6] bg-[#fafafa]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2e2e4a] bg-[#1f1f33]">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#d4a017] flex items-center justify-center">
-                <Mic size={12} className="text-[#111113]" />
+              <div className="w-6 h-6 rounded-full bg-[#f59e0b] flex items-center justify-center">
+                <Mic size={12} className="text-white" />
               </div>
-              <span className="text-[13px] font-bold text-[#111113]">Voice Assistant</span>
+              <span className="text-[13px] font-bold text-white">Voice Assistant</span>
             </div>
             <button
               onClick={handleCancel}
-              className="w-6 h-6 flex items-center justify-center rounded text-[#9ca3af] hover:text-[#374151] hover:bg-[#f3f4f6] transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-[#6b7280] hover:text-[#cbd5e1] hover:bg-[#f3f4f6] transition-colors"
             >
               <X size={13} />
             </button>
@@ -1487,15 +1487,15 @@ export default function VoiceAssistant({ currentView, user }) {
             {/* idle */}
             {phase === 'idle' && (
               <div className="flex flex-col gap-3">
-                <p className="text-[13px] text-[#374151]">
+                <p className="text-[13px] text-[#cbd5e1]">
                   Tap the button below and speak your command. I'll route it to the right place automatically.
                 </p>
-                <p className="text-[11px] text-[#9ca3af] leading-relaxed">
+                <p className="text-[11px] text-[#6b7280] leading-relaxed">
                   Examples: "Add a note to the VPN ticket" · "Create an urgent ticket for the server outage" · "Remind me to call John next Tuesday" · "Schedule a call with Acme Corp tomorrow at 2pm"
                 </p>
                 <button
                   onClick={startRecording}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#d4a017] hover:bg-[#c4920f] text-[#111113] text-[13px] font-bold transition-all hover:-translate-y-px active:translate-y-0"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-white text-[13px] font-bold transition-all hover:-translate-y-px active:translate-y-0"
                 >
                   <Mic size={15} /> Start recording
                 </button>
@@ -1569,10 +1569,10 @@ export default function VoiceAssistant({ currentView, user }) {
             {/* success */}
             {phase === 'success' && (
               <div className="flex flex-col items-center justify-center gap-3 py-4">
-                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100">
+                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(16,185,129,0.15)]">
                   <Check size={20} className="text-green-600" strokeWidth={2.5} />
                 </span>
-                <p className="text-[13px] font-semibold text-[#111113]">{successMsg}</p>
+                <p className="text-[13px] font-semibold text-white">{successMsg}</p>
               </div>
             )}
           </div>
@@ -1585,12 +1585,12 @@ export default function VoiceAssistant({ currentView, user }) {
           onClick={handleOpen}
           title="Voice assistant"
           className="fixed bottom-6 right-4 md:right-6 z-[9999] w-12 h-12 rounded-full shadow-lg
-                     bg-[#d4a017] hover:bg-[#c4920f] active:scale-95
+                     bg-[#f59e0b] hover:bg-[#d97706] active:scale-95
                      flex items-center justify-center transition-all duration-150
                      hover:shadow-xl hover:-translate-y-0.5"
           style={{ boxShadow: '0 4px 20px rgba(212,160,23,0.5)' }}
         >
-          <Mic size={20} className="text-[#111113]" strokeWidth={2.2} />
+          <Mic size={20} className="text-white" strokeWidth={2.2} />
         </button>
       )}
 

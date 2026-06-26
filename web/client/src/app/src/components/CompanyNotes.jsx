@@ -9,16 +9,16 @@ import { useAuth } from '../../../context/AuthProvider.jsx';
 import DictationButton from './DictationButton.jsx';
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
-const LABEL_CLS   = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
-const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors';
-const GHOST_BTN   = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors';
+const INPUT_CLS   = 'w-full rounded-md border border-[#2e2e4a] bg-[#242438] px-3 py-2 text-[13px] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] transition-colors';
+const LABEL_CLS   = 'block text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1.5';
+const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#2e2e4a] bg-[#242438] text-[#cbd5e1] text-[13px] font-medium hover:bg-[#1a1a2e] transition-colors';
+const GHOST_BTN   = 'inline-flex items-center justify-center w-7 h-7 rounded-md text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#cbd5e1] transition-colors';
 
 const NOTE_TYPE_META = {
-  note:         { label: 'Note',         icon: StickyNote, badge: 'bg-[#f3f4f6] text-[#374151]'  },
+  note:         { label: 'Note',         icon: StickyNote, badge: 'bg-[#f3f4f6] text-[#cbd5e1]'  },
   knowledge:    { label: 'Knowledge',    icon: BookOpen,   badge: 'bg-[#dbeafe] text-[#1e40af]'  },
-  announcement: { label: 'Announcement', icon: Megaphone,  badge: 'bg-[#fef3c7] text-[#92400e]'  },
+  announcement: { label: 'Announcement', icon: Megaphone,  badge: 'bg-[#fef3c7] text-[#fcd34d]'  },
 };
 
 function formatTime(iso) {
@@ -51,10 +51,10 @@ function NewTicketFromNoteModal({ note, onClose }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-      <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e5e7eb]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-          <h3 className="text-[14px] font-bold text-[#111113] flex items-center gap-2">
-            <TicketIcon className="w-4 h-4 text-[#d4a017]" /> Create ticket from note
+      <div className="bg-[#242438] rounded-xl w-full max-w-md shadow-xl border border-[#2e2e4a]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
+          <h3 className="text-[14px] font-bold text-white flex items-center gap-2">
+            <TicketIcon className="w-4 h-4 text-[#f59e0b]" /> Create ticket from note
           </h3>
           <button onClick={onClose} className={GHOST_BTN}><X className="w-4 h-4" /></button>
         </div>
@@ -62,8 +62,8 @@ function NewTicketFromNoteModal({ note, onClose }) {
           {success ? (
             <div className="flex flex-col items-center gap-3 py-4">
               <CheckCircle className="w-10 h-10 text-green-500" />
-              <p className="text-[14px] font-medium text-[#111113]">Ticket created</p>
-              <p className="text-[12px] text-[#6b7280]">Reference #{success}</p>
+              <p className="text-[14px] font-medium text-white">Ticket created</p>
+              <p className="text-[12px] text-[#94a3b8]">Reference #{success}</p>
               <button className={GOLD_BTN} onClick={onClose}>Done</button>
             </div>
           ) : (
@@ -75,7 +75,7 @@ function NewTicketFromNoteModal({ note, onClose }) {
               {note.body && (
                 <div>
                   <label className={LABEL_CLS}>Description (from note)</label>
-                  <div className="rounded-md border border-[#e5e7eb] bg-[#fafafa] px-3 py-2 text-[13px] text-[#6b7280] max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                  <div className="rounded-md border border-[#2e2e4a] bg-[#1f1f33] px-3 py-2 text-[13px] text-[#94a3b8] max-h-24 overflow-y-auto whitespace-pre-wrap leading-relaxed">
                     {note.body}
                   </div>
                 </div>
@@ -137,10 +137,10 @@ function AddNoteToTicketModal({ note, onClose }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-      <div className="bg-white rounded-xl w-full max-w-md shadow-xl border border-[#e5e7eb]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-          <h3 className="text-[14px] font-bold text-[#111113] flex items-center gap-2">
-            <CornerUpRight className="w-4 h-4 text-[#d4a017]" /> Add note to ticket
+      <div className="bg-[#242438] rounded-xl w-full max-w-md shadow-xl border border-[#2e2e4a]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
+          <h3 className="text-[14px] font-bold text-white flex items-center gap-2">
+            <CornerUpRight className="w-4 h-4 text-[#f59e0b]" /> Add note to ticket
           </h3>
           <button onClick={onClose} className={GHOST_BTN}><X className="w-4 h-4" /></button>
         </div>
@@ -148,14 +148,14 @@ function AddNoteToTicketModal({ note, onClose }) {
           {success ? (
             <div className="flex flex-col items-center gap-3 py-4">
               <CheckCircle className="w-10 h-10 text-green-500" />
-              <p className="text-[14px] font-medium text-[#111113]">Note added to ticket</p>
-              <p className="text-[12px] text-[#6b7280]">Posted as an internal note</p>
+              <p className="text-[14px] font-medium text-white">Note added to ticket</p>
+              <p className="text-[12px] text-[#94a3b8]">Posted as an internal note</p>
               <button className={GOLD_BTN} onClick={onClose}>Done</button>
             </div>
           ) : (
             <>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280]" />
                 <input
                   className={`${INPUT_CLS} pl-8`}
                   placeholder="Search tickets…"
@@ -164,21 +164,21 @@ function AddNoteToTicketModal({ note, onClose }) {
                   autoFocus
                 />
               </div>
-              <div className="border border-[#e5e7eb] rounded-lg overflow-hidden max-h-52 overflow-y-auto">
-                {loading && <p className="text-[13px] text-[#9ca3af] text-center py-6">Loading tickets…</p>}
+              <div className="border border-[#2e2e4a] rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                {loading && <p className="text-[13px] text-[#6b7280] text-center py-6">Loading tickets…</p>}
                 {!loading && filtered.length === 0 && (
-                  <p className="text-[13px] text-[#9ca3af] text-center py-6">No tickets found</p>
+                  <p className="text-[13px] text-[#6b7280] text-center py-6">No tickets found</p>
                 )}
                 {filtered.map(t => (
                   <button
                     key={t.id}
                     onClick={() => setSelected(t.id)}
-                    className={`w-full text-left px-4 py-3 border-b border-[#f3f4f6] last:border-0 transition-colors ${
-                      selected === t.id ? 'bg-[#fef9ec] border-l-2 border-l-[#d4a017]' : 'hover:bg-[#fafafa]'
+                    className={`w-full text-left px-4 py-3 border-b border-[#2e2e4a] last:border-0 transition-colors ${
+                      selected === t.id ? 'bg-[#fef9ec] border-l-2 border-l-[#d4a017]' : 'hover:bg-[#1f1f33]'
                     }`}
                   >
-                    <p className="text-[13px] font-medium text-[#111113] truncate">{t.title}</p>
-                    <p className="text-[11px] text-[#9ca3af] mt-0.5">#{t.id?.slice(0,8)} · {t.status}</p>
+                    <p className="text-[13px] font-medium text-white truncate">{t.title}</p>
+                    <p className="text-[11px] text-[#6b7280] mt-0.5">#{t.id?.slice(0,8)} · {t.status}</p>
                   </button>
                 ))}
               </div>
@@ -212,35 +212,35 @@ function VersionsPanel({ noteId, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
-          <h3 className="text-[15px] font-bold text-[#111113] flex items-center gap-2">
+      <div className="bg-[#242438] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
+          <h3 className="text-[15px] font-bold text-white flex items-center gap-2">
             <History className="w-4 h-4" /> Version history
           </h3>
           <button onClick={onClose} className={GHOST_BTN}><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {loading && <p className="text-[13px] text-[#9ca3af] text-center py-8">Loading…</p>}
+          {loading && <p className="text-[13px] text-[#6b7280] text-center py-8">Loading…</p>}
           {!loading && versions.length === 0 && (
-            <p className="text-[13px] text-[#9ca3af] text-center py-8">No previous versions.</p>
+            <p className="text-[13px] text-[#6b7280] text-center py-8">No previous versions.</p>
           )}
           {versions.map((v, i) => (
-            <div key={v.id} className="border border-[#e5e7eb] rounded-lg overflow-hidden">
+            <div key={v.id} className="border border-[#2e2e4a] rounded-lg overflow-hidden">
               <button
                 onClick={() => setExpanded(expanded === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#f9fafb] transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#1a1a2e] transition-colors"
               >
                 <div>
-                  <p className="text-[13px] font-medium text-[#111113]">{v.title || '(no title)'}</p>
-                  <p className="text-[11px] text-[#9ca3af] mt-0.5">
+                  <p className="text-[13px] font-medium text-white">{v.title || '(no title)'}</p>
+                  <p className="text-[11px] text-[#6b7280] mt-0.5">
                     Edited by {v.edited_by_name} · {formatTime(v.edited_at)}
                   </p>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-[#9ca3af] transition-transform ${expanded === i ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-[#6b7280] transition-transform ${expanded === i ? 'rotate-180' : ''}`} />
               </button>
               {expanded === i && (
-                <div className="px-4 pb-4 border-t border-[#f3f4f6]">
-                  <p className="text-[13px] text-[#6b7280] whitespace-pre-wrap mt-3 leading-relaxed">
+                <div className="px-4 pb-4 border-t border-[#2e2e4a]">
+                  <p className="text-[13px] text-[#94a3b8] whitespace-pre-wrap mt-3 leading-relaxed">
                     {v.body || '(empty)'}
                   </p>
                 </div>
@@ -274,7 +274,7 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
   };
 
   return (
-    <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-4 space-y-3">
+    <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg p-4 space-y-3">
 
       {/* Type pill selector — prominent so it can't be missed */}
       {isAdmin && (
@@ -294,8 +294,8 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
                   onClick={() => setNoteType(opt.value)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors ${
                     noteType === opt.value
-                      ? 'bg-[#d4a017] border-[#d4a017] text-[#111113]'
-                      : 'bg-white border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db] hover:text-[#374151]'
+                      ? 'bg-[#f59e0b] border-[#f59e0b] text-white'
+                      : 'bg-[#242438] border-[#2e2e4a] text-[#94a3b8] hover:border-[#d1d5db] hover:text-[#cbd5e1]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -338,7 +338,7 @@ function SharedNoteForm({ initial, isAdmin, categories, onSave, onCancel, saving
         {isAdmin && (
           <label className="flex items-center gap-2 cursor-pointer pb-2 whitespace-nowrap">
             <input type="checkbox" className="w-4 h-4 rounded accent-[#d4a017]" checked={pinned} onChange={e => setPinned(e.target.checked)} />
-            <span className="text-[13px] text-[#374151]">Pin as announcement</span>
+            <span className="text-[13px] text-[#cbd5e1]">Pin as announcement</span>
           </label>
         )}
       </div>
@@ -360,7 +360,7 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
 
   return (
     <>
-      <tr className={`border-b border-[#f3f4f6] transition-colors ${note.pinned ? 'bg-[#fffdf5]' : 'hover:bg-[#fafafa]'}`}>
+      <tr className={`border-b border-[#2e2e4a] transition-colors ${note.pinned ? 'bg-[#fffdf5]' : 'hover:bg-[#1f1f33]'}`}>
 
         {/* Type badge */}
         <td className="pl-3 py-2.5 w-28">
@@ -373,12 +373,12 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
         {/* Title + body preview */}
         <td className="py-2.5 px-3 min-w-0 max-w-0">
           <div className="flex items-center gap-2 overflow-hidden">
-            {note.pinned && <Pin className="w-3 h-3 text-[#d4a017] flex-shrink-0" />}
-            <span className="text-[13px] font-medium text-[#111113] truncate">
-              {note.title || <span className="font-normal italic text-[#9ca3af]">Untitled</span>}
+            {note.pinned && <Pin className="w-3 h-3 text-[#f59e0b] flex-shrink-0" />}
+            <span className="text-[13px] font-medium text-white truncate">
+              {note.title || <span className="font-normal italic text-[#6b7280]">Untitled</span>}
             </span>
             {note.body && (
-              <span className="text-[12px] text-[#9ca3af] truncate hidden sm:block flex-shrink min-w-0">
+              <span className="text-[12px] text-[#6b7280] truncate hidden sm:block flex-shrink min-w-0">
                 — {note.body}
               </span>
             )}
@@ -388,7 +388,7 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
         {/* Category */}
         <td className="py-2.5 px-3 w-32 whitespace-nowrap">
           {note.category ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[#6b7280] font-medium px-2 py-0.5 rounded-full bg-white border border-[#e5e7eb]">
+            <span className="inline-flex items-center gap-1 text-[11px] text-[#94a3b8] font-medium px-2 py-0.5 rounded-full bg-[#242438] border border-[#2e2e4a]">
               <Tag className="w-3 h-3" />{note.category}
             </span>
           ) : (
@@ -398,8 +398,8 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
 
         {/* Author + date */}
         <td className="py-2.5 px-3 w-40 whitespace-nowrap">
-          <p className="text-[12px] text-[#6b7280] truncate">{note.author_name}</p>
-          <p className="text-[11px] text-[#9ca3af]">{formatTime(note.updated_at)}</p>
+          <p className="text-[12px] text-[#94a3b8] truncate">{note.author_name}</p>
+          <p className="text-[11px] text-[#6b7280]">{formatTime(note.updated_at)}</p>
         </td>
 
         {/* Actions */}
@@ -416,7 +416,7 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
             </button>
             {isAdmin && (
               <button onClick={() => onTogglePin(note)} className={GHOST_BTN} title={note.pinned ? 'Unpin' : 'Pin'}>
-                <Pin className={`w-3.5 h-3.5 ${note.pinned ? 'text-[#d4a017]' : ''}`} />
+                <Pin className={`w-3.5 h-3.5 ${note.pinned ? 'text-[#f59e0b]' : ''}`} />
               </button>
             )}
             <button onClick={() => onExpand(note)} className={GHOST_BTN} title="Edit">
@@ -433,8 +433,8 @@ function SharedNoteRow({ note, isExpanded, isAdmin, currentUserId, categories, o
 
       {/* Inline expanded edit form */}
       {isExpanded && (
-        <tr className="border-b border-[#e5e7eb]">
-          <td colSpan={5} className="px-3 py-3 bg-white">
+        <tr className="border-b border-[#2e2e4a]">
+          <td colSpan={5} className="px-3 py-3 bg-[#242438]">
             <SharedNoteForm
               initial={note}
               isAdmin={isAdmin}
@@ -559,7 +559,7 @@ const CompanyNotes = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d4a017]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f59e0b]" />
       </div>
     );
   }
@@ -583,8 +583,8 @@ const CompanyNotes = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[18px] font-bold text-[#111113]">Company Notes</h2>
-          <p className="text-[13px] text-[#6b7280] mt-0.5">Shared with all staff</p>
+          <h2 className="text-[18px] font-bold text-white">Company Notes</h2>
+          <p className="text-[13px] text-[#94a3b8] mt-0.5">Shared with all staff</p>
         </div>
         {!showForm && (
           <button className={GOLD_BTN} onClick={() => { setShowForm(true); setExpandedId(null); }}>
@@ -615,7 +615,7 @@ const CompanyNotes = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex border-b border-[#e5e7eb]">
+        <div className="flex border-b border-[#2e2e4a]">
           {[
             { value: 'all',          label: 'All' },
             { value: 'note',         label: 'General' },
@@ -626,7 +626,7 @@ const CompanyNotes = () => {
               key={tab.value}
               onClick={() => setFilterType(tab.value)}
               className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors ${
-                filterType === tab.value ? 'border-[#d4a017] text-[#111113]' : 'border-transparent text-[#6b7280] hover:text-[#111113]'
+                filterType === tab.value ? 'border-[#f59e0b] text-white' : 'border-transparent text-[#94a3b8] hover:text-white'
               }`}
             >
               {tab.label}
@@ -635,7 +635,7 @@ const CompanyNotes = () => {
         </div>
         {categories.length > 0 && (
           <select
-            className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-[13px] text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
+            className="rounded-lg border border-[#2e2e4a] bg-[#242438] px-3 py-1.5 text-[13px] text-[#cbd5e1] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
           >
@@ -647,19 +647,19 @@ const CompanyNotes = () => {
 
       {/* Table */}
       {notes.length === 0 ? (
-        <div className="text-center py-16 text-[#9ca3af]">
+        <div className="text-center py-16 text-[#6b7280]">
           <StickyNote className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-[14px]">No notes yet. Be the first to add one.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+        <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
           <table className="w-full table-fixed">
             <thead>
-              <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
-                <th className="text-left pl-3 py-2 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-28">Type</th>
-                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Note</th>
-                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-32">Category</th>
-                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider w-40">Author</th>
+              <tr className="bg-[#1f1f33] border-b border-[#2e2e4a]">
+                <th className="text-left pl-3 py-2 text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider w-28">Type</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider">Note</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider w-32">Category</th>
+                <th className="text-left py-2 px-3 text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider w-40">Author</th>
                 <th className="w-36 pr-3" />
               </tr>
             </thead>

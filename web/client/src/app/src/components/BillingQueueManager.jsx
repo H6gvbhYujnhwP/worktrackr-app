@@ -79,7 +79,7 @@ const BillingQueueManager = ({ onManualProcess }) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl text-gray-900 flex items-center">
+              <CardTitle className="text-2xl text-white flex items-center">
                 <FileText className="w-8 h-8 mr-3 text-green-600" />
                 Billing Queue Manager
               </CardTitle>
@@ -100,7 +100,7 @@ const BillingQueueManager = ({ onManualProcess }) => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6b7280] w-4 h-4" />
                 <Input
                   placeholder="Search by customer, service, or ticket ID..."
                   value={searchTerm}
@@ -124,9 +124,9 @@ const BillingQueueManager = ({ onManualProcess }) => {
         <CardContent>
           {filteredItems.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 mb-2">No items in billing queue</h3>
-              <p className="text-gray-600 mb-6">
+              <FileText className="w-16 h-16 mx-auto text-[#6b7280] mb-4" />
+              <h3 className="text-xl font-medium text-white mb-2">No items in billing queue</h3>
+              <p className="text-[#94a3b8] mb-6">
                 {billingQueue.length === 0 
                   ? "Completed tickets will appear here automatically when they're ready for billing."
                   : "No items match your current search criteria."
@@ -153,18 +153,18 @@ const BillingQueueManager = ({ onManualProcess }) => {
                         <div className="flex-1">
                           {/* Header */}
                           <div className="flex items-center space-x-3 mb-3">
-                            <h4 className="font-semibold text-gray-900">{item.ticketId}</h4>
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <h4 className="font-semibold text-white">{item.ticketId}</h4>
+                            <Badge className="bg-[rgba(16,185,129,0.15)] text-green-800 border-green-200">
                               <CheckCircle className="w-4 h-4" />
                               <span className="ml-1">Ready for Billing</span>
                             </Badge>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-[#94a3b8]">
                               Added {formatDate(item.addedToQueueAt)}
                             </span>
                           </div>
                           
                           {/* Content Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#94a3b8] mb-4">
                             <div>
                               <p><strong>Customer:</strong> {item.ticketData.customer.name}</p>
                               <p><strong>Email:</strong> {item.ticketData.customer.email}</p>

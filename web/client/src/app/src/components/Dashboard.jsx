@@ -20,6 +20,7 @@ import {
   Trash2, UserPlus, Flag, GitMerge, ChevronDown, Package, LogOut,
   Building2
 } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 import AppVersion from './AppVersion.jsx';
 import TicketCard from './TicketCard.jsx';
@@ -59,25 +60,25 @@ import CompanyNotes from './CompanyNotes.jsx';
 import JobsList from './JobsList.jsx';
 import InvoicesList from './InvoicesList.jsx';
 
-// ─── Status chip style ────────────────────────────────────────────────────────
+// ─── Status chip style (dark) ─────────────────────────────────────────────────
 const chipBase = 'text-[12px] font-medium px-3 py-1.5 rounded-md border transition-colors cursor-pointer whitespace-nowrap';
-const chipActive = 'bg-[#f9fafb] text-[#1d1d1f] border-[#e5e7eb]';
-const chipInactive = 'text-[#6b7280] border-transparent hover:bg-[#f9fafb]';
+const chipActive = 'bg-[rgba(245,158,11,0.15)] text-[#fcd34d] border-[#f59e0b]';
+const chipInactive = 'text-[#94a3b8] border-transparent hover:bg-[#242438] hover:text-white';
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+// ─── Stat card (dark) ─────────────────────────────────────────────────────────
 const StatCard = ({ label, count, iconBg, iconColor, Icon, onClick, active }) => (
   <div
     onClick={onClick}
-    className={`flex items-center gap-2.5 px-4 py-3 bg-white rounded-xl border cursor-pointer
-                transition-all flex-1 min-w-[120px]
-                ${active ? 'border-[#d4a017] shadow-sm' : 'border-[#e5e7eb] hover:border-[#d4a017]'}`}
+    className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer
+                transition-all flex-1 min-w-[120px] bg-[#242438]
+                ${active ? 'border-[#f59e0b]' : 'border-[#2e2e4a] hover:border-[#f59e0b]'}`}
   >
     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
       <Icon className={`w-[16px] h-[16px] ${iconColor}`} />
     </div>
     <div>
-      <div className="text-[20px] font-bold text-[#1d1d1f] leading-none">{count}</div>
-      <div className="text-[11px] font-medium text-[#9ca3af] mt-0.5">{label}</div>
+      <div className="text-[20px] font-bold text-white leading-none">{count}</div>
+      <div className="text-[11px] font-medium text-[#94a3b8] mt-0.5">{label}</div>
     </div>
   </div>
 );
@@ -239,22 +240,35 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   // the render function creates a new component type every render, causing React
   // to unmount/remount the entire subtree and losing input focus on every keystroke.
   const ticketsViewJSX = (
-    <>
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+      {/* Hero header */}
+      <div className="mb-5">
+        <PageHero
+          title="Tickets"
+          icon={Ticket}
+          meta={[{ label: `${ticketCounts.all_open} open` }]}
+          actions={
+            <HeroButtonPrimary icon={Plus} onClick={() => setShowCreateModal(true)}>New ticket</HeroButtonPrimary>
+          }
+          compact
+        />
+      </div>
+
       {/* ── Inline stat cards ── */}
       <div className="flex flex-wrap gap-3 mb-5">
-        <StatCard label="All open"   count={ticketCounts.all_open}   Icon={Ticket}       iconBg="bg-[#f3f4f6]"  iconColor="text-[#6b7280]" onClick={() => setTab('all_open')}   active={activeTab==='all_open'} />
-        <StatCard label="Open"       count={ticketCounts.open}       Icon={CheckCircle}  iconBg="bg-[#dcfce7]"  iconColor="text-[#16a34a]" onClick={() => setTab('open')}       active={activeTab==='open'} />
-        <StatCard label="In progress"count={ticketCounts.in_progress}Icon={Clock}        iconBg="bg-[#dbeafe]"  iconColor="text-[#1d4ed8]" onClick={() => setTab('in_progress')} active={activeTab==='in_progress'} />
-        <StatCard label="Pending"    count={ticketCounts.pending}    Icon={AlertCircle}  iconBg="bg-[#fef3c7]"  iconColor="text-[#d97706]" onClick={() => setTab('pending')}    active={activeTab==='pending'} />
-        <StatCard label="Resolved"   count={ticketCounts.resolved}   Icon={CheckCircle}  iconBg="bg-[#dbeafe]"  iconColor="text-[#1d4ed8]" onClick={() => setTab('resolved')}   active={activeTab==='resolved'} />
-        <StatCard label="Closed"     count={ticketCounts.closed}     Icon={X}            iconBg="bg-[#f3f4f6]"  iconColor="text-[#6b7280]" onClick={() => setTab('closed')}     active={activeTab==='closed'} />
+        <StatCard label="All open"   count={ticketCounts.all_open}   Icon={Ticket}       iconBg="bg-[rgba(107,114,128,0.20)]"  iconColor="text-[#cbd5e1]" onClick={() => setTab('all_open')}   active={activeTab==='all_open'} />
+        <StatCard label="Open"       count={ticketCounts.open}       Icon={CheckCircle}  iconBg="bg-[rgba(16,185,129,0.20)]"  iconColor="text-[#6ee7b7]" onClick={() => setTab('open')}       active={activeTab==='open'} />
+        <StatCard label="In progress"count={ticketCounts.in_progress}Icon={Clock}        iconBg="bg-[rgba(59,130,246,0.20)]"  iconColor="text-[#93c5fd]" onClick={() => setTab('in_progress')} active={activeTab==='in_progress'} />
+        <StatCard label="Pending"    count={ticketCounts.pending}    Icon={AlertCircle}  iconBg="bg-[rgba(245,158,11,0.20)]"  iconColor="text-[#fcd34d]" onClick={() => setTab('pending')}    active={activeTab==='pending'} />
+        <StatCard label="Resolved"   count={ticketCounts.resolved}   Icon={CheckCircle}  iconBg="bg-[rgba(59,130,246,0.20)]"  iconColor="text-[#93c5fd]" onClick={() => setTab('resolved')}   active={activeTab==='resolved'} />
+        <StatCard label="Closed"     count={ticketCounts.closed}     Icon={X}            iconBg="bg-[rgba(107,114,128,0.20)]"  iconColor="text-[#cbd5e1]" onClick={() => setTab('closed')}     active={activeTab==='closed'} />
       </div>
 
       {/* ── Table container ── */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-[#e5e7eb]">
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3.5 border-b border-[#2e2e4a]">
           {/* Tab pills */}
           {[
             { key: 'all_open',    label: 'All open',    count: ticketCounts.all_open },
@@ -281,54 +295,46 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
           <div className="ml-auto flex items-center gap-2">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280]" />
               <input
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Search tickets..."
-                className="pl-8 pr-3 py-1.5 text-[12px] border border-[#e5e7eb] rounded-md bg-white
-                           text-[#1d1d1f] placeholder:text-[#9ca3af] focus:outline-none
-                           focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] w-[180px]"
+                className="pl-8 pr-3 py-1.5 text-[12px] border border-[#2e2e4a] rounded-md bg-[#1a1a2e]
+                           text-white placeholder:text-[#6b7280] focus:outline-none
+                           focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] w-[180px]"
               />
             </div>
 
             {isAdmin && (
               <button
                 onClick={() => setShowTicketCustomizer(true)}
-                className="text-[12px] text-[#6b7280] border border-[#e5e7eb] bg-white px-3 py-1.5
-                           rounded-md flex items-center gap-1 hover:border-[#d1d5db] transition-colors"
+                className="text-[12px] text-[#94a3b8] border border-[#2e2e4a] bg-[#242438] px-3 py-1.5
+                           rounded-md flex items-center gap-1 hover:bg-[#2a2a48] transition-colors"
               >
                 <Workflow className="w-3.5 h-3.5" /> Customize
               </button>
             )}
-
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="text-[13px] font-semibold bg-[#d4a017] text-[#111] px-4 py-1.5 rounded-md
-                         hover:bg-[#c4920f] transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-3.5 h-3.5" /> New ticket
-            </button>
           </div>
         </div>
 
         {/* Bulk action bar — only shown when rows selected */}
         {selectedTickets.size > 0 && (
-          <div className="flex items-center gap-2 px-5 py-2 bg-[#fef9ee] border-b border-[#e5e7eb]">
-            <span className="text-[12px] font-medium text-[#92400e]">{selectedTickets.size} selected</span>
+          <div className="flex items-center gap-2 px-5 py-2 bg-[rgba(245,158,11,0.08)] border-b border-[#2e2e4a]">
+            <span className="text-[12px] font-medium text-[#fcd34d]">{selectedTickets.size} selected</span>
             <div className="flex items-center gap-1 ml-2">
               <button onClick={handleBulkDelete} disabled={loading}
-                className="text-[12px] text-[#6b7280] hover:text-red-600 px-2 py-1 rounded flex items-center gap-1">
+                className="text-[12px] text-[#94a3b8] hover:text-[#fca5a5] px-2 py-1 rounded flex items-center gap-1">
                 <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
               <button onClick={() => setShowAssignModal(true)} disabled={loading}
-                className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                className="text-[12px] text-[#94a3b8] hover:text-white px-2 py-1 rounded flex items-center gap-1">
                 <UserPlus className="w-3.5 h-3.5" /> Assign
               </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button disabled={loading}
-                    className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                    className="text-[12px] text-[#94a3b8] hover:text-white px-2 py-1 rounded flex items-center gap-1">
                     <Settings className="w-3.5 h-3.5" /> Status <ChevronDown className="w-3 h-3" />
                   </button>
                 </DropdownMenuTrigger>
@@ -343,7 +349,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button disabled={loading}
-                    className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                    className="text-[12px] text-[#94a3b8] hover:text-white px-2 py-1 rounded flex items-center gap-1">
                     <Flag className="w-3.5 h-3.5" /> Priority <ChevronDown className="w-3 h-3" />
                   </button>
                 </DropdownMenuTrigger>
@@ -356,7 +362,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
                 </DropdownMenuContent>
               </DropdownMenu>
               <button onClick={handleMergeTickets} disabled={selectedTickets.size < 2 || loading}
-                className="text-[12px] text-[#6b7280] hover:text-[#1d1d1f] px-2 py-1 rounded flex items-center gap-1">
+                className="text-[12px] text-[#94a3b8] hover:text-white px-2 py-1 rounded flex items-center gap-1">
                 <GitMerge className="w-3.5 h-3.5" /> Merge
               </button>
             </div>
@@ -394,7 +400,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
           onClose={() => setShowAssignModal(false)}
         />
       )}
-    </>
+    </div>
   );
 
   // ── Render by view ─────────────────────────────────────────────────────────
@@ -416,7 +422,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {SALES_VIEWS.includes(currentView) && !salesProfileOpen && (
         <SalesTabs current={currentView} onChange={onViewChange} dark={['companies', 'quotes', 'orders', 'sales-calendar'].includes(currentView)} />
       )}
-      {currentView === 'tickets'        && ticketsViewJSX}
+      {currentView === 'tickets'        && <>{ticketsViewJSX}</>}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
       {currentView === 'calendar'       && (
         <CRMCalendar
@@ -472,10 +478,12 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'invoices'       && <InvoicesList />}
       {currentView === 'pricing-config' && (
         <ErrorBoundary>
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <Settings className="w-10 h-10 text-[#d4a017] mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-[#1d1d1f] mb-2">Pricing Configuration</h2>
-            <p className="text-[#9ca3af] text-sm">Configure your organisation's pricing settings and tiers. Feature under active development.</p>
+          <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+            <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] p-8 text-center">
+              <Settings className="w-10 h-10 text-[#f59e0b] mx-auto mb-4" />
+              <h2 className="text-lg font-semibold text-white mb-2">Pricing Configuration</h2>
+              <p className="text-[#94a3b8] text-sm">Configure your organisation's pricing settings and tiers. Feature under active development.</p>
+            </div>
           </div>
         </ErrorBoundary>
       )}

@@ -7,7 +7,7 @@
 // search/filters/columns, same "new order for company" entry and row → order
 // form. Only the colours change.
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ShoppingCart } from 'lucide-react';
 import OrderForm from './OrderForm.jsx';
 import SalesPageLayout, {
   SalesSearch, SalesPrimaryButton, SalesAllPill, SalesFilterPill,
@@ -109,6 +109,7 @@ export default function OrdersList({ initialNewCompanyId, onConsumeInitial }) {
       dark
       title="Orders"
       subtitle={`${orders.length} ${orders.length === 1 ? 'order' : 'orders'}`}
+      icon={ShoppingCart}
       actions={actions}
       filters={filters}
     >

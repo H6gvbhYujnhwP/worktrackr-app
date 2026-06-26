@@ -130,7 +130,7 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-center text-gray-500">Loading templates...</p>
+          <p className="text-center text-[#94a3b8]">Loading templates...</p>
         </CardContent>
       </Card>
     );
@@ -157,7 +157,7 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
           {/* Search and Filter */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6b7280] w-4 h-4" />
               <Input
                 placeholder="Search templates..."
                 value={searchTerm}
@@ -166,7 +166,7 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-gray-400" />
+              <Filter className="w-4 h-4 text-[#6b7280]" />
               <select
                 value={sectorFilter}
                 onChange={(e) => setSectorFilter(e.target.value)}
@@ -183,9 +183,9 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
           {/* Templates List */}
           {filteredTemplates.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
-              <p className="text-gray-500 mb-4">
+              <FileText className="w-12 h-12 text-[#6b7280] mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">No templates found</h3>
+              <p className="text-[#94a3b8] mb-4">
                 {searchTerm || sectorFilter !== 'ALL' 
                   ? 'Try adjusting your search or filters' 
                   : 'Get started by creating your first quote template'}
@@ -202,7 +202,7 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate mb-1">
+                        <h3 className="font-semibold text-white truncate mb-1">
                           {template.name}
                         </h3>
                         {template.sector && (
@@ -214,12 +214,12 @@ export default function QuoteTemplatesManager({ onCreateTemplate, onEditTemplate
                     </div>
 
                     {template.description && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      <p className="text-sm text-[#94a3b8] mb-3 line-clamp-2">
                         {template.description}
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                    <div className="flex items-center justify-between text-sm text-[#94a3b8] mb-4">
                       <span>
                         {template.default_line_items?.length || 0} items
                       </span>

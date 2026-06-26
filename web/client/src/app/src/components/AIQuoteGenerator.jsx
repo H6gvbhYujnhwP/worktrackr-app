@@ -128,7 +128,7 @@ export default function AIQuoteGenerator({ ticketId, customerId, onDraftComplete
 
       {/* Main Prompt Text Box */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-[#cbd5e1] mb-2">
           Main Prompt
         </label>
         <textarea
@@ -140,19 +140,19 @@ Example:
 - Paste: 'Hi, we need a quote for network upgrade for 21 units...'
 - Type: 'Create quote for server installation, 3 days labour, Dell server, migration'
 - Notes: 'Customer called about WiFi upgrade, needs completion by end of month'"
-          className="w-full h-48 sm:h-64 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+          className="w-full h-48 sm:h-64 px-3 sm:px-4 py-2 sm:py-3 border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b] text-sm resize-none"
         />
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-[#94a3b8]">
           This is your primary input. Paste anything here - emails, notes, requirements, instructions to the AI.
         </p>
       </div>
 
       {/* File Upload */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-[#cbd5e1] mb-2">
           Upload Files (Optional)
         </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center hover:border-blue-400 transition-colors">
+        <div className="border-2 border-dashed border-[#2e2e4a] rounded-lg p-4 sm:p-6 text-center hover:border-blue-400 transition-colors">
           <input
             type="file"
             id="file-upload"
@@ -165,11 +165,11 @@ Example:
             htmlFor="file-upload"
             className="cursor-pointer flex flex-col items-center"
           >
-            <Upload className="text-gray-400 mb-2" size={24} />
-            <p className="text-sm text-gray-600 font-medium">
+            <Upload className="text-[#6b7280] mb-2" size={24} />
+            <p className="text-sm text-[#94a3b8] font-medium">
               Click to upload or drag and drop
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[#94a3b8] mt-1">
               PDF files or audio recordings (MP3, WAV, MP4)
             </p>
           </label>
@@ -181,12 +181,12 @@ Example:
             {uploadedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
+                className="flex items-center justify-between bg-[#1f1f33] border border-[#2e2e4a] rounded-lg px-3 py-2"
               >
                 <div className="flex items-center gap-2">
                   {getFileIcon(file)}
-                  <span className="text-sm text-gray-700">{file.name}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-sm text-[#cbd5e1]">{file.name}</span>
+                  <span className="text-xs text-[#94a3b8]">
                     ({(file.size / 1024).toFixed(1)} KB)
                   </span>
                 </div>
@@ -204,10 +204,10 @@ Example:
 
       {/* Context Sources */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-[#cbd5e1] mb-3">
           Context to Include
         </label>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 space-y-3">
+        <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg p-3 sm:p-4 space-y-3">
           <div className="flex items-start gap-3">
             <input
               type="checkbox"
@@ -217,11 +217,11 @@ Example:
               className="mt-1"
             />
             <div className="flex-1">
-              <label htmlFor="ctx-ticket" className="text-sm font-medium text-gray-700 cursor-pointer">
+              <label htmlFor="ctx-ticket" className="text-sm font-medium text-[#cbd5e1] cursor-pointer">
                 Ticket Description
               </label>
               {contextPreview?.ticket_description && (
-                <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                <p className="text-xs text-[#94a3b8] mt-1 line-clamp-2">
                   {contextPreview.ticket_description}
                 </p>
               )}
@@ -237,11 +237,11 @@ Example:
               className="mt-1"
             />
             <div className="flex-1">
-              <label htmlFor="ctx-updates" className="text-sm font-medium text-gray-700 cursor-pointer">
+              <label htmlFor="ctx-updates" className="text-sm font-medium text-[#cbd5e1] cursor-pointer">
                 Ticket Updates & Comments
               </label>
               {contextPreview?.ticket_updates_count > 0 && (
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-[#94a3b8] mt-1">
                   {contextPreview.ticket_updates_count} updates available
                 </p>
               )}
@@ -257,11 +257,11 @@ Example:
               className="mt-1"
             />
             <div className="flex-1">
-              <label htmlFor="ctx-customer" className="text-sm font-medium text-gray-700 cursor-pointer">
+              <label htmlFor="ctx-customer" className="text-sm font-medium text-[#cbd5e1] cursor-pointer">
                 Customer Information
               </label>
               {contextPreview?.customer_name && (
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-[#94a3b8] mt-1">
                   {contextPreview.customer_name} - {contextPreview.customer_sector || 'No sector'}
                 </p>
               )}
@@ -277,18 +277,18 @@ Example:
               className="mt-1"
             />
             <div className="flex-1">
-              <label htmlFor="ctx-similar" className="text-sm font-medium text-gray-700 cursor-pointer">
+              <label htmlFor="ctx-similar" className="text-sm font-medium text-[#cbd5e1] cursor-pointer">
                 Previous Similar Quotes
               </label>
               {contextPreview?.similar_quotes_count > 0 && (
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-[#94a3b8] mt-1">
                   {contextPreview.similar_quotes_count} similar quotes found
                 </p>
               )}
             </div>
           </div>
         </div>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-[#94a3b8]">
           The AI will use this context along with your prompt to generate a more accurate quote.
         </p>
       </div>
@@ -301,7 +301,7 @@ Example:
       )}
 
       {/* Generate Button */}
-      <div className="flex justify-end pt-4 border-t border-gray-200">
+      <div className="flex justify-end pt-4 border-t border-[#2e2e4a]">
         <button
           onClick={handleGenerate}
           disabled={isGenerating || (!prompt.trim() && uploadedFiles.length === 0)}

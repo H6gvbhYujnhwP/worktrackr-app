@@ -126,13 +126,13 @@ const ContactSelector = ({
 
   const getStatusColor = (status) => {
     const colors = {
-      [CONTACT_STATUS.ACTIVE]: 'bg-green-100 text-green-800 border-green-200',
+      [CONTACT_STATUS.ACTIVE]: 'bg-[rgba(16,185,129,0.15)] text-green-800 border-green-200',
       [CONTACT_STATUS.PROSPECT]: 'bg-blue-100 text-blue-800 border-blue-200',
       [CONTACT_STATUS.AT_RISK]: 'bg-orange-100 text-orange-800 border-orange-200',
-      [CONTACT_STATUS.INACTIVE]: 'bg-gray-100 text-gray-800 border-gray-200',
+      [CONTACT_STATUS.INACTIVE]: 'bg-[#242438] text-white border-[#2e2e4a]',
       [CONTACT_STATUS.ARCHIVED]: 'bg-red-100 text-red-800 border-red-200'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[status] || 'bg-[#242438] text-white border-[#2e2e4a]';
   };
 
   return (
@@ -141,43 +141,43 @@ const ContactSelector = ({
       <div 
         className={`
           flex items-center justify-between p-3 border rounded-lg cursor-pointer
-          ${isOpen ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}
-          ${selectedContact ? 'bg-blue-50' : 'bg-white hover:bg-gray-50'}
+          ${isOpen ? 'border-blue-500 ring-2 ring-blue-200' : 'border-[#2e2e4a]'}
+          ${selectedContact ? 'bg-blue-50' : 'bg-[#242438] hover:bg-[#1f1f33]'}
         `}
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedContact ? (
           <div className="flex items-center space-x-3 flex-1">
-            <div className="p-2 bg-white rounded-lg border">
+            <div className="p-2 bg-[#242438] rounded-lg border">
               {selectedContact.type === CONTACT_TYPES.COMPANY ? (
-                <Building2 className="w-4 h-4 text-gray-600" />
+                <Building2 className="w-4 h-4 text-[#94a3b8]" />
               ) : (
-                <User className="w-4 h-4 text-gray-600" />
+                <User className="w-4 h-4 text-[#94a3b8]" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 truncate">{selectedContact.display_name || selectedContact.name || selectedContact.company_name}</p>
+              <p className="font-medium text-white truncate">{selectedContact.display_name || selectedContact.name || selectedContact.company_name}</p>
               {(selectedContact.email || selectedContact.phone) && (
-                <p className="text-sm text-gray-500 truncate">{selectedContact.email || selectedContact.phone}</p>
+                <p className="text-sm text-[#94a3b8] truncate">{selectedContact.email || selectedContact.phone}</p>
               )}
             </div>
           </div>
         ) : (
           <div className="flex items-center space-x-3 flex-1">
-            <Search className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-500">{placeholder}</span>
+            <Search className="w-4 h-4 text-[#6b7280]" />
+            <span className="text-[#94a3b8]">{placeholder}</span>
           </div>
         )}
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-[#6b7280] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </div>
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-[#242438] border border-[#2e2e4a] rounded-lg shadow-lg overflow-hidden">
           {/* Search Input */}
           <div className="p-3 border-b">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6b7280] w-4 h-4" />
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
@@ -194,7 +194,7 @@ const ContactSelector = ({
               <div className="p-4 text-center">
                 {searchTerm ? (
                   <div>
-                    <p className="text-gray-600 mb-3">No contacts found for "{searchTerm}"</p>
+                    <p className="text-[#94a3b8] mb-3">No contacts found for "{searchTerm}"</p>
                     {showCreateButton && (
                       <Button 
                         onClick={handleCreateNew}
@@ -208,7 +208,7 @@ const ContactSelector = ({
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-600 mb-3">No contacts available</p>
+                    <p className="text-[#94a3b8] mb-3">No contacts available</p>
                     {showCreateButton && (
                       <Button 
                         onClick={handleCreateNew}
@@ -233,22 +233,22 @@ const ContactSelector = ({
                       key={contact.id}
                       className={`
                         flex items-center space-x-3 px-4 py-3 cursor-pointer transition-colors
-                        ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                        ${isSelected ? 'bg-blue-50' : 'hover:bg-[#1f1f33]'}
                       `}
                       onClick={() => handleContactSelect(contact)}
                     >
-                      <div className="p-2 bg-gray-100 rounded-lg">
+                      <div className="p-2 bg-[#242438] rounded-lg">
                         {contact.type === CONTACT_TYPES.COMPANY ? (
-                          <Building2 className="w-4 h-4 text-gray-600" />
+                          <Building2 className="w-4 h-4 text-[#94a3b8]" />
                         ) : (
-                          <User className="w-4 h-4 text-gray-600" />
+                          <User className="w-4 h-4 text-[#94a3b8]" />
                         )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{displayInfo.name}</p>
+                        <p className="font-medium text-white truncate">{displayInfo.name}</p>
                         {displayInfo.subtitle && (
-                          <p className="text-sm text-gray-500 truncate">{displayInfo.subtitle}</p>
+                          <p className="text-sm text-[#94a3b8] truncate">{displayInfo.subtitle}</p>
                         )}
                       </div>
                       
@@ -265,7 +265,7 @@ const ContactSelector = ({
                 ) && (
                   <div className="border-t mt-2 pt-2">
                     <div
-                      className="flex items-center space-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50 text-blue-600"
+                      className="flex items-center space-x-3 px-3 py-2 cursor-pointer hover:bg-[#1f1f33] text-blue-600"
                       onClick={handleCreateNew}
                     >
                       <div className="p-2 bg-blue-100 rounded-lg">
@@ -273,7 +273,7 @@ const ContactSelector = ({
                       </div>
                       <div>
                         <p className="font-medium">Create "{searchTerm}" as new contact</p>
-                        <p className="text-xs text-gray-500">Add this as a new contact to your database</p>
+                        <p className="text-xs text-[#94a3b8]">Add this as a new contact to your database</p>
                       </div>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ const ContactSelector = ({
                 {showCreateButton && (
                   <div className="border-t mt-2 pt-2">
                     <div
-                      className="flex items-center space-x-3 px-3 py-2 cursor-pointer hover:bg-gray-50 text-blue-600"
+                      className="flex items-center space-x-3 px-3 py-2 cursor-pointer hover:bg-[#1f1f33] text-blue-600"
                       onClick={handleCreateNew}
                     >
                       <div className="p-2 bg-blue-100 rounded-lg">
@@ -291,7 +291,7 @@ const ContactSelector = ({
                       </div>
                       <div>
                         <p className="font-medium">Create new contact</p>
-                        <p className="text-xs text-gray-500">Add a new contact to your database</p>
+                        <p className="text-xs text-[#94a3b8]">Add a new contact to your database</p>
                       </div>
                     </div>
                   </div>

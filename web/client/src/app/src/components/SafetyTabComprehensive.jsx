@@ -16,7 +16,7 @@ const SECTORS = [
 ];
 
 const getRiskLevel = (score) => {
-  if (score <= 4) return { level: 'Low', color: 'bg-green-100 text-green-800' };
+  if (score <= 4) return { level: 'Low', color: 'bg-[rgba(16,185,129,0.15)] text-green-800' };
   if (score <= 9) return { level: 'Medium', color: 'bg-yellow-100 text-yellow-800' };
   if (score <= 15) return { level: 'High', color: 'bg-orange-100 text-orange-800' };
   return { level: 'Critical', color: 'bg-red-100 text-red-800' };
@@ -210,7 +210,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
           <h3 className="font-semibold text-lg">
             {isMethodStatement ? 'Method Statement' : 'Risk Assessment'} - {sectorLabel}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-[#94a3b8] mt-1">
             Complete all required fields. All information will be saved to the ticket.
           </p>
         </div>
@@ -351,7 +351,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
           </div>
         </div>
         {formData.likelihood && formData.severity && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-[#1f1f33] rounded-lg">
             <div className="flex items-center justify-between">
               <span className="font-semibold">Risk Score:</span>
               <span className="text-2xl font-bold">{formData.likelihood * formData.severity}</span>
@@ -579,7 +579,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
           </div>
         </div>
         {formData.likelihood && formData.severity && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-[#1f1f33] rounded-lg">
             <div className="flex items-center justify-between">
               <span className="font-semibold">Risk Score:</span>
               <span className="text-2xl font-bold">{formData.likelihood * formData.severity}</span>
@@ -741,7 +741,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
           </div>
         </div>
         {formData.likelihood && formData.severity && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-[#1f1f33] rounded-lg">
             <div className="flex items-center justify-between">
               <span className="font-semibold">Risk Score:</span>
               <span className="text-2xl font-bold">{formData.likelihood * formData.severity}</span>
@@ -917,7 +917,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
             </div>
           </div>
           {formData.fmea_severity && formData.fmea_occurrence && formData.fmea_detection && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-[#1f1f33] rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">RPN (Risk Priority Number):</span>
                 <span className="text-2xl font-bold">
@@ -975,7 +975,7 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
             </div>
           </div>
           {formData.probability && formData.impact && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-4 bg-[#1f1f33] rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Risk Score:</span>
                 <span className="text-2xl font-bold">{formData.probability * formData.impact}</span>
@@ -1035,15 +1035,15 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
               <div className="flex items-center gap-2 mb-2">
                 {isMS ? <FileText className="h-5 w-5 text-blue-600" /> : <Shield className="h-5 w-5 text-orange-600" />}
                 <h4 className="font-semibold">{isMS ? 'Method Statement' : 'Risk Assessment'}</h4>
-                <span className="text-sm text-gray-500">- {sectorLabel}</span>
+                <span className="text-sm text-[#94a3b8]">- {sectorLabel}</span>
               </div>
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="text-sm text-[#94a3b8] mb-2">
                 {doc.project_name || doc.assessment_title || doc.service_reference || doc.process_name || 'Untitled Document'}
               </p>
-              <div className="flex gap-4 text-xs text-gray-500">
+              <div className="flex gap-4 text-xs text-[#94a3b8]">
                 <span>Created: {new Date(doc.created_at).toLocaleDateString()}</span>
                 <span>Updated: {new Date(doc.updated_at).toLocaleDateString()}</span>
-                <span className={`px-2 py-0.5 rounded ${doc.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                <span className={`px-2 py-0.5 rounded ${doc.status === 'approved' ? 'bg-[rgba(16,185,129,0.15)] text-green-800' : 'bg-[#242438] text-white'}`}>
                   {doc.status || 'draft'}
                 </span>
               </div>
@@ -1086,8 +1086,8 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
         </CardHeader>
         <CardContent>
           {methodStatements.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-8 text-[#94a3b8]">
+              <FileText className="h-12 w-12 mx-auto mb-3 text-[#6b7280]" />
               <p>No method statements yet</p>
               <p className="text-sm">Click "Add Method Statement" to create one</p>
             </div>
@@ -1118,8 +1118,8 @@ export default function SafetyTabComprehensive({ ticket, onUpdate }) {
         </CardHeader>
         <CardContent>
           {riskAssessments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Shield className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-8 text-[#94a3b8]">
+              <Shield className="h-12 w-12 mx-auto mb-3 text-[#6b7280]" />
               <p>No risk assessments yet</p>
               <p className="text-sm">Click "Add Risk Assessment" to create one</p>
             </div>

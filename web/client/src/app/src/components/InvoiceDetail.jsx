@@ -1,3 +1,4 @@
+import PageHero from './PageHero.jsx';
 // web/client/src/app/src/components/InvoiceDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -57,7 +58,7 @@ function toInputDate(d) {
 }
 
 const STATUS_STYLES = {
-  draft:   'bg-[#f3f4f6] text-[#6b7280]',
+  draft:   'bg-[#f3f4f6] text-[#94a3b8]',
   sent:    'bg-[#dbeafe] text-[#1d4ed8]',
   paid:    'bg-[#dcfce7] text-[#15803d]',
   overdue: 'bg-[#fee2e2] text-[#dc2626]',
@@ -74,8 +75,8 @@ function StatusBadge({ status }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]';
-const LABEL_CLS = 'block text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1';
+const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]';
+const LABEL_CLS = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1';
 
 export default function InvoiceDetail() {
   const { id } = useParams();
@@ -185,15 +186,15 @@ export default function InvoiceDetail() {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64 text-[13px] text-[#9ca3af]">Loading invoice…</div>;
+  if (loading) return <div className="flex justify-center items-center h-64 text-[13px] text-[#6b7280]">Loading invoice…</div>;
 
   if (error || !invoice) {
     return (
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 text-center">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] p-6 text-center">
         <p className="text-[13px] text-red-600 mb-3">{error || 'Invoice not found'}</p>
         <button
           onClick={() => navigate('/app/invoices')}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] mx-auto"
+          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33] mx-auto"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Invoices
         </button>
@@ -202,7 +203,7 @@ export default function InvoiceDetail() {
   }
 
   const actionBtn = 'flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium rounded-lg transition-colors';
-  const metaLabel = 'text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider';
+  const metaLabel = 'text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider';
 
   // Context-sensitive status action buttons
   const statusActions = [];
@@ -218,10 +219,11 @@ export default function InvoiceDetail() {
     statusActions.push({ label: 'Mark as Sent', status: 'sent', icon: Send,         cls: 'border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff]' });
   }
 
-  const TH = 'py-3 px-4 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]';
-  const TH_R = 'py-3 px-4 text-right text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]';
+  const TH = 'py-3 px-4 text-left text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]';
+  const TH_R = 'py-3 px-4 text-right text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]';
 
   return (
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
     <div className="space-y-5">
 
       {/* Header */}
@@ -229,16 +231,16 @@ export default function InvoiceDetail() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/app/invoices')}
-            className="p-2 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] text-[#6b7280]"
+            className="p-2 rounded-lg border border-[#2e2e4a] hover:bg-[#1f1f33] text-[#94a3b8]"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-[20px] font-bold text-[#111113]">{invoice.invoiceNumber}</h1>
+              <h1 className="text-[20px] font-bold text-white">{invoice.invoiceNumber}</h1>
               <StatusBadge status={invoice.status} />
             </div>
-            <p className="text-[12px] text-[#9ca3af] mt-0.5">
+            <p className="text-[12px] text-[#6b7280] mt-0.5">
               Created {fmtDate(invoice.createdAt)}
               {invoice.contactName && ` · ${invoice.contactName}`}
             </p>
@@ -259,7 +261,7 @@ export default function InvoiceDetail() {
           <button
             onClick={handleDownloadPdf}
             disabled={downloadingPdf}
-            className={`${actionBtn} bg-[#d4a017] text-[#111113] hover:bg-[#b8860b] disabled:opacity-50`}
+            className={`${actionBtn} bg-[#f59e0b] text-white hover:bg-[#b8860b] disabled:opacity-50`}
           >
             {downloadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {downloadingPdf ? 'Generating…' : 'Download PDF'}
@@ -284,45 +286,45 @@ export default function InvoiceDetail() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Info cards */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center gap-2">
-              <Receipt className="w-4 h-4 text-[#9ca3af]" />
-              <h3 className="text-[13px] font-semibold text-[#374151]">Invoice Details</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a] flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-[#6b7280]" />
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Invoice Details</h3>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <p className={metaLabel}>Contact</p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <User className="w-3.5 h-3.5 text-[#9ca3af]" />
-                  <p className="text-[14px] font-medium text-[#111113]">
-                    {invoice.contactName || <span className="text-[#9ca3af] font-normal">No contact linked</span>}
+                  <User className="w-3.5 h-3.5 text-[#6b7280]" />
+                  <p className="text-[14px] font-medium text-white">
+                    {invoice.contactName || <span className="text-[#6b7280] font-normal">No contact linked</span>}
                   </p>
                 </div>
-                {invoice.contactEmail && <p className="text-[12px] text-[#6b7280] mt-0.5 ml-5">{invoice.contactEmail}</p>}
-                {invoice.contactPhone && <p className="text-[12px] text-[#6b7280] mt-0.5 ml-5">{invoice.contactPhone}</p>}
+                {invoice.contactEmail && <p className="text-[12px] text-[#94a3b8] mt-0.5 ml-5">{invoice.contactEmail}</p>}
+                {invoice.contactPhone && <p className="text-[12px] text-[#94a3b8] mt-0.5 ml-5">{invoice.contactPhone}</p>}
               </div>
               {invoice.jobNumber && (
                 <div>
                   <p className={metaLabel}>Linked Project</p>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Briefcase className="w-3.5 h-3.5 text-[#9ca3af]" />
-                    <p className="text-[14px] font-medium text-[#111113]">{invoice.jobNumber}</p>
+                    <Briefcase className="w-3.5 h-3.5 text-[#6b7280]" />
+                    <p className="text-[14px] font-medium text-white">{invoice.jobNumber}</p>
                   </div>
-                  {invoice.jobTitle && <p className="text-[12px] text-[#6b7280] mt-0.5 ml-5">{invoice.jobTitle}</p>}
+                  {invoice.jobTitle && <p className="text-[12px] text-[#94a3b8] mt-0.5 ml-5">{invoice.jobTitle}</p>}
                 </div>
               )}
               <div>
                 <p className={metaLabel}>Issue Date</p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#9ca3af]" />
-                  <p className="text-[13px] text-[#374151]">{fmtDate(invoice.issueDate)}</p>
+                  <Calendar className="w-3.5 h-3.5 text-[#6b7280]" />
+                  <p className="text-[13px] text-[#cbd5e1]">{fmtDate(invoice.issueDate)}</p>
                 </div>
               </div>
               <div>
                 <p className={metaLabel}>Due Date</p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#9ca3af]" />
-                  <p className={`text-[13px] font-medium ${invoice.status === 'overdue' ? 'text-red-600' : 'text-[#374151]'}`}>
+                  <Calendar className="w-3.5 h-3.5 text-[#6b7280]" />
+                  <p className={`text-[13px] font-medium ${invoice.status === 'overdue' ? 'text-red-600' : 'text-[#cbd5e1]'}`}>
                     {fmtDate(invoice.dueDate)}
                   </p>
                 </div>
@@ -331,17 +333,17 @@ export default function InvoiceDetail() {
           </div>
 
           {/* Lines table */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Line Items</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Line Items</h3>
             </div>
             {invoice.lines.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-[#9ca3af]">No line items on this invoice</p>
+              <p className="py-8 text-center text-[13px] text-[#6b7280]">No line items on this invoice</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">
                   <thead>
-                    <tr className="border-b border-[#e5e7eb]">
+                    <tr className="border-b border-[#2e2e4a]">
                       <th className={TH}>Description</th>
                       <th className={TH_R}>Qty</th>
                       <th className={TH_R}>Unit Price</th>
@@ -353,19 +355,19 @@ export default function InvoiceDetail() {
                     {invoice.lines.map((line, idx) => (
                       <tr
                         key={line.id}
-                        className={`border-b border-[#f3f4f6] ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
+                        className={`border-b border-[#2e2e4a] ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-[#242438]'}`}
                       >
-                        <td className="py-3 px-4 text-[#374151]">{line.description}</td>
-                        <td className="py-3 px-4 text-right text-[#6b7280]">
+                        <td className="py-3 px-4 text-[#cbd5e1]">{line.description}</td>
+                        <td className="py-3 px-4 text-right text-[#94a3b8]">
                           {line.quantity % 1 === 0 ? line.quantity.toFixed(0) : line.quantity.toFixed(2)}
                         </td>
-                        <td className="py-3 px-4 text-right text-[#6b7280]">{fmt(line.unitPrice)}</td>
+                        <td className="py-3 px-4 text-right text-[#94a3b8]">{fmt(line.unitPrice)}</td>
                         <td className="py-3 px-4">
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${line.vatApplicable ? 'bg-[#dbeafe] text-[#1d4ed8]' : 'bg-[#f3f4f6] text-[#9ca3af]'}`}>
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${line.vatApplicable ? 'bg-[#dbeafe] text-[#1d4ed8]' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>
                             {line.vatApplicable ? '20%' : 'No VAT'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-right font-semibold text-[#111113]">{fmt(line.lineTotal)}</td>
+                        <td className="py-3 px-4 text-right font-semibold text-white">{fmt(line.lineTotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -374,20 +376,20 @@ export default function InvoiceDetail() {
             )}
 
             {/* Totals panel */}
-            <div className="border-t-2 border-[#e5e7eb] bg-[#fafafa]">
+            <div className="border-t-2 border-[#2e2e4a] bg-[#1f1f33]">
               <div className="flex justify-end px-5 py-4">
                 <div className="space-y-2 min-w-[200px]">
-                  <div className="flex justify-between gap-8 text-[13px] text-[#6b7280]">
+                  <div className="flex justify-between gap-8 text-[13px] text-[#94a3b8]">
                     <span>Subtotal</span>
-                    <span className="font-medium text-[#374151]">{fmt(invoice.subtotal)}</span>
+                    <span className="font-medium text-[#cbd5e1]">{fmt(invoice.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between gap-8 text-[13px] text-[#6b7280]">
+                  <div className="flex justify-between gap-8 text-[13px] text-[#94a3b8]">
                     <span>VAT (20%)</span>
-                    <span className="font-medium text-[#374151]">{fmt(invoice.vatTotal)}</span>
+                    <span className="font-medium text-[#cbd5e1]">{fmt(invoice.vatTotal)}</span>
                   </div>
-                  <div className="flex justify-between gap-8 text-[15px] font-bold text-[#111113] border-t border-[#e5e7eb] pt-2 mt-2">
+                  <div className="flex justify-between gap-8 text-[15px] font-bold text-white border-t border-[#2e2e4a] pt-2 mt-2">
                     <span>Total</span>
-                    <span className="text-[#d4a017]">{fmt(invoice.total)}</span>
+                    <span className="text-[#f59e0b]">{fmt(invoice.total)}</span>
                   </div>
                 </div>
               </div>
@@ -399,9 +401,9 @@ export default function InvoiceDetail() {
         <div className="space-y-5">
 
           {/* Invoice meta */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Invoice Info</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Invoice Info</h3>
             </div>
             <div className="p-5 space-y-4">
               {[
@@ -411,16 +413,16 @@ export default function InvoiceDetail() {
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className={metaLabel}>{label}</p>
-                  <p className="text-[13px] font-medium text-[#374151] mt-0.5">{value}</p>
+                  <p className="text-[13px] font-medium text-[#cbd5e1] mt-0.5">{value}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Editable fields */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">Edit Details</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Edit Details</h3>
             </div>
             <div className="p-5 space-y-4">
               <div>
@@ -446,7 +448,7 @@ export default function InvoiceDetail() {
                 <button
                   onClick={handleSaveEdits}
                   disabled={saving}
-                  className="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-white bg-[#f59e0b] hover:bg-[#b8860b] rounded-lg transition-colors disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                   {saving ? 'Saving…' : 'Save Changes'}
@@ -457,9 +459,9 @@ export default function InvoiceDetail() {
 
           {/* Status actions (also in sidebar for easy access) */}
           {statusActions.length > 0 && (
-            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#e5e7eb]">
-                <h3 className="text-[13px] font-semibold text-[#374151]">Change Status</h3>
+            <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[#2e2e4a]">
+                <h3 className="text-[13px] font-semibold text-[#cbd5e1]">Change Status</h3>
               </div>
               <div className="p-5 space-y-2">
                 {statusActions.map(({ label, status, icon: Icon, cls }) => (
@@ -478,6 +480,7 @@ export default function InvoiceDetail() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

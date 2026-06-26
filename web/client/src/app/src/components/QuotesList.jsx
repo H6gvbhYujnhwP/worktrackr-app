@@ -1,7 +1,9 @@
-// web/client/src/app/src/components/QuotesList.jsx
+// Sales › Quotes list — dark reskin matching the WorkTrackr v3.1 design system.
+// All data fetching, routing, search, sort, and filter behaviour is unchanged.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, FileText, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, Filter, FileText, ArrowUpDown, FileCheck } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 export default function QuotesList() {
   const navigate = useNavigate();
@@ -32,15 +34,16 @@ export default function QuotesList() {
     fetchQuotes();
   }, []);
 
+  const STATUS_DARK = {
+    draft:    'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]',
+    sent:     'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+    accepted: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+    declined: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+    expired:  'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  };
+
   const statusBadge = (status) => {
-    const map = {
-      draft:    'bg-[#f3f4f6] text-[#6b7280]',
-      sent:     'bg-[#dbeafe] text-[#1d4ed8]',
-      accepted: 'bg-[#dcfce7] text-[#15803d]',
-      declined: 'bg-[#fee2e2] text-[#dc2626]',
-      expired:  'bg-[#ffedd5] text-[#c2410c]',
-    };
-    const cls = map[status] || map.draft;
+    const cls = STATUS_DARK[status] || STATUS_DARK.draft;
     const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Draft';
     return (
       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${cls}`}>
@@ -87,13 +90,9 @@ export default function QuotesList() {
     else { setSortBy(field); setSortOrder('desc'); }
   };
 
-  // Plain render helper — NOT a React component (no capital, returns JSX directly).
-  // Using a const SortTh = () => ... inside this function body would cause React
-  // to see a new component type on every render and unmount/remount the whole
-  // table header on every keystroke in the search box.
   const renderSortTh = (field, children) => (
     <th
-      className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa] cursor-pointer hover:text-[#374151] select-none"
+      className="text-left py-3 px-4 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33] cursor-pointer hover:text-[#94a3b8] select-none"
       onClick={() => toggleSort(field)}
     >
       <div className="flex items-center gap-1.5">
@@ -103,106 +102,94 @@ export default function QuotesList() {
     </th>
   );
 
+  const heroActions = (
+    <HeroButtonPrimary icon={Plus} onClick={() => navigate('/app/crm/quotes/new')}>
+      Create New Quote
+    </HeroButtonPrimary>
+  );
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 text-[13px] text-[#9ca3af]">
-        Loading quotes...
+      <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+        <div className="mb-5">
+          <PageHero title="Quotes" icon={FileCheck} actions={heroActions} compact />
+        </div>
+        <div className="flex justify-center items-center h-48 text-[13px] text-[#94a3b8]">Loading quotes…</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-        <p className="text-[13px] text-red-600 mb-3">Error: {error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-3 py-1.5 text-[13px] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
-        >
-          Retry
-        </button>
+      <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+        <div className="mb-5">
+          <PageHero title="Quotes" icon={FileCheck} actions={heroActions} compact />
+        </div>
+        <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] p-6">
+          <p className="text-[13px] text-[#fca5a5] mb-3">Error: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-3 py-1.5 text-[13px] border border-[#2e2e4a] text-[#94a3b8] rounded-lg hover:bg-[#2a2a48]"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-bold text-[#111113]">Quotes</h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Manage and track customer quotes</p>
-        </div>
-        <button
-          onClick={() => navigate('/app/crm/quotes/new')}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Create New Quote
-        </button>
+      {/* Glowing hero header */}
+      <div className="mb-5">
+        <PageHero title="Quotes" icon={FileCheck} actions={heroActions} compact />
       </div>
 
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Quotes', value: quotes.length, color: 'text-[#111113]' },
-          { label: 'Sent', value: quotes.filter(q => q.status === 'sent').length, color: 'text-[#1d4ed8]' },
-          { label: 'Accepted', value: quotes.filter(q => q.status === 'accepted').length, color: 'text-[#15803d]' },
-          { label: 'Total Value', value: formatCurrency(quotes.reduce((s, q) => s + parseFloat(q.total_amount || 0), 0)), color: 'text-[#111113]' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white rounded-xl border border-[#e5e7eb] px-4 py-3">
-            <div className={`text-[22px] font-bold ${color}`}>{value}</div>
-            <div className="text-[11px] text-[#9ca3af] uppercase tracking-wider mt-0.5">{label}</div>
-          </div>
-        ))}
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280]" />
+          <input
+            type="text"
+            placeholder="Search by quote number, title, or customer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg bg-[#242438] text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-[#6b7280]" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg bg-[#242438] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
       </div>
 
-      {/* Main table container */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-
-        {/* Toolbar */}
-        <div className="flex flex-col md:flex-row gap-3 p-4 border-b border-[#e5e7eb]">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
-            <input
-              type="text"
-              placeholder="Search by quote number, title, or customer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-[#9ca3af]" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] bg-white"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="accepted">Accepted</option>
-              <option value="declined">Declined</option>
-              <option value="expired">Expired</option>
-            </select>
-          </div>
-        </div>
-
+      {/* Table */}
+      <div className="border border-[#2e2e4a] rounded-xl overflow-hidden bg-[#242438]">
         {filteredQuotes.length === 0 ? (
           <div className="text-center py-16">
-            <FileText className="w-10 h-10 text-[#e5e7eb] mx-auto mb-3" />
-            <h3 className="text-[14px] font-medium text-[#374151] mb-1">
+            <FileText className="w-10 h-10 text-[#2e2e4a] mx-auto mb-3" />
+            <h3 className="text-[14px] font-medium text-[#94a3b8] mb-1">
               {quotes.length === 0 ? 'No quotes yet' : 'No quotes found'}
             </h3>
-            <p className="text-[13px] text-[#9ca3af] mb-4">
+            <p className="text-[13px] text-[#6b7280] mb-4">
               {quotes.length === 0 ? 'Create your first quote to get started' : 'Try adjusting your search or filters'}
             </p>
             {quotes.length === 0 && (
               <button
                 onClick={() => navigate('/app/crm/quotes/new')}
-                className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
+                className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4 inline mr-1.5" />
                 Create New Quote
@@ -214,36 +201,36 @@ export default function QuotesList() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#e5e7eb]">
+                  <tr className="border-b border-[#2e2e4a]">
                     {renderSortTh('quote_number', 'Quote #')}
                     {renderSortTh('customer_name', 'Customer')}
-                    <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Title</th>
-                    <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Status</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]">Title</th>
+                    <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]">Status</th>
                     {renderSortTh('total_amount', 'Total')}
                     {renderSortTh('valid_until', 'Valid Until')}
                     {renderSortTh('created_at', 'Created')}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredQuotes.map((quote, index) => (
+                  {filteredQuotes.map((quote) => (
                     <tr
                       key={quote.id}
                       onClick={() => navigate(`/app/crm/quotes/${quote.quote_number}`)}
-                      className={`border-b border-[#f3f4f6] hover:bg-[#fef9ee] cursor-pointer transition-colors text-[13px] ${index % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
+                      className="border-b border-[#2e2e4a] hover:bg-[#2a2a48] cursor-pointer transition-colors text-[13px]"
                     >
-                      <td className="py-3 px-4 font-medium text-[#d4a017]">{quote.quote_number}</td>
-                      <td className="py-3 px-4 text-[#111113]">{quote.customer_name || 'Unknown'}</td>
-                      <td className="py-3 px-4 text-[#374151]">{quote.title}</td>
+                      <td className="py-3 px-4 font-medium text-[#f59e0b]">{quote.quote_number}</td>
+                      <td className="py-3 px-4 text-white">{quote.customer_name || 'Unknown'}</td>
+                      <td className="py-3 px-4 text-[#cbd5e1]">{quote.title}</td>
                       <td className="py-3 px-4">{statusBadge(quote.status)}</td>
-                      <td className="py-3 px-4 font-medium text-[#111113]">{formatCurrency(quote.total_amount)}</td>
-                      <td className="py-3 px-4 text-[#6b7280]">{formatDate(quote.valid_until)}</td>
-                      <td className="py-3 px-4 text-[#9ca3af]">{formatDate(quote.created_at)}</td>
+                      <td className="py-3 px-4 font-medium text-white">{formatCurrency(quote.total_amount)}</td>
+                      <td className="py-3 px-4 text-[#94a3b8]">{formatDate(quote.valid_until)}</td>
+                      <td className="py-3 px-4 text-[#6b7280]">{formatDate(quote.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-[#f3f4f6] text-[12px] text-[#9ca3af]">
+            <div className="px-4 py-3 border-t border-[#2e2e4a] text-[12px] text-[#6b7280]">
               Showing {filteredQuotes.length} of {quotes.length} quotes
             </div>
           </>

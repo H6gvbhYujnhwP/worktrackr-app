@@ -9,7 +9,8 @@
 // Approval, Purchasing, Fulfilment — are kept exactly, with every action and the
 // approval comment preserved. Nothing invented.
 import React, { useEffect, useState } from 'react';
-import { Check, X, ShoppingCart, Receipt, Banknote } from 'lucide-react';
+import { Check, X, ShoppingCart, Receipt, Banknote, ClipboardCheck } from 'lucide-react';
+import PageHero from './PageHero.jsx';
 
 const money = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
@@ -90,13 +91,15 @@ export default function OrderQueues() {
   return (
     <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
       <div className="mb-4">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl font-semibold text-white">Approvals</div>
-          {approval.length > 0 && (
-            <span className="rounded-full px-2.5 py-0.5 text-[12px] bg-[rgba(245,158,11,0.15)] text-[#fcd34d] border border-[#f59e0b]">{approval.length} pending</span>
-          )}
-        </div>
-        <div className="text-[13px] text-[#94a3b8]">Manager sign-off queue — approve orders, then drive them through purchasing to paid.</div>
+        <PageHero
+          title="Approvals"
+          icon={ClipboardCheck}
+          meta={[
+            { label: 'Manager sign-off queue' },
+            ...(approval.length > 0 ? [{ label: `${approval.length} pending` }] : []),
+          ]}
+          compact
+        />
       </div>
 
       {error && <div className="text-[12px] text-[#fca5a5] mb-3">{error}</div>}

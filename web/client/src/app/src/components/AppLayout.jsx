@@ -66,6 +66,7 @@ const MobileHeader = ({ user, onMenuToggle }) => (
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
 const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate, lastUpdate, currentView = 'tickets', fullBleed = false }) => {
+  // v3.1 redesign: every view is full-bleed dark — fullBleed prop kept for API compat but ignored
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
@@ -89,7 +90,7 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
   const sidebarWidth = isTablet ? 64 : 240;
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#f5f5f7]">
+    <div className="h-screen flex overflow-hidden bg-[#1a1a2e]">
 
       {/* Mobile header — fixed top, dark, matches sidebar */}
       <MobileHeader user={user} onMenuToggle={() => setIsMobileMenuOpen(o => !o)} />
@@ -128,14 +129,8 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
         style={{ marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? sidebarWidth : 0 }}
       >
         {/* Content — NO double wrapper. Children render directly on gray bg. */}
-        <main className={`flex-1 overflow-y-auto pt-14 md:pt-0 ${fullBleed ? 'bg-[#1a1a2e]' : ''}`}>
-          {fullBleed ? (
-            <div className="min-h-full">{children}</div>
-          ) : (
-            <div className="p-4 md:p-6 lg:p-7 max-w-[1600px] mx-auto">
-              {children}
-            </div>
-          )}
+        <main className="flex-1 overflow-y-auto pt-14 md:pt-0 bg-[#1a1a2e]">
+          <div className="min-h-full">{children}</div>
         </main>
       </div>
 

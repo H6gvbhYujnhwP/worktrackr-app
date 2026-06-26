@@ -1,7 +1,7 @@
 import React from 'react';
 
 const AppVersion = () => {
-  const APP_VERSION = '2025-11-08.FIXED'; // Fixed onChange handlers and added logging
+  const APP_VERSION = '2026-06-26.dark-redesign-r2'; // Manus dark redesign round 2 integrated + verified
   
   return (
     <div className="text-xs text-gray-400 text-center py-2">

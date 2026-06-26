@@ -26,15 +26,15 @@ import {
 import QuoteTemplatesManager from './QuoteTemplatesManager';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const INPUT_CLS   = 'w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-[13px] text-[#111113] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] transition-colors';
-const LABEL_CLS   = 'block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5';
-const SECTION_H   = 'text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider';
-const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#d4a017] text-[#111113] text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50';
-const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e5e7eb] bg-white text-[#374151] text-[13px] font-medium hover:bg-[#f9fafb] transition-colors';
-const GHOST_BTN   = 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors';
+const INPUT_CLS   = 'w-full rounded-md border border-[#2e2e4a] bg-[#242438] px-3 py-2 text-[13px] text-white placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] transition-colors';
+const LABEL_CLS   = 'block text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1.5';
+const SECTION_H   = 'text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider';
+const GOLD_BTN    = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-[13px] font-semibold hover:bg-[#b8860b] transition-colors disabled:opacity-50';
+const OUTLINE_BTN = 'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#2e2e4a] bg-[#242438] text-[#cbd5e1] text-[13px] font-medium hover:bg-[#1a1a2e] transition-colors';
+const GHOST_BTN   = 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#cbd5e1] transition-colors';
 
 const QUOTE_STATUS_BADGE = {
-  draft:    'bg-[#f3f4f6] text-[#6b7280]',
+  draft:    'bg-[#f3f4f6] text-[#94a3b8]',
   sent:     'bg-[#dbeafe] text-[#1e40af]',
   accepted: 'bg-[#dcfce7] text-[#166534]',
   declined: 'bg-[#fee2e2] text-[#991b1b]',
@@ -453,17 +453,18 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
     <div className="space-y-5">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       {!singleSection && (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[20px] font-bold text-[#111113] flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#d4a017]" />
+          <h1 className="text-[20px] font-bold text-white flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[#f59e0b]" />
             Customer Relationship Management
           </h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Manage customers, track services, and monitor renewals</p>
+          <p className="text-[13px] text-[#6b7280] mt-0.5">Manage customers, track services, and monitor renewals</p>
         </div>
         <button type="button" className={GOLD_BTN}>
           <Plus className="w-4 h-4" /> Add Customer
@@ -480,13 +481,13 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
           { icon: AlertTriangle,bg: 'bg-[#fef3c7]', color: 'text-[#d97706]', val: totalRenewals,        label: 'Renewals Due'   },
           { icon: TrendingUp,   bg: 'bg-[#ede9fe]', color: 'text-[#7c3aed]', val: totalOpportunities,  label: 'Open Opps'      },
         ].map(({ icon: Icon, bg, color, val, label }) => (
-          <div key={label} className="bg-white rounded-xl border border-[#e5e7eb] p-4 flex items-center gap-3">
+          <div key={label} className="bg-[#242438] rounded-xl border border-[#2e2e4a] p-4 flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
               <Icon className={`w-5 h-5 ${color}`} />
             </div>
             <div className="min-w-0">
-              <p className="text-[20px] font-bold text-[#111113] leading-none truncate">{val}</p>
-              <p className="text-[11px] text-[#9ca3af] uppercase tracking-wider mt-0.5">{label}</p>
+              <p className="text-[20px] font-bold text-white leading-none truncate">{val}</p>
+              <p className="text-[11px] text-[#6b7280] uppercase tracking-wider mt-0.5">{label}</p>
             </div>
           </div>
         ))}
@@ -494,10 +495,10 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
       )}
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {!singleSection && (
-          <TabsList className="flex border-b border-[#e5e7eb] bg-transparent h-auto p-0 w-full rounded-none overflow-x-auto">
+          <TabsList className="flex border-b border-[#2e2e4a] bg-transparent h-auto p-0 w-full rounded-none overflow-x-auto">
             {[
               { value: 'customers', label: 'Customers'       },
               { value: 'catalog',   label: idyq.connected ? 'Product Catalog · IDYQ' : 'Product Catalog' },
@@ -509,9 +510,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                 key={t.value}
                 value={t.value}
                 className="flex-shrink-0 rounded-none px-5 py-3 text-[13px] font-medium border-b-2 -mb-px
-                           data-[state=active]:border-[#d4a017] data-[state=active]:text-[#111113] data-[state=active]:bg-transparent data-[state=active]:shadow-none
-                           data-[state=inactive]:border-transparent data-[state=inactive]:text-[#6b7280]
-                           hover:text-[#111113] transition-colors"
+                           data-[state=active]:border-[#f59e0b] data-[state=active]:text-white data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                           data-[state=inactive]:border-transparent data-[state=inactive]:text-[#94a3b8]
+                           hover:text-white transition-colors"
               >
                 {t.label}
               </TabsTrigger>
@@ -524,9 +525,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
             {/* Search + filter bar */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280] pointer-events-none" />
                 <input
-                  className="pl-9 pr-3 py-2 text-[13px] rounded-lg border border-[#e5e7eb] bg-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] w-full transition-colors"
+                  className="pl-9 pr-3 py-2 text-[13px] rounded-lg border border-[#2e2e4a] bg-[#1a1a2e] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] w-full transition-colors"
                   placeholder="Search by company name (starts with)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -538,11 +539,11 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
             </div>
 
             {/* Alphabet nav */}
-            <div className="hidden lg:block bg-[#fafafa] rounded-lg border border-[#e5e7eb] p-3">
+            <div className="hidden lg:block bg-[#1f1f33] rounded-lg border border-[#2e2e4a] p-3">
               <div className="flex flex-wrap gap-1 justify-center">
                 <button
                   onClick={() => setAlphabetFilter('ALL')}
-                  className={`h-7 px-2.5 rounded text-[11px] font-semibold transition-colors ${alphabetFilter === 'ALL' ? 'bg-[#d4a017] text-[#111113]' : 'bg-white border border-[#e5e7eb] text-[#6b7280] hover:border-[#d4a017] hover:text-[#111113]'}`}
+                  className={`h-7 px-2.5 rounded text-[11px] font-semibold transition-colors ${alphabetFilter === 'ALL' ? 'bg-[#f59e0b] text-white' : 'bg-[#242438] border border-[#2e2e4a] text-[#94a3b8] hover:border-[#f59e0b] hover:text-white'}`}
                 >
                   ALL
                 </button>
@@ -555,10 +556,10 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                       disabled={!hasCompanies}
                       className={`h-7 w-7 rounded text-[11px] font-semibold transition-colors ${
                         alphabetFilter === letter
-                          ? 'bg-[#d4a017] text-[#111113]'
+                          ? 'bg-[#f59e0b] text-white'
                           : hasCompanies
-                            ? 'bg-white border border-[#e5e7eb] text-[#6b7280] hover:border-[#d4a017] hover:text-[#111113]'
-                            : 'bg-white border border-[#e5e7eb] text-[#d1d5db] cursor-not-allowed'
+                            ? 'bg-[#242438] border border-[#2e2e4a] text-[#94a3b8] hover:border-[#f59e0b] hover:text-white'
+                            : 'bg-[#242438] border border-[#2e2e4a] text-[#d1d5db] cursor-not-allowed'
                       }`}
                     >
                       {letter}
@@ -566,7 +567,7 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                   );
                 })}
               </div>
-              <p className="text-[12px] text-[#9ca3af] mt-2 text-center">
+              <p className="text-[12px] text-[#6b7280] mt-2 text-center">
                 Showing {filteredCompanies.length} of {contacts.length} customers
                 {alphabetFilter !== 'ALL' && ` starting with "${alphabetFilter}"`}
               </p>
@@ -578,22 +579,22 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                 <div
                   key={company.id}
                   onClick={() => setSelectedCompany(company)}
-                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border border-[#e5e7eb] cursor-pointer transition-colors ${
-                    index % 2 === 0 ? 'bg-white hover:bg-[#fef9ee]' : 'bg-[#fafafa] hover:bg-[#fef9ee]'
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border border-[#2e2e4a] cursor-pointer transition-colors ${
+                    index % 2 === 0 ? 'bg-[#242438] hover:bg-[rgba(245,158,11,0.08)]' : 'bg-[#1f1f33] hover:bg-[rgba(245,158,11,0.08)]'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-[#f3f4f6] flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-4 h-4 text-[#6b7280]" />
+                      <Building2 className="w-4 h-4 text-[#94a3b8]" />
                     </div>
-                    <span className="text-[13px] font-medium text-[#111113]">{company.name}</span>
+                    <span className="text-[13px] font-medium text-white">{company.name}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2 sm:mt-0">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${company.status === 'Active' ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#991b1b]'}`}>
                       {company.status}
                     </span>
                     {company.renewalsCount > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#fef3c7] text-[#92400e]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#fef3c7] text-[#fcd34d]">
                         {company.renewalsCount} Renewals Due
                       </span>
                     )}
@@ -608,8 +609,8 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
               {filteredCompanies.length === 0 && (
                 <div className="py-12 text-center">
                   <Building2 className="w-10 h-10 mx-auto text-[#d1d5db] mb-3" />
-                  <p className="text-[14px] font-medium text-[#374151] mb-1">No customers found</p>
-                  <p className="text-[13px] text-[#9ca3af]">
+                  <p className="text-[14px] font-medium text-[#cbd5e1] mb-1">No customers found</p>
+                  <p className="text-[13px] text-[#6b7280]">
                     {contacts.length === 0 ? 'Add your first customer to get started.' : 'No customers match your current filter.'}
                   </p>
                 </div>
@@ -622,9 +623,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
             {idyq.connected ? <IdyqCatalogView /> : (<>
             {/* New product form */}
             {showNewProductForm && (
-              <div className="border border-[#d4a017]/30 rounded-xl bg-[#fef9ee] p-5">
+              <div className="border border-[#f59e0b]/30 rounded-xl bg-[rgba(245,158,11,0.08)] p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[14px] font-semibold text-[#111113]">Add New Product / Service</h3>
+                  <h3 className="text-[14px] font-semibold text-white">Add New Product / Service</h3>
                   <button type="button" onClick={cancelNewProduct} className={GHOST_BTN}>
                     <X className="w-4 h-4" />
                   </button>
@@ -638,11 +639,11 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-[13px] text-[#374151] cursor-pointer">
+                    <label className="flex items-center gap-2 text-[13px] text-[#cbd5e1] cursor-pointer">
                       <input type="checkbox" checked={newProduct.active} onChange={(e) => setNewProduct(prev => ({ ...prev, active: e.target.checked }))} className="rounded" />
                       Active
                     </label>
-                    <span className="text-[13px] text-[#6b7280]">
+                    <span className="text-[13px] text-[#94a3b8]">
                       Margin: {getCurrentCurrencySymbol()}{((parseFloat(newProduct.defaultClientPrice) || 0) - (parseFloat(newProduct.defaultOurCost) || 0)).toFixed(2)}
                     </span>
                   </div>
@@ -655,12 +656,12 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
             )}
 
             {/* Products table */}
-            <div className="border border-[#e5e7eb] rounded-xl overflow-hidden">
+            <div className="border border-[#2e2e4a] rounded-xl overflow-hidden">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
+                  <tr className="bg-[#1f1f33] border-b border-[#2e2e4a]">
                     {['Product', 'Category', 'Our Cost', 'Client Price', 'Margin', 'Unit', 'Def. Qty', ''].map((h, i) => (
-                      <th key={i} className={`px-4 py-2.5 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
+                      <th key={i} className={`px-4 py-2.5 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -669,15 +670,15 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                     const isEditing = editingProduct === product.id;
                     const margin = product.client_price - product.our_cost;
                     return (
-                      <tr key={product.id} className={`border-b border-[#f3f4f6] transition-colors ${index % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[#fef9ee]' : 'bg-white hover:bg-[#fef9ee]'}`}>
+                      <tr key={product.id} className={`border-b border-[#2e2e4a] transition-colors ${index % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[rgba(245,158,11,0.08)]' : 'bg-[#242438] hover:bg-[rgba(245,158,11,0.08)]'}`}>
                         <td className="px-4 py-3">
                           {isEditing ? (
                             <input className={INPUT_CLS} value={editingProductData?.name !== undefined ? editingProductData.name : product.name} onChange={(e) => setEditingProductData(prev => ({ ...prev, name: e.target.value }))} />
                           ) : (
                             <div>
-                              <p className="text-[13px] font-medium text-[#111113]">{product.name}</p>
+                              <p className="text-[13px] font-medium text-white">{product.name}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <label className="flex items-center gap-1.5 text-[11px] text-[#9ca3af] cursor-pointer">
+                                <label className="flex items-center gap-1.5 text-[11px] text-[#6b7280] cursor-pointer">
                                   <input type="checkbox" checked={editingProductData?.is_active !== undefined ? editingProductData.is_active : product.is_active} onChange={(e) => setEditingProductData(prev => ({ ...prev, is_active: e.target.checked }))} className="rounded" />
                                   Active
                                 </label>
@@ -689,15 +690,15 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                           {isEditing ? (
                             <input className={INPUT_CLS} value={editingProductData?.type !== undefined ? editingProductData.type : product.type} onChange={(e) => setEditingProductData(prev => ({ ...prev, type: e.target.value }))} />
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f3f4f6] text-[#6b7280]">{product.type}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f3f4f6] text-[#94a3b8]">{product.type}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#374151]">
+                        <td className="px-4 py-3 text-[13px] text-[#cbd5e1]">
                           {isEditing ? (
                             <input type="number" step="0.01" className={INPUT_CLS} value={editingProductData?.our_cost !== undefined ? editingProductData.our_cost : product.our_cost} onChange={(e) => setEditingProductData(prev => ({ ...prev, our_cost: e.target.value === '' ? '' : parseFloat(e.target.value) }))} />
                           ) : `${getCurrentCurrencySymbol()}${product.our_cost}`}
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#374151]">
+                        <td className="px-4 py-3 text-[13px] text-[#cbd5e1]">
                           {isEditing ? (
                             <input type="number" step="0.01" className={INPUT_CLS} value={editingProductData?.client_price !== undefined ? editingProductData.client_price : product.client_price} onChange={(e) => setEditingProductData(prev => ({ ...prev, client_price: e.target.value === '' ? '' : parseFloat(e.target.value) }))} />
                           ) : `${getCurrentCurrencySymbol()}${product.client_price}`}
@@ -707,12 +708,12 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                             {getCurrentCurrencySymbol()}{margin.toFixed(2)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#374151]">
+                        <td className="px-4 py-3 text-[13px] text-[#cbd5e1]">
                           {isEditing ? (
                             <input className={INPUT_CLS} value={editingProductData?.unit !== undefined ? editingProductData.unit : product.unit} onChange={(e) => setEditingProductData(prev => ({ ...prev, unit: e.target.value }))} />
                           ) : product.unit}
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#374151]">
+                        <td className="px-4 py-3 text-[13px] text-[#cbd5e1]">
                           {isEditing ? (
                             <input type="number" min="1" className={INPUT_CLS} value={editingProductData?.default_quantity !== undefined ? editingProductData.default_quantity : product.default_quantity} onChange={(e) => setEditingProductData(prev => ({ ...prev, default_quantity: parseInt(e.target.value) || 1 }))} />
                           ) : product.default_quantity}
@@ -739,12 +740,12 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                               }}
                               className={GHOST_BTN}
                             >
-                              {isEditing ? <span className="text-[11px] font-semibold text-[#d4a017] px-1">Save</span> : <Edit className="w-4 h-4" />}
+                              {isEditing ? <span className="text-[11px] font-semibold text-[#f59e0b] px-1">Save</span> : <Edit className="w-4 h-4" />}
                             </button>
                             <button
                               type="button"
                               onClick={() => { if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) removeProduct(product.id); }}
-                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#9ca3af] hover:bg-[#fee2e2] hover:text-red-600 transition-colors"
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#6b7280] hover:bg-[#fee2e2] hover:text-red-600 transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -755,7 +756,7 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                   })}
                   {productCatalog.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-[13px] text-[#9ca3af]">
+                      <td colSpan={8} className="px-4 py-12 text-center text-[13px] text-[#6b7280]">
                         No products in catalog yet. Add your first product above.
                       </td>
                     </tr>
@@ -777,20 +778,20 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
           <TabsContent value="quotes" className="p-5 space-y-4">
             {idyq.connected ? <IdyqQuotesView /> : (<>
             {quotesLoading ? (
-              <div className="py-12 text-center text-[13px] text-[#9ca3af]">Loading quotes...</div>
+              <div className="py-12 text-center text-[13px] text-[#6b7280]">Loading quotes...</div>
             ) : quotes.length === 0 ? (
               <div className="py-12 text-center">
                 <FileText className="w-10 h-10 mx-auto text-[#d1d5db] mb-3" />
-                <p className="text-[14px] font-medium text-[#374151] mb-1">No quotes yet</p>
-                <p className="text-[13px] text-[#9ca3af]">Create your first quote to get started.</p>
+                <p className="text-[14px] font-medium text-[#cbd5e1] mb-1">No quotes yet</p>
+                <p className="text-[13px] text-[#6b7280]">Create your first quote to get started.</p>
               </div>
             ) : (
-              <div className="border border-[#e5e7eb] rounded-xl overflow-hidden">
+              <div className="border border-[#2e2e4a] rounded-xl overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-[#fafafa] border-b border-[#e5e7eb]">
+                    <tr className="bg-[#1f1f33] border-b border-[#2e2e4a]">
                       {['Quote #', 'Customer', 'Date', 'Amount', 'Status'].map((h, i) => (
-                        <th key={i} className={`px-5 py-2.5 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider ${i === 3 ? 'text-right' : 'text-left'}`}>{h}</th>
+                        <th key={i} className={`px-5 py-2.5 text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider ${i === 3 ? 'text-right' : 'text-left'}`}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -799,16 +800,16 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                       <tr
                         key={quote.id}
                         onClick={() => navigate(`/app/crm/quotes/${quote.id}/edit`)}
-                        className={`border-b border-[#f3f4f6] cursor-pointer transition-colors ${index % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[#fef9ee]' : 'bg-white hover:bg-[#fef9ee]'}`}
+                        className={`border-b border-[#2e2e4a] cursor-pointer transition-colors ${index % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[rgba(245,158,11,0.08)]' : 'bg-[#242438] hover:bg-[rgba(245,158,11,0.08)]'}`}
                       >
-                        <td className="px-5 py-3 text-[13px] font-semibold text-[#111113]">{quote.quote_number}</td>
-                        <td className="px-5 py-3 text-[13px] text-[#374151]">{quote.customer_name}</td>
-                        <td className="px-5 py-3 text-[13px] text-[#6b7280]">
+                        <td className="px-5 py-3 text-[13px] font-semibold text-white">{quote.quote_number}</td>
+                        <td className="px-5 py-3 text-[13px] text-[#cbd5e1]">{quote.customer_name}</td>
+                        <td className="px-5 py-3 text-[13px] text-[#94a3b8]">
                           {quote.created_at ? new Date(quote.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                         </td>
-                        <td className="px-5 py-3 text-right text-[13px] font-semibold text-[#111113]">£{parseFloat(quote.total_amount).toFixed(2)}</td>
+                        <td className="px-5 py-3 text-right text-[13px] font-semibold text-white">£{parseFloat(quote.total_amount).toFixed(2)}</td>
                         <td className="px-5 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${QUOTE_STATUS_BADGE[quote.status] || 'bg-[#f3f4f6] text-[#6b7280]'}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${QUOTE_STATUS_BADGE[quote.status] || 'bg-[#f3f4f6] text-[#94a3b8]'}`}>
                             {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
                           </span>
                         </td>
@@ -835,8 +836,8 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
           <TabsContent value="settings" className="p-5 space-y-6">
             <IdyqConnectionPanel onChanged={idyq.refresh} />
             <div>
-              <h3 className="text-[15px] font-semibold text-[#111113] mb-1">CRM Settings</h3>
-              <p className="text-[13px] text-[#9ca3af]">Configure your CRM preferences and renewal alerts</p>
+              <h3 className="text-[15px] font-semibold text-white mb-1">CRM Settings</h3>
+              <p className="text-[13px] text-[#6b7280]">Configure your CRM preferences and renewal alerts</p>
             </div>
             <div className="space-y-5 max-w-md">
               <div>
@@ -847,12 +848,12 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                   value={renewalAlertDays}
                   onChange={(e) => setRenewalAlertDays(parseInt(e.target.value) || 60)}
                 />
-                <p className="text-[12px] text-[#9ca3af] mt-1.5">How many days before renewal to create alerts and calendar events</p>
+                <p className="text-[12px] text-[#6b7280] mt-1.5">How many days before renewal to create alerts and calendar events</p>
               </div>
               <div>
                 <label className={LABEL_CLS}>Default Currency</label>
                 <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                  <SelectTrigger className="w-64 focus:ring-[#d4a017]/30 focus:border-[#d4a017]">
+                  <SelectTrigger className="w-64 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]">
                     <SelectValue>
                       {worldCurrencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency} - {worldCurrencies.find(c => c.code === selectedCurrency)?.name}
                     </SelectValue>
@@ -865,7 +866,7 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[12px] text-[#9ca3af] mt-1.5">Selected currency will be used throughout the CRM system</p>
+                <p className="text-[12px] text-[#6b7280] mt-1.5">Selected currency will be used throughout the CRM system</p>
               </div>
               <div className="flex gap-3">
                 <button type="button" className={GOLD_BTN}>Save Settings</button>
@@ -881,17 +882,17 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
       {/* ── Customer Detail Modal ─────────────────────────────────────────────── */}
       {selectedCompany && (
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-6 overflow-y-auto">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-5xl">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] w-full max-w-5xl">
             {/* Modal header */}
-            <div className="px-6 py-4 border-b border-[#e5e7eb] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-6 py-4 border-b border-[#2e2e4a] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-[18px] font-semibold text-[#111113]">{selectedCompany.name}</h2>
+                  <h2 className="text-[18px] font-semibold text-white">{selectedCompany.name}</h2>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${selectedCompany.status === 'Active' ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#991b1b]'}`}>
                     {selectedCompany.status}
                   </span>
                 </div>
-                <p className="text-[13px] text-[#9ca3af] mt-0.5">Customer Details & Service Overview</p>
+                <p className="text-[13px] text-[#6b7280] mt-0.5">Customer Details & Service Overview</p>
               </div>
               <button type="button" onClick={() => setSelectedCompany(null)} className={GHOST_BTN}>
                 <X className="w-4 h-4" />
@@ -909,19 +910,19 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                       { icon: AlertTriangle, bg: 'bg-[#fef3c7]', color: 'text-[#d97706]', val: selectedCompany.renewalsCount, label: 'Renewals Due' },
                       { icon: TrendingUp, bg: 'bg-[#ede9fe]', color: 'text-[#7c3aed]', val: selectedCompany.openOppsCount, label: 'Open Opps' },
                     ].map(({ icon: Icon, bg, color, val, label }) => (
-                      <div key={label} className="bg-[#fafafa] rounded-xl border border-[#e5e7eb] p-3 text-center">
+                      <div key={label} className="bg-[#1f1f33] rounded-xl border border-[#2e2e4a] p-3 text-center">
                         <Icon className={`w-5 h-5 mx-auto ${color} mb-1`} />
                         <p className={`text-[18px] font-bold ${color} leading-none`}>{val}</p>
-                        <p className="text-[11px] text-[#9ca3af] mt-0.5">{label}</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">{label}</p>
                       </div>
                     ))}
                   </div>
 
                   {/* Services */}
-                  <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#e5e7eb]">
-                      <p className="text-[14px] font-semibold text-[#111113]">Services & Products</p>
-                      <p className="text-[12px] text-[#9ca3af] mt-0.5">Manage what this customer is purchasing from your catalog</p>
+                  <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-[#2e2e4a]">
+                      <p className="text-[14px] font-semibold text-white">Services & Products</p>
+                      <p className="text-[12px] text-[#6b7280] mt-0.5">Manage what this customer is purchasing from your catalog</p>
                     </div>
                     <div className="divide-y divide-[#f3f4f6]">
                       {getCustomerServices(selectedCompany.id).map((service) => {
@@ -931,9 +932,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                           <div key={service.id} className="p-4">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-[13px] font-medium text-[#111113]">{service.name}</span>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f3f4f6] text-[#6b7280]">{service.category}</span>
-                                <label className="flex items-center gap-1.5 text-[12px] text-[#6b7280] cursor-pointer">
+                                <span className="text-[13px] font-medium text-white">{service.name}</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f3f4f6] text-[#94a3b8]">{service.category}</span>
+                                <label className="flex items-center gap-1.5 text-[12px] text-[#94a3b8] cursor-pointer">
                                   <input type="checkbox" checked={service.isActive} onChange={(e) => updateCustomerService(selectedCompany.id, service.id, { isActive: e.target.checked })} className="rounded" />
                                   Active
                                 </label>
@@ -952,31 +953,31 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                                 { label: 'Service Total Profit',value: `${getCurrentCurrencySymbol()}${profit.toFixed(2)}`,                                    className: 'text-[#059669] font-bold'   },
                               ].map(({ label, value, editInput, className: cls }) => (
                                 <div key={label}>
-                                  <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">{label}</p>
+                                  <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">{label}</p>
                                   {isEditing && editInput
                                     ? editInput
-                                    : <div className={`p-2 bg-[#fafafa] rounded-lg ${cls || 'text-[#374151]'}`}>{value}</div>
+                                    : <div className={`p-2 bg-[#1f1f33] rounded-lg ${cls || 'text-[#cbd5e1]'}`}>{value}</div>
                                   }
                                 </div>
                               ))}
                             </div>
 
                             {/* Notes and renewal */}
-                            <div className="mt-3 pt-3 border-t border-[#f3f4f6] flex flex-wrap items-center gap-3">
+                            <div className="mt-3 pt-3 border-t border-[#2e2e4a] flex flex-wrap items-center gap-3">
                               <button type="button" onClick={() => openNotesModal(selectedCompany.id, service.id)} className={OUTLINE_BTN}>
                                 <FileText className="w-3.5 h-3.5" />
                                 Notes
                                 {serviceNotes[`${selectedCompany.id}-${service.id}`] && (
-                                  <span className="w-2 h-2 bg-[#d4a017] rounded-full" />
+                                  <span className="w-2 h-2 bg-[#f59e0b] rounded-full" />
                                 )}
                               </button>
                               <div className="flex items-center gap-2">
-                                <span className="text-[12px] text-[#6b7280]">Renewal Date:</span>
+                                <span className="text-[12px] text-[#94a3b8]">Renewal Date:</span>
                                 <input
                                   type="date"
                                   value={renewalDates[`${selectedCompany.id}-${service.id}`] || ''}
                                   onChange={(e) => updateRenewalDate(selectedCompany.id, service.id, e.target.value)}
-                                  className="text-[12px] rounded-md border border-[#e5e7eb] px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
+                                  className="text-[12px] rounded-md border border-[#2e2e4a] px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
                                 />
                               </div>
                               {renewalDates[`${selectedCompany.id}-${service.id}`] && (
@@ -992,12 +993,12 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                   </div>
 
                   {/* Opportunities */}
-                  <div className="bg-white rounded-xl border border-[#e5e7eb] p-5">
-                    <p className="text-[14px] font-semibold text-[#111113] mb-1">Opportunities</p>
-                    <p className="text-[12px] text-[#9ca3af] mb-4">Sales opportunities in progress</p>
+                  <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] p-5">
+                    <p className="text-[14px] font-semibold text-white mb-1">Opportunities</p>
+                    <p className="text-[12px] text-[#6b7280] mb-4">Sales opportunities in progress</p>
                     <div className="py-8 text-center">
                       <Target className="w-10 h-10 mx-auto text-[#d1d5db] mb-2" />
-                      <p className="text-[13px] text-[#9ca3af] mb-3">No opportunities yet</p>
+                      <p className="text-[13px] text-[#6b7280] mb-3">No opportunities yet</p>
                       <button type="button" className={OUTLINE_BTN}>Create Opportunity</button>
                     </div>
                   </div>
@@ -1006,9 +1007,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                 {/* ── Right: contact info & activity ─────────────────────── */}
                 <div className="space-y-4">
                   {/* Contact info */}
-                  <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#e5e7eb] flex items-center justify-between">
-                      <p className="text-[14px] font-semibold text-[#111113]">Contact Information</p>
+                  <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-[#2e2e4a] flex items-center justify-between">
+                      <p className="text-[14px] font-semibold text-white">Contact Information</p>
                       <button type="button" onClick={() => setEditingContact(!editingContact)} className={OUTLINE_BTN}>
                         {editingContact ? 'Save' : 'Edit'}
                       </button>
@@ -1021,9 +1022,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                         { icon: MapPin, label: 'Address',         field: 'address', type: 'text', textarea: true },
                       ].map(({ icon: Icon, label, field, type, textarea }) => (
                         <div key={field} className="flex items-start gap-3">
-                          <Icon className="w-4 h-4 text-[#9ca3af] mt-1 flex-shrink-0" />
+                          <Icon className="w-4 h-4 text-[#6b7280] mt-1 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">{label}</p>
+                            <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">{label}</p>
                             {editingContact ? (
                               textarea ? (
                                 <textarea className={`${INPUT_CLS} min-h-[70px]`} value={getContactInfo(selectedCompany)[field]} onChange={(e) => updateContactInfo(selectedCompany.id, field, e.target.value)} rows={3} />
@@ -1031,7 +1032,7 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                                 <input type={type} className={INPUT_CLS} value={getContactInfo(selectedCompany)[field]} onChange={(e) => updateContactInfo(selectedCompany.id, field, e.target.value)} />
                               )
                             ) : (
-                              <p className="text-[13px] font-medium text-[#111113]">{getContactInfo(selectedCompany)[field] || '—'}</p>
+                              <p className="text-[13px] font-medium text-white">{getContactInfo(selectedCompany)[field] || '—'}</p>
                             )}
                           </div>
                         </div>
@@ -1040,32 +1041,32 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                   </div>
 
                   {/* Recent activity */}
-                  <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#e5e7eb]">
-                      <p className="text-[14px] font-semibold text-[#111113]">Recent Activity</p>
+                  <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-[#2e2e4a]">
+                      <p className="text-[14px] font-semibold text-white">Recent Activity</p>
                     </div>
                     <div className="p-5 space-y-3">
                       <div className="flex items-start gap-3">
                         <Calendar className="w-4 h-4 text-[#6366f1] mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-[12px] font-semibold text-[#374151]">Last Activity</p>
-                          <p className="text-[12px] text-[#9ca3af]">{selectedCompany.lastActivity || '—'}</p>
+                          <p className="text-[12px] font-semibold text-[#cbd5e1]">Last Activity</p>
+                          <p className="text-[12px] text-[#6b7280]">{selectedCompany.lastActivity || '—'}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <Clock className="w-4 h-4 text-[#d97706] mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-[12px] font-semibold text-[#374151]">Next CRM Event</p>
-                          <p className="text-[12px] text-[#9ca3af]">{selectedCompany.nextCRMEvent || '—'}</p>
+                          <p className="text-[12px] font-semibold text-[#cbd5e1]">Next CRM Event</p>
+                          <p className="text-[12px] text-[#6b7280]">{selectedCompany.nextCRMEvent || '—'}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Quick actions */}
-                  <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#e5e7eb]">
-                      <p className="text-[14px] font-semibold text-[#111113]">Quick Actions</p>
+                  <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-[#2e2e4a]">
+                      <p className="text-[14px] font-semibold text-white">Quick Actions</p>
                     </div>
                     <div className="p-4 space-y-2">
                       {[
@@ -1074,8 +1075,8 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
                         { icon: Calendar, label: 'Schedule Meeting' },
                         { icon: Edit,     label: 'Edit Customer'    },
                       ].map(({ icon: Icon, label }) => (
-                        <button key={label} type="button" className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#e5e7eb] text-[13px] text-[#374151] hover:bg-[#fef9ee] hover:border-[#d4a017]/50 transition-colors">
-                          <Icon className="w-4 h-4 text-[#9ca3af]" />
+                        <button key={label} type="button" className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#2e2e4a] text-[13px] text-[#cbd5e1] hover:bg-[rgba(245,158,11,0.08)] hover:border-[#f59e0b]/50 transition-colors">
+                          <Icon className="w-4 h-4 text-[#6b7280]" />
                           {label}
                         </button>
                       ))}
@@ -1091,9 +1092,9 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
       {/* ── Notes Modal ───────────────────────────────────────────────────────── */}
       {showNotesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-md">
-            <div className="px-5 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Service Notes</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] w-full max-w-md">
+            <div className="px-5 py-4 border-b border-[#2e2e4a] flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold text-white">Service Notes</h3>
               <button type="button" onClick={() => setShowNotesModal(null)} className={GHOST_BTN}>
                 <X className="w-4 h-4" />
               </button>
@@ -1117,6 +1118,7 @@ export default function CRMDashboard({ defaultTab = 'customers', singleSection =
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

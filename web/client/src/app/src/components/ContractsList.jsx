@@ -82,16 +82,16 @@ export default function ContractsList({ initialNewCompanyId, onConsumeInitial, i
 
   const actions = (
     <>
-      <SalesSearch value={search} onChange={setSearch} placeholder="Search company, salesperson" />
-      <SalesPrimaryButton onClick={() => setOpen({})}>New contract</SalesPrimaryButton>
+      <SalesSearch dark value={search} onChange={setSearch} placeholder="Search company, salesperson" />
+      <SalesPrimaryButton dark onClick={() => setOpen({})}>New contract</SalesPrimaryButton>
     </>
   );
 
   const filters = (
     <>
-      <SalesAllPill active={filter === 'all'} count={contracts.length} onClick={() => setFilter('all')} />
+      <SalesAllPill dark active={filter === 'all'} count={contracts.length} onClick={() => setFilter('all')} />
       {FILTERS.map((f) => (
-        <SalesFilterPill
+        <SalesFilterPill dark
           key={f}
           active={filter === f}
           pillClass={STATUS[f]}
@@ -111,36 +111,37 @@ export default function ContractsList({ initialNewCompanyId, onConsumeInitial, i
 
   return (
     <SalesPageLayout
+      dark
       title={title}
       subtitle={`${contracts.length} ${contracts.length === 1 ? 'contract' : 'contracts'} · active recurring profit ${money(activeProfit)}/mo`}
       actions={actions}
       filters={filters}
     >
-      <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
+      <div className={`${GRID} px-4 py-2.5 bg-[#1f1f33] text-[11px] uppercase tracking-wide text-[#94a3b8]`}>
         <div>Company</div><div>Salesperson</div><div className="text-right">Charge / mo</div><div className="text-right">Profit / mo</div><div />
       </div>
-      {loading && <div className="px-4 py-8 text-center text-[13px] text-gray-500">Loading contracts…</div>}
+      {loading && <div className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">Loading contracts…</div>}
       {error && !loading && <div className="px-4 py-8 text-center text-[13px] text-red-700">{error}</div>}
       {!loading && !error && visible.length === 0 && (
-        <div className="px-4 py-10 text-center text-[13px] text-gray-500">No contracts {filter !== 'all' ? `at status “${filter}”` : 'yet'}. Create one with “New contract”.</div>
+        <div className="px-4 py-10 text-center text-[13px] text-[#94a3b8]">No contracts {filter !== 'all' ? `at status “${filter}”` : 'yet'}. Create one with “New contract”.</div>
       )}
       {!loading && !error && visible.map((c, i) => {
         const notAccruing = c.status !== 'active';
         return (
           <button key={c.id} onClick={() => setOpen({ contractId: c.id })}
-            className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50 ${i % 2 ? 'bg-gray-50/40' : ''}`}>
+            className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-[#2e2e4a] hover:bg-[#1f1f33] ${i % 2 ? 'bg-[#1f1f33]/40' : ''}`}>
             <div className="min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate">{c.companyName || 'No company'}</div>
-              <span className={`inline-block mt-1 rounded-md px-2 py-0.5 text-[11px] capitalize ${STATUS[c.status] || 'bg-gray-100 text-gray-700'}`}>{c.status}</span>
+              <div className="text-sm font-medium text-white truncate">{c.companyName || 'No company'}</div>
+              <span className={`inline-block mt-1 rounded-md px-2 py-0.5 text-[11px] capitalize ${STATUS[c.status] || 'bg-[#242438] text-[#cbd5e1]'}`}>{c.status}</span>
             </div>
-            <div className="min-w-0 text-[13px] text-gray-600 truncate">{c.salespersonName || '—'}</div>
-            <div className="text-right text-[13px] text-gray-700">{money(c.totals?.monthlyCharge)}</div>
-            <div className={`text-right text-[13px] ${notAccruing ? 'text-gray-400' : 'text-[#0f6e56]'}`}>{money(c.totals?.monthlyProfit)}</div>
-            <div className="text-right text-gray-300"><ChevronRight className="w-4 h-4 inline" /></div>
+            <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{c.salespersonName || '—'}</div>
+            <div className="text-right text-[13px] text-[#cbd5e1]">{money(c.totals?.monthlyCharge)}</div>
+            <div className={`text-right text-[13px] ${notAccruing ? 'text-[#6b7280]' : 'text-[#0f6e56]'}`}>{money(c.totals?.monthlyProfit)}</div>
+            <div className="text-right text-[#6b7280]"><ChevronRight className="w-4 h-4 inline" /></div>
           </button>
         );
       })}
-      <div className="px-4 py-3 border-t border-gray-100 text-[12px] text-gray-400">
+      <div className="px-4 py-3 border-t border-[#2e2e4a] text-[12px] text-[#6b7280]">
         Profit feeds recurring commission only while a contract is Active. Paused and cancelled contracts stop accruing.
       </div>
     </SalesPageLayout>

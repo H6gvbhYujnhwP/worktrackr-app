@@ -10,6 +10,7 @@ import {
   Sparkles, Ticket, FileText, CalendarPlus
 } from 'lucide-react';
 import { useSimulation } from '../App.jsx';
+import PageHero, { HeroButtonPrimary, HeroButtonOutline } from './PageHero.jsx';
 
 // FIX 1: type values are lowercase to match backend Zod schema
 const eventTypes = [
@@ -545,45 +546,32 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     <div className="space-y-5 p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-[22px] font-bold text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#6b7280]" />
-            Calendar
-          </h1>
-          <p className="text-[13px] text-[#6b7280] mt-0.5">Jobs, tickets, meetings and follow-ups — all in one place</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Select value={viewMode} onValueChange={setViewMode}>
-            <SelectTrigger className="w-28 text-[13px] border-[#2e2e4a] bg-[#242438] text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
-              <SelectItem value="day">Day</SelectItem>
-              <SelectItem value="week">Week</SelectItem>
-              <SelectItem value="month">Month</SelectItem>
-            </SelectContent>
-          </Select>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Activity
-          </button>
-          <button
-            onClick={() => {
+      <PageHero
+        title="Calendar"
+        icon={Calendar}
+        meta={[{ label: 'Jobs, tickets, meetings and follow-ups — all in one place' }]}
+        actions={
+          <>
+            <Select value={viewMode} onValueChange={setViewMode}>
+              <SelectTrigger className="w-28 text-[13px] border-[#2e2e4a] bg-[#242438] text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+              </SelectContent>
+            </Select>
+            <HeroButtonPrimary icon={Plus} onClick={() => setShowCreateModal(true)}>Add Activity</HeroButtonPrimary>
+            <HeroButtonOutline icon={Calendar} onClick={() => {
               const dateStr = selectedDate.toISOString().split('T')[0];
               setNewMeeting(prev => ({ ...prev, date: dateStr, time: '09:00' }));
               setShowMeetingModal(true);
-            }}
-            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] hover:bg-[#1f1f33] rounded-lg transition-colors"
-          >
-            <Calendar className="w-4 h-4" />
-            Book Meeting
-          </button>
-        </div>
-      </div>
+            }}>Book Meeting</HeroButtonOutline>
+          </>
+        }
+        compact
+      />
 
       {/* Calendar navigation */}
       <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] px-4 py-3 flex items-center justify-between">

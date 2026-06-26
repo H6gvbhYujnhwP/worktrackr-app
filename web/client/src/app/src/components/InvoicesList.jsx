@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, Plus, Search, ChevronRight, Loader2, X, Calendar } from 'lucide-react';
+import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 // ── Normalisers ────────────────────────────────────────────────────────────────
 function mapInvoiceLine(raw) {
@@ -52,10 +53,10 @@ function fmtDate(d) {
 }
 
 const STATUS_STYLES = {
-  draft:   'bg-[#f3f4f6] text-[#6b7280]',
-  sent:    'bg-[#dbeafe] text-[#1d4ed8]',
-  paid:    'bg-[#dcfce7] text-[#15803d]',
-  overdue: 'bg-[#fee2e2] text-[#dc2626]',
+  draft:   'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]',
+  sent:    'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  paid:    'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  overdue: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
 };
 
 // ── Module-level StatusBadge ───────────────────────────────────────────────────
@@ -75,11 +76,11 @@ function StatPill({ label, value, active, onClick }) {
       onClick={onClick}
       className={`flex flex-col items-center px-4 py-2.5 rounded-xl border transition-colors ${
         active
-          ? 'bg-[#fef9ee] border-[#d4a017]/40 text-[#b8860b]'
-          : 'bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-[#fafafa]'
+          ? 'bg-[rgba(245,158,11,0.15)] border-[#f59e0b] text-[#fcd34d]'
+          : 'bg-[#242438] border-[#2e2e4a] text-[#94a3b8] hover:bg-[#2a2a48]'
       }`}
     >
-      <span className={`text-[18px] font-bold leading-none ${active ? 'text-[#d4a017]' : 'text-[#111113]'}`}>{value}</span>
+      <span className={`text-[18px] font-bold leading-none ${active ? 'text-[#fcd34d]' : 'text-white'}`}>{value}</span>
       <span className="text-[11px] mt-1 font-medium">{label}</span>
     </button>
   );
@@ -95,7 +96,7 @@ function NewInvoiceModal({ onClose, onCreated }) {
   const [saving, setSaving]       = useState(false);
   const [err, setErr]             = useState('');
 
-  const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]';
+  const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#f59e0b]';
   const LABEL_CLS = 'block text-[11px] font-semibold text-[#6b7280] mb-1';
 
   const handleCreate = async () => {
@@ -127,10 +128,10 @@ function NewInvoiceModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl border border-[#e5e7eb] w-full max-w-md shadow-xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb]">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] w-full max-w-md shadow-xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
           <h2 className="text-[14px] font-semibold text-[#111113]">New Invoice</h2>
-          <button onClick={onClose} className="p-1 text-[#9ca3af] hover:text-[#374151]">
+          <button onClick={onClose} className="p-1 text-[#9ca3af] hover:text-[#cbd5e1]">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -166,7 +167,7 @@ function NewInvoiceModal({ onClose, onCreated }) {
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
             {saving ? 'Creating…' : 'Create Invoice'}
           </button>
-          <button onClick={onClose} className="px-3 py-2 text-[13px] text-[#6b7280] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">
+          <button onClick={onClose} className="px-3 py-2 text-[13px] text-[#6b7280] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">
             Cancel
           </button>
         </div>
@@ -229,30 +230,20 @@ export default function InvoicesList() {
     navigate(`/app/invoices/${inv.id}`);
   };
 
-  const TH = 'py-3 px-4 text-left text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]';
-  const TH_R = 'py-3 px-4 text-right text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]';
+  const TH = 'py-3 px-4 text-left text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]';
+  const TH_R = 'py-3 px-4 text-right text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider bg-[#1f1f33]';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-[#fef9ee] rounded-lg flex items-center justify-center">
-            <Receipt className="w-4 h-4 text-[#d4a017]" />
-          </div>
-          <div>
-            <h1 className="text-[20px] font-bold text-[#111113] leading-none">Invoices</h1>
-            <p className="text-[12px] text-[#9ca3af] mt-0.5">{invoices.length} invoice{invoices.length !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-semibold text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" /> New Invoice
-        </button>
-      </div>
+      <PageHero
+        title="Invoices"
+        icon={Receipt}
+        meta={[{ label: `${invoices.length} invoice${invoices.length !== 1 ? 's' : ''}` }]}
+        actions={<HeroButtonPrimary icon={Plus} onClick={() => setShowNewModal(true)}>New Invoice</HeroButtonPrimary>}
+        compact
+      />
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -265,25 +256,25 @@ export default function InvoicesList() {
 
       {/* Total value banner */}
       {!loading && invoices.length > 0 && (
-        <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-xl px-5 py-3 flex items-center justify-between">
-          <span className="text-[13px] text-[#b8860b] font-medium">
+        <div className="bg-[rgba(245,158,11,0.10)] border border-[rgba(245,158,11,0.30)] rounded-xl px-5 py-3 flex items-center justify-between">
+          <span className="text-[13px] text-[#fcd34d] font-medium">
             Total value {statusFilter !== 'all' ? `(${statusFilter})` : '(all invoices)'}
           </span>
-          <span className="text-[18px] font-bold text-[#d4a017]">{fmt(totalValue)}</span>
+          <span className="text-[18px] font-bold text-[#f59e0b]">{fmt(totalValue)}</span>
         </div>
       )}
 
       {/* Search + table */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#e5e7eb] flex items-center gap-3">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#2e2e4a] flex items-center gap-3">
           <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9ca3af]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6b7280]" />
             <input
               type="text"
               placeholder="Search invoices…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
+              className="w-full pl-8 pr-3 py-1.5 text-[13px] border border-[#2e2e4a] rounded-lg bg-[#1a1a2e] text-white placeholder:text-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
             />
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -293,8 +284,8 @@ export default function InvoicesList() {
                 onClick={() => setStatusFilter(statusFilter === s ? 'all' : s)}
                 className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
                   statusFilter === s
-                    ? 'bg-[#d4a017] text-[#111113] border-[#d4a017]'
-                    : 'text-[#6b7280] border-[#e5e7eb] hover:bg-[#fafafa]'
+                    ? 'bg-[#f59e0b] text-[#1a1a2e] border-[#f59e0b]'
+                    : 'text-[#94a3b8] border-[#2e2e4a] hover:bg-[#2a2a48]'
                 }`}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -314,9 +305,9 @@ export default function InvoicesList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
-            <Receipt className="w-10 h-10 text-[#e5e7eb] mx-auto mb-3" />
-            <p className="text-[14px] font-medium text-[#374151] mb-1">No invoices found</p>
-            <p className="text-[13px] text-[#9ca3af]">
+            <Receipt className="w-10 h-10 text-[#3a3a5c] mx-auto mb-3" />
+            <p className="text-[14px] font-medium text-[#cbd5e1] mb-1">No invoices found</p>
+            <p className="text-[13px] text-[#6b7280]">
               {invoices.length === 0 ? 'Create your first invoice to get started.' : 'Try adjusting your search or filter.'}
             </p>
           </div>
@@ -324,7 +315,7 @@ export default function InvoicesList() {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-[#e5e7eb]">
+                <tr className="border-b border-[#2e2e4a]">
                   <th className={TH}>Invoice #</th>
                   <th className={TH}>Contact</th>
                   <th className={TH}>Project</th>
@@ -340,28 +331,28 @@ export default function InvoicesList() {
                   <tr
                     key={inv.id}
                     onClick={() => navigate(`/app/invoices/${inv.id}`)}
-                    className={`border-b border-[#f3f4f6] hover:bg-[#fef9ee] cursor-pointer transition-colors ${idx % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
+                    className="border-b border-[#2e2e4a] hover:bg-[#2a2a48] cursor-pointer transition-colors bg-[#242438]"
                   >
-                    <td className="py-3 px-4 font-semibold text-[#111113] whitespace-nowrap">{inv.invoiceNumber}</td>
-                    <td className="py-3 px-4 text-[#374151]">{inv.contactName || <span className="text-[#9ca3af] italic">No contact</span>}</td>
+                    <td className="py-3 px-4 font-semibold text-white whitespace-nowrap">{inv.invoiceNumber}</td>
+                    <td className="py-3 px-4 text-[#cbd5e1]">{inv.contactName || <span className="text-[#6b7280] italic">No contact</span>}</td>
                     <td className="py-3 px-4">
                       {inv.jobNumber
-                        ? <span className="text-[#6b7280]">{inv.jobNumber}</span>
-                        : <span className="text-[#9ca3af]">—</span>}
+                        ? <span className="text-[#94a3b8]">{inv.jobNumber}</span>
+                        : <span className="text-[#6b7280]">—</span>}
                     </td>
-                    <td className="py-3 px-4 text-[#6b7280] whitespace-nowrap">
+                    <td className="py-3 px-4 text-[#94a3b8] whitespace-nowrap">
                       <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-[#9ca3af]" />
+                        <Calendar className="w-3 h-3 text-[#6b7280]" />
                         {fmtDate(inv.issueDate)}
                       </span>
                     </td>
-                    <td className={`py-3 px-4 whitespace-nowrap ${inv.status === 'overdue' ? 'text-red-600 font-medium' : 'text-[#6b7280]'}`}>
+                    <td className={`py-3 px-4 whitespace-nowrap ${inv.status === 'overdue' ? 'text-[#fca5a5] font-medium' : 'text-[#94a3b8]'}`}>
                       {fmtDate(inv.dueDate)}
                     </td>
-                    <td className="py-3 px-4 text-right font-semibold text-[#111113]">{fmt(inv.total)}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-white">{fmt(inv.total)}</td>
                     <td className="py-3 px-4"><StatusBadge status={inv.status} /></td>
                     <td className="py-3 px-4">
-                      <ChevronRight className="w-4 h-4 text-[#d4a017]" />
+                      <ChevronRight className="w-4 h-4 text-[#f59e0b]" />
                     </td>
                   </tr>
                 ))}

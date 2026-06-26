@@ -18,21 +18,21 @@ const PRIORITY_BAR = {
 };
 
 const PRIORITY_BADGE = {
-  urgent: 'bg-[#fee2e2] text-[#991b1b]',
-  high:   'bg-[#fef3c7] text-[#d97706]',
-  medium: 'bg-[#dbeafe] text-[#2563eb]',
-  low:    'bg-[#dcfce7] text-[#16a34a]',
+  urgent: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+  high:   'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  medium: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  low:    'bg-[rgba(34,197,94,0.20)] text-[#86efac]',
 };
 
 const STATUS_BADGE = {
-  open:             'bg-[#dcfce7] text-[#166534]',
-  in_progress:      'bg-[#dbeafe] text-[#1e40af]',
-  pending:          'bg-[#fef3c7] text-[#92400e]',
-  resolved:         'bg-[#dbeafe] text-[#1e40af]',
-  closed:           'bg-[#f3f4f6] text-[#6b7280]',
-  approved:         'bg-[#dcfce7] text-[#166534]',
-  denied:           'bg-[#fee2e2] text-[#991b1b]',
-  waiting_approval: 'bg-[#fef3c7] text-[#92400e]',
+  open:             'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  in_progress:      'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  pending:          'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  resolved:         'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  closed:           'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]',
+  approved:         'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  denied:           'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+  waiting_approval: 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
 };
 
 const STATUS_LABEL = {
@@ -113,13 +113,13 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
       <div className="overflow-x-auto">
         <table className="w-full border-collapse responsive-table">
           <thead>
-            <tr className="bg-[#fafafa]">
-              <th className="w-10 px-4 py-2.5 border-b border-[#e5e7eb]">
+            <tr className="bg-[#1f1f33]">
+              <th className="w-10 px-4 py-2.5 border-b border-[#2e2e4a]">
                 <Checkbox checked={allSelected} onCheckedChange={toggleAll} />
               </th>
               {['Ticket','Assigned to','Priority','Status','Updated',''].map((h, i) => (
-                <th key={i} className="text-left px-4 py-2.5 border-b border-[#e5e7eb]
-                                       text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">
+                <th key={i} className="text-left px-4 py-2.5 border-b border-[#2e2e4a]
+                                       text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
                   {h}
                 </th>
               ))}
@@ -135,8 +135,8 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
               return (
                 <tr
                   key={ticket.id}
-                  className={`border-b border-[#f3f4f6] transition-colors
-                    ${isSelected ? 'bg-[#fef9ee]' : idx % 2 === 1 ? 'bg-[#fafbfc] hover:bg-[#fef9ee]' : 'bg-white hover:bg-[#fef9ee]'}`}
+                  className={`border-b border-[#2e2e4a] transition-colors
+                    ${isSelected ? 'bg-[rgba(245,158,11,0.08)]' : 'bg-[#242438] hover:bg-[#2a2a48]'}`}
                 >
                   {/* Checkbox */}
                   <td className="w-10 px-4 py-3">
@@ -145,10 +145,10 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
 
                   {/* Ticket title + id */}
                   <td className="px-4 py-3 ticket-cell cursor-pointer" onClick={() => onTicketClick?.(ticket)}>
-                    <div className="text-[13px] font-medium text-[#1d1d1f] hover:text-[#d4a017] transition-colors">
+                    <div className="text-[13px] font-medium text-white hover:text-[#f59e0b] transition-colors">
                       {ticket.title}
                     </div>
-                    <div className="text-[11px] text-[#9ca3af] mt-0.5 font-mono">
+                    <div className="text-[11px] text-[#6b7280] mt-0.5 font-mono">
                       #{ticket.id?.slice(0, 8)}
                     </div>
                   </td>
@@ -160,7 +160,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
                                       flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0`}>
                         {getInitial(assigneeId)}
                       </div>
-                      <span className="text-[12px] text-[#374151]">{getUserName(assigneeId)}</span>
+                      <span className="text-[12px] text-[#cbd5e1]">{getUserName(assigneeId)}</span>
                     </div>
                   </td>
 
@@ -195,7 +195,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
                       disabled={loading}
                       className={`text-[11px] font-semibold px-2 py-1 rounded-full border-0 cursor-pointer
                                   appearance-none focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30
-                                  ${STATUS_BADGE[status] || 'bg-[#f3f4f6] text-[#6b7280]'}`}
+                                  ${STATUS_BADGE[status] || 'bg-[#1f1f33] text-[#6b7280]'}`}
                       style={{ backgroundImage: 'none' }}
                     >
                       {['open','in_progress','pending','resolved','closed'].map(s => (
@@ -214,7 +214,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="w-7 h-7 rounded-md flex items-center justify-center
-                                           text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151]
+                                           text-[#9ca3af] hover:bg-[#2a2a48] hover:text-[#cbd5e1]
                                            transition-colors">
                           <MoreVertical className="w-4 h-4" />
                         </button>
@@ -236,7 +236,7 @@ export default function TicketsTableView({ tickets, users, onTicketClick, select
       </div>
 
       {/* Footer count */}
-      <div className="px-5 py-2.5 bg-[#fafafa] border-t border-[#e5e7eb] text-[12px] text-[#9ca3af]">
+      <div className="px-5 py-2.5 bg-[#1f1f33] border-t border-[#2e2e4a] text-[12px] text-[#9ca3af]">
         {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
         {selectedTickets.size > 0 && ` · ${selectedTickets.size} selected`}
       </div>

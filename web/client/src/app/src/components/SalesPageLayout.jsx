@@ -21,6 +21,7 @@
 // Dark accent (redesign): amber #f59e0b on cards #242438 / base #1a1a2e.
 import React from 'react';
 import { Search, Plus } from 'lucide-react';
+import PageHero, { HeroButtonOutline, HeroButtonPrimary } from './PageHero.jsx';
 
 // ── header building blocks ───────────────────────────────────────────────────
 
@@ -127,21 +128,23 @@ export default function SalesPageLayout({
   actions,
   filters,
   maxWidth,
-  dark = false,
+  dark = false,   // kept for backwards-compat; all pages are now dark
   bare = false,
+  icon,           // optional lucide icon for the hero
+  heroMeta = [],  // optional [{icon, label}] for the hero meta row
   children,
 }) {
-  const width = maxWidth || (dark ? 'max-w-none' : 'max-w-5xl');
   return (
-    <div className={`${dark ? 'p-5 md:p-7 min-h-full bg-[#1a1a2e]' : 'p-4 md:p-6'} ${width} mx-auto`}>
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div>
-          <div className={`font-semibold ${dark ? 'text-2xl text-white' : 'text-lg text-gray-900'}`}>{title}</div>
-          {subtitle != null && (
-            <div className={`text-[13px] ${dark ? 'text-[#94a3b8]' : 'text-gray-500'}`}>{subtitle}</div>
-          )}
-        </div>
-        {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e] max-w-none mx-auto">
+      {/* Glowing hero header on every page */}
+      <div className="mb-5">
+        <PageHero
+          title={title}
+          icon={icon}
+          meta={heroMeta}
+          actions={actions}
+          compact
+        />
       </div>
 
       {filters && <div className="flex items-center gap-2 mb-4 flex-wrap">{filters}</div>}
@@ -149,7 +152,7 @@ export default function SalesPageLayout({
       {bare ? (
         children
       ) : (
-        <div className={`border rounded-xl overflow-hidden ${dark ? 'border-[#2e2e4a] bg-[#242438]' : 'border-gray-200 bg-white'}`}>
+        <div className="border rounded-xl overflow-hidden border-[#2e2e4a] bg-[#242438]">
           {children}
         </div>
       )}

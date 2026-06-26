@@ -161,9 +161,9 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
       case 'confirmed':   return 'bg-[#dcfce7] text-[#166534] border-[#bbf7d0]';
       case 'pending':     return 'bg-[#fef9c3] text-[#854d0e] border-[#fde68a]';
       case 'in_progress': return 'bg-[#dbeafe] text-[#1e40af] border-[#bfdbfe]';
-      case 'completed':   return 'bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]';
+      case 'completed':   return 'bg-[#f3f4f6] text-[#cbd5e1] border-[#2e2e4a]';
       case 'cancelled':   return 'bg-[#fee2e2] text-[#991b1b] border-[#fecaca]';
-      default:            return 'bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]';
+      default:            return 'bg-[#f3f4f6] text-[#cbd5e1] border-[#2e2e4a]';
     }
   };
 
@@ -172,9 +172,9 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
       case 'paid':        return 'bg-[#dcfce7] text-[#166534]';
       case 'sent':        return 'bg-[#dbeafe] text-[#1e40af]';
       case 'pending':     return 'bg-[#fef9c3] text-[#854d0e]';
-      case 'draft':       return 'bg-[#f3f4f6] text-[#374151]';
+      case 'draft':       return 'bg-[#f3f4f6] text-[#cbd5e1]';
       case 'not_created': return 'bg-[#fee2e2] text-[#991b1b]';
-      default:            return 'bg-[#f3f4f6] text-[#374151]';
+      default:            return 'bg-[#f3f4f6] text-[#cbd5e1]';
     }
   };
 
@@ -256,17 +256,18 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
+    <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
 
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-[#2e2e4a] flex items-center justify-between">
         <div>
-          <h2 className="text-[15px] font-semibold text-[#111113]">Ticket Calendar</h2>
-          <p className="text-sm text-[#6b7280] mt-0.5">Manage your appointments and schedule new tickets</p>
+          <h2 className="text-[15px] font-semibold text-white">Ticket Calendar</h2>
+          <p className="text-sm text-[#94a3b8] mt-0.5">Manage your appointments and schedule new tickets</p>
         </div>
         <button
           onClick={() => setShowBookingForm(true)}
-          className="px-4 py-2 text-sm font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors flex items-center gap-2"
+          className="px-4 py-2 text-sm font-medium text-white bg-[#f59e0b] hover:bg-[#b8860b] rounded-lg transition-colors flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           New Booking
@@ -278,16 +279,16 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: Calendar, color: 'text-[#d4a017]', label: "Today's Bookings", value: getBookingsForDate(new Date()).length },
+            { icon: Calendar, color: 'text-[#f59e0b]', label: "Today's Bookings", value: getBookingsForDate(new Date()).length },
             { icon: DollarSign, color: 'text-[#16a34a]', label: "Today's Revenue", value: `£${getBookingsForDate(new Date()).reduce((sum, b) => sum + b.price, 0)}` },
             { icon: CheckCircle, color: 'text-[#0891b2]', label: 'Completed', value: bookings.filter(b => b.status === 'completed').length },
             { icon: AlertCircle, color: 'text-[#d97706]', label: 'Pending Invoices', value: bookings.filter(b => b.invoiceStatus === 'not_created' || b.invoiceStatus === 'draft').length },
           ].map(({ icon: Icon, color, label, value }) => (
-            <div key={label} className="bg-[#fafafa] border border-[#e5e7eb] rounded-xl p-4 flex items-center gap-3">
+            <div key={label} className="bg-[#1f1f33] border border-[#2e2e4a] rounded-xl p-4 flex items-center gap-3">
               <Icon className={`w-7 h-7 flex-shrink-0 ${color}`} />
               <div>
-                <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">{label}</p>
-                <p className="text-xl font-bold text-[#111113] mt-0.5">{value}</p>
+                <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">{label}</p>
+                <p className="text-xl font-bold text-white mt-0.5">{value}</p>
               </div>
             </div>
           ))}
@@ -295,13 +296,13 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
 
         {/* Calendar Controls */}
         <div className="flex items-center justify-between">
-          <div className="flex border border-[#e5e7eb] rounded-lg overflow-hidden">
+          <div className="flex border border-[#2e2e4a] rounded-lg overflow-hidden">
             {['day', 'week', 'month'].map(v => (
               <button
                 key={v}
                 onClick={() => setViewMode(v)}
                 className={`px-4 py-2 text-xs font-medium capitalize transition-colors
-                  ${viewMode === v ? 'bg-[#d4a017] text-[#111113]' : 'bg-white text-[#6b7280] hover:bg-[#f9fafb]'}`}
+                  ${viewMode === v ? 'bg-[#f59e0b] text-white' : 'bg-[#242438] text-[#94a3b8] hover:bg-[#1a1a2e]'}`}
               >
                 {v}
               </button>
@@ -311,11 +312,11 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={navigatePrev}
-              className="px-3 py-1.5 text-xs font-medium border border-[#e5e7eb] rounded-lg bg-white text-[#374151] hover:bg-[#f9fafb] transition-colors"
+              className="px-3 py-1.5 text-xs font-medium border border-[#2e2e4a] rounded-lg bg-[#242438] text-[#cbd5e1] hover:bg-[#1a1a2e] transition-colors"
             >
               Previous
             </button>
-            <span className="text-sm font-medium text-[#374151] px-2">
+            <span className="text-sm font-medium text-[#cbd5e1] px-2">
               {viewMode === 'month' 
                 ? selectedDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
                 : viewMode === 'week'
@@ -325,7 +326,7 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
             </span>
             <button
               onClick={navigateNext}
-              className="px-3 py-1.5 text-xs font-medium border border-[#e5e7eb] rounded-lg bg-white text-[#374151] hover:bg-[#f9fafb] transition-colors"
+              className="px-3 py-1.5 text-xs font-medium border border-[#2e2e4a] rounded-lg bg-[#242438] text-[#cbd5e1] hover:bg-[#1a1a2e] transition-colors"
             >
               Next
             </button>
@@ -334,10 +335,10 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
 
         {/* Month View */}
         {viewMode === 'month' && (
-          <div className="border border-[#e5e7eb] rounded-lg overflow-hidden">
-            <div className="grid grid-cols-7 bg-[#fafafa] border-b border-[#e5e7eb]">
+          <div className="border border-[#2e2e4a] rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7 bg-[#1f1f33] border-b border-[#2e2e4a]">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="p-3 text-center text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider border-r border-[#e5e7eb] last:border-r-0">
+                <div key={day} className="p-3 text-center text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider border-r border-[#2e2e4a] last:border-r-0">
                   {day}
                 </div>
               ))}
@@ -351,12 +352,12 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                 return (
                   <div 
                     key={index} 
-                    className={`min-h-[120px] p-2 border-r border-b border-[#e5e7eb] last:border-r-0 transition-colors
-                      ${isCurrentMonth ? 'bg-white hover:bg-[#fef9ee]' : 'bg-[#fafafa]'}
+                    className={`min-h-[120px] p-2 border-r border-b border-[#2e2e4a] last:border-r-0 transition-colors
+                      ${isCurrentMonth ? 'bg-[#242438] hover:bg-[#fef9ee]' : 'bg-[#1f1f33]'}
                       ${isToday ? 'bg-[#fef9ee]' : ''}`}
                   >
                     <div className={`text-sm font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full
-                      ${isToday ? 'bg-[#d4a017] text-[#111113]' : isCurrentMonth ? 'text-[#111113]' : 'text-[#9ca3af]'}`}>
+                      ${isToday ? 'bg-[#f59e0b] text-white' : isCurrentMonth ? 'text-white' : 'text-[#6b7280]'}`}>
                       {day.date.getDate()}
                     </div>
                     <div className="space-y-1">
@@ -371,7 +372,7 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                         </div>
                       ))}
                       {dayBookings.length > 3 && (
-                        <div className="text-xs text-[#9ca3af] text-center">
+                        <div className="text-xs text-[#6b7280] text-center">
                           +{dayBookings.length - 3} more
                         </div>
                       )}
@@ -388,11 +389,11 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
           <div className="grid grid-cols-8 gap-3">
             {/* Time Column */}
             <div className="space-y-2">
-              <div className="h-12 flex items-center justify-center text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">
+              <div className="h-12 flex items-center justify-center text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
                 Time
               </div>
               {timeSlots.filter((_, index) => index % 2 === 0).map(time => (
-                <div key={time} className="h-16 flex items-center justify-center text-xs text-[#9ca3af] border-t border-[#e5e7eb]">
+                <div key={time} className="h-16 flex items-center justify-center text-xs text-[#6b7280] border-t border-[#2e2e4a]">
                   {time}
                 </div>
               ))}
@@ -401,11 +402,11 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
             {/* Day Columns */}
             {weekDays.map((day, dayIndex) => (
               <div key={dayIndex} className="space-y-2">
-                <div className="h-12 flex flex-col items-center justify-center bg-[#fafafa] border border-[#e5e7eb] rounded-lg">
-                  <div className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">
+                <div className="h-12 flex flex-col items-center justify-center bg-[#1f1f33] border border-[#2e2e4a] rounded-lg">
+                  <div className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
                     {day.toLocaleDateString('en-GB', { weekday: 'short' })}
                   </div>
-                  <div className="text-base font-bold text-[#111113]">
+                  <div className="text-base font-bold text-white">
                     {day.getDate()}
                   </div>
                 </div>
@@ -437,22 +438,22 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
         )}
 
         {/* Today's Bookings */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#e5e7eb] flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-[#d4a017]" />
-            <span className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">Today's Bookings</span>
+        <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#2e2e4a] flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#f59e0b]" />
+            <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Today's Bookings</span>
           </div>
           <div className="divide-y divide-[#e5e7eb]">
             {getBookingsForDate(new Date()).length === 0 ? (
-              <div className="text-center py-10 text-[#9ca3af] text-sm">
+              <div className="text-center py-10 text-[#6b7280] text-sm">
                 No bookings scheduled for today
               </div>
             ) : (
               getBookingsForDate(new Date()).map(booking => (
-                <div key={booking.id} className="p-5 flex items-start justify-between hover:bg-[#fafafa] transition-colors">
+                <div key={booking.id} className="p-5 flex items-start justify-between hover:bg-[#1f1f33] transition-colors">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <h4 className="font-semibold text-[#111113] text-[13px]">{booking.customerName}</h4>
+                      <h4 className="font-semibold text-white text-[13px]">{booking.customerName}</h4>
                       <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${getStatusColor(booking.status)}`}>
                         {booking.status.replace('_', ' ')}
                       </span>
@@ -460,7 +461,7 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                         Invoice: {booking.invoiceStatus.replace('_', ' ')}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-[#6b7280]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-[#94a3b8]">
                       <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" />{booking.startTime} - {booking.endTime}</div>
                       <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" />{booking.customerPhone}</div>
                       <div className="flex items-center gap-2"><User className="w-3.5 h-3.5" />{booking.service}</div>
@@ -469,13 +470,13 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                       <div className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" />£{booking.price}</div>
                     </div>
                     {booking.notes && (
-                      <div className="mt-2 px-3 py-2 bg-[#fafafa] border border-[#e5e7eb] rounded-lg text-xs text-[#6b7280]">
+                      <div className="mt-2 px-3 py-2 bg-[#1f1f33] border border-[#2e2e4a] rounded-lg text-xs text-[#94a3b8]">
                         {booking.notes}
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                    <button className="w-8 h-8 flex items-center justify-center border border-[#e5e7eb] rounded-lg text-[#6b7280] hover:bg-[#f9fafb] hover:text-[#111113] transition-colors">
+                    <button className="w-8 h-8 flex items-center justify-center border border-[#2e2e4a] rounded-lg text-[#94a3b8] hover:bg-[#1a1a2e] hover:text-white transition-colors">
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     {booking.invoiceStatus === 'not_created' && (
@@ -500,28 +501,28 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
       {/* Booking Form Modal */}
       {showBookingForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">New Booking</h3>
-              <p className="text-sm text-[#6b7280] mt-0.5">Schedule a new appointment</p>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">New Booking</h3>
+              <p className="text-sm text-[#94a3b8] mt-0.5">Schedule a new appointment</p>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="customerName" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Customer Name</Label>
-                  <Input id="customerName" placeholder="Enter customer name" className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]" />
+                  <Label htmlFor="customerName" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Customer Name</Label>
+                  <Input id="customerName" placeholder="Enter customer name" className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" />
                 </div>
                 <div>
-                  <Label htmlFor="customerPhone" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Phone Number</Label>
-                  <Input id="customerPhone" placeholder="07123 456789" className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]" />
+                  <Label htmlFor="customerPhone" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Phone Number</Label>
+                  <Input id="customerPhone" placeholder="07123 456789" className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" />
                 </div>
                 <div>
-                  <Label htmlFor="customerEmail" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Email Address</Label>
-                  <Input id="customerEmail" type="email" placeholder="customer@email.com" className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]" />
+                  <Label htmlFor="customerEmail" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Email Address</Label>
+                  <Input id="customerEmail" type="email" placeholder="customer@email.com" className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" />
                 </div>
                 <div>
-                  <Label htmlFor="service" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Service Type</Label>
-                  <select id="service" className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] bg-white text-[#111113]">
+                  <Label htmlFor="service" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Service Type</Label>
+                  <select id="service" className="w-full px-3 py-2 text-sm border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] bg-[#242438] text-white">
                     {currentServices.map(service => (
                       <option key={service.name} value={service.name}>
                         {service.name} - £{service.price} ({service.duration}min)
@@ -530,12 +531,12 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="date" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Date</Label>
-                  <Input id="date" type="date" className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]" />
+                  <Label htmlFor="date" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Date</Label>
+                  <Input id="date" type="date" className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" />
                 </div>
                 <div>
-                  <Label htmlFor="time" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Time</Label>
-                  <select id="time" className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] bg-white text-[#111113]">
+                  <Label htmlFor="time" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Time</Label>
+                  <select id="time" className="w-full px-3 py-2 text-sm border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b] bg-[#242438] text-white">
                     {timeSlots.map(time => (
                       <option key={time} value={time}>{time}</option>
                     ))}
@@ -543,14 +544,14 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
                 </div>
               </div>
               <div>
-                <Label htmlFor="location" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Location</Label>
-                <Input id="location" placeholder="Customer address" className="border-[#e5e7eb] focus:ring-[#d4a017]/30 focus:border-[#d4a017]" />
+                <Label htmlFor="location" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Location</Label>
+                <Input id="location" placeholder="Customer address" className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" />
               </div>
               <div>
-                <Label htmlFor="notes" className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280] mb-1.5 block">Notes</Label>
+                <Label htmlFor="notes" className="text-[11px] font-semibold uppercase tracking-wider text-[#94a3b8] mb-1.5 block">Notes</Label>
                 <textarea 
                   id="notes" 
-                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]" 
+                  className="w-full px-3 py-2 text-sm border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]" 
                   rows="3"
                   placeholder="Additional notes about the job"
                 />
@@ -558,13 +559,13 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   onClick={() => setShowBookingForm(false)}
-                  className="px-4 py-2 text-sm font-medium text-[#374151] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-[#cbd5e1] bg-[#242438] border border-[#2e2e4a] rounded-lg hover:bg-[#1a1a2e] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => setShowBookingForm(false)}
-                  className="px-4 py-2 text-sm font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8860b] rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#f59e0b] hover:bg-[#b8860b] rounded-lg transition-colors"
                 >
                   Create Booking
                 </button>
@@ -573,6 +574,7 @@ const BookingCalendar = ({ businessType = 'electrician' }) => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

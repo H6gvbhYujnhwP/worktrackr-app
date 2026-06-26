@@ -63,7 +63,7 @@ const workflowTemplates = [
     description: 'Automated workflow for IT support requests with escalation',
     category: 'IT Support',
     icon: <Settings className="w-6 h-6" />,
-    color: 'bg-green-100 text-green-800',
+    color: 'bg-[rgba(16,185,129,0.15)] text-green-800',
     triggers: [
       {
         type: 'ticket.created',
@@ -251,9 +251,9 @@ export default function WorkflowBuilder() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#1f1f33]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-[#242438] border-b border-[#2e2e4a] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -265,12 +265,12 @@ export default function WorkflowBuilder() {
               <Building2 className="w-8 h-8 text-blue-600 mr-3" />
               <div className="text-xl font-bold">
                 Work<span className="text-yellow-500">Trackr</span> 
-                <span className="text-sm font-normal text-gray-500 ml-2">Workflow Builder</span>
+                <span className="text-sm font-normal text-[#94a3b8] ml-2">Workflow Builder</span>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-[#94a3b8]">
                 {user.name}
               </div>
               <Button variant="ghost" size="sm" onClick={logout}>
@@ -284,10 +284,10 @@ export default function WorkflowBuilder() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-white">
             Workflow Builder
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-[#94a3b8] mt-2">
             Create and customize automated workflows to streamline your ticket management process
           </p>
         </div>
@@ -303,8 +303,8 @@ export default function WorkflowBuilder() {
           {/* Templates Tab */}
           <TabsContent value="templates" className="mt-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Workflow Templates</h2>
-              <p className="text-gray-600">
+              <h2 className="text-2xl font-bold text-white mb-2">Workflow Templates</h2>
+              <p className="text-[#94a3b8]">
                 Choose from pre-built workflow templates designed for common use cases
               </p>
             </div>
@@ -335,10 +335,10 @@ export default function WorkflowBuilder() {
                     <div className="space-y-4">
                       {/* Triggers */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Triggers</h4>
+                        <h4 className="font-medium text-white mb-2">Triggers</h4>
                         <div className="space-y-2">
                           {template.triggers.map((trigger, index) => (
-                            <div key={index} className="flex items-center text-sm text-gray-600">
+                            <div key={index} className="flex items-center text-sm text-[#94a3b8]">
                               <Zap className="w-4 h-4 mr-2 text-yellow-500" />
                               When {trigger.type.replace('.', ' ')} 
                               {trigger.conditions.length > 0 && (
@@ -353,10 +353,10 @@ export default function WorkflowBuilder() {
 
                       {/* Actions */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Actions</h4>
+                        <h4 className="font-medium text-white mb-2">Actions</h4>
                         <div className="space-y-2">
                           {template.actions.slice(0, 3).map((action, index) => (
-                            <div key={index} className="flex items-center text-sm text-gray-600">
+                            <div key={index} className="flex items-center text-sm text-[#94a3b8]">
                               {action.type.includes('email') ? (
                                 <Mail className="w-4 h-4 mr-2 text-blue-500" />
                               ) : action.type.includes('assign') ? (
@@ -368,7 +368,7 @@ export default function WorkflowBuilder() {
                             </div>
                           ))}
                           {template.actions.length > 3 && (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-[#94a3b8]">
                               +{template.actions.length - 3} more actions
                             </div>
                           )}
@@ -377,7 +377,7 @@ export default function WorkflowBuilder() {
 
                       {/* Stages */}
                       <div>
-                        <h4 className="font-medium text-gray-900 mb-2">Workflow Stages</h4>
+                        <h4 className="font-medium text-white mb-2">Workflow Stages</h4>
                         <div className="flex flex-wrap gap-2">
                           {template.stages.map((stage, index) => (
                             <Badge key={index} variant="secondary" className="text-xs">
@@ -412,8 +412,8 @@ export default function WorkflowBuilder() {
           {/* Custom Builder Tab */}
           <TabsContent value="builder" className="mt-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Custom Workflow Builder</h2>
-              <p className="text-gray-600">
+              <h2 className="text-2xl font-bold text-white mb-2">Custom Workflow Builder</h2>
+              <p className="text-[#94a3b8]">
                 Build your own custom workflow from scratch or modify a template
               </p>
             </div>
@@ -464,7 +464,7 @@ export default function WorkflowBuilder() {
                   </CardHeader>
                   <CardContent>
                     {customWorkflow.triggers.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-[#94a3b8]">
                         No triggers defined. Add a trigger to get started.
                       </div>
                     ) : (
@@ -512,7 +512,7 @@ export default function WorkflowBuilder() {
                   </CardHeader>
                   <CardContent>
                     {customWorkflow.actions.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-[#94a3b8]">
                         No actions defined. Add an action to specify what should happen.
                       </div>
                     ) : (
@@ -564,22 +564,22 @@ export default function WorkflowBuilder() {
                   <CardContent>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium text-gray-900">Name</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-white">Name</h4>
+                        <p className="text-sm text-[#94a3b8]">
                           {customWorkflow.name || 'Untitled Workflow'}
                         </p>
                       </div>
                       
                       <div>
-                        <h4 className="font-medium text-gray-900">Triggers</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-white">Triggers</h4>
+                        <p className="text-sm text-[#94a3b8]">
                           {customWorkflow.triggers.length} trigger(s) defined
                         </p>
                       </div>
                       
                       <div>
-                        <h4 className="font-medium text-gray-900">Actions</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="font-medium text-white">Actions</h4>
+                        <p className="text-sm text-[#94a3b8]">
                           {customWorkflow.actions.length} action(s) defined
                         </p>
                       </div>
@@ -612,8 +612,8 @@ export default function WorkflowBuilder() {
           {/* Active Workflows Tab */}
           <TabsContent value="active" className="mt-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Active Workflows</h2>
-              <p className="text-gray-600">
+              <h2 className="text-2xl font-bold text-white mb-2">Active Workflows</h2>
+              <p className="text-[#94a3b8]">
                 Manage your currently active workflows
               </p>
             </div>
@@ -632,9 +632,9 @@ export default function WorkflowBuilder() {
                           </Badge>
                         </div>
                         
-                        <p className="text-gray-600 mb-3">{workflow.description}</p>
+                        <p className="text-[#94a3b8] mb-3">{workflow.description}</p>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-4 text-sm text-[#94a3b8]">
                           <span>Created: {new Date(workflow.createdAt).toLocaleDateString()}</span>
                           <span>•</span>
                           <span>{workflow.triggers?.length || 0} triggers</span>
@@ -661,9 +661,9 @@ export default function WorkflowBuilder() {
               
               {workflows.length === 0 && (
                 <Card className="p-8 text-center">
-                  <Workflow className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No active workflows</h3>
-                  <p className="text-gray-600 mb-4">
+                  <Workflow className="w-12 h-12 text-[#6b7280] mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">No active workflows</h3>
+                  <p className="text-[#94a3b8] mb-4">
                     Create your first workflow using templates or the custom builder
                   </p>
                   <Button onClick={() => setActiveTab('templates')}>

@@ -153,9 +153,41 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #1a1a2e;
+    color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Dark scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #1a1a2e; }
+  ::-webkit-scrollbar-thumb { background: #2e2e4a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a5c; }
+
+  /* ─── Shadcn Select / DropdownMenu / Popover — dark overrides ─── */
+  [data-radix-popper-content-wrapper] [role="listbox"],
+  [data-radix-popper-content-wrapper] [role="menu"],
+  [data-radix-popper-content-wrapper] > div {
+    background-color: #242438 !important;
+    border-color: #2e2e4a !important;
+    color: #ffffff !important;
+  }
+  [data-radix-select-viewport] [role="option"]:hover,
+  [data-radix-select-viewport] [role="option"]:focus,
+  [data-radix-select-viewport] [role="option"][data-highlighted] {
+    background-color: #2a2a48 !important;
+    color: #ffffff !important;
+  }
+  [data-radix-select-viewport] [role="option"][data-state="checked"] {
+    color: #f59e0b !important;
+  }
+
+  /* ─── Shadcn Dialog ─── */
+  [role="dialog"] > div[class*="bg-"] {
+    background-color: #242438;
+    border-color: #2e2e4a;
+    color: #ffffff;
   }
 }
 
@@ -178,9 +210,9 @@
   .responsive-table tbody td.date-cell    { flex: 1 1 100%; order: 4; }
 }
 
-/* ─── Table utilities ─── */
-.table-zebra tbody tr:nth-child(even) { background-color: #fafbfc; }
-.table-row-hover:hover { background-color: #fef9ee !important; }
+/* ─── Table utilities (dark) ─── */
+.table-zebra tbody tr:nth-child(even) { background-color: #1f1f33; }
+.table-row-hover:hover { background-color: #2a2a48 !important; }
 
 /* ─── Mobile container ─── */
 .mobile-container { max-width: 100%; overflow-x: hidden; padding-left: 1rem; padding-right: 1rem; }

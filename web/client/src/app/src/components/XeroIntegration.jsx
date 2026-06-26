@@ -87,7 +87,7 @@ const XeroIntegration = ({ businessType = 'service' }) => {
                     <Link className="w-4 h-4 mr-2" />
                     Connect to Xero
                   </Button>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-[#94a3b8]">
                     <p>• Automatic invoice creation and sending</p>
                     <p>• Real-time financial data synchronization</p>
                     <p>• Customer and contact management</p>
@@ -112,7 +112,7 @@ const XeroIntegration = ({ businessType = 'service' }) => {
                     <Link className="w-4 h-4 mr-2" />
                     Connect to QuickBooks
                   </Button>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-2 text-sm text-[#94a3b8]">
                     <p>• Automatic invoice and payment tracking</p>
                     <p>• Customer and vendor synchronization</p>
                     <p>• Tax calculation and reporting</p>
@@ -139,26 +139,26 @@ const XeroIntegration = ({ businessType = 'service' }) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="text-sm font-medium">Auto-Create Invoices</Label>
-                      <p className="text-xs text-gray-600">Create invoices when tickets are completed</p>
+                      <p className="text-xs text-[#94a3b8]">Create invoices when tickets are completed</p>
                     </div>
                     <input 
                       type="checkbox" 
                       checked={xeroSettings.autoCreateInvoices}
                       onChange={(e) => setXeroSettings({...xeroSettings, autoCreateInvoices: e.target.checked})}
-                      className="rounded border-gray-300"
+                      className="rounded border-[#2e2e4a]"
                     />
                   </div>
                   
                   <div className="flex items-center justify-between">
                     <div>
                       <Label className="text-sm font-medium">Auto-Send Invoices</Label>
-                      <p className="text-xs text-gray-600">Email invoices to customers automatically</p>
+                      <p className="text-xs text-[#94a3b8]">Email invoices to customers automatically</p>
                     </div>
                     <input 
                       type="checkbox" 
                       checked={xeroSettings.autoSendInvoices}
                       onChange={(e) => setXeroSettings({...xeroSettings, autoSendInvoices: e.target.checked})}
-                      className="rounded border-gray-300"
+                      className="rounded border-[#2e2e4a]"
                     />
                   </div>
                 </div>
@@ -198,9 +198,9 @@ const XeroIntegration = ({ businessType = 'service' }) => {
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
-                <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices yet</h3>
-                <p className="text-gray-600 mb-4">Process tickets from the billing queue to create invoices</p>
+                <FileText className="w-12 h-12 mx-auto text-[#6b7280] mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">No invoices yet</h3>
+                <p className="text-[#94a3b8] mb-4">Process tickets from the billing queue to create invoices</p>
                 <Button onClick={() => setActiveTab('queue')}>
                   Go to Billing Queue
                 </Button>
@@ -228,9 +228,9 @@ const XeroIntegration = ({ businessType = 'service' }) => {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
-                  <Edit className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No ticket selected</h3>
-                  <p className="text-gray-600 mb-4">Go to the billing queue and select a ticket to process manually</p>
+                  <Edit className="w-12 h-12 mx-auto text-[#6b7280] mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">No ticket selected</h3>
+                  <p className="text-[#94a3b8] mb-4">Go to the billing queue and select a ticket to process manually</p>
                   <Button onClick={() => setActiveTab('queue')}>
                     Go to Billing Queue
                   </Button>
@@ -272,7 +272,7 @@ const XeroIntegration = ({ businessType = 'service' }) => {
               <div className="border rounded-lg p-4">
                 <h4 className="font-medium mb-3">Invoice Items</h4>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-700">
+                  <div className="grid grid-cols-12 gap-2 text-sm font-medium text-[#cbd5e1]">
                     <div className="col-span-5">Description</div>
                     <div className="col-span-2">Quantity</div>
                     <div className="col-span-2">Rate</div>
@@ -294,7 +294,7 @@ const XeroIntegration = ({ businessType = 'service' }) => {
                   <Label htmlFor="notes">Notes</Label>
                   <textarea 
                     id="notes" 
-                    className="w-full p-2 border border-gray-300 rounded-md" 
+                    className="w-full p-2 border border-[#2e2e4a] rounded-md" 
                     rows="3"
                     placeholder="Additional notes for the invoice"
                   ></textarea>
