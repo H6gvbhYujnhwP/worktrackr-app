@@ -1,34 +1,45 @@
 // web/client/src/app/src/components/CompanyProfile.jsx
-// Phase 1 + Phase 2 — the company hub.
-// Reads one company (GET /api/contacts/:id), lets you change its sales stage
-// (PUT, merging crm), manage its people (contactPersons), track its tasks
-// (GET/POST/PUT /api/tasks?contactId=) and see a live activity timeline
-// (GET /api/contacts/:id/history = CRM events + completed tasks).
-// Props: companyId (required), onBack(), onNewOrder().
+// v3.2 redesign — the company hub, rebuilt to the dark, full-width "Relationship
+// Hub" layout (PageHero + People / History & notes / Overview columns + a
+// full-width Services & contracts band). ALL data wiring is unchanged from the
+// previous version; only the look changed, plus two additions that use existing
+// endpoints: Save note (POST /api/contacts/:id/notes) and Add calendar reminder
+// (POST /api/crm-events, a linked follow_up), and an editable Source dropdown.
+// Reads one company (GET /api/contacts/:id), its tasks (/api/tasks?contactId=),
+// its history (/api/contacts/:id/history) and its active services (contracts).
+// Props: companyId (required), onBack(), onNewOrder(), onNewContract().
 import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Check, Plus, Lock, X, Pencil,
   Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck, Repeat,
+  CalendarPlus, Calendar, User, Box,
 } from 'lucide-react';
+import PageHero, { HeroButtonOutline } from './PageHero.jsx';
 
+// Stage values are unchanged in the DB; only the FIRST label is shown as
+// "Suspect" (value stays 'new' so existing data is untouched).
 const STAGES = [
-  { key: 'new',          label: 'New',          pill: 'bg-[#F1EFE8] text-[#2C2C2A]' },
-  { key: 'prospect',     label: 'Prospect',     pill: 'bg-[#E6F1FB] text-[#0C447C]' },
-  { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[#FAEEDA] text-[#854F0B]' },
-  { key: 'customer',     label: 'Customer',     pill: 'bg-[#E1F5EE] text-[#085041]' },
+  { key: 'new',          label: 'Suspect' },
+  { key: 'prospect',     label: 'Prospect' },
+  { key: 'hot_prospect', label: 'Hot prospect' },
+  { key: 'customer',     label: 'Customer' },
 ];
+const SOURCES = ['Telesales', 'Door knocking', 'E-shot', 'Social media', 'Website', 'Referral'];
+
 const PRIORITY = {
-  high:   'bg-[#FAECE7] text-[#993C1D]',
-  medium: 'bg-[#FAEEDA] text-[#854F0B]',
-  low:    'bg-[#EAF3DE] text-[#3B6D11]',
+  high:   { bg: 'rgba(239,68,68,0.16)',  fg: '#f4a5a5' },
+  medium: { bg: 'rgba(245,158,11,0.16)', fg: '#f5c277' },
+  low:    { bg: 'rgba(16,185,129,0.16)', fg: '#7fe0c2' },
 };
 const HISTORY = {
-  call:      { icon: Phone,       label: 'Call' },
-  meeting:   { icon: Users,       label: 'Meeting' },
+  call:      { icon: Phone,         label: 'Call' },
+  meeting:   { icon: Users,         label: 'Meeting' },
   follow_up: { icon: CornerUpRight, label: 'Follow-up' },
-  renewal:   { icon: RefreshCw,   label: 'Renewal' },
-  other:     { icon: FileText,    label: 'Note' },
-  task:      { icon: SquareCheck, label: 'Task completed' },
+  renewal:   { icon: RefreshCw,     label: 'Renewal' },
+  other:     { icon: FileText,      label: 'Note' },
+  note:      { icon: FileText,      label: 'Note' },
+  email:     { icon: Mail,          label: 'Email' },
+  task:      { icon: SquareCheck,   label: 'Task completed' },
 };
 const initials = (name = '') =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
@@ -41,6 +52,29 @@ const timeAgo = (iso) => {
   return new Date(iso).toLocaleDateString();
 };
 const emptyPerson = { name: '', role: '', email: '', phone: '', isDecisionMaker: false, editIndex: -1 };
+
+// ── dark surface helpers (use the --wt-* tokens added in v3.1) ──
+const T = {
+  base: 'var(--wt-bg-base, #1a1a2e)',
+  card: 'var(--wt-bg-card, #242438)',
+  border: 'var(--wt-border, #2e2e4a)',
+  accent: 'var(--wt-accent, #f59e0b)',
+  text: 'var(--wt-text-primary, #ffffff)',
+  sub: 'var(--wt-text-secondary, #94a3b8)',
+  muted: 'var(--wt-text-muted, #6b7280)',
+  green: 'var(--wt-green, #10b981)',
+  red: 'var(--wt-red, #ef4444)',
+};
+const cardStyle = {
+  background: T.card, border: `1px solid ${T.border}`,
+  borderRadius: 'var(--wt-radius-lg, 12px)', padding: '14px 16px',
+};
+const sectionTitle = { fontSize: 16, fontWeight: 600, color: T.text };
+const inputStyle = {
+  background: T.base, border: `1px solid ${T.border}`, color: T.text,
+  borderRadius: 'var(--wt-radius-md, 8px)', padding: '8px 10px', fontSize: 13, width: '100%',
+};
+const linkBtn = { background: 'transparent', border: 'none', color: T.accent, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 };
 
 export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewContract }) {
   const [company, setCompany] = useState(null);
@@ -55,6 +89,10 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const [taskForm, setTaskForm] = useState(null);      // null = closed
   const [services, setServices] = useState({ loading: true, lines: [], monthlyProfit: 0, count: 0 });
 
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [reminderForm, setReminderForm] = useState(null); // null = closed
+
   const loadCompany = async () => {
     const r = await fetch(`/api/contacts/${companyId}`, { credentials: 'include' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -66,7 +104,6 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const loadHistory = () =>
     fetch(`/api/contacts/${companyId}/history`, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : [])).then((d) => setHistory(Array.isArray(d) ? d : [])).catch(() => {});
-  // Active recurring services for this company = the lines of its active contracts.
   const loadServices = async () => {
     try {
       const r = await fetch(`/api/contracts?contactId=${companyId}&status=active`, { credentials: 'include' });
@@ -95,10 +132,11 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     return () => { alive = false; };
   }, [companyId]);
 
-  const setStage = async (stage) => {
+  // Save a crm field (stage or source) — same PUT, merging crm.
+  const saveCrm = async (patch) => {
     if (!company) return;
     const prev = company;
-    const nextCrm = { ...(company.crm || {}), salesStage: stage };
+    const nextCrm = { ...(company.crm || {}), ...patch };
     setCompany({ ...company, crm: nextCrm });
     setSaving(true);
     try {
@@ -108,9 +146,11 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
         body: JSON.stringify({ crm: nextCrm }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    } catch (e) { setCompany(prev); setError(e.message || 'Could not save stage'); }
+    } catch (e) { setCompany(prev); setError(e.message || 'Could not save'); }
     finally { setSaving(false); }
   };
+  const setStage = (stage) => saveCrm({ salesStage: stage });
+  const setSource = (source) => saveCrm({ source });
 
   const savePeople = async (people) => {
     const prev = company;
@@ -171,234 +211,317 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     } catch { loadTasks(); }
   };
 
-  if (loading) return <div className="p-6 text-[13px] text-gray-500">Loading company…</div>;
-  if (error && !company) return <div className="p-6 text-[13px] text-red-700">Couldn’t load company: {error}</div>;
+  // Save a note → POST /api/contacts/:id/notes (shows in the timeline below).
+  const saveNote = async () => {
+    const body = noteText.trim();
+    if (!body) return;
+    setSavingNote(true);
+    try {
+      const r = await fetch(`/api/contacts/${companyId}/notes`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'note', body }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setNoteText('');
+      loadHistory();
+    } catch (e) { setError(e.message || 'Could not save note'); }
+    finally { setSavingNote(false); }
+  };
+
+  // Add a calendar reminder → POST /api/crm-events (a linked follow_up that
+  // lands on the CRM calendar and in this timeline).
+  const submitReminder = async () => {
+    const title = (reminderForm.title || '').trim();
+    const date = reminderForm.date;
+    if (!title || !date) return;
+    const startAt = new Date(`${date}T09:00:00`).toISOString();
+    try {
+      const r = await fetch('/api/crm-events', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_id: companyId, title, type: 'follow_up',
+          start_at: startAt, end_at: startAt, all_day: true, status: 'planned',
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setReminderForm(null);
+      loadHistory();
+    } catch (e) { setError(e.message || 'Could not add reminder'); }
+  };
+
+  if (loading) return <div style={{ padding: 24, fontSize: 13, color: T.sub }}>Loading company…</div>;
+  if (error && !company) return <div style={{ padding: 24, fontSize: 13, color: T.red }}>Couldn’t load company: {error}</div>;
   if (!company) return null;
 
   const crm = company.crm || {};
   const people = Array.isArray(company.contactPersons) ? company.contactPersons : [];
-  // Decision 7: monthly profit is auto-calculated from active contracts; the
-  // manual crm.totalProfit is kept only as a fallback when there are none.
   const computedMonthly = services.monthlyProfit;
   const monthly = computedMonthly > 0 ? computedMonthly : (Number(crm.totalProfit) || 0);
   const money0 = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  const stagePill = STAGES.find((s) => s.key === crm.salesStage)?.pill || 'bg-gray-100 text-gray-700';
+  const stageLabel = STAGES.find((s) => s.key === crm.salesStage)?.label || null;
   const openTasks = tasks.filter((t) => t.status === 'open');
   const today = new Date().toISOString().slice(0, 10);
 
+  const heroActions = (
+    <>
+      <HeroButtonOutline icon={Check} onClick={() => setStage('customer')}>Mark won</HeroButtonOutline>
+      <HeroButtonOutline icon={Plus} onClick={() => onNewOrder && onNewOrder(company)}>New order</HeroButtonOutline>
+      <HeroButtonOutline icon={Repeat} onClick={() => onNewContract && onNewContract(company)}>New contract</HeroButtonOutline>
+    </>
+  );
+
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <button onClick={() => onBack && onBack()} className="inline-flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-800 mb-3">
-        <ArrowLeft className="w-4 h-4" /> Back to companies
+    <div style={{ background: T.base, minHeight: '100%', padding: '16px 20px', color: T.text }}>
+      <button onClick={() => onBack && onBack()}
+        style={{ ...linkBtn, color: T.sub, marginBottom: 12 }}>
+        <ArrowLeft size={16} /> Back to companies
       </button>
 
-      {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5 mb-3">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-lg font-medium text-gray-900">{company.name}</span>
-              <select value={crm.salesStage || ''} onChange={(e) => setStage(e.target.value)} disabled={saving}
-                className={`rounded-md px-2 py-1 text-[12px] border-0 ${stagePill}`}>
-                <option value="" disabled>Set stage…</option>
-                {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-            </div>
-            <div className="text-[13px] text-gray-500 mt-1">
-              Account manager: {crm.assignedTo || '—'} · Source: {crm.source || '—'}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setStage('customer')} disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-[13px] hover:bg-gray-50">
-              <Check className="w-4 h-4" /> Mark won
-            </button>
-            <button onClick={() => onNewOrder && onNewOrder(company)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#378add] text-[#185fa5] px-3 py-1.5 text-[13px] hover:bg-[#e6f1fb]">
-              <Plus className="w-4 h-4" /> New order
-            </button>
-            <button onClick={() => onNewContract && onNewContract(company)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#0F6E56] text-[#085041] px-3 py-1.5 text-[13px] hover:bg-[#E1F5EE]">
-              <Repeat className="w-4 h-4" /> New contract
-            </button>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        title={company.name}
+        initials={initials(company.name)}
+        stage={stageLabel}
+        meta={[{ icon: User, label: `Account manager: ${crm.assignedTo || '—'}` }]}
+        actions={heroActions}
+      />
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-[13px] text-gray-500">Monthly profit</div>
-          <div className="text-2xl font-medium text-gray-900">{Number.isFinite(monthly) && monthly > 0 ? `£${monthly.toLocaleString()}` : '—'}</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-[13px] text-gray-500">Active services</div>
-          <div className="text-2xl font-medium text-gray-900">{services.loading ? '…' : services.count}</div>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-[13px] text-gray-500">Open tasks</div>
-          <div className="text-2xl font-medium text-gray-900">{openTasks.length}</div>
-        </div>
-      </div>
-
-      {/* Services & monthly profit (from active contracts) */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-base font-medium text-gray-900">Services &amp; monthly profit</span>
-          {services.lines.some((l) => l.source === 'idyq') && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-[#EEEDFE] text-[#3C3489] px-2 py-0.5 text-[11px]">
-              <Lock className="w-3 h-3" /> from IdoYourQuotes
-            </span>
-          )}
-        </div>
-        {services.loading ? (
-          <div className="text-[13px] text-gray-500 py-6 text-center border-t border-gray-100">Loading services…</div>
-        ) : services.lines.length === 0 ? (
-          <div className="text-[13px] text-gray-500 py-6 text-center border-t border-gray-100">
-            No active services yet. Activate a contract for this company to see recurring services and monthly profit here.
-          </div>
-        ) : (
-          <div className="border-t border-gray-100">
-            <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 text-[11px] uppercase tracking-wide text-gray-500">
-              <div>Service</div><div className="text-right">Charge</div><div className="text-right">Cost</div><div className="text-right">Profit</div>
-            </div>
-            {services.lines.map((l) => {
-              const charge = (Number(l.monthlyCost) || 0) + (Number(l.monthlyProfit) || 0);
-              return (
-                <div key={l.id} className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 border-t border-gray-50 text-[13px] items-center">
-                  <div className="text-gray-900 truncate">
-                    {l.description}
-                    <span className="ml-1 text-[10px] text-gray-400">{l.billingInterval === 'annual' ? '/yr ÷12' : '/mo'}</span>
-                    {l.source === 'idyq' && <span className="ml-1 align-middle inline-block bg-[#EEEDFE] text-[#3C3489] rounded px-1 text-[9.5px] font-semibold">IDYQ</span>}
-                  </div>
-                  <div className="text-right text-gray-700">{money0(charge)}</div>
-                  <div className="text-right text-gray-500">{money0(l.monthlyCost)}</div>
-                  <div className="text-right text-[#0f6e56]">{money0(l.monthlyProfit)}</div>
-                </div>
-              );
-            })}
-            <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 py-2 mt-1 border-t border-gray-200 text-[13px] font-medium bg-[#E1F5EE] rounded-lg px-2">
-              <div className="text-[#085041]">Total recurring / month</div>
-              <div /><div />
-              <div className="text-right text-[#0f6e56]">{money0(services.monthlyProfit)}</div>
-            </div>
-            <div className="text-[11px] text-gray-400 mt-2">Read-only — from this company's active contracts. Edit margins on the quote in IdoYourQuotes and re-pull, or in the contract for manual lines.</div>
-          </div>
+      {/* Stage / Source / next-action control strip */}
+      <div style={{ ...cardStyle, marginTop: 12, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center', fontSize: 13, color: T.sub }}>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          Stage
+          <select value={crm.salesStage || ''} onChange={(e) => setStage(e.target.value)} disabled={saving}
+            style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
+            <option value="" disabled>Set stage…</option>
+            {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          Source
+          <select value={crm.source || ''} onChange={(e) => setSource(e.target.value)} disabled={saving}
+            style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
+            <option value="">—</option>
+            {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        {crm.nextAction && (
+          <span>Next action: {crm.nextAction}{crm.chaseDate ? <span style={{ color: T.red }}> · {crm.chaseDate}</span> : null}</span>
         )}
       </div>
 
-      {/* Contacts + Tasks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Contacts (editable) */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base font-medium text-gray-900">Contacts</span>
-            <button onClick={() => setPersonForm({ ...emptyPerson })} className="text-[13px] text-[#185fa5] inline-flex items-center gap-1">
-              <Plus className="w-3.5 h-3.5" /> Add person
-            </button>
+      {/* Three columns: People · History & notes · Overview */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 12 }}>
+
+        {/* People */}
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={sectionTitle}><Users size={16} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />People</span>
+            <button onClick={() => setPersonForm({ ...emptyPerson })} style={linkBtn}><Plus size={14} /> Add person</button>
           </div>
 
           {personForm && (
-            <div className="border border-gray-200 rounded-lg p-3 mb-2 grid gap-2">
-              <input autoFocus value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} placeholder="Name" className="border border-gray-300 rounded px-2 py-1.5 text-[13px]" />
-              <input value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })} placeholder="Role" className="border border-gray-300 rounded px-2 py-1.5 text-[13px]" />
-              <input value={personForm.email} onChange={(e) => setPersonForm({ ...personForm, email: e.target.value })} placeholder="Email" className="border border-gray-300 rounded px-2 py-1.5 text-[13px]" />
-              <input value={personForm.phone} onChange={(e) => setPersonForm({ ...personForm, phone: e.target.value })} placeholder="Phone" className="border border-gray-300 rounded px-2 py-1.5 text-[13px]" />
-              <label className="text-[13px] text-gray-700 flex items-center gap-2">
-                <input type="checkbox" checked={personForm.isDecisionMaker} onChange={(e) => setPersonForm({ ...personForm, isDecisionMaker: e.target.checked })} /> Decision maker
+            <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginBottom: 8, display: 'grid', gap: 8 }}>
+              <input autoFocus value={personForm.name} onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })} placeholder="Name" style={inputStyle} />
+              <input value={personForm.role} onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })} placeholder="Role" style={inputStyle} />
+              <input value={personForm.email} onChange={(e) => setPersonForm({ ...personForm, email: e.target.value })} placeholder="Email" style={inputStyle} />
+              <input value={personForm.phone} onChange={(e) => setPersonForm({ ...personForm, phone: e.target.value })} placeholder="Phone" style={inputStyle} />
+              <label style={{ fontSize: 13, color: T.sub, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="checkbox" checked={personForm.isDecisionMaker} onChange={(e) => setPersonForm({ ...personForm, isDecisionMaker: e.target.checked })} /> Primary / decision maker
               </label>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setPersonForm(null)} className="rounded border border-gray-300 px-2 py-1 text-[12px]">Cancel</button>
-                <button onClick={submitPerson} className="rounded border border-[#d4a017] bg-[rgba(212,160,23,0.12)] text-[#8a6a0f] px-2 py-1 text-[12px]">Save</button>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setPersonForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
+                <button onClick={submitPerson} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Save</button>
               </div>
             </div>
           )}
 
-          {people.length === 0 && !personForm && <div className="text-[13px] text-gray-500 py-2 border-t border-gray-100">No people added yet.</div>}
+          {people.length === 0 && !personForm && <div style={{ fontSize: 13, color: T.sub, padding: '8px 0' }}>No people added yet.</div>}
           {people.map((p, i) => {
             const name = p.name || p.fullName || 'Unnamed';
             const role = p.role || p.title || p.position || '';
             const dm = p.isDecisionMaker || p.decisionMaker;
             return (
-              <div key={i} className="flex items-center gap-3 py-2 border-t border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-[#e6f1fb] text-[#185fa5] flex items-center justify-center text-[12px] font-medium flex-shrink-0">{initials(name)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium text-gray-900 truncate">
-                    {name}
-                    {dm && <span className="ml-2 rounded bg-[#E1F5EE] text-[#085041] px-1.5 py-0.5 text-[10px]">decision maker</span>}
+              <div key={i} style={{ background: T.base, border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: T.accent, color: T.base, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, flexShrink: 0 }}>{initials(name)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
+                      {name}
+                      {dm && <span style={{ marginLeft: 8, fontSize: 10, color: T.green, border: `1px solid ${T.green}66`, borderRadius: 999, padding: '1px 6px' }}>Primary</span>}
+                    </div>
+                    {role && <div style={{ fontSize: 12, color: T.sub }}>{role}</div>}
                   </div>
-                  <div className="text-[12px] text-gray-500 truncate">{[role, p.email, p.phone].filter(Boolean).join(' · ') || '—'}</div>
+                  <button onClick={() => setPersonForm({ name, role, email: p.email || '', phone: p.phone || '', isDecisionMaker: !!dm, editIndex: i })} style={{ ...linkBtn, color: T.muted }}><Pencil size={15} /></button>
+                  <button onClick={() => removePerson(i)} style={{ ...linkBtn, color: T.muted }}><X size={15} /></button>
                 </div>
-                <button onClick={() => setPersonForm({ name, role, email: p.email || '', phone: p.phone || '', isDecisionMaker: !!dm, editIndex: i })} className="text-gray-400 hover:text-gray-700"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => removePerson(i)} className="text-gray-400 hover:text-red-700"><X className="w-4 h-4" /></button>
+                {(p.phone || p.email) && (
+                  <div style={{ fontSize: 12, color: T.sub, marginTop: 6, display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                    {p.phone && <span><Phone size={12} style={{ verticalAlign: -1, marginRight: 4, color: T.accent }} />{p.phone}</span>}
+                    {p.email && <span><Mail size={12} style={{ verticalAlign: -1, marginRight: 4, color: T.accent }} />{p.email}</span>}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Tasks for this company */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base font-medium text-gray-900">Tasks</span>
-            <button onClick={() => setTaskForm({ title: '', dueDate: '', priority: 'medium' })} className="text-[13px] text-[#185fa5] inline-flex items-center gap-1">
-              <Plus className="w-3.5 h-3.5" /> Add task
+        {/* History & notes */}
+        <div style={cardStyle}>
+          <div style={{ ...sectionTitle, marginBottom: 10 }}><Calendar size={16} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />History &amp; notes</div>
+          <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Log a call, note or meeting…"
+            style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            <button onClick={saveNote} disabled={savingNote || !noteText.trim()}
+              style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !noteText.trim() ? 0.6 : 1 }}>
+              <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Save note
+            </button>
+            <button onClick={() => setReminderForm({ title: '', date: '' })}
+              style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>
+              <CalendarPlus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add calendar reminder
             </button>
           </div>
 
-          {taskForm && (
-            <div className="border border-gray-200 rounded-lg p-3 mb-2 grid gap-2">
-              <input autoFocus value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="What needs doing?" className="border border-gray-300 rounded px-2 py-1.5 text-[13px]" />
-              <div className="flex gap-2">
-                <input type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} className="border border-gray-300 rounded px-2 py-1.5 text-[13px] flex-1" />
-                <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })} className="border border-gray-300 rounded px-2 py-1.5 text-[13px] bg-white">
-                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
-                </select>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setTaskForm(null)} className="rounded border border-gray-300 px-2 py-1 text-[12px]">Cancel</button>
-                <button onClick={addTask} className="rounded border border-[#d4a017] bg-[rgba(212,160,23,0.12)] text-[#8a6a0f] px-2 py-1 text-[12px]">Save</button>
+          {reminderForm && (
+            <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginTop: 8, display: 'grid', gap: 8 }}>
+              <input autoFocus value={reminderForm.title} onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })} placeholder="Reminder (e.g. call back)" style={inputStyle} />
+              <input type="date" value={reminderForm.date} onChange={(e) => setReminderForm({ ...reminderForm, date: e.target.value })} style={inputStyle} />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setReminderForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
+                <button onClick={submitReminder} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Add to calendar</button>
               </div>
             </div>
           )}
 
-          {tasks.length === 0 && !taskForm && <div className="text-[13px] text-gray-500 py-2 border-t border-gray-100">No tasks yet.</div>}
-          {tasks.map((t) => {
-            const overdue = t.status === 'open' && t.dueDate && t.dueDate < today;
-            return (
-              <div key={t.id} className="flex items-center gap-2 py-2 border-t border-gray-100 text-[13px]">
-                <button onClick={() => toggleTask(t)} className="flex-shrink-0 w-4 h-4 rounded border border-gray-300 flex items-center justify-center hover:border-[#d4a017]">
-                  {t.status === 'done' && <Check className="w-3 h-3 text-[#0f6e56]" />}
-                </button>
-                <span className={`flex-1 truncate ${t.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>{t.title}</span>
-                {t.dueDate && <span className={`text-[12px] ${overdue ? 'text-red-700' : 'text-gray-500'}`}>{overdue ? 'overdue' : t.dueDate}</span>}
-                <span className={`rounded px-1.5 py-0.5 text-[10px] ${PRIORITY[t.priority] || PRIORITY.medium}`}>{t.priority[0].toUpperCase() + t.priority.slice(1)}</span>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {history.length === 0 && <div style={{ fontSize: 13, color: T.sub }}>No recent activity yet. Notes you save, calls and meetings from the CRM calendar, and completed tasks show here.</div>}
+            {history.map((h) => {
+              const cfg = HISTORY[h.kind] || HISTORY.other;
+              const Icon = cfg.icon;
+              return (
+                <div key={h.id} style={{ display: 'flex', gap: 9, fontSize: 13 }}>
+                  <Icon size={15} style={{ color: T.accent, marginTop: 2, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: T.text }}><span style={{ fontWeight: 600 }}>{cfg.label}</span>{h.title ? ` — ${h.title}` : ''}</div>
+                    <div style={{ fontSize: 12, color: T.muted }}>{h.actor ? `${h.actor} · ` : ''}{timeAgo(h.at)}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Overview: stat tiles + tasks */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={cardStyle}>
+            <div style={{ ...sectionTitle, marginBottom: 10 }}>Overview</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ background: T.base, borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 12, color: T.sub }}>Monthly profit</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: T.accent }}>{Number.isFinite(monthly) && monthly > 0 ? money0(monthly) : '£—'}</div>
               </div>
-            );
-          })}
+              <div style={{ background: T.base, borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 12, color: T.sub }}>Active services</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: T.accent }}>{services.loading ? '…' : services.count}</div>
+              </div>
+              <div style={{ background: T.base, borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 12, color: T.sub }}>Open tasks</div>
+                <div style={{ fontSize: 22, fontWeight: 600, color: T.accent }}>{openTasks.length}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <span style={sectionTitle}>Tasks</span>
+              <button onClick={() => setTaskForm({ title: '', dueDate: '', priority: 'medium' })} style={linkBtn}><Plus size={14} /> Add task</button>
+            </div>
+
+            {taskForm && (
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginBottom: 8, display: 'grid', gap: 8 }}>
+                <input autoFocus value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="What needs doing?" style={inputStyle} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
+                  <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setTaskForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
+                  <button onClick={addTask} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+                </div>
+              </div>
+            )}
+
+            {tasks.length === 0 && !taskForm && <div style={{ fontSize: 13, color: T.sub, padding: '4px 0' }}>No tasks yet.</div>}
+            {tasks.map((t) => {
+              const overdue = t.status === 'open' && t.dueDate && t.dueDate < today;
+              const pr = PRIORITY[t.priority] || PRIORITY.medium;
+              return (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 13 }}>
+                  <button onClick={() => toggleTask(t)} style={{ flexShrink: 0, width: 16, height: 16, borderRadius: 4, border: `1px solid ${T.border}`, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    {t.status === 'done' && <Check size={12} style={{ color: T.green }} />}
+                  </button>
+                  <span style={{ flex: 1, minWidth: 0, textDecoration: t.status === 'done' ? 'line-through' : 'none', color: t.status === 'done' ? T.muted : T.text }}>{t.title}</span>
+                  {t.dueDate && <span style={{ fontSize: 12, color: overdue ? T.red : T.muted }}>{overdue ? 'overdue' : t.dueDate}</span>}
+                  <span style={{ borderRadius: 999, padding: '1px 7px', fontSize: 10, background: pr.bg, color: pr.fg }}>{t.priority[0].toUpperCase() + t.priority.slice(1)}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* History timeline */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 md:px-5 mt-3">
-        <div className="text-base font-medium text-gray-900 mb-1">History</div>
-        {history.length === 0 && <div className="text-[13px] text-gray-500 py-2 border-t border-gray-100">No recent activity yet. Calls and meetings (from the CRM calendar) and completed tasks will show here.</div>}
-        {history.map((h) => {
-          const cfg = HISTORY[h.kind] || HISTORY.other;
-          const Icon = cfg.icon;
-          return (
-            <div key={h.id} className="flex gap-2.5 py-2 border-t border-gray-100 text-[13px]">
-              <Icon className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <span className="font-medium text-gray-900">{cfg.label}</span>
-                <span className="text-gray-700"> — {h.title}</span>
-                <span className="text-gray-400"> · {h.actor ? `${h.actor} · ` : ''}{timeAgo(h.at)}</span>
-              </div>
+      {/* Services & contracts — full-width band */}
+      <div style={{ ...cardStyle, marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={sectionTitle}><Box size={16} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />Services &amp; contracts</span>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {services.lines.some((l) => l.source === 'idyq') && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 8, background: 'rgba(124,116,255,0.15)', color: '#b9b3ff', padding: '2px 8px', fontSize: 11 }}>
+                <Lock size={12} /> from IdoYourQuotes
+              </span>
+            )}
+            <button onClick={() => onNewContract && onNewContract(company)} style={linkBtn}><Plus size={14} /> New contract</button>
+          </div>
+        </div>
+
+        {services.loading ? (
+          <div style={{ fontSize: 13, color: T.sub, padding: '20px 0', textAlign: 'center' }}>Loading services…</div>
+        ) : services.lines.length === 0 ? (
+          <div style={{ fontSize: 13, color: T.sub, padding: '20px 0', textAlign: 'center' }}>
+            No active services yet. Activate a contract for this company to see recurring services and monthly profit here.
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)', gap: 8, padding: '6px 0', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.muted }}>
+              <div>Service</div><div style={{ textAlign: 'right' }}>Charge</div><div style={{ textAlign: 'right' }}>Cost</div><div style={{ textAlign: 'right' }}>Profit</div>
             </div>
-          );
-        })}
+            {services.lines.map((l) => {
+              const charge = (Number(l.monthlyCost) || 0) + (Number(l.monthlyProfit) || 0);
+              return (
+                <div key={l.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)', gap: 8, padding: '8px 0', borderTop: `1px solid ${T.border}`, fontSize: 13, alignItems: 'center' }}>
+                  <div style={{ color: T.text, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {l.description}
+                    <span style={{ marginLeft: 4, fontSize: 10, color: T.muted }}>{l.billingInterval === 'annual' ? '/yr ÷12' : '/mo'}</span>
+                    {l.source === 'idyq' && <span style={{ marginLeft: 4, fontSize: 9.5, background: 'rgba(124,116,255,0.18)', color: '#b9b3ff', borderRadius: 4, padding: '0 4px', fontWeight: 600 }}>IDYQ</span>}
+                  </div>
+                  <div style={{ textAlign: 'right', color: T.sub }}>{money0(charge)}</div>
+                  <div style={{ textAlign: 'right', color: T.muted }}>{money0(l.monthlyCost)}</div>
+                  <div style={{ textAlign: 'right', color: T.green }}>{money0(l.monthlyProfit)}</div>
+                </div>
+              );
+            })}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)', gap: 8, padding: '8px', marginTop: 4, borderRadius: 8, background: 'rgba(16,185,129,0.12)', fontSize: 13, fontWeight: 600 }}>
+              <div style={{ color: T.green }}>Total recurring / month</div><div /><div />
+              <div style={{ textAlign: 'right', color: T.green }}>{money0(services.monthlyProfit)}</div>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 8 }}>Read-only — from this company's active contracts. Edit margins on the quote in IdoYourQuotes and re-pull, or in the contract for manual lines.</div>
+          </div>
+        )}
       </div>
 
-      {error && <div className="text-[12px] text-red-700 mt-3">{error}</div>}
+      {error && <div style={{ fontSize: 12, color: T.red, marginTop: 12 }}>{error}</div>}
     </div>
   );
 }
