@@ -37,6 +37,7 @@ import CRMCalendar from './CRMCalendar.jsx';
 import ContactManager from './ContactManager.jsx';
 import CompanyPipelineList from './CompanyPipelineList.jsx';
 import CompanyProfile from './CompanyProfile.jsx';
+import AddCompanyPage from './AddCompanyPage.jsx';
 import MyTasks from './MyTasks.jsx';
 import OrdersList from './OrdersList.jsx';
 import ContractsList from './ContractsList.jsx';
@@ -94,6 +95,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
 
   const [activeTab, setActiveTab]             = useState('all_open');
   const [openCompanyId, setOpenCompanyId]     = useState(null);
+  const [addingCompany, setAddingCompany]     = useState(false);
   const [openLeadCompanyId, setOpenLeadCompanyId] = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
   const [contractsInitial, setContractsInitial] = useState(null);
@@ -396,7 +398,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
   }
 
   const salesProfileOpen =
-    (currentView === 'companies' && openCompanyId) ||
+    (currentView === 'companies' && (openCompanyId || addingCompany)) ||
     (currentView === 'leads' && openLeadCompanyId);
   return (
     <div className="space-y-0">
@@ -421,11 +423,15 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       {currentView === 'billing' && isAdmin && <XeroIntegration />}
       {currentView === 'contacts'       && <ContactManager />}
       {currentView === 'companies'      && (
-        openCompanyId
-          ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
-              onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
-              onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
-          : <CompanyPipelineList onOpenCompany={setOpenCompanyId} />
+        addingCompany
+          ? <AddCompanyPage
+              onCancel={() => setAddingCompany(false)}
+              onCreated={(id) => { setAddingCompany(false); if (id) setOpenCompanyId(id); }} />
+          : openCompanyId
+            ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
+                onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
+                onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
+            : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} />
       )}
       {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
