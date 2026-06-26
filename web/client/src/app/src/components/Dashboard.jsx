@@ -137,7 +137,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
     // The redesigned dark Sales pages (Companies list/profile/add, Quotes, Orders)
     // go edge-to-edge, plus the dark Workspace screens (My Tasks, Approvals,
     // My Pay). The Calendar tab, My Notes, Leads/Contracts are still light.
-    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay'].includes(currentView);
+    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay', 'my-notes'].includes(currentView);
     if (onFullBleedChange) onFullBleedChange(fb);
   }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 
