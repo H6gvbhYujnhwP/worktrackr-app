@@ -12,7 +12,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Check, Plus, Lock, X, Pencil,
   Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck, Repeat,
-  CalendarPlus, Calendar, User, Box,
+  CalendarPlus, Calendar, User, Box, Globe,
 } from 'lucide-react';
 import PageHero, { HeroButtonOutline } from './PageHero.jsx';
 
@@ -92,6 +92,8 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [reminderForm, setReminderForm] = useState(null); // null = closed
+  const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
+  const [naForm, setNaForm] = useState(null);             // next action + chase date edit; null = closed
 
   const loadCompany = async () => {
     const r = await fetch(`/api/contacts/${companyId}`, { credentials: 'include' });
@@ -251,6 +253,52 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     } catch (e) { setError(e.message || 'Could not add reminder'); }
   };
 
+  // Save the company's own contact details (phone / email / website).
+  const saveDetails = async () => {
+    const prev = company;
+    const w = (detailsForm.website || '').trim();
+    const patch = {
+      phone: (detailsForm.phone || '').trim(),
+      email: (detailsForm.email || '').trim(),
+      website: w && !/^https?:\/\//i.test(w) ? `https://${w}` : w,
+    };
+    setCompany({ ...company, ...patch });
+    setDetailsForm(null);
+    try {
+      const r = await fetch(`/api/contacts/${companyId}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    } catch (e) { setCompany(prev); setError(e.message || 'Could not save details'); }
+  };
+
+  // Save next action + chase date onto the company's crm (shows here and on the list).
+  const saveNextAction = async () => {
+    await saveCrm({ nextAction: (naForm.nextAction || '').trim(), chaseDate: naForm.chaseDate || null });
+    setNaForm(null);
+  };
+
+  // Book the next action onto the CRM calendar as a follow-up reminder for the chase date.
+  const bookNextAction = async () => {
+    const title = (naForm.nextAction || '').trim() || 'Follow up';
+    const date = naForm.chaseDate;
+    if (!date) { setError('Pick a chase date to book it in the calendar.'); return; }
+    const startAt = new Date(`${date}T09:00:00`).toISOString();
+    try {
+      await saveCrm({ nextAction: title, chaseDate: date });
+      const r = await fetch('/api/crm-events', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id: companyId, title, type: 'follow_up', start_at: startAt, end_at: startAt, all_day: true, status: 'planned' }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setNaForm(null);
+      loadHistory();
+    } catch (e) { setError(e.message || 'Could not book reminder'); }
+  };
+
   if (loading) return <div style={{ padding: 24, fontSize: 13, color: T.sub }}>Loading company…</div>;
   if (error && !company) return <div style={{ padding: 24, fontSize: 13, color: T.red }}>Couldn’t load company: {error}</div>;
   if (!company) return null;
@@ -305,9 +353,30 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
-        {crm.nextAction && (
-          <span>Next action: {crm.nextAction}{crm.chaseDate ? <span style={{ color: T.red }}> · {crm.chaseDate}</span> : null}</span>
-        )}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span>Next action:</span>
+          {naForm ? (
+            <>
+              <input value={naForm.nextAction} onChange={(e) => setNaForm({ ...naForm, nextAction: e.target.value })} placeholder="e.g. call back" style={{ ...inputStyle, width: 150, padding: '5px 8px' }} />
+              <input type="date" value={naForm.chaseDate || ''} onChange={(e) => setNaForm({ ...naForm, chaseDate: e.target.value })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              <button onClick={saveNextAction} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+              <button onClick={bookNextAction} style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}><CalendarPlus size={13} style={{ verticalAlign: -2, marginRight: 3 }} />Book in calendar</button>
+              <button onClick={() => setNaForm(null)} style={{ background: 'transparent', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+            </>
+          ) : (
+            <button onClick={() => setNaForm({ nextAction: crm.nextAction || '', chaseDate: crm.chaseDate || '' })} style={{ ...linkBtn, color: T.text }}>
+              {crm.nextAction ? (
+                <>
+                  {crm.nextAction}
+                  {crm.chaseDate && <span style={{ marginLeft: 6, color: crm.chaseDate < today ? T.red : T.sub }}>{crm.chaseDate < today ? `· overdue ${crm.chaseDate}` : `· ${crm.chaseDate}`}</span>}
+                  <Pencil size={12} style={{ marginLeft: 6 }} />
+                </>
+              ) : (
+                <span style={{ color: T.accent }}>+ Set next action</span>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Three columns: People · History & notes · Overview */}
@@ -315,6 +384,37 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
         {/* People */}
         <div style={cardStyle}>
+          {/* Company's own contact details */}
+          <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.muted }}>Company details</span>
+              {!detailsForm && (
+                <button onClick={() => setDetailsForm({ phone: company.phone || '', email: company.email || '', website: company.website || '' })} style={{ ...linkBtn, color: T.muted }}><Pencil size={13} /></button>
+              )}
+            </div>
+            {detailsForm ? (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <input value={detailsForm.phone} onChange={(e) => setDetailsForm({ ...detailsForm, phone: e.target.value })} placeholder="Telephone" style={inputStyle} />
+                <input value={detailsForm.email} onChange={(e) => setDetailsForm({ ...detailsForm, email: e.target.value })} placeholder="Email" style={inputStyle} />
+                <input value={detailsForm.website} onChange={(e) => setDetailsForm({ ...detailsForm, website: e.target.value })} placeholder="Website" style={inputStyle} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setDetailsForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
+                  <button onClick={saveDetails} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Save</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 13 }}>
+                <span style={{ color: company.phone ? T.text : T.muted, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Phone size={13} style={{ color: T.accent, flexShrink: 0 }} />{company.phone || 'No telephone'}</span>
+                <span style={{ color: company.email ? T.text : T.muted, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Mail size={13} style={{ color: T.accent, flexShrink: 0 }} />{company.email || 'No email'}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Globe size={13} style={{ color: T.accent, flexShrink: 0 }} />
+                  {company.website
+                    ? <a href={company.website} target="_blank" rel="noreferrer" style={{ color: T.text, textDecoration: 'none' }}>{company.website.replace(/^https?:\/\//, '')}</a>
+                    : <span style={{ color: T.muted }}>No website</span>}
+                </span>
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={sectionTitle}><Users size={16} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />People</span>
             <button onClick={() => setPersonForm({ ...emptyPerson })} style={linkBtn}><Plus size={14} /> Add person</button>
