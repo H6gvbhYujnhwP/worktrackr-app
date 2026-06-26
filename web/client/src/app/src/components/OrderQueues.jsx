@@ -1,11 +1,20 @@
 // web/client/src/app/src/components/OrderQueues.jsx
-// Phase 3 — manager queues. Approval queue (approve/reject submitted orders with
-// a comment) and Purchasing & fulfilment (approved -> ordered -> invoiced -> paid).
-// All actions hit the orders API; the API enforces manager-only.
+// Workspace › Approvals — manager queues. Approve/reject submitted orders (with a
+// comment) and drive approved orders through purchasing → fulfilment → paid.
+// All actions hit the orders API; the API enforces manager-only (403 handled).
+//
+// v3.7 — DARK reskin to Manus's Approvals card style (left accent bar, type pill,
+// requester, amber Approve / red Reject). The REAL workflow is order-based (not
+// the expense/leave illustration in the mockup), so the three real queues —
+// Approval, Purchasing, Fulfilment — are kept exactly, with every action and the
+// approval comment preserved. Nothing invented.
 import React, { useEffect, useState } from 'react';
 import { Check, X, ShoppingCart, Receipt, Banknote } from 'lucide-react';
 
 const money = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+const AVATARS = ['#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#06b6d4'];
+const avatarColor = (name) => { const s = String(name || ''); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AVATARS[h % AVATARS.length]; };
 
 export default function OrderQueues() {
   const [orders, setOrders] = useState([]);
@@ -44,80 +53,98 @@ export default function OrderQueues() {
   const purchasing = orders.filter((o) => o.status === 'approved');
   const fulfilment = orders.filter((o) => ['ordered', 'invoiced'].includes(o.status));
 
-  const Row = ({ o, right }) => (
-    <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center px-4 py-3 border-t border-gray-100">
-      <div className="min-w-0">
-        <div className="text-[13px] font-medium text-gray-900 truncate">{o.companyName || 'No company'}</div>
-        <div className="text-[12px] text-gray-500 truncate">{o.salespersonName || '—'}</div>
+  // a card row: left accent + order context + value/profit + right-hand actions
+  const Card = ({ o, accent, children }) => (
+    <div className="relative rounded-xl border border-[#2e2e4a] bg-[#242438] overflow-hidden mb-3">
+      <span className="absolute left-0 top-0 bottom-0 w-1" style={{ background: accent }} />
+      <div className="grid grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_auto] gap-3 items-center pl-5 pr-4 py-3.5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="inline-block rounded-md px-2 py-0.5 text-[11px] uppercase tracking-wide bg-[rgba(245,158,11,0.18)] text-[#fcd34d]">Order</span>
+            <span className="text-[15px] font-semibold text-white truncate">{o.companyName || 'No company'}</span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2 text-[12px] text-[#94a3b8]">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-semibold text-white" style={{ background: avatarColor(o.salespersonName) }}>{initials(o.salespersonName)}</span>
+            {o.salespersonName || '—'}
+          </div>
+        </div>
+        <div className="text-[13px]">
+          <div className="text-white">{money(o.totals?.value)}</div>
+          <div className="text-[#6ee7b7]">{money(o.totals?.profit)} profit</div>
+        </div>
+        <div className="flex items-center gap-2 justify-end">{children}</div>
       </div>
-      <div className="text-right text-[13px] text-gray-700">{money(o.totals?.value)}</div>
-      <div className="text-right text-[13px] text-[#0f6e56]">{money(o.totals?.profit)} profit</div>
-      <div className="flex items-center gap-1.5 justify-end">{right}</div>
     </div>
   );
 
-  const Card = ({ title, count, children }) => (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-3">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50">
-        <span className="text-[14px] font-medium text-gray-900">{title}</span>
-        <span className="text-[12px] text-gray-500">{count}</span>
+  const Section = ({ title, count, children }) => (
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="text-[14px] font-medium text-white">{title}</span>
+        <span className="text-[12px] text-[#6b7280]">{count}</span>
       </div>
       {children}
     </div>
   );
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+    <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
       <div className="mb-4">
-        <div className="text-lg font-medium text-gray-900">Order approvals</div>
-        <div className="text-[13px] text-gray-500">Approve orders, then drive them through purchasing to paid.</div>
+        <div className="flex items-center gap-3">
+          <div className="text-2xl font-semibold text-white">Approvals</div>
+          {approval.length > 0 && (
+            <span className="rounded-full px-2.5 py-0.5 text-[12px] bg-[rgba(245,158,11,0.15)] text-[#fcd34d] border border-[#f59e0b]">{approval.length} pending</span>
+          )}
+        </div>
+        <div className="text-[13px] text-[#94a3b8]">Manager sign-off queue — approve orders, then drive them through purchasing to paid.</div>
       </div>
-      {error && <div className="text-[12px] text-red-700 mb-3">{error}</div>}
-      {loading && <div className="text-[13px] text-gray-500">Loading…</div>}
+
+      {error && <div className="text-[12px] text-[#fca5a5] mb-3">{error}</div>}
+      {loading && <div className="text-[13px] text-[#94a3b8]">Loading…</div>}
 
       {!loading && (
         <>
-          <Card title="Approval queue" count={`${approval.length} awaiting`}>
-            {approval.length === 0 && <div className="px-4 py-6 text-center text-[13px] text-gray-500">Nothing awaiting approval.</div>}
+          <Section title="Approval queue" count={`${approval.length} awaiting`}>
+            {approval.length === 0 && <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] px-4 py-6 text-center text-[13px] text-[#6b7280]">Nothing awaiting approval.</div>}
             {approval.map((o) => (
-              <div key={o.id} className="border-t border-gray-100">
-                <Row o={o} right={
-                  <>
-                    <button disabled={busy} onClick={() => act(o.id, 'approve', { comment: comments[o.id] || null })}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#0F6E56] text-[#0F6E56] px-2.5 py-1 text-[12px]"><Check className="w-3.5 h-3.5" /> Approve</button>
-                    <button disabled={busy} onClick={() => act(o.id, 'reject', { comment: comments[o.id] || null })}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#a32d2d] text-[#a32d2d] px-2.5 py-1 text-[12px]"><X className="w-3.5 h-3.5" /> Reject</button>
-                  </>
-                } />
-                <div className="px-4 pb-3 -mt-1">
+              <div key={o.id} className="mb-3">
+                <Card o={o} accent="#f59e0b">
+                  <button disabled={busy} onClick={() => act(o.id, 'approve', { comment: comments[o.id] || null })}
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#f59e0b] text-[#1a1a2e] font-medium px-3 py-1.5 text-[12px] hover:bg-[#d97706] disabled:opacity-50"><Check className="w-3.5 h-3.5" /> Approve</button>
+                  <button disabled={busy} onClick={() => act(o.id, 'reject', { comment: comments[o.id] || null })}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[#ef4444] text-[#fca5a5] px-3 py-1.5 text-[12px] hover:bg-[rgba(239,68,68,0.1)] disabled:opacity-50"><X className="w-3.5 h-3.5" /> Reject</button>
+                </Card>
+                <div className="-mt-1.5 mb-1 px-1">
                   <input value={comments[o.id] || ''} onChange={(e) => setComments({ ...comments, [o.id]: e.target.value })}
-                    placeholder="Comment (saved to order history)" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-[12px]" />
+                    placeholder="Comment (saved to order history)"
+                    className="w-full border border-[#2e2e4a] bg-[#1f1f33] text-white rounded-lg px-3 py-1.5 text-[12px] outline-none placeholder:text-[#6b7280]" />
                 </div>
               </div>
             ))}
-          </Card>
+          </Section>
 
-          <Card title="Purchasing queue" count={`${purchasing.length} approved`}>
-            {purchasing.length === 0 && <div className="px-4 py-6 text-center text-[13px] text-gray-500">No approved orders to purchase.</div>}
+          <Section title="Purchasing queue" count={`${purchasing.length} approved`}>
+            {purchasing.length === 0 && <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] px-4 py-6 text-center text-[13px] text-[#6b7280]">No approved orders to purchase.</div>}
             {purchasing.map((o) => (
-              <Row key={o.id} o={o} right={
+              <Card key={o.id} o={o} accent="#3b82f6">
                 <button disabled={busy} onClick={() => act(o.id, 'purchase')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-1 text-[12px] hover:bg-gray-50"><ShoppingCart className="w-3.5 h-3.5" /> Mark ordered</button>
-              } />
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] px-3 py-1.5 text-[12px] hover:bg-[#2a2a48] disabled:opacity-50"><ShoppingCart className="w-3.5 h-3.5" /> Mark ordered</button>
+              </Card>
             ))}
-          </Card>
+          </Section>
 
-          <Card title="Fulfilment" count={`${fulfilment.length} in progress`}>
-            {fulfilment.length === 0 && <div className="px-4 py-6 text-center text-[13px] text-gray-500">Nothing in fulfilment.</div>}
+          <Section title="Fulfilment" count={`${fulfilment.length} in progress`}>
+            {fulfilment.length === 0 && <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] px-4 py-6 text-center text-[13px] text-[#6b7280]">Nothing in fulfilment.</div>}
             {fulfilment.map((o) => (
-              <Row key={o.id} o={o} right={
-                o.status === 'ordered'
-                  ? <button disabled={busy} onClick={() => act(o.id, 'invoice')} className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-1 text-[12px] hover:bg-gray-50"><Receipt className="w-3.5 h-3.5" /> Mark invoiced</button>
-                  : <button disabled={busy} onClick={() => act(o.id, 'pay')} className="inline-flex items-center gap-1 rounded-lg border border-[#27500A] text-[#27500A] px-2.5 py-1 text-[12px]"><Banknote className="w-3.5 h-3.5" /> Mark paid</button>
-              } />
+              <Card key={o.id} o={o} accent="#10b981">
+                {o.status === 'ordered'
+                  ? <button disabled={busy} onClick={() => act(o.id, 'invoice')} className="inline-flex items-center gap-1 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] px-3 py-1.5 text-[12px] hover:bg-[#2a2a48] disabled:opacity-50"><Receipt className="w-3.5 h-3.5" /> Mark invoiced</button>
+                  : <button disabled={busy} onClick={() => act(o.id, 'pay')} className="inline-flex items-center gap-1 rounded-lg border border-[#10b981] text-[#6ee7b7] px-3 py-1.5 text-[12px] hover:bg-[rgba(16,185,129,0.1)] disabled:opacity-50"><Banknote className="w-3.5 h-3.5" /> Mark paid</button>}
+              </Card>
             ))}
-          </Card>
-          <div className="text-[12px] text-gray-400">Marking an order Paid is what releases its profit to commission.</div>
+          </Section>
+
+          <div className="text-[12px] text-[#6b7280]">Marking an order Paid is what releases its profit to commission.</div>
         </>
       )}
     </div>

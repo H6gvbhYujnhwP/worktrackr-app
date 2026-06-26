@@ -135,8 +135,9 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   // condition here as more dark/full-screen pages land.
   useEffect(() => {
     // The redesigned dark Sales pages (Companies list/profile/add, Quotes, Orders)
-    // go edge-to-edge. The Calendar tab + Leads/Contracts are still light.
-    const fb = ['companies', 'quotes', 'orders'].includes(currentView);
+    // go edge-to-edge, plus the dark Workspace screens (My Tasks, Approvals,
+    // My Pay). The Calendar tab, My Notes, Leads/Contracts are still light.
+    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay'].includes(currentView);
     if (onFullBleedChange) onFullBleedChange(fb);
   }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 

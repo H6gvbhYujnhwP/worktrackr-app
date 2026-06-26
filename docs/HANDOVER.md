@@ -16,7 +16,7 @@ A CRM / ordering / commission app.
 The **owner is non-technical**. Explain everything in **plain, app-flow language — no code jargon**. Describe what a change does for the user, not how the code works.
 
 ## Source of truth
-- **The roadmap** — `docs/WorkTrackr_CRM_Ordering_Commission_Roadmap_v3.5.md` (always read the highest version). Start with **§15 (status banner)** and **§17 (UI redesign + build log)**.
+- **The roadmap** — `docs/WorkTrackr_CRM_Ordering_Commission_Roadmap_v3.7.md` (always read the highest version). Start with **§15 (status banner)** and **§17 (UI redesign + build log)**.
 - **The UI redesign** was designed by **Manus AI**. Design assets + token sheet are in **`docs/design/`** (`REDESIGN_HANDOVER.md`, `DESIGN_SYSTEM.md`, `BATCH_KEY.md`, and per-screen PNGs).
 - ⚠️ **Stale — do NOT trust:** `docs/ROADMAP.md`, `docs/APP-STATE.md`, `docs/database_schema.md` (April snapshots, superseded by the roadmap).
 
@@ -29,6 +29,8 @@ The **owner is non-technical**. Explain everything in **plain, app-flow language
 6. **No hardcoded money** — everything is £ and comes from real data.
 7. **Dark redesign is page-by-page.** Do **not** flip the whole app dark at once — it would break the screens not yet rebuilt. A `fullBleed` flag (Dashboard → AppLayout) makes a dark page go edge-to-edge; extend its condition as more dark pages land.
 8. **Build to Manus's design exactly — do NOT redesign.**
+9. **Never lose existing functionality.** Before rebuilding a screen, read the OLD version and write a **feature inventory** (every button, menu, filter, field + the action behind each); the new screen must re-tick the whole list before hand-over, and the list goes in the build log. (A prior session dropped features — this is the guard against it.)
+10. **Go faster by GROUP, not by cramming.** Work a whole shared-frame group per turn (e.g. all of Sales together) rather than one screen — that also flips shared chrome once with no half-dark states. Re-skin in place where a screen only needs colours (you can't lose a feature you didn't remove). Do **not** attempt the whole app in one turn; the per-group parity check is exactly what gets sacrificed.
 
 ## The redesign in one line
 Whole app moving to a **dark, full-width "Relationship Hub"** look. The **company is the centre of everything**: Leads folded into the company; contracts/services shown on the company record.
@@ -39,9 +41,14 @@ Whole app moving to a **dark, full-width "Relationship Hub"** look. The **compan
 - **v3.3** — **Add company** full-page form (fixed the previously dead button; Dashboard wires it).
 - **v3.4** — Dark pages now **full-screen** (no light gutter); **Leads + Contracts tabs removed** (Sales tabs = Companies · Quotes · Orders · Calendar).
 - **v3.5** — Company record gaps filled: company **telephone / email / website** shown + editable in the People box; dated **Next action** (note + chase date, **overdue in red**) with a **Book in calendar** button (saves to `crm.nextAction`/`crm.chaseDate`; posts a `follow_up` to `/api/crm-events`).
+- **v3.6** — **Sales group went dark together.** Companies list rebuilt to Manus's design (**Pipeline** kanban + **List** table with telephone/email/contact/next-action+chase-date/monthly value; List/Pipeline toggle, search, All-sources filter, working ⋯ menu, Add company, **CSV Import preserved**). Quotes + Orders **dark-reskinned in place** (data/actions/filters/columns identical — colours only). Shared frame (`SalesPageLayout`/`SalesTabs`) got an **opt-in `dark` flag** so the three flip once while **Leads + Contracts stay light**; Dashboard raises full-bleed for companies/quotes/orders. Built from a **parity inventory** of each old screen (zero feature loss).
+- **v3.7** — **Workspace group started: My Tasks · Approvals · My Pay went dark.** My Tasks rebuilt to Manus's dark table (time tabs, status dropdown that keeps the Completed view, derived Status column, assignee avatars, overdue group, all-caught-up empty state) with the add-task form + tick-to-complete preserved. Approvals (`OrderQueues`) reskinned to Manus's dark card style **over the real order workflow** (Approval/Purchasing/Fulfilment + comment + all actions kept; the expense/leave/quote mockup illustration was NOT invented). My Pay dark-reskinned over its **role-gated** commission (`BonusScreen`) + wage (`EngineerWage`) content; Manus's payslip/YTD/next-payment extras deferred (need backend). **My Notes deferred** (see Next task).
 
 ## Next task
-Build the **Companies LIST** to **Manus's design as drawn**:
+**Finish the Workspace group: My Notes (`PersonalNotes.jsx`).** This one needs a **decision first**, because Manus's My Notes (two-pane editor with **categories, rich-text formatting, search**) clashes with the real screen, which instead has **due-date reminders + overdue banner, complete toggle, pin, create-ticket-from-note, add-note-to-ticket, and voice dictation** — none of Manus's category/rich-text features exist in the data model. Building it as drawn would **delete real features** (the exact thing we must not do). Options: (a) **reskin-in-place** — keep every existing feature, apply the dark theme, borrow Manus's two-pane look only where it doesn't cost features; or (b) add backend (note categories + rich-text storage) first, then build closer to the drawing. Recommend (a) now, (b) later. After My Notes: **Delivery** (batch_b: Tickets, Projects, Calendar — the Calendar dark pass also lets the Sales *Calendar* tab go dark), then **Finance** (batch_d), **Settings** (batch_e), **Account** (batch_f), plus the **sidebar 3-state + mobile**. **Keep Manus's design — don't redesign.** Inventory each old screen first, build, validate, hand over with a filename→folder + DELETE list, bump the roadmap +0.1.
+
+## (previous next task — done in v3.6)
+Built the **Companies LIST** to Manus's design as drawn:
 - The **pipeline / kanban view** (Suspect / Prospect / Hot Prospect / Customer columns of cards — each card: company name, owner avatar+name, coloured source pill, activity time, ⋯ menu; with a **List/Pipeline toggle**, **Search**, **All-sources filter**, and **Add company**).
 - **Plus a List view (table)** carrying **telephone, email, contact, next action + chase date (overdue red), monthly value**.
 - **Keep Manus's design — do not redesign.** The Companies list shares `SalesPageLayout` / `SalesTabs` with Quotes/Orders, so plan the dark-chrome migration so that shared frame flips once.

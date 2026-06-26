@@ -1,10 +1,14 @@
 // web/client/src/app/src/components/MyPay.jsx
-// IA consolidation — "My Pay" in the Workspace group. One personal pay page that
-// holds both the commission view (salespeople) and the wage view (engineers).
-// A person is usually only one of the two, so the visible tabs follow their role:
-//   salesman -> Commission only, engineer -> Wage only (engineers must NOT see
-//   commission/profit, per the role rules), everyone else -> both tabs.
-// Reuses the existing BonusScreen and EngineerWage screens unchanged.
+// Workspace › My Pay — one personal pay page holding both the commission view
+// (salespeople) and the wage view (engineers). Visible tabs follow the role:
+//   salesman -> Commission only · engineer -> Wage only (engineers must NOT see
+//   commission/profit) · everyone else -> both. Reuses BonusScreen + EngineerWage.
+//
+// v3.7 — DARK reskin. Role gating preserved exactly. NOTE: Manus's My Pay mockup
+// also shows an earnings summary, YTD cards, payslip PDFs and a next-payment
+// block — those need backend that doesn't exist yet (payslip storage, YTD
+// aggregates, pay-run dates), so they're intentionally NOT faked here. The real,
+// computed commission + wage content is what's shown, now in the dark theme.
 import React, { useState } from 'react';
 import { Wallet, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../../context/AuthProvider.jsx';
@@ -16,8 +20,6 @@ const ALL_TABS = {
   wage:       { key: 'wage',       label: 'Wage',       icon: TrendingUp },
 };
 
-// Which tabs a role may see. Salesman: commission only. Engineer: wage only
-// (no commission/profit). Anyone else (admin/manager/staff): both.
 function tabsForRole(role) {
   if (role === 'salesman') return ['commission'];
   if (role === 'engineer') return ['wage'];
@@ -30,30 +32,34 @@ export default function MyPay() {
   const visible = tabsForRole(role).map((k) => ALL_TABS[k]);
   const [tab, setTab] = useState(visible[0].key);
 
-  // Guard: if the role resolves after mount and the current tab is no longer
-  // allowed, snap to the first allowed tab.
   const allowedKeys = visible.map((t) => t.key);
   const activeKey = allowedKeys.includes(tab) ? tab : visible[0].key;
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="text-lg font-medium text-gray-900 mb-1">My Pay</div>
-      <div className="text-[13px] text-gray-500 mb-3">
-        {visible.length > 1
-          ? 'Your commission and wage in one place. Switch to whichever applies to you.'
-          : 'Your personal pay summary.'}
-      </div>
-
-      {visible.length > 1 && (
-        <div className="flex gap-2 mb-2">
-          {visible.map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${activeKey === key ? 'outline outline-2 outline-[#d4a017] bg-[rgba(212,160,23,0.12)] text-[#8a6a0f]' : 'bg-gray-100 text-gray-700'}`}>
-              <Icon className="w-4 h-4" /> {label}
-            </button>
-          ))}
+    <div className="min-h-full bg-[#1a1a2e]">
+      <div className="max-w-3xl mx-auto px-5 md:px-7 pt-5 md:pt-7">
+        <div className="text-2xl font-semibold text-white mb-1">My Pay</div>
+        <div className="text-[13px] text-[#94a3b8] mb-3">
+          {visible.length > 1
+            ? 'Your commission and wage in one place. Switch to whichever applies to you.'
+            : 'Your personal pay summary.'}
         </div>
-      )}
+
+        {visible.length > 1 && (
+          <div className="flex gap-2 mb-1">
+            {visible.map(({ key, label, icon: Icon }) => (
+              <button key={key} onClick={() => setTab(key)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ${
+                  activeKey === key
+                    ? 'bg-[rgba(245,158,11,0.15)] text-[#fcd34d] outline outline-2 outline-[#f59e0b]'
+                    : 'bg-[#242438] text-[#94a3b8] hover:text-white'
+                }`}>
+                <Icon className="w-4 h-4" /> {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {activeKey === 'commission' ? <BonusScreen /> : <EngineerWage />}
     </div>
