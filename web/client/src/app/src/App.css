@@ -88,6 +88,29 @@
   --sidebar-accent-foreground:    #cccccc;
   --sidebar-border:               #222228;
   --sidebar-ring:                 #d4a017;
+
+  /* ─── WorkTrackr v3.1 redesign tokens (dark, full-width) ───
+     New, prefixed --wt-* so they never collide with the tokens above.
+     Used only by the redesigned dark screens/components (e.g. PageHero).
+     Source of truth: docs/design/DESIGN_SYSTEM + REDESIGN_HANDOVER.md */
+  --wt-bg-base:        #1a1a2e;
+  --wt-bg-card:        #242438;
+  --wt-bg-card-hover:  #2a2a48;
+  --wt-border:         #2e2e4a;
+  --wt-accent:         #f59e0b;
+  --wt-accent-dark:    #d97706;
+  --wt-accent-glow:    rgba(245,158,11,0.25);
+  --wt-text-primary:   #ffffff;
+  --wt-text-secondary: #94a3b8;
+  --wt-text-muted:     #6b7280;
+  --wt-green:          #10b981;
+  --wt-red:            #ef4444;
+  --wt-grey:           #6b7280;
+  --wt-blue:           #3b82f6;
+  --wt-radius-sm: 4px;
+  --wt-radius-md: 8px;
+  --wt-radius-lg: 12px;
+  --wt-radius-xl: 16px;
 }
 
 /* Dark mode — kept minimal, sidebar is already dark */
