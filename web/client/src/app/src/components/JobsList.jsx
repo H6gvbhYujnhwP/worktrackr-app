@@ -1,38 +1,50 @@
 // web/client/src/app/src/components/JobsList.jsx
+// Delivery › Projects — list of field-service projects (jobs). GET /api/jobs.
+// Row/card → /app/jobs/:id; Create → /app/jobs/new.
+//
+// v3.9 — rebuilt to Manus's DARK card grid (batch_b/projects_list). Real data
+// only: company/contact, title, status, single assignee, scheduled dates,
+// project number. NOTE: the data model has no "progress %" or multi-assignee
+// list, so Manus's progress bars + assignee stacks are NOT faked — cards show the
+// real single assignee + status + due date instead.
+//
+// EVERYTHING preserved: load, search (number/title/contact/assignee), status
+// filter (all six statuses — via quick tabs + the full dropdown), sort (now a
+// dropdown), the stat strip, Create Project, open-project, loading/error/empty,
+// and the "showing X of Y" count.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Briefcase, ArrowUpDown, Clock, User } from 'lucide-react';
+import { Plus, Search, ChevronDown, Briefcase, PauseCircle, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
 
-// ── Module-level helpers ───────────────────────────────────────────────────────
-function formatDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
+const STATUS = {
+  scheduled:   { label: 'Scheduled',   pill: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]' },
+  in_progress: { label: 'In progress', pill: 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]' },
+  on_hold:     { label: 'On hold',     pill: 'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]' },
+  completed:   { label: 'Completed',   pill: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' },
+  invoiced:    { label: 'Invoiced',    pill: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]' },
+  cancelled:   { label: 'Cancelled',   pill: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]' },
+};
+const statusInfo = (s) => STATUS[s] || STATUS.scheduled;
 
-function formatTime(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+const AVATARS = ['#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#06b6d4'];
+const avatarColor = (name) => { const s = String(name || ''); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AVATARS[h % AVATARS.length]; };
+const initials = (name) => String(name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : null);
 
-// Module-level status badge — not defined inside parent body
-function StatusBadge({ status }) {
-  const map = {
-    scheduled:   'bg-[#dbeafe] text-[#1d4ed8]',
-    in_progress: 'bg-[#fef3c7] text-[#92400e]',
-    on_hold:     'bg-[#f3f4f6] text-[#6b7280]',
-    completed:   'bg-[#dcfce7] text-[#15803d]',
-    invoiced:    'bg-[#ede9fe] text-[#6d28d9]',
-    cancelled:   'bg-[#fee2e2] text-[#dc2626]',
-  };
-  const label = status
-    ? status.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())
-    : 'Scheduled';
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${map[status] || map.scheduled}`}>
-      {label}
-    </span>
-  );
-}
+const SORTS = [
+  { key: 'createdAt|desc',     label: 'Newest first' },
+  { key: 'title|asc',          label: 'Title A–Z' },
+  { key: 'scheduledStart|asc', label: 'Scheduled date' },
+  { key: 'jobNumber|asc',      label: 'Project number' },
+  { key: 'assignedToName|asc', label: 'Assignee' },
+];
+
+const TABS = [
+  { key: 'all',         label: 'All' },
+  { key: 'in_progress', label: 'Active' },
+  { key: 'on_hold',     label: 'On hold' },
+  { key: 'completed',   label: 'Completed' },
+];
 
 export default function JobsList() {
   const navigate = useNavigate();
@@ -41,13 +53,11 @@ export default function JobsList() {
   const [error, setError]           = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy]         = useState('created_at');
-  const [sortOrder, setSortOrder]   = useState('desc');
+  const [sort, setSort]             = useState('createdAt|desc');
 
   useEffect(() => {
     const fetchJobs = async () => {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       try {
         const response = await fetch('/api/jobs', { credentials: 'include' });
         if (!response.ok) throw new Error('Failed to fetch jobs');
@@ -63,6 +73,10 @@ export default function JobsList() {
     fetchJobs();
   }, []);
 
+  const now = Date.now();
+  const isOverdue = (j) => j.scheduledEnd && new Date(j.scheduledEnd).getTime() < now && !['completed', 'invoiced', 'cancelled'].includes(j.status);
+
+  const [sortBy, sortOrder] = sort.split('|');
   const filteredJobs = jobs
     .filter(j => {
       if (statusFilter !== 'all' && j.status !== statusFilter) return false;
@@ -80,177 +94,166 @@ export default function JobsList() {
     .sort((a, b) => {
       let av = a[sortBy], bv = b[sortBy];
       if (['scheduledStart', 'scheduledEnd', 'createdAt'].includes(sortBy)) {
-        av = new Date(av || 0).getTime();
-        bv = new Date(bv || 0).getTime();
+        av = new Date(av || 0).getTime(); bv = new Date(bv || 0).getTime();
       }
       return sortOrder === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
 
-  const toggleSort = (field) => {
-    if (sortBy === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
-    else { setSortBy(field); setSortOrder('desc'); }
-  };
-
-  // Plain render helper — NOT a React component (no capital letter)
-  // Using const SortTh = () => ... inside a function body would cause full
-  // unmount/remount on every render. This is a plain function returning JSX.
-  const renderSortTh = (field, children) => (
-    <th
-      className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa] cursor-pointer hover:text-[#374151] select-none"
-      onClick={() => toggleSort(field)}
-    >
-      <div className="flex items-center gap-1.5">
-        {children}
-        <ArrowUpDown className="w-3 h-3 opacity-50" />
-      </div>
-    </th>
-  );
+  const stats = [
+    { label: 'In progress', value: jobs.filter(j => j.status === 'in_progress').length, Icon: Briefcase,   color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+    { label: 'On hold',     value: jobs.filter(j => j.status === 'on_hold').length,     Icon: PauseCircle, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
+    { label: 'Overdue',     value: jobs.filter(isOverdue).length,                       Icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+    { label: 'Completed',   value: jobs.filter(j => j.status === 'completed' || j.status === 'invoiced').length, Icon: CheckCircle2, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+  ];
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64 text-[13px] text-[#9ca3af]">
-        Loading jobs...
-      </div>
-    );
+    return <div className="min-h-full bg-[#1a1a2e] flex justify-center items-center h-64 text-[13px] text-[#6b7280]">Loading projects…</div>;
   }
-
   if (error) {
     return (
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-        <p className="text-[13px] text-red-600 mb-3">Error: {error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-3 py-1.5 text-[13px] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
-        >
-          Retry
-        </button>
+      <div className="min-h-full bg-[#1a1a2e] p-5 md:p-7">
+        <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] p-6 max-w-md">
+          <p className="text-[13px] text-[#fca5a5] mb-3">Error: {error}</p>
+          <button onClick={() => window.location.reload()} className="px-3 py-1.5 text-[13px] border border-[#2e2e4a] text-[#cbd5e1] rounded-lg hover:bg-[#2a2a48]">Retry</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[22px] font-bold text-[#111113]">Projects</h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Manage and track field service projects</p>
-        </div>
-        <button
-          onClick={() => navigate('/app/jobs/new')}
-          className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Create Project
-        </button>
-      </div>
-
-      {/* Stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Projects', value: jobs.length,                                                       color: 'text-[#111113]' },
-          { label: 'Scheduled',    value: jobs.filter(j => j.status === 'scheduled').length,                 color: 'text-[#1d4ed8]' },
-          { label: 'In Progress',  value: jobs.filter(j => j.status === 'in_progress').length,               color: 'text-[#92400e]' },
-          { label: 'Completed',    value: jobs.filter(j => j.status === 'completed' || j.status === 'invoiced').length, color: 'text-[#15803d]' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white rounded-xl border border-[#e5e7eb] px-4 py-3">
-            <div className={`text-[22px] font-bold ${color}`}>{value}</div>
-            <div className="text-[11px] text-[#9ca3af] uppercase tracking-wider mt-0.5">{label}</div>
+    <div className="min-h-full bg-[#1a1a2e] p-5 md:p-7">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+        <div className="text-2xl font-semibold text-white">Projects</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 border border-[#2e2e4a] rounded-lg px-3 h-9 bg-[#242438]">
+            <Search className="w-4 h-4 text-[#6b7280]" />
+            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search projects…"
+              className="text-[13px] outline-none w-48 bg-transparent text-white placeholder:text-[#6b7280]" />
           </div>
-        ))}
-      </div>
-
-      {/* Main table container */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-
-        {/* Toolbar */}
-        <div className="flex flex-col md:flex-row gap-3 p-4 border-b border-[#e5e7eb]">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
-            <input
-              type="text"
-              placeholder="Search by project number, title, contact, or assignee..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-[#9ca3af]" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017] bg-white"
-            >
-              <option value="all">All Status</option>
+          <div className="relative">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none">
+              <option value="all">All status</option>
               <option value="scheduled">Scheduled</option>
-              <option value="in_progress">In Progress</option>
-              <option value="on_hold">On Hold</option>
+              <option value="in_progress">In progress</option>
+              <option value="on_hold">On hold</option>
               <option value="completed">Completed</option>
               <option value="invoiced">Invoiced</option>
               <option value="cancelled">Cancelled</option>
             </select>
+            <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
+          <button onClick={() => navigate('/app/jobs/new')}
+            className="h-9 inline-flex items-center gap-1.5 rounded-lg bg-[#f59e0b] text-[#1a1a2e] px-3.5 text-[13px] font-medium hover:bg-[#d97706]">
+            <Plus className="w-4 h-4" /> New project
+          </button>
         </div>
-
-        {filteredJobs.length === 0 ? (
-          <div className="text-center py-16">
-            <Briefcase className="w-10 h-10 text-[#e5e7eb] mx-auto mb-3" />
-            <h3 className="text-[14px] font-medium text-[#374151] mb-1">
-              {jobs.length === 0 ? 'No projects yet' : 'No projects found'}
-            </h3>
-            <p className="text-[13px] text-[#9ca3af] mb-4">
-              {jobs.length === 0 ? 'Create your first project to get started' : 'Try adjusting your search or filters'}
-            </p>
-            {jobs.length === 0 && (
-              <button
-                onClick={() => navigate('/app/jobs/new')}
-                className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4 inline mr-1.5" />
-                Create Project
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#e5e7eb]">
-                    {renderSortTh('jobNumber', 'Project #')}
-                    {renderSortTh('title', 'Title')}
-                    {renderSortTh('contactName', 'Contact')}
-                    <th className="text-left py-3 px-4 text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider bg-[#fafafa]">Status</th>
-                    {renderSortTh('scheduledStart', <><Clock className="w-3 h-3 mr-0.5 inline" />Scheduled</>)}
-                    {renderSortTh('assignedToName', <><User className="w-3 h-3 mr-0.5 inline" />Assigned To</>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredJobs.map((job, index) => (
-                    <tr
-                      key={job.id}
-                      onClick={() => navigate(`/app/jobs/${job.id}`)}
-                      className={`border-b border-[#f3f4f6] hover:bg-[#fef9ee] cursor-pointer transition-colors text-[13px] ${index % 2 === 1 ? 'bg-[#fafbfc]' : 'bg-white'}`}
-                    >
-                      <td className="py-3 px-4 font-medium text-[#d4a017] whitespace-nowrap">{job.jobNumber}</td>
-                      <td className="py-3 px-4 text-[#111113] font-medium max-w-[220px] truncate">{job.title}</td>
-                      <td className="py-3 px-4 text-[#374151]">{job.contactName || <span className="text-[#9ca3af]">—</span>}</td>
-                      <td className="py-3 px-4"><StatusBadge status={job.status} /></td>
-                      <td className="py-3 px-4 text-[#6b7280] whitespace-nowrap">{formatDate(job.scheduledStart)}</td>
-                      <td className="py-3 px-4 text-[#374151]">{job.assignedToName || <span className="text-[#9ca3af]">Unassigned</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="px-4 py-3 border-t border-[#f3f4f6] text-[12px] text-[#9ca3af]">
-              Showing {filteredJobs.length} of {jobs.length} projects
-            </div>
-          </>
-        )}
       </div>
+
+      {/* Tabs + sort */}
+      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-[#2e2e4a] mb-5">
+        <div className="flex gap-5 overflow-x-auto">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setStatusFilter(t.key)}
+              className={`text-[13px] whitespace-nowrap pb-2.5 -mb-px border-b-2 ${statusFilter === t.key ? 'border-[#f59e0b] text-white' : 'border-transparent text-[#94a3b8] hover:text-white'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="relative pb-2">
+          <select value={sort} onChange={(e) => setSort(e.target.value)}
+            className="h-8 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-[#cbd5e1] text-[12px] pl-3 pr-7 outline-none">
+            {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+          <ChevronDown className="w-3.5 h-3.5 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        {stats.map(({ label, value, Icon, color, bg }) => (
+          <div key={label} className="bg-[#242438] border border-[#2e2e4a] rounded-xl px-4 py-3.5 flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: bg }}>
+              <Icon className="w-5 h-5" style={{ color }} />
+            </span>
+            <div>
+              <div className="text-2xl font-semibold" style={{ color }}>{value}</div>
+              <div className="text-[12px] text-[#94a3b8]">{label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Card grid */}
+      {filteredJobs.length === 0 ? (
+        <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl text-center py-16">
+          <Briefcase className="w-10 h-10 text-[#3a3a5c] mx-auto mb-3" />
+          <h3 className="text-[14px] font-medium text-[#cbd5e1] mb-1">{jobs.length === 0 ? 'No projects yet' : 'No projects found'}</h3>
+          <p className="text-[13px] text-[#6b7280] mb-4">{jobs.length === 0 ? 'Create your first project to get started' : 'Try adjusting your search or filters'}</p>
+          {jobs.length === 0 && (
+            <button onClick={() => navigate('/app/jobs/new')} className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">
+              <Plus className="w-4 h-4 inline mr-1.5" /> Create project
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredJobs.map((job) => {
+              const si = statusInfo(job.status);
+              const overdue = isOverdue(job);
+              const due = fmtDate(job.scheduledEnd) || fmtDate(job.scheduledStart);
+              const dueLabel = job.scheduledEnd ? 'Due' : 'Starts';
+              return (
+                <button key={job.id} onClick={() => navigate(`/app/jobs/${job.id}`)}
+                  className="text-left rounded-xl border border-[#2e2e4a] bg-[#242438] hover:bg-[#2a2a48] transition-colors p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg text-[12px] font-semibold text-white" style={{ background: avatarColor(job.contactName || job.title) }}>
+                      {initials(job.contactName || job.title)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[12px] text-[#94a3b8] truncate">{job.contactName || '—'}</div>
+                        <span className={`shrink-0 inline-block rounded-md px-2 py-0.5 text-[11px] ${si.pill}`}>{si.label}</span>
+                      </div>
+                      <div className="text-[15px] font-semibold text-white truncate mt-0.5">{job.title}</div>
+                      <div className="text-[11px] text-[#6b7280] mt-0.5">{job.jobNumber}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {job.assignedToName ? (
+                        <>
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[9px] font-semibold text-white" style={{ background: avatarColor(job.assignedToName) }}>{initials(job.assignedToName)}</span>
+                          <span className="text-[12px] text-[#cbd5e1] truncate">{job.assignedToName}</span>
+                        </>
+                      ) : (
+                        <span className="text-[12px] text-[#6b7280]">Unassigned</span>
+                      )}
+                    </div>
+                    {due && (
+                      <span className={`inline-flex items-center gap-1 text-[12px] ${overdue ? 'text-[#fca5a5]' : 'text-[#94a3b8]'}`}>
+                        <Calendar className="w-3.5 h-3.5" /> {dueLabel}: {due}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* dashed new-project card */}
+            <button onClick={() => navigate('/app/jobs/new')}
+              className="rounded-xl border border-dashed border-[#33334f] text-[#6b7280] hover:text-[#94a3b8] hover:border-[#454567] flex flex-col items-center justify-center gap-2 py-10 min-h-[140px]">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-[#33334f]"><Plus className="w-5 h-5" /></span>
+              <span className="text-[13px]">New project</span>
+            </button>
+          </div>
+
+          <div className="mt-4 text-[12px] text-[#6b7280]">Showing {filteredJobs.length} of {jobs.length} projects</div>
+        </>
+      )}
     </div>
   );
 }

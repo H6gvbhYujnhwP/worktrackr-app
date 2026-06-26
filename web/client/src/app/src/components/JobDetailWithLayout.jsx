@@ -24,6 +24,7 @@ export default function JobDetailWithLayout() {
       isAdmin={isAdmin}
       onNavigate={handleNavigate}
       currentView="jobs"
+      fullBleed
     >
       <JobDetail />
     </AppLayout>
