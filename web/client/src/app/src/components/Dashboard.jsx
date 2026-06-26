@@ -137,7 +137,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
     // The redesigned dark Sales pages (Companies list/profile/add, Quotes, Orders)
     // go edge-to-edge, plus the dark Workspace screens (My Tasks, Approvals,
     // My Pay). The Calendar tab, My Notes, Leads/Contracts are still light.
-    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay', 'my-notes', 'jobs'].includes(currentView);
+    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay', 'my-notes', 'jobs', 'calendar', 'sales-calendar', 'crm-calendar'].includes(currentView);
     if (onFullBleedChange) onFullBleedChange(fb);
   }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 
@@ -414,7 +414,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   return (
     <div className="space-y-0">
       {SALES_VIEWS.includes(currentView) && !salesProfileOpen && (
-        <SalesTabs current={currentView} onChange={onViewChange} dark={['companies', 'quotes', 'orders'].includes(currentView)} />
+        <SalesTabs current={currentView} onChange={onViewChange} dark={['companies', 'quotes', 'orders', 'sales-calendar'].includes(currentView)} />
       )}
       {currentView === 'tickets'        && ticketsViewJSX}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}

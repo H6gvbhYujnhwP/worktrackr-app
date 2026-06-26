@@ -13,13 +13,13 @@ import { useSimulation } from '../App.jsx';
 
 // FIX 1: type values are lowercase to match backend Zod schema
 const eventTypes = [
-  { value: 'call',       label: 'Call',       icon: Phone,         color: 'bg-[#dbeafe] text-[#1d4ed8]' },
-  { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[#dcfce7] text-[#15803d]' },
-  { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[#f3e8ff] text-[#7e22ce]' },
-  { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[#ffedd5] text-[#c2410c]' },
-  { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[#fef9ee] text-[#b8860b]' },
-  { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[#e0e7ff] text-[#4338ca]' },
-  { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[#f1f5f9] text-[#475569]' },
+  { value: 'call',       label: 'Call',       icon: Phone,         color: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]' },
+  { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' },
+  { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]' },
+  { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[rgba(249,115,22,0.20)] text-[#fdba74]' },
+  { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[rgba(245,158,11,0.16)] text-[#fcd34d]' },
+  { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[rgba(99,102,241,0.20)] text-[#a5b4fc]' },
+  { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[rgba(71,85,105,0.30)] text-[#cbd5e1]' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ function NextActionButton({ action, onAction }) {
   return (
     <button
       onClick={() => onAction(action.type)}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#b8860b] border border-[#d4a017]/40 rounded-lg hover:bg-[#fde68a]/40 transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[#fcd34d] border border-[#f59e0b]/40 rounded-lg hover:bg-[rgba(245,158,11,0.25)] transition-colors"
     >
       {IconComp && <IconComp className="w-3.5 h-3.5" />}
       {action.label}
@@ -52,34 +52,34 @@ function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
   if (!loading && !suggestion) return null;
 
   return (
-    <div className="bg-[#fef9ee] border border-[#d4a017]/30 rounded-xl p-4">
+    <div className="bg-[rgba(245,158,11,0.16)] border border-[#f59e0b]/30 rounded-xl p-4">
       {loading ? (
         <div className="flex items-center gap-3">
-          <div className="w-4 h-4 border-2 border-[#d4a017] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          <span className="text-[13px] text-[#b8860b]">Analysing event and generating suggestion…</span>
+          <div className="w-4 h-4 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <span className="text-[13px] text-[#fcd34d]">Analysing event and generating suggestion…</span>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-start gap-2 flex-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#d4a017] flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-3.5 h-3.5 text-[#f59e0b] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-[11px] font-semibold text-[#b8860b] uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-semibold text-[#fcd34d] uppercase tracking-wider mb-1">
                   AI Suggestion
                 </p>
-                <p className="text-[13px] text-[#374151] leading-relaxed">{suggestion}</p>
+                <p className="text-[13px] text-[#cbd5e1] leading-relaxed">{suggestion}</p>
               </div>
             </div>
             <button
               onClick={onDismiss}
-              className="p-1 rounded-lg hover:bg-[#fde68a]/50 text-[#9ca3af] hover:text-[#374151] flex-shrink-0 transition-colors"
+              className="p-1 rounded-lg hover:bg-[rgba(245,158,11,0.25)] text-[#6b7280] hover:text-[#cbd5e1] flex-shrink-0 transition-colors"
               title="Dismiss suggestion"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
           {actions && actions.filter(a => a.type !== 'none').length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1 border-t border-[#d4a017]/20">
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-[#f59e0b]/20">
               {actions
                 .filter(a => a.type !== 'none')
                 .map((action, i) => (
@@ -538,27 +538,27 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   const calendarDays = generateCalendarDays();
   const todayEvents = getEventsForDate(selectedDate);
 
-  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d4a017]/30 focus:border-[#d4a017]";
-  const labelClass = "block text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1.5";
+  const inputClass = "w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]";
+  const labelClass = "block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 p-5 md:p-7 min-h-full bg-[#1a1a2e]">
 
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111113] flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#9ca3af]" />
+          <h1 className="text-[22px] font-bold text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[#6b7280]" />
             Calendar
           </h1>
-          <p className="text-[13px] text-[#9ca3af] mt-0.5">Jobs, tickets, meetings and follow-ups — all in one place</p>
+          <p className="text-[13px] text-[#6b7280] mt-0.5">Jobs, tickets, meetings and follow-ups — all in one place</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={viewMode} onValueChange={setViewMode}>
-            <SelectTrigger className="w-28 text-[13px] border-[#e5e7eb]">
+            <SelectTrigger className="w-28 text-[13px] border-[#2e2e4a] bg-[#242438] text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
               <SelectItem value="day">Day</SelectItem>
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="month">Month</SelectItem>
@@ -566,7 +566,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
           </Select>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Activity
@@ -577,7 +577,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               setNewMeeting(prev => ({ ...prev, date: dateStr, time: '09:00' }));
               setShowMeetingModal(true);
             }}
-            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] hover:bg-[#fafafa] rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] hover:bg-[#1f1f33] rounded-lg transition-colors"
           >
             <Calendar className="w-4 h-4" />
             Book Meeting
@@ -586,7 +586,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       </div>
 
       {/* Calendar navigation */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] px-4 py-3 flex items-center justify-between">
+      <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -596,11 +596,11 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               else d.setMonth(d.getMonth() - 1);
               setSelectedDate(d);
             }}
-            className="p-1.5 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] transition-colors"
+            className="p-1.5 rounded-lg border border-[#2e2e4a] hover:bg-[#1f1f33] transition-colors"
           >
-            <ChevronLeft className="w-4 h-4 text-[#374151]" />
+            <ChevronLeft className="w-4 h-4 text-[#cbd5e1]" />
           </button>
-          <h2 className="text-[14px] font-semibold text-[#111113] min-w-[200px] text-center">
+          <h2 className="text-[14px] font-semibold text-white min-w-[200px] text-center">
             {viewMode === 'day' && selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             {viewMode === 'week' && getWeekRange()}
             {viewMode === 'month' && selectedDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
@@ -613,9 +613,9 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               else d.setMonth(d.getMonth() + 1);
               setSelectedDate(d);
             }}
-            className="p-1.5 rounded-lg border border-[#e5e7eb] hover:bg-[#fafafa] transition-colors"
+            className="p-1.5 rounded-lg border border-[#2e2e4a] hover:bg-[#1f1f33] transition-colors"
           >
-            <ChevronRight className="w-4 h-4 text-[#374151]" />
+            <ChevronRight className="w-4 h-4 text-[#cbd5e1]" />
           </button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -627,7 +627,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
             <button
               key={s.key}
               onClick={() => setSources((prev) => ({ ...prev, [s.key]: !prev[s.key] }))}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] rounded-lg border transition-colors ${sources[s.key] ? 'border-[#e5e7eb] text-[#374151] bg-white' : 'border-transparent text-[#9ca3af] bg-[#f5f5f7]'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] rounded-lg border transition-colors ${sources[s.key] ? 'border-[#2e2e4a] text-[#cbd5e1] bg-[#242438]' : 'border-transparent text-[#6b7280] bg-[#1f1f33]'}`}
             >
               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: sources[s.key] ? s.dot : '#cbd5e1' }} />
               {s.label}
@@ -635,7 +635,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
           ))}
           <button
             onClick={() => setSelectedDate(new Date())}
-            className="px-3 py-1.5 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa] transition-colors"
+            className="px-3 py-1.5 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33] transition-colors"
           >
             Today
           </button>
@@ -645,9 +645,9 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* Calendar grid */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#e5e7eb]">
-            <h3 className="text-[13px] font-semibold text-[#374151]">
+        <div className="lg:col-span-2 bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#2e2e4a]">
+            <h3 className="text-[13px] font-semibold text-[#cbd5e1]">
               {viewMode === 'day' && selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {viewMode === 'week' && `Week — ${getWeekRange()}`}
               {viewMode === 'month' && 'Month View'}
@@ -658,16 +658,16 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
             {/* Day view */}
             {viewMode === 'day' && (
               <div className="space-y-3">
-                <div className="text-center p-4 bg-[#fafafa] rounded-lg border border-[#e5e7eb]">
-                  <h3 className="text-[14px] font-semibold text-[#374151]">
+                <div className="text-center p-4 bg-[#1f1f33] rounded-lg border border-[#2e2e4a]">
+                  <h3 className="text-[14px] font-semibold text-[#cbd5e1]">
                     {selectedDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </h3>
-                  <p className="text-[12px] text-[#9ca3af] mt-0.5">
+                  <p className="text-[12px] text-[#6b7280] mt-0.5">
                     {todayEvents.length} event{todayEvents.length !== 1 ? 's' : ''} scheduled
                   </p>
                 </div>
                 {todayEvents.length === 0 ? (
-                  <div className="text-center py-10 text-[13px] text-[#9ca3af]">
+                  <div className="text-center py-10 text-[13px] text-[#6b7280]">
                     <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     No events scheduled for this day
                   </div>
@@ -679,16 +679,16 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                       <div
                         key={event.id}
                         onClick={() => openEvent(event)}
-                        className="p-4 border border-[#e5e7eb] rounded-lg hover:bg-[#fef9ee] cursor-pointer transition-colors"
+                        className="p-4 border border-[#2e2e4a] rounded-lg hover:bg-[rgba(245,158,11,0.16)] cursor-pointer transition-colors"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${tc.color}`}>{tc.label}</span>
-                            <span className="text-[13px] font-medium text-[#111113]">{event.title}</span>
+                            <span className="text-[13px] font-medium text-white">{event.title}</span>
                           </div>
-                          <span className="text-[12px] text-[#9ca3af]">{ts && formatTime(ts)}</span>
+                          <span className="text-[12px] text-[#6b7280]">{ts && formatTime(ts)}</span>
                         </div>
-                        <div className="mt-2 text-[12px] text-[#6b7280] space-y-0.5">
+                        <div className="mt-2 text-[12px] text-[#94a3b8] space-y-0.5">
                           <p><span className="font-medium">Company:</span> {event.company}</p>
                           {event.contact && <p><span className="font-medium">Contact:</span> {event.contact}</p>}
                         </div>
@@ -706,12 +706,12 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                   const dayEvents = getEventsForDate(day);
                   const isToday = day.toDateString() === new Date().toDateString();
                   return (
-                    <div key={index} className="border border-[#e5e7eb] rounded-lg p-2 min-h-[100px]">
-                      <div className={`text-center mb-2 ${isToday ? 'text-[#d4a017] font-bold' : 'text-[#6b7280]'}`}>
+                    <div key={index} className="border border-[#2e2e4a] rounded-lg p-2 min-h-[100px]">
+                      <div className={`text-center mb-2 ${isToday ? 'text-[#f59e0b] font-bold' : 'text-[#94a3b8]'}`}>
                         <div className="text-[10px] font-semibold uppercase tracking-wider">
                           {day.toLocaleDateString('en-GB', { weekday: 'short' })}
                         </div>
-                        <div className={`text-[14px] mt-0.5 ${isToday ? 'bg-[#d4a017] text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto' : ''}`}>
+                        <div className={`text-[14px] mt-0.5 ${isToday ? 'bg-[#f59e0b] text-[#1a1a2e] rounded-full w-7 h-7 flex items-center justify-center mx-auto' : ''}`}>
                           {day.getDate()}
                         </div>
                       </div>
@@ -731,7 +731,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                           );
                         })}
                         {dayEvents.length > 3 && (
-                          <div className="text-[10px] text-[#9ca3af] text-center">+{dayEvents.length - 3} more</div>
+                          <div className="text-[10px] text-[#6b7280] text-center">+{dayEvents.length - 3} more</div>
                         )}
                       </div>
                     </div>
@@ -745,7 +745,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <>
                 <div className="grid grid-cols-7 gap-1 mb-1">
                   {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
-                    <div key={d} className="p-2 text-center text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">{d}</div>
+                    <div key={d} className="p-2 text-center text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1">
@@ -759,10 +759,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                         key={index}
                         onClick={() => setSelectedDate(day)}
                         className={`min-h-[72px] p-1 border rounded-lg cursor-pointer transition-colors
-                          ${isCurrentMonth ? 'bg-white' : 'bg-[#fafafa] text-[#9ca3af]'}
-                          ${isToday ? 'border-[#d4a017] bg-[#fef9ee]' : 'border-[#e5e7eb]'}
-                          ${isSelected ? 'ring-2 ring-[#d4a017]/40' : ''}
-                          hover:bg-[#fef9ee]`}
+                          ${isCurrentMonth ? 'bg-[#242438]' : 'bg-[#1f1f33] text-[#6b7280]'}
+                          ${isToday ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.16)]' : 'border-[#2e2e4a]'}
+                          ${isSelected ? 'ring-2 ring-[#f59e0b]/40' : ''}
+                          hover:bg-[rgba(245,158,11,0.16)]`}
                       >
                         <div className="text-[12px] font-medium mb-1">{day.getDate()}</div>
                         <div className="space-y-0.5">
@@ -775,7 +775,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                             );
                           })}
                           {dayEvents.length > 2 && (
-                            <div className="text-[10px] text-[#9ca3af]">+{dayEvents.length - 2} more</div>
+                            <div className="text-[10px] text-[#6b7280]">+{dayEvents.length - 2} more</div>
                           )}
                         </div>
                       </div>
@@ -791,15 +791,15 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
         <div className="space-y-4">
 
           {/* Events for selected date */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">
                 {selectedDate.toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })}
               </h3>
             </div>
             <div className="p-4">
               {todayEvents.length === 0 ? (
-                <p className="text-[13px] text-[#9ca3af] text-center py-4">No events scheduled</p>
+                <p className="text-[13px] text-[#6b7280] text-center py-4">No events scheduled</p>
               ) : (
                 <div className="space-y-2">
                   {todayEvents.map(event => {
@@ -811,15 +811,15 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                       <div
                         key={event.id}
                         onClick={() => openEvent(event)}
-                        className="border border-[#e5e7eb] rounded-lg p-3 hover:bg-[#fef9ee] cursor-pointer transition-colors"
+                        className="border border-[#2e2e4a] rounded-lg p-3 hover:bg-[rgba(245,158,11,0.16)] cursor-pointer transition-colors"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <IconComponent className="w-3.5 h-3.5 text-[#9ca3af]" />
-                              <span className="text-[13px] font-medium text-[#111113] truncate">{event.title}</span>
+                              <IconComponent className="w-3.5 h-3.5 text-[#6b7280]" />
+                              <span className="text-[13px] font-medium text-white truncate">{event.title}</span>
                             </div>
-                            <div className="text-[11px] text-[#6b7280] space-y-0.5">
+                            <div className="text-[11px] text-[#94a3b8] space-y-0.5">
                               {ts && <div>🕐 {formatTime(ts)}{te ? ` – ${formatTime(te)}` : ''}</div>}
                               <div>🏢 {event.company}</div>
                               {event.contact && <div>👤 {event.contact}</div>}
@@ -830,8 +830,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                               {tc.label}
                             </span>
                             {event.status === 'done'
-                              ? <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-                              : <Clock className="w-3.5 h-3.5 text-[#d4a017]" />
+                              ? <CheckCircle className="w-3.5 h-3.5 text-[#6ee7b7]" />
+                              : <Clock className="w-3.5 h-3.5 text-[#f59e0b]" />
                             }
                           </div>
                         </div>
@@ -844,20 +844,20 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
           </div>
 
           {/* Stats */}
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#e5e7eb]">
-              <h3 className="text-[13px] font-semibold text-[#374151]">This Month</h3>
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#2e2e4a]">
+              <h3 className="text-[13px] font-semibold text-[#cbd5e1]">This Month</h3>
             </div>
             <div className="p-4 space-y-3">
               {[
-                { label: 'Total Events', value: events.length, color: 'text-[#111113]' },
+                { label: 'Total Events', value: events.length, color: 'text-white' },
                 // FIX 8: lowercase status values to match backend
-                { label: 'Completed', value: events.filter(e => e.status === 'done').length, color: 'text-[#15803d]' },
-                { label: 'Pending', value: events.filter(e => e.status === 'planned').length, color: 'text-[#d4a017]' },
-                { label: 'Renewals', value: events.filter(e => e.type === 'renewal').length, color: 'text-[#c2410c]' },
+                { label: 'Completed', value: events.filter(e => e.status === 'done').length, color: 'text-[#6ee7b7]' },
+                { label: 'Pending', value: events.filter(e => e.status === 'planned').length, color: 'text-[#f59e0b]' },
+                { label: 'Renewals', value: events.filter(e => e.type === 'renewal').length, color: 'text-[#fdba74]' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex justify-between items-center">
-                  <span className="text-[13px] text-[#6b7280]">{label}</span>
+                  <span className="text-[13px] text-[#94a3b8]">{label}</span>
                   <span className={`text-[13px] font-semibold ${color}`}>{value}</span>
                 </div>
               ))}
@@ -869,10 +869,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── CREATE ACTIVITY MODAL ── */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h2 className="text-[15px] font-semibold text-[#111113]">Add CRM Activity</h2>
-              <button onClick={() => setShowCreateModal(false)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h2 className="text-[15px] font-semibold text-white">Add CRM Activity</h2>
+              <button onClick={() => setShowCreateModal(false)} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -884,8 +884,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <div>
                 <label className={labelClass}>Type</label>
                 <Select value={newEvent.type} onValueChange={v => setNewEvent({...newEvent, type: v})}>
-                  <SelectTrigger className="text-[13px] border-[#e5e7eb]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
                     {eventTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -907,8 +907,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <textarea className={inputClass} value={newEvent.notes} onChange={e => setNewEvent({...newEvent, notes: e.target.value})} placeholder="Additional notes..." rows={3} />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">Cancel</button>
               <button
                 onClick={async () => {
                   if (!newEvent.title.trim() || !newEvent.scheduleTask) {
@@ -944,7 +944,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                   setShowCreateModal(false);
                   setNewEvent({ title: '', type: 'call', company: '', contact: '', scheduleTask: '', assignedUser: '', notes: '' });
                 }}
-                className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg"
               >
                 Create Activity
               </button>
@@ -956,12 +956,12 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── EVENT DETAIL MODAL ── */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h2 className="text-[15px] font-semibold text-[#111113]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h2 className="text-[15px] font-semibold text-white">
                 {selectedEvent._isJob ? 'Scheduled Project' : 'Event Details'}
               </h2>
-              <button onClick={() => { setSelectedEvent(null); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+              <button onClick={() => { setSelectedEvent(null); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -971,21 +971,21 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <>
                 <div className="p-6 space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-[#fef9ee] border border-[#d4a017]/20 flex-shrink-0">
-                      <Briefcase className="w-4 h-4 text-[#d4a017]" />
+                    <div className="p-2 rounded-lg bg-[rgba(245,158,11,0.16)] border border-[#f59e0b]/20 flex-shrink-0">
+                      <Briefcase className="w-4 h-4 text-[#f59e0b]" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider">{selectedEvent.jobNumber}</p>
-                      <h3 className="text-[14px] font-semibold text-[#111113] mt-0.5">{selectedEvent.jobTitle}</h3>
+                      <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">{selectedEvent.jobNumber}</p>
+                      <h3 className="text-[14px] font-semibold text-white mt-0.5">{selectedEvent.jobTitle}</h3>
                     </div>
                   </div>
                   <div className="space-y-2 text-[13px]">
                     {(selectedEvent.start_at) && (
                       <>
-                        <div><span className="font-medium text-[#374151]">Date:</span> <span className="text-[#6b7280]">{formatDate(selectedEvent.start_at)}</span></div>
+                        <div><span className="font-medium text-[#cbd5e1]">Date:</span> <span className="text-[#94a3b8]">{formatDate(selectedEvent.start_at)}</span></div>
                         <div>
-                          <span className="font-medium text-[#374151]">Time:</span>{' '}
-                          <span className="text-[#6b7280]">
+                          <span className="font-medium text-[#cbd5e1]">Time:</span>{' '}
+                          <span className="text-[#94a3b8]">
                             {formatTime(selectedEvent.start_at)}
                             {selectedEvent.end_at && selectedEvent.end_at !== selectedEvent.start_at
                               ? ` – ${formatTime(selectedEvent.end_at)}`
@@ -995,20 +995,20 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                       </>
                     )}
                     {selectedEvent.company && (
-                      <div><span className="font-medium text-[#374151]">Contact:</span> <span className="text-[#6b7280]">{selectedEvent.company}</span></div>
+                      <div><span className="font-medium text-[#cbd5e1]">Contact:</span> <span className="text-[#94a3b8]">{selectedEvent.company}</span></div>
                     )}
                     {selectedEvent.contact && (
-                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.contact}</span></div>
+                      <div><span className="font-medium text-[#cbd5e1]">Assigned to:</span> <span className="text-[#94a3b8]">{selectedEvent.contact}</span></div>
                     )}
                     <div>
-                      <span className="font-medium text-[#374151]">Status:</span>{' '}
+                      <span className="font-medium text-[#cbd5e1]">Status:</span>{' '}
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ml-1 ${
-                        selectedEvent.jobStatus === 'scheduled'   ? 'bg-[#dbeafe] text-[#1d4ed8]' :
-                        selectedEvent.jobStatus === 'in_progress' ? 'bg-[#fef3c7] text-[#d97706]' :
-                        selectedEvent.jobStatus === 'on_hold'     ? 'bg-[#f3f4f6] text-[#6b7280]' :
-                        selectedEvent.jobStatus === 'completed'   ? 'bg-[#dcfce7] text-[#15803d]' :
-                        selectedEvent.jobStatus === 'invoiced'    ? 'bg-[#f3e8ff] text-[#7e22ce]' :
-                        'bg-[#fee2e2] text-[#dc2626]'
+                        selectedEvent.jobStatus === 'scheduled'   ? 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]' :
+                        selectedEvent.jobStatus === 'in_progress' ? 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]' :
+                        selectedEvent.jobStatus === 'on_hold'     ? 'bg-[rgba(107,114,128,0.20)] text-[#94a3b8]' :
+                        selectedEvent.jobStatus === 'completed'   ? 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' :
+                        selectedEvent.jobStatus === 'invoiced'    ? 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]' :
+                        'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]'
                       }`}>
                         {selectedEvent.jobStatus?.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </span>
@@ -1016,21 +1016,21 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                   </div>
                   {selectedEvent.notes && (
                     <div>
-                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Notes</p>
-                      <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
+                      <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-[13px] text-[#94a3b8]">{selectedEvent.notes}</p>
                     </div>
                   )}
                 </div>
-                <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
+                <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
                   <button
                     onClick={() => { setSelectedEvent(null); setNextAction(null); }}
-                    className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                    className="px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
                   >
                     Close
                   </button>
                   <button
                     onClick={() => { setSelectedEvent(null); setNextAction(null); navigate(`/app/jobs/${selectedEvent._jobId}`); }}
-                    className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                    className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg"
                   >
                     <ExternalLink className="w-3.5 h-3.5" /> View Project
                   </button>
@@ -1041,40 +1041,40 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <>
                 <div className="p-6 space-y-4">
                   <div>
-                    <h3 className="text-[15px] font-semibold text-[#111113]">{selectedEvent.title}</h3>
+                    <h3 className="text-[15px] font-semibold text-white">{selectedEvent.title}</h3>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1 ${getEventTypeConfig(selectedEvent.type).color}`}>
                       {getEventTypeConfig(selectedEvent.type).label}
                     </span>
                   </div>
                   <div className="space-y-2 text-[13px]">
-                    <div><span className="font-medium text-[#374151]">Company:</span> <span className="text-[#6b7280]">{selectedEvent.company}</span></div>
-                    <div><span className="font-medium text-[#374151]">Contact:</span> <span className="text-[#6b7280]">{selectedEvent.contact}</span></div>
+                    <div><span className="font-medium text-[#cbd5e1]">Company:</span> <span className="text-[#94a3b8]">{selectedEvent.company}</span></div>
+                    <div><span className="font-medium text-[#cbd5e1]">Contact:</span> <span className="text-[#94a3b8]">{selectedEvent.contact}</span></div>
                     {(selectedEvent.start_at || selectedEvent.startAt) && (
                       <>
-                        <div><span className="font-medium text-[#374151]">Date:</span> <span className="text-[#6b7280]">{formatDate(selectedEvent.start_at || selectedEvent.startAt)}</span></div>
-                        <div><span className="font-medium text-[#374151]">Time:</span> <span className="text-[#6b7280]">{formatTime(selectedEvent.start_at || selectedEvent.startAt)} – {formatTime(selectedEvent.end_at || selectedEvent.endAt)}</span></div>
+                        <div><span className="font-medium text-[#cbd5e1]">Date:</span> <span className="text-[#94a3b8]">{formatDate(selectedEvent.start_at || selectedEvent.startAt)}</span></div>
+                        <div><span className="font-medium text-[#cbd5e1]">Time:</span> <span className="text-[#94a3b8]">{formatTime(selectedEvent.start_at || selectedEvent.startAt)} – {formatTime(selectedEvent.end_at || selectedEvent.endAt)}</span></div>
                       </>
                     )}
                     {selectedEvent.assigned_user && (
-                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_user}</span></div>
+                      <div><span className="font-medium text-[#cbd5e1]">Assigned to:</span> <span className="text-[#94a3b8]">{selectedEvent.assigned_user}</span></div>
                     )}
                     {selectedEvent.assigned_users && selectedEvent.assigned_users.length > 0 && (
-                      <div><span className="font-medium text-[#374151]">Assigned to:</span> <span className="text-[#6b7280]">{selectedEvent.assigned_users.join(', ')}</span></div>
+                      <div><span className="font-medium text-[#cbd5e1]">Assigned to:</span> <span className="text-[#94a3b8]">{selectedEvent.assigned_users.join(', ')}</span></div>
                     )}
                     <div>
-                      <span className="font-medium text-[#374151]">Status:</span>{' '}
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${selectedEvent.status === 'done' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fef9ee] text-[#d4a017]'}`}>
+                      <span className="font-medium text-[#cbd5e1]">Status:</span>{' '}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${selectedEvent.status === 'done' ? 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' : 'bg-[rgba(245,158,11,0.16)] text-[#f59e0b]'}`}>
                         {selectedEvent.status === 'done' ? 'Done' : 'Planned'}
                       </span>
                     </div>
                     {selectedEvent.location && (
-                      <div><span className="font-medium text-[#374151]">Location:</span> <span className="text-[#6b7280]">{selectedEvent.location}</span></div>
+                      <div><span className="font-medium text-[#cbd5e1]">Location:</span> <span className="text-[#94a3b8]">{selectedEvent.location}</span></div>
                     )}
                   </div>
                   {selectedEvent.notes && (
                     <div>
-                      <p className="text-[11px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Notes</p>
-                      <p className="text-[13px] text-[#6b7280]">{selectedEvent.notes}</p>
+                      <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-[13px] text-[#94a3b8]">{selectedEvent.notes}</p>
                     </div>
                   )}
 
@@ -1087,29 +1087,29 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                     onDismiss={() => setNextAction(null)}
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 px-6 py-4 border-t border-[#e5e7eb]">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 px-6 py-4 border-t border-[#2e2e4a]">
                   <button
                     onClick={() => scheduleFromEvent(selectedEvent)}
-                    className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                    className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
                   >
                     <Calendar className="w-4 h-4" /> Schedule Meeting
                   </button>
                   <div className="flex flex-wrap gap-2 justify-end">
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#fca5a5] border border-[rgba(239,68,68,0.4)] rounded-lg hover:bg-[rgba(239,68,68,0.15)]"
                     >
                       <Trash2 className="w-4 h-4" /> Delete
                     </button>
                     <button
                       onClick={() => { setSelectedEvent(null); setNextAction(null); }}
-                      className="px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                      className="px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
                     >
                       Close
                     </button>
                     <button
                       onClick={() => openEditModal(selectedEvent)}
-                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]"
+                      className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
                     >
                       <Edit className="w-4 h-4" /> Edit
                     </button>
@@ -1117,7 +1117,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                     {selectedEvent.status !== 'done' && (
                       <button
                         onClick={() => markEventDone(selectedEvent)}
-                        className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg"
+                        className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg"
                       >
                         <CheckCircle className="w-4 h-4" /> Mark Done
                       </button>
@@ -1133,10 +1133,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── BOOK MEETING MODAL ── */}
       {showMeetingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Book Customer Meeting</h3>
-              <button onClick={() => setShowMeetingModal(false)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">Book Customer Meeting</h3>
+              <button onClick={() => setShowMeetingModal(false)} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1163,8 +1163,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <div>
                   <label className={labelClass}>Time</label>
                   <Select value={newMeeting.time} onValueChange={v => setNewMeeting(p => ({...p, time: v}))}>
-                    <SelectTrigger className="text-[13px] border-[#e5e7eb]"><SelectValue placeholder="Select time" /></SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue placeholder="Select time" /></SelectTrigger>
+                    <SelectContent className="max-h-60 bg-[#242438] border-[#2e2e4a] text-white">
                       {generateTimeOptions().map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -1173,8 +1173,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <div>
                 <label className={labelClass}>Assigned User</label>
                 <Select value={newMeeting.assignedUser} onValueChange={v => setNewMeeting(p => ({...p, assignedUser: v}))}>
-                  <SelectTrigger className="text-[13px] border-[#e5e7eb]"><SelectValue placeholder="Select user" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue placeholder="Select user" /></SelectTrigger>
+                  <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
                     {getAvailableUsers().map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -1188,9 +1188,9 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <textarea className={inputClass} value={newMeeting.notes} onChange={e => setNewMeeting(p => ({...p, notes: e.target.value}))} rows={3} placeholder="Meeting agenda, objectives, etc." />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => setShowMeetingModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
-              <button onClick={createMeeting} className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg">Book Meeting</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={() => setShowMeetingModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">Cancel</button>
+              <button onClick={createMeeting} className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">Book Meeting</button>
             </div>
           </div>
         </div>
@@ -1199,10 +1199,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── SCHEDULE MEETING MODAL ── */}
       {showScheduleMeetingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Schedule Customer Meeting</h3>
-              <button onClick={() => setShowScheduleMeetingModal(false)} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">Schedule Customer Meeting</h3>
+              <button onClick={() => setShowScheduleMeetingModal(false)} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1229,8 +1229,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <div>
                   <label className={labelClass}>Time</label>
                   <Select value={scheduleMeeting.time} onValueChange={v => setScheduleMeeting(p => ({...p, time: v}))}>
-                    <SelectTrigger className="text-[13px] border-[#e5e7eb]"><SelectValue placeholder="Select time" /></SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue placeholder="Select time" /></SelectTrigger>
+                    <SelectContent className="max-h-60 bg-[#242438] border-[#2e2e4a] text-white">
                       {generateTimeOptions().map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -1255,11 +1255,11 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                         }}
                         className="rounded"
                       />
-                      <span className="text-[#374151]">{user}</span>
+                      <span className="text-[#cbd5e1]">{user}</span>
                     </label>
                   ))}
                   {getAvailableUsers().length === 0 && (
-                    <p className="text-[12px] text-[#9ca3af] col-span-2">No contacts found — add contacts in the Contacts section first</p>
+                    <p className="text-[12px] text-[#6b7280] col-span-2">No contacts found — add contacts in the Contacts section first</p>
                   )}
                 </div>
               </div>
@@ -1273,9 +1273,9 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <textarea className={inputClass} value={scheduleMeeting.notes} onChange={e => setScheduleMeeting(p => ({...p, notes: e.target.value}))} rows={3} placeholder="Meeting agenda, objectives, preparation notes..." />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => setShowScheduleMeetingModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
-              <button onClick={createScheduledMeeting} className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg">Schedule Meeting</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={() => setShowScheduleMeetingModal(false)} className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">Cancel</button>
+              <button onClick={createScheduledMeeting} className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">Schedule Meeting</button>
             </div>
           </div>
         </div>
@@ -1284,23 +1284,23 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── DELETE CONFIRM MODAL ── */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Delete Event</h3>
-              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">Delete Event</h3>
+              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-[13px] text-[#6b7280]">Are you sure you want to delete this event? This action cannot be undone.</p>
-              <div className="bg-[#fafafa] border border-[#e5e7eb] rounded-lg p-3">
-                <p className="text-[13px] font-medium text-[#374151]">{selectedEvent?.title}</p>
-                <p className="text-[12px] text-[#9ca3af] mt-0.5">{selectedEvent?.company}</p>
+              <p className="text-[13px] text-[#94a3b8]">Are you sure you want to delete this event? This action cannot be undone.</p>
+              <div className="bg-[#1f1f33] border border-[#2e2e4a] rounded-lg p-3">
+                <p className="text-[13px] font-medium text-[#cbd5e1]">{selectedEvent?.title}</p>
+                <p className="text-[12px] text-[#6b7280] mt-0.5">{selectedEvent?.company}</p>
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
-              <button onClick={deleteEvent} className="px-4 py-2 text-[13px] font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Delete Event</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={() => { setShowDeleteConfirm(false); setSendCancellationEmail(true); setNextAction(null); }} className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">Cancel</button>
+              <button onClick={deleteEvent} className="px-4 py-2 text-[13px] font-medium text-white bg-[#ef4444] hover:bg-[#dc2626] rounded-lg">Delete Event</button>
             </div>
           </div>
         </div>
@@ -1309,10 +1309,10 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       {/* ── EDIT EVENT MODAL ── */}
       {showEditModal && editingEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-              <h3 className="text-[15px] font-semibold text-[#111113]">Edit Event</h3>
-              <button onClick={() => { setShowEditModal(false); setEditingEvent(null); }} className="p-1.5 rounded-lg hover:bg-[#f5f5f7] text-[#6b7280]">
+          <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
+              <h3 className="text-[15px] font-semibold text-white">Edit Event</h3>
+              <button onClick={() => { setShowEditModal(false); setEditingEvent(null); }} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1339,8 +1339,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <div>
                   <label className={labelClass}>Time *</label>
                   <Select value={editingEvent.time} onValueChange={v => setEditingEvent(p => ({...p, time: v}))}>
-                    <SelectTrigger className="text-[13px] border-[#e5e7eb]"><SelectValue placeholder="Select time" /></SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue placeholder="Select time" /></SelectTrigger>
+                    <SelectContent className="max-h-60 bg-[#242438] border-[#2e2e4a] text-white">
                       {generateTimeOptions().map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -1365,7 +1365,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                         }}
                         className="rounded"
                       />
-                      <span className="text-[#374151]">{user}</span>
+                      <span className="text-[#cbd5e1]">{user}</span>
                     </label>
                   ))}
                 </div>
@@ -1379,9 +1379,9 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <textarea className={inputClass} value={editingEvent.notes || ''} onChange={e => setEditingEvent(p => ({...p, notes: e.target.value}))} rows={3} placeholder="Additional notes" />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb]">
-              <button onClick={() => { setShowEditModal(false); setEditingEvent(null); }} className="px-4 py-2 text-[13px] font-medium text-[#374151] border border-[#e5e7eb] rounded-lg hover:bg-[#fafafa]">Cancel</button>
-              <button onClick={saveEditedEvent} className="px-4 py-2 text-[13px] font-medium text-[#111113] bg-[#d4a017] hover:bg-[#b8891a] rounded-lg">Save Changes</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+              <button onClick={() => { setShowEditModal(false); setEditingEvent(null); }} className="px-4 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">Cancel</button>
+              <button onClick={saveEditedEvent} className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">Save Changes</button>
             </div>
           </div>
         </div>
