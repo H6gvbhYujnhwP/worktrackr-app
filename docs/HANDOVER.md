@@ -1,8 +1,24 @@
 # WorkTrackr — Handover (read me first)
 
-**Last updated: end of the v3.5 redesign session.**
+**Last updated: end of the v4.2 session — the frontend redesign has been handed to Manus AI.**
 
 This file is the quick orientation for anyone (or any AI assistant) picking up work on WorkTrackr. The full detail lives in the roadmap; this is the map.
+
+---
+
+## 🚦 DIRECTION CHANGE (v4.2) — READ THIS FIRST
+The owner has handed the **entire frontend visual redesign to Manus AI**. The page-by-page dark reskin done here (v3.1–v4.1) is **superseded** — Manus will redo the visual layer across the whole app in one pass, with the glowing Concept-3 hero header on the **top bar of every page**.
+
+- **The brief given to Manus is `docs/MANUS_FRONTEND_REDESIGN_PROMPT.md`.** The owner gives Manus the repo zip; Manus returns the redesigned frontend as a zip **or** pushes to GitHub.
+- **Your job when the redesign comes back = integrate + verify it all still works**, NOT more reskinning:
+  1. Get the code (returned zip, or pull Manus's GitHub branch); work from a clean copy.
+  2. **`npm run build` must pass clean** — no broken imports, only real `lucide-react@0.510` icons.
+  3. **Every feature + flow preserved** — use the parity-inventory + flow-verification rules below and the roadmap **§17 build log** (it lists each screen's real features + real endpoints). Confirm each button/filter/search/sort/tab/modal/form still hits the **same endpoint, same field shape**, `credentials:'include'`.
+  4. **Guardrails held:** no hardcoded money; role-gating intact (engineers never see commission/profit); **no invented data** (re-check the divergences in "Don't invent data" below).
+  5. **Report to the owner in plain app-flow terms**; fix or flag anything broken.
+  6. **THEN run `cleanup-design-reference.ps1`** (repo root) to delete the **~124 MB of Manus reference images** in `docs/design/`. It's scoped to `docs/design/` and never touches the live in-app asset `web/client/src/app/src/assets/wriggly_flourish.*`. **Run it only AFTER Manus is done** (Manus needs those images). Then commit the deletion so the repo shrinks.
+
+**Don't invent data (the divergences to verify):** Projects cards have no progress % and a single assignee; Project detail is a **field-service job** (time entries + parts + convert-to-invoice), not tasks/team/milestones/files; My Pay has no payslip/YTD/next-payment backend; Approvals is the **order** workflow, not expense/leave/quote; My Notes is plain with reminders + ticket-integration + dictation (no categories/rich-text); My Tasks status is **open/done only**; **`PUT /api/contacts/:id` replaces the whole `crm` object**; stage `new` displays as **"Suspect"**.
 
 ---
 
@@ -16,8 +32,9 @@ A CRM / ordering / commission app.
 The **owner is non-technical**. Explain everything in **plain, app-flow language — no code jargon**. Describe what a change does for the user, not how the code works.
 
 ## Source of truth
-- **The roadmap** — `docs/WorkTrackr_CRM_Ordering_Commission_Roadmap_v4.0.md` (always read the highest version). Start with **§15 (status banner)** and **§17 (UI redesign + build log)**.
-- **The UI redesign** was designed by **Manus AI**. Design assets + token sheet are in **`docs/design/`** (`REDESIGN_HANDOVER.md`, `DESIGN_SYSTEM.md`, `BATCH_KEY.md`, and per-screen PNGs).
+- **The roadmap** — `docs/WorkTrackr_CRM_Ordering_Commission_Roadmap_v4.2.md` (always read the highest version). Start with **§15 (status banner — has the Manus-pivot START HERE block)** and **§17 (UI redesign + build log)**.
+- **The Manus brief** — `docs/MANUS_FRONTEND_REDESIGN_PROMPT.md` (the redesign instructions handed to Manus).
+- **The UI redesign** was designed by **Manus AI**. Design assets + token sheet are in **`docs/design/`** (`REDESIGN_HANDOVER.md`, `DESIGN_SYSTEM.md`, `BATCH_KEY.md`, and per-screen PNGs) — these PNGs are the ~124 MB the cleanup script removes once Manus is done.
 - ⚠️ **Stale — do NOT trust:** `docs/ROADMAP.md`, `docs/APP-STATE.md`, `docs/database_schema.md` (April snapshots, superseded by the roadmap).
 
 ## How we work (follow exactly)
@@ -48,8 +65,17 @@ Whole app moving to a **dark, full-width "Relationship Hub"** look. The **compan
 - **v3.9** — **Delivery group started: Projects (list + detail) went dark.** `JobsList` rebuilt to Manus's dark **card grid** (real data — no faked progress/assignee-stacks); search, six-status filter (tabs + dropdown), sort, stat strip, create/open all kept. `JobDetail` **dark-reskinned in place** (logic byte-for-byte) — kept the real field-service features (time entries, parts, status workflow, convert-to-invoice, edit, delete) rather than Manus's Tasks/Team/Milestones/Files view. `JobDetailWithLayout` + Dashboard wired for full-bleed.
 - **v4.0** — **Delivery Calendar went dark; Sales Calendar tab seam closed.** `CRMCalendar` dark-reskinned in place via scripted token swap (logic byte-for-byte; all 11 flows intact; 6 shadcn Selects given dark overrides). Dashboard wires full-bleed for the calendar views and makes the Sales **Calendar** tab bar dark — **the Sales group is now fully dark end-to-end.**
 
+- **v4.1** — **Company hero glow turned up.** `PageHero` box styling upgraded to match Manus's render — a lit amber outline (rim + outer bloom + bright top edge + inner glow) and a deeper inner gradient. Affects the company record + add-company pages only. The glowing hero is still company-record-only (Manus's choice); extending it to list headers is an opt-in flair decision.
+
 ## Next task
-**Tickets — the last Delivery piece, and the biggest/most critical screen in the app. Give it a whole turn.** The Tickets *list* is **woven into `Dashboard.jsx`** (inline stat cards + tab pills + the table container, ~lines 238–395) on top of `TicketsTableView.jsx` (254). The *detail* is `TicketDetailViewTabbed.jsx` (~1,900 lines). Supporting modals: `CreateTicketModal.jsx` (605), `TicketDetailModal.jsx` (194), `AssignTicketsModal.jsx`, `TicketFieldCustomizer.jsx`, `TicketCard.jsx` (104). Approach: (1) inventory every flow and verify endpoints first; (2) reskin in place via the **scripted colour-token swap** (the same method used for `JobDetail` + `CRMCalendar` — keeps logic byte-for-byte); (3) the inline Dashboard tickets block needs its light classes swapped too, plus full-bleed added for `tickets`; (4) **do not** combine with anything else. After Tickets, Delivery is done. Then **Finance** (batch_d: Invoices), **Settings** (batch_e), **Account** (batch_f), plus the **sidebar 3-state + mobile**. **Keep Manus's design — don't redesign.** Per the standing rules: inventory first, verify flows, reskin-in-place (logic verbatim), validate, hand over with filename→folder + DELETE list, bump roadmap +0.1.
+**Wait for Manus's redesigned frontend, then INTEGRATE + VERIFY it (see the DIRECTION CHANGE banner at the top).** In short: get Manus's code → `npm run build` clean → verify every feature/flow still works against the same endpoints (use the §17 build log as the checklist of what each screen really does) → confirm the guardrails held (no hardcoded money, role-gating, no invented data) → report to the owner in plain terms and fix/flag anything broken → **then run `cleanup-design-reference.ps1`** to strip the ~124 MB of reference images from `docs/design/`.
+
+Useful while verifying: the v3.6–v4.1 components this project produced (dark Sales, Workspace, Projects, Calendar, `PageHero`) are catalogued in §17 — even if Manus replaces them, they document the *real* features + endpoints each screen must still have. If Manus's output is missing a feature or invents data, that's the thing to flag.
+
+**Reskin work is paused** — don't continue the page-by-page dark reskap; Manus owns the visual layer now. The remaining screens the old plan listed (Tickets, Finance, Settings, Account, sidebar 3-state + mobile) are Manus's to do. If the owner later wants to drop Manus and resume in-house, the old plan resumes from **Tickets** (list woven into `Dashboard.jsx` + `TicketsTableView` + `TicketDetailViewTabbed` + the ticket modals).
+
+## (previous next task — superseded by the Manus handoff in v4.2)
+Tickets, then Finance / Settings / Account / sidebar — was the page-by-page plan; now Manus's job.
 
 ## (previous next task — done in v4.0)
 Delivery: Calendar — done (CRMCalendar dark in place; Sales Calendar tab now dark too).
