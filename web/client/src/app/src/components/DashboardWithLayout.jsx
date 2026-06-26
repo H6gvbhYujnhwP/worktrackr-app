@@ -13,6 +13,7 @@ export default function DashboardWithLayout() {
   // cached at mount; the one-shot effect below covers the async-load case.
   const roleHome = (role) => (role === 'salesman' || role === 'engineer') ? 'my-pay' : 'tickets';
   const [currentView, setCurrentView] = useState(() => roleHome(membership?.role));
+  const [fullBleed, setFullBleed] = useState(false);
   const homeAppliedRef = useRef(false);
 
   // Check if user is admin
@@ -73,6 +74,7 @@ export default function DashboardWithLayout() {
       isEngineer={isEngineer}
       onNavigate={handleSidebarNavigation}
       currentView={currentView}
+      fullBleed={fullBleed}
     >
       {/* Dashboard is now a CONTROLLED COMPONENT */}
       {/* It receives currentView as a prop and calls onViewChange to request changes */}
@@ -80,6 +82,7 @@ export default function DashboardWithLayout() {
         ref={dashboardRef}
         currentView={currentView}
         onViewChange={handleSidebarNavigation}
+        onFullBleedChange={setFullBleed}
       />
     </AppLayout>
   );

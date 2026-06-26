@@ -89,7 +89,7 @@ const StatCard = ({ label, count, iconBg, iconColor, Icon, onClick, active }) =>
 // if new views are added later.
 const ENGINEER_ALLOWED_VIEWS = ['tickets', 'jobs', 'calendar', 'my-tasks', 'my-pay', 'my-wage', 'my-notes'];
 
-const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
+const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, ref) => {
   const { user, membership, logout } = useAuth();
   const { tickets, users, emailLogs, bulkUpdateTickets, bulkDeleteTickets } = useSimulation();
 
@@ -129,6 +129,14 @@ const Dashboard = forwardRef(({ currentView, onViewChange }, ref) => {
       onViewChange('tickets');
     }
   }, [membership, currentView]);
+
+  // Tell the layout when a dark, full-bleed redesigned page is showing, so it
+  // drops the light padded wrapper (removes the white gutter). Extend the
+  // condition here as more dark/full-screen pages land.
+  useEffect(() => {
+    const fb = currentView === 'companies' && (!!openCompanyId || addingCompany);
+    if (onFullBleedChange) onFullBleedChange(fb);
+  }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 
   // Loading guard
   if (user === undefined || membership === undefined) {

@@ -8,10 +8,8 @@ import React from 'react';
 
 const TABS = [
   { view: 'companies', label: 'Companies' },
-  { view: 'leads',     label: 'Leads' },
   { view: 'quotes',    label: 'Quotes' },
   { view: 'orders',    label: 'Orders' },
-  { view: 'contracts', label: 'Contracts' },
   { view: 'sales-calendar', label: 'Calendar' },
 ];
 
