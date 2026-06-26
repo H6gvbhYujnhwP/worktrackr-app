@@ -1,9 +1,11 @@
 // web/client/src/app/src/components/OrdersList.jsx
-// Phase 3 — orders list + entry to the order form. Encapsulates open/create
+// Sales › Orders — orders list + entry to the order form. Encapsulates open/create
 // state so the Dashboard only renders <OrdersList/>. Reads /api/orders.
 // Props: initialNewCompanyId (open a fresh order for this company), onConsumeInitial().
-// Chrome (header / pills / table shell) comes from SalesPageLayout so every Sales
-// tab shares one look (see SalesPageLayout.jsx).
+//
+// v3.6 — DARK reskin to match the redesigned Sales group. Same data, same
+// search/filters/columns, same "new order for company" entry and row → order
+// form. Only the colours change.
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import OrderForm from './OrderForm.jsx';
@@ -12,13 +14,13 @@ import SalesPageLayout, {
 } from './SalesPageLayout.jsx';
 
 const STATUS = {
-  draft:     'bg-[#F1EFE8] text-[#2C2C2A]',
-  submitted: 'bg-[#E6F1FB] text-[#0C447C]',
-  approved:  'bg-[#E1F5EE] text-[#085041]',
-  rejected:  'bg-[#FAECE7] text-[#993C1D]',
-  ordered:   'bg-[#FAEEDA] text-[#854F0B]',
-  invoiced:  'bg-[#E6F1FB] text-[#0C447C]',
-  paid:      'bg-[#EAF3DE] text-[#27500A]',
+  draft:     'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]',
+  submitted: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  approved:  'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',
+  rejected:  'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',
+  ordered:   'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',
+  invoiced:  'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',
+  paid:      'bg-[rgba(132,204,22,0.20)] text-[#bef264]',
 };
 const FILTERS = ['draft', 'submitted', 'approved', 'ordered', 'invoiced', 'paid'];
 const money = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
@@ -78,17 +80,18 @@ export default function OrdersList({ initialNewCompanyId, onConsumeInitial }) {
 
   const actions = (
     <>
-      <SalesSearch value={search} onChange={setSearch} placeholder="Search company, salesperson" />
-      <SalesPrimaryButton onClick={() => setOpen({})}>New order</SalesPrimaryButton>
+      <SalesSearch dark value={search} onChange={setSearch} placeholder="Search company, salesperson" />
+      <SalesPrimaryButton dark onClick={() => setOpen({})}>New order</SalesPrimaryButton>
     </>
   );
 
   const filters = (
     <>
-      <SalesAllPill active={filter === 'all'} count={orders.length} onClick={() => setFilter('all')} />
+      <SalesAllPill dark active={filter === 'all'} count={orders.length} onClick={() => setFilter('all')} />
       {FILTERS.map((f) => (
         <SalesFilterPill
           key={f}
+          dark
           active={filter === f}
           pillClass={STATUS[f]}
           count={counts[f] || 0}
@@ -103,30 +106,31 @@ export default function OrdersList({ initialNewCompanyId, onConsumeInitial }) {
 
   return (
     <SalesPageLayout
+      dark
       title="Orders"
       subtitle={`${orders.length} ${orders.length === 1 ? 'order' : 'orders'}`}
       actions={actions}
       filters={filters}
     >
-      <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
+      <div className={`${GRID} px-4 py-2.5 bg-[#1f1f33] text-[11px] uppercase tracking-wide text-[#6b7280]`}>
         <div>Company</div><div>Salesperson</div><div className="text-right">Value</div><div className="text-right">Profit</div><div />
       </div>
-      {loading && <div className="px-4 py-8 text-center text-[13px] text-gray-500">Loading orders…</div>}
-      {error && !loading && <div className="px-4 py-8 text-center text-[13px] text-red-700">{error}</div>}
+      {loading && <div className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">Loading orders…</div>}
+      {error && !loading && <div className="px-4 py-8 text-center text-[13px] text-[#fca5a5]">{error}</div>}
       {!loading && !error && visible.length === 0 && (
-        <div className="px-4 py-10 text-center text-[13px] text-gray-500">No orders {filter !== 'all' ? `at status “${filter}”` : 'yet'}. Create one with “New order”.</div>
+        <div className="px-4 py-10 text-center text-[13px] text-[#94a3b8]">No orders {filter !== 'all' ? `at status “${filter}”` : 'yet'}. Create one with “New order”.</div>
       )}
-      {!loading && !error && visible.map((o, i) => (
+      {!loading && !error && visible.map((o) => (
         <button key={o.id} onClick={() => setOpen({ orderId: o.id })}
-          className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50 ${i % 2 ? 'bg-gray-50/40' : ''}`}>
+          className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-[#2e2e4a] hover:bg-[#2a2a48]`}>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-gray-900 truncate">{o.companyName || 'No company'}</div>
-            <span className={`inline-block mt-1 rounded-md px-2 py-0.5 text-[11px] capitalize ${STATUS[o.status] || 'bg-gray-100 text-gray-700'}`}>{o.status}</span>
+            <div className="text-sm font-medium text-white truncate">{o.companyName || 'No company'}</div>
+            <span className={`inline-block mt-1 rounded-md px-2 py-0.5 text-[11px] capitalize ${STATUS[o.status] || 'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]'}`}>{o.status}</span>
           </div>
-          <div className="min-w-0 text-[13px] text-gray-600 truncate">{o.salespersonName || '—'}</div>
-          <div className="text-right text-[13px] text-gray-700">{money(o.totals?.value)}</div>
-          <div className="text-right text-[13px] text-[#0f6e56]">{money(o.totals?.profit)}</div>
-          <div className="text-right text-gray-300"><ChevronRight className="w-4 h-4 inline" /></div>
+          <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{o.salespersonName || '—'}</div>
+          <div className="text-right text-[13px] text-[#cbd5e1]">{money(o.totals?.value)}</div>
+          <div className="text-right text-[13px] text-[#6ee7b7]">{money(o.totals?.profit)}</div>
+          <div className="text-right text-[#6b7280]"><ChevronRight className="w-4 h-4 inline" /></div>
         </button>
       ))}
     </SalesPageLayout>

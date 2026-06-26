@@ -134,7 +134,9 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   // drops the light padded wrapper (removes the white gutter). Extend the
   // condition here as more dark/full-screen pages land.
   useEffect(() => {
-    const fb = currentView === 'companies' && (!!openCompanyId || addingCompany);
+    // The redesigned dark Sales pages (Companies list/profile/add, Quotes, Orders)
+    // go edge-to-edge. The Calendar tab + Leads/Contracts are still light.
+    const fb = ['companies', 'quotes', 'orders'].includes(currentView);
     if (onFullBleedChange) onFullBleedChange(fb);
   }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 
@@ -411,7 +413,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   return (
     <div className="space-y-0">
       {SALES_VIEWS.includes(currentView) && !salesProfileOpen && (
-        <SalesTabs current={currentView} onChange={onViewChange} />
+        <SalesTabs current={currentView} onChange={onViewChange} dark={['companies', 'quotes', 'orders'].includes(currentView)} />
       )}
       {currentView === 'tickets'        && ticketsViewJSX}
       {currentView === 'users' && isAdmin && <UserManagementImproved users={users} currentUser={user} />}
