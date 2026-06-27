@@ -52,6 +52,13 @@ const timeAgo = (iso) => {
   return new Date(iso).toLocaleDateString();
 };
 
+// Build a 1-hour timed event window from a date + HH:mm time (local → ISO).
+const eventWindow = (date, time) => {
+  const start = new Date(`${date}T${time || '09:00'}:00`);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  return { start_at: start.toISOString(), end_at: end.toISOString() };
+};
+
 // Precise, compact date+time stamp for the timeline (e.g. "Today 14:32",
 // "Yesterday 09:05", "27 Jun 2026 14:32"). Full date/time available on hover.
 const stamp = (iso) => {
@@ -105,6 +112,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const [savingNote, setSavingNote] = useState(false);
   const [noteToCal, setNoteToCal] = useState(false);
   const [noteCalDate, setNoteCalDate] = useState('');
+  const [noteCalTime, setNoteCalTime] = useState('09:00');
   const [dragOver, setDragOver] = useState(false);
   const [reminderForm, setReminderForm] = useState(null); // null = closed
   const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
@@ -299,17 +307,18 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       if (noteToCal && noteCalDate) {
-        const startAt = new Date(`${noteCalDate}T09:00:00`).toISOString();
-        await fetch('/api/crm-events', {
+        const { start_at, end_at } = eventWindow(noteCalDate, noteCalTime);
+        const cr = await fetch('/api/crm-events', {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contact_id: companyId, title: body.slice(0, 120), type: 'follow_up',
-            start_at: startAt, end_at: startAt, all_day: true, status: 'planned',
+            start_at, end_at, all_day: false, status: 'planned',
           }),
         });
+        if (!cr.ok) throw new Error(`Saved the note, but the calendar entry failed (HTTP ${cr.status})`);
       }
-      setNoteText(''); setNoteToCal(false); setNoteCalDate('');
+      setNoteText(''); setNoteToCal(false); setNoteCalDate(''); setNoteCalTime('09:00');
       loadHistory();
     } catch (e) { setError(e.message || 'Could not save note'); }
     finally { setSavingNote(false); }
@@ -320,15 +329,16 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const submitReminder = async () => {
     const title = (reminderForm.title || '').trim();
     const date = reminderForm.date;
+    const time = reminderForm.time || '09:00';
     if (!title || !date) return;
-    const startAt = new Date(`${date}T09:00:00`).toISOString();
+    const { start_at, end_at } = eventWindow(date, time);
     try {
       const r = await fetch('/api/crm-events', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contact_id: companyId, title, type: 'follow_up',
-          start_at: startAt, end_at: startAt, all_day: true, status: 'planned',
+          start_at, end_at, all_day: false, status: 'planned',
         }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -369,13 +379,13 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     const title = (naForm.nextAction || '').trim() || 'Follow up';
     const date = naForm.chaseDate;
     if (!date) { setError('Pick a chase date to book it in the calendar.'); return; }
-    const startAt = new Date(`${date}T09:00:00`).toISOString();
+    const { start_at, end_at } = eventWindow(date, naForm.chaseTime);
     try {
       await saveCrm({ nextAction: title, chaseDate: date });
       const r = await fetch('/api/crm-events', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact_id: companyId, title, type: 'follow_up', start_at: startAt, end_at: startAt, all_day: true, status: 'planned' }),
+        body: JSON.stringify({ contact_id: companyId, title, type: 'follow_up', start_at, end_at, all_day: false, status: 'planned' }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setNaForm(null);
@@ -444,6 +454,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             <>
               <input value={naForm.nextAction} onChange={(e) => setNaForm({ ...naForm, nextAction: e.target.value })} placeholder="e.g. call back" style={{ ...inputStyle, width: 150, padding: '5px 8px' }} />
               <input type="date" value={naForm.chaseDate || ''} onChange={(e) => setNaForm({ ...naForm, chaseDate: e.target.value })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              <input type="time" value={naForm.chaseTime || '09:00'} onChange={(e) => setNaForm({ ...naForm, chaseTime: e.target.value })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
               <button onClick={saveNextAction} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
               <button onClick={bookNextAction} style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}><CalendarPlus size={13} style={{ verticalAlign: -2, marginRight: 3 }} />Book in calendar</button>
               <button onClick={() => setNaForm(null)} style={{ background: 'transparent', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 12 }}>Cancel</button>
@@ -571,7 +582,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !noteText.trim() ? 0.6 : 1 }}>
               <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Save note
             </button>
-            <button onClick={() => setReminderForm({ title: '', date: '' })}
+            <button onClick={() => setReminderForm({ title: '', date: '', time: '09:00' })}
               style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>
               <CalendarPlus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add calendar reminder
             </button>
@@ -580,15 +591,22 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               Add to calendar
             </label>
             {noteToCal && (
-              <input type="date" value={noteCalDate} onChange={(e) => setNoteCalDate(e.target.value)}
-                style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              <>
+                <input type="date" value={noteCalDate} onChange={(e) => setNoteCalDate(e.target.value)}
+                  style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+                <input type="time" value={noteCalTime} onChange={(e) => setNoteCalTime(e.target.value)}
+                  style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              </>
             )}
           </div>
 
           {reminderForm && (
             <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginTop: 8, display: 'grid', gap: 8 }}>
               <input autoFocus value={reminderForm.title} onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })} placeholder="Reminder (e.g. call back)" style={inputStyle} />
-              <input type="date" value={reminderForm.date} onChange={(e) => setReminderForm({ ...reminderForm, date: e.target.value })} style={inputStyle} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input type="date" value={reminderForm.date} onChange={(e) => setReminderForm({ ...reminderForm, date: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
+                <input type="time" value={reminderForm.time || '09:00'} onChange={(e) => setReminderForm({ ...reminderForm, time: e.target.value })} style={{ ...inputStyle, width: 'auto' }} />
+              </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setReminderForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
                 <button onClick={submitReminder} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Add to calendar</button>

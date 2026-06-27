@@ -196,7 +196,11 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const [activeStage, setActiveStage] = useState(null); // list-view stage filter (null = all)
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('pipeline'); // 'pipeline' | 'list'
+  const [viewMode, setViewMode] = useState(() => {
+    try { const v = localStorage.getItem('wt_companies_view'); if (v === 'list' || v === 'pipeline') return v; } catch (e) { /* ignore */ }
+    return 'pipeline';
+  }); // 'pipeline' | 'list' — remembered between visits
+  const chooseView = (m) => { setViewMode(m); try { localStorage.setItem('wt_companies_view', m); } catch (e) { /* ignore */ } };
   const [showImport, setShowImport] = useState(false);
   const [reload, setReload] = useState(0);
   const [menuOpen, setMenuOpen] = useState(null);
@@ -317,7 +321,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       <SalesSecondaryButton dark icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
       <SalesPrimaryButton dark onClick={() => onAddCompany && onAddCompany()}>Add company</SalesPrimaryButton>
       {isManager && (
-        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => !v); setViewMode('list'); setActiveStage(null); }}>
+        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => { const next = !v; if (next) setViewMode('list'); else { try { const sv = localStorage.getItem('wt_companies_view'); setViewMode(sv === 'list' || sv === 'pipeline' ? sv : 'pipeline'); } catch (e) { setViewMode('pipeline'); } } return next; }); setActiveStage(null); }}>
           {archivedMode ? 'Active companies' : 'Archived'}
         </SalesSecondaryButton>
       )}
@@ -328,7 +332,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const Toggle = (
     <div className="inline-flex rounded-lg border border-[#2e2e4a] bg-[#242438] p-0.5">
       <button
-        onClick={() => setViewMode('list')}
+        onClick={() => chooseView('list')}
         className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] ${
           viewMode === 'list' ? 'bg-[rgba(245,158,11,0.15)] text-[#fcd34d]' : 'text-[#94a3b8] hover:text-white'
         }`}
@@ -336,7 +340,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
         <List className="w-4 h-4" /> List view
       </button>
       <button
-        onClick={() => setViewMode('pipeline')}
+        onClick={() => chooseView('pipeline')}
         className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] ${
           viewMode === 'pipeline' ? 'bg-[rgba(245,158,11,0.15)] text-[#fcd34d]' : 'text-[#94a3b8] hover:text-white'
         }`}

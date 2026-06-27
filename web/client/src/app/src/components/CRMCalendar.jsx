@@ -276,7 +276,11 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     const dateStr = `${year}-${month}-${day}`;
     const crm = sources.sales ? events.filter(event => {
       const ts = event.start_at || event.startAt;
-      if (ts) return ts.split('T')[0] === dateStr;
+      if (ts) {
+        const ed = new Date(ts);
+        const eLocal = `${ed.getFullYear()}-${String(ed.getMonth() + 1).padStart(2, '0')}-${String(ed.getDate()).padStart(2, '0')}`;
+        return eLocal === dateStr;
+      }
       return event.date === dateStr;
     }) : [];
     const jobs = sources.projects ? jobEvents.filter(j => j.start_at && j.start_at.split('T')[0] === dateStr) : [];
