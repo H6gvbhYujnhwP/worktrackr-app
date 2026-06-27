@@ -51,6 +51,18 @@ const timeAgo = (iso) => {
   if (d < 30) return `${d}d ago`;
   return new Date(iso).toLocaleDateString();
 };
+
+// Precise, compact date+time stamp for the timeline (e.g. "Today 14:32",
+// "Yesterday 09:05", "27 Jun 2026 14:32"). Full date/time available on hover.
+const stamp = (iso) => {
+  if (!iso) return '';
+  const dt = new Date(iso);
+  const time = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const days = Math.floor((Date.now() - dt.getTime()) / 86400000);
+  if (days <= 0) return `Today ${time}`;
+  if (days === 1) return `Yesterday ${time}`;
+  return `${dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} ${time}`;
+};
 const emptyPerson = { name: '', role: '', email: '', phone: '', isDecisionMaker: false, editIndex: -1 };
 
 // ── dark surface helpers (use the --wt-* tokens added in v3.1) ──
@@ -91,6 +103,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [reminderForm, setReminderForm] = useState(null); // null = closed
   const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
   const [naForm, setNaForm] = useState(null);             // next action + chase date edit; null = closed
@@ -211,6 +224,46 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
       });
       loadHistory();
     } catch { loadTasks(); }
+  };
+
+  // Drag an email file (.eml/.txt) or selected text onto the timeline to log it
+  // as a note — uses the same notes endpoint, no extra storage. (Binary files
+  // like PDFs/images are noted by name only; true file storage needs the backend.)
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const postEmailNote = (subject, body) =>
+      fetch(`/api/contacts/${companyId}/notes`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: 'email', subject, body }),
+      });
+    try {
+      const files = Array.from(e.dataTransfer.files || []);
+      if (files.length) {
+        for (const f of files) {
+          let subject = f.name.replace(/\.(eml|msg|txt)$/i, '');
+          let body = '';
+          if (/\.(eml|txt)$/i.test(f.name)) {
+            const text = await f.text();
+            const m = text.match(/^Subject:\s*(.+)$/im);
+            if (m) subject = m[1].trim();
+            body = text.slice(0, 5000);
+          } else {
+            body = `File dropped: ${f.name}`;
+          }
+          await postEmailNote(subject, body);
+        }
+        loadHistory();
+        return;
+      }
+      const text = e.dataTransfer.getData('text');
+      if (text && text.trim()) {
+        const subject = text.trim().split('\n')[0].slice(0, 120) || 'Email';
+        await postEmailNote(subject, text.trim().slice(0, 5000));
+        loadHistory();
+      }
+    } catch { /* ignore drop errors */ }
   };
 
   // Save a note → POST /api/contacts/:id/notes (shows in the timeline below).
@@ -467,8 +520,18 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
         </div>
 
         {/* History & notes */}
-        <div style={cardStyle}>
+        <div
+          style={{ ...cardStyle, ...(dragOver ? { outline: `2px dashed ${T.accent}`, outlineOffset: -2 } : {}) }}
+          onDragOver={(e) => { e.preventDefault(); if (!dragOver) setDragOver(true); }}
+          onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
+          onDrop={handleDrop}
+        >
           <div style={{ ...sectionTitle, marginBottom: 10 }}><Calendar size={16} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />History &amp; notes</div>
+          {dragOver && (
+            <div style={{ fontSize: 12, color: T.accent, fontWeight: 600, marginBottom: 8 }}>
+              Drop an email or text here to log it
+            </div>
+          )}
           <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Log a call, note or meeting…"
             style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
@@ -503,7 +566,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
                   <Icon size={15} style={{ color: T.accent, marginTop: 2, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ color: T.text }}><span style={{ fontWeight: 600 }}>{cfg.label}</span>{h.title ? ` — ${h.title}` : ''}</div>
-                    <div style={{ fontSize: 12, color: T.muted }}>{h.actor ? `${h.actor} · ` : ''}{timeAgo(h.at)}</div>
+                    <div style={{ fontSize: 12, color: T.muted }} title={h.at ? new Date(h.at).toLocaleString() : ''}>{h.actor ? `${h.actor} · ` : ''}{stamp(h.at)}</div>
                   </div>
                 </div>
               );
