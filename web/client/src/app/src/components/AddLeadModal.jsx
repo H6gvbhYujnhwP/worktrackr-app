@@ -6,8 +6,8 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const LABEL = 'block text-[12px] text-gray-600 mb-1';
-const INPUT = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#0F6E56]';
+const LABEL = 'block text-[12px] text-[#94a3b8] mb-1';
+const INPUT = 'w-full border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#0F6E56]';
 
 function todayISO() {
   const d = new Date();
@@ -66,10 +66,10 @@ export default function AddLeadModal({ currentUser, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4">
-      <div className="bg-white rounded-xl w-full max-w-[540px] border border-gray-200 shadow-xl my-8">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h3 className="text-[15px] font-medium text-gray-900">Add lead</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5" /></button>
+      <div className="bg-[#242438] rounded-xl w-full max-w-[540px] border border-[#2e2e4a] shadow-xl my-8">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2e2e4a]">
+          <h3 className="text-[15px] font-medium text-white">Add lead</h3>
+          <button onClick={onClose} className="text-[#6b7280] hover:text-[#cbd5e1]"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-5 space-y-3">
@@ -121,15 +121,15 @@ export default function AddLeadModal({ currentUser, onClose, onCreated }) {
           </div>
 
           <div>
-            <label className={LABEL}>First note <span className="text-gray-400">(optional)</span></label>
+            <label className={LABEL}>First note <span className="text-[#6b7280]">(optional)</span></label>
             <textarea className={`${INPUT} min-h-[64px]`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was said…" />
           </div>
 
           {err && <div className="text-[12px] text-red-700">{err}</div>}
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
-          <button onClick={onClose} className="h-9 px-4 rounded-lg border border-gray-300 text-gray-700 text-[13px] hover:bg-gray-50">Cancel</button>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#2e2e4a]">
+          <button onClick={onClose} className="h-9 px-4 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] text-[13px] hover:bg-[#1f1f33]">Cancel</button>
           <button
             onClick={save}
             disabled={saving || !name.trim()}

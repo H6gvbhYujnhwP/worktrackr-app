@@ -36,7 +36,7 @@ const LEAD_KEYS = new Set(['new', 'prospect', 'hot_prospect']);
 
 function StagePill({ stageKey }) {
   const s = STAGE_BY_KEY[stageKey];
-  if (!s) return <span className="text-[11px] text-gray-400">—</span>;
+  if (!s) return <span className="text-[11px] text-[#6b7280]">—</span>;
   return <span className={`inline-block rounded-md px-2 py-0.5 text-[11px] ${s.pill}`}>{s.label}</span>;
 }
 
@@ -69,9 +69,9 @@ const GRID = 'grid grid-cols-[minmax(140px,1.2fr)_minmax(100px,0.95fr)_minmax(10
 function SortHead({ label, sortKey, active, dir, onSort, className = '' }) {
   const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
   return (
-    <button onClick={() => onSort(sortKey)} className={`inline-flex items-center gap-1 text-left ${active ? 'text-gray-700' : ''} ${className}`}>
+    <button onClick={() => onSort(sortKey)} className={`inline-flex items-center gap-1 text-left ${active ? 'text-[#cbd5e1]' : ''} ${className}`}>
       {label}
-      <Icon className={`w-3 h-3 ${active ? 'text-[#0F6E56]' : 'text-gray-400'}`} />
+      <Icon className={`w-3 h-3 ${active ? 'text-[#0F6E56]' : 'text-[#6b7280]'}`} />
     </button>
   );
 }
@@ -203,22 +203,22 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
   // Header actions (none in the archived view).
   const actions = archivedView ? null : (
     <>
-      <SalesSearch value={search} onChange={setSearch} placeholder="Search name, contact, email" />
-      <SalesSecondaryButton active={mineOnly} onClick={() => setMineOnly((v) => !v)}>Mine only</SalesSecondaryButton>
-      <SalesSecondaryButton icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
-      <SalesPrimaryButton onClick={() => setShowAdd(true)}>Add lead</SalesPrimaryButton>
+      <SalesSearch dark value={search} onChange={setSearch} placeholder="Search name, contact, email" />
+      <SalesSecondaryButton dark active={mineOnly} onClick={() => setMineOnly((v) => !v)}>Mine only</SalesSecondaryButton>
+      <SalesSecondaryButton dark icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
+      <SalesPrimaryButton dark onClick={() => setShowAdd(true)}>Add lead</SalesPrimaryButton>
     </>
   );
 
   // Filter row: stage chips + manager Archived entry + overdue counter (active view);
   // a back-to-active button (archived view).
   const filters = archivedView ? (
-    <SalesSecondaryButton onClick={() => setMode('active')}>← Active leads</SalesSecondaryButton>
+    <SalesSecondaryButton dark onClick={() => setMode('active')}>← Active leads</SalesSecondaryButton>
   ) : (
     <>
-      <SalesAllPill active={activeStage === null} count={leads.length} onClick={() => setActiveStage(null)} />
+      <SalesAllPill dark active={activeStage === null} count={leads.length} onClick={() => setActiveStage(null)} />
       {LEAD_STAGES.map((s) => (
-        <SalesFilterPill
+        <SalesFilterPill dark
           key={s.key}
           active={activeStage === s.key}
           pillClass={s.pill}
@@ -230,7 +230,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
       ))}
       {isManager && (
         <button onClick={() => { setMode('archived'); setActiveStage(null); }}
-          className="rounded-full px-3 py-1.5 text-[13px] border border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200 inline-flex items-center gap-1.5">
+          className="rounded-full px-3 py-1.5 text-[13px] border border-transparent bg-[#242438] text-[#94a3b8] hover:bg-[#2a2a48] inline-flex items-center gap-1.5">
           <Archive className="w-3.5 h-3.5" /> Archived
         </button>
       )}
@@ -258,6 +258,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
       )}
 
       <SalesPageLayout
+      dark
         title={archivedView ? 'Archived leads' : 'Leads'}
         subtitle={archivedView ? 'Hidden leads — restore or remove' : 'Companies you’re chasing'}
         actions={actions}
@@ -266,7 +267,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
       >
         <div className="overflow-x-auto">
           <div className="min-w-[1184px]">
-            <div className={`${GRID} px-4 py-2.5 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500`}>
+            <div className={`${GRID} px-4 py-2.5 bg-[#1f1f33] text-[11px] uppercase tracking-wide text-[#94a3b8]`}>
               <SortHead label="Company"     sortKey="name"    active={sortKey === 'name'}    dir={sortDir} onSort={toggleSort} />
               <SortHead label="Contact"     sortKey="contact" active={sortKey === 'contact'} dir={sortDir} onSort={toggleSort} />
               <div>Phone</div>
@@ -279,12 +280,12 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
               <div className="text-right">Actions</div>
             </div>
 
-            {loading && <div className="px-4 py-8 text-center text-[13px] text-gray-500">Loading…</div>}
+            {loading && <div className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">Loading…</div>}
             {error && !loading && (
               <div className="px-4 py-8 text-center text-[13px] text-red-700">Couldn’t load: {error}</div>
             )}
             {!loading && !error && visible.length === 0 && (
-              <div className="px-4 py-10 text-center text-[13px] text-gray-500">
+              <div className="px-4 py-10 text-center text-[13px] text-[#94a3b8]">
                 {archivedView ? 'No archived leads.' : (activeStage ? `No leads at stage “${STAGE_BY_KEY[activeStage]?.label}”.` : 'No leads yet. Add one or import a list to start chasing.')}
               </div>
             )}
@@ -296,17 +297,17 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
                 tabIndex={0}
                 onClick={() => onOpenCompany && onOpenCompany(co.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onOpenCompany && onOpenCompany(co.id); }}
-                className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-gray-100 hover:bg-gray-50 cursor-pointer ${i % 2 ? 'bg-gray-50/40' : ''}`}
+                className={`w-full text-left ${GRID} items-center px-4 py-3 border-t border-[#2e2e4a] hover:bg-[#1f1f33] cursor-pointer ${i % 2 ? 'bg-[#1f1f33]/40' : ''}`}
               >
-                <div className="min-w-0 text-sm font-medium text-gray-900 truncate">{co.name}</div>
-                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.primaryContact || '—'}</div>
-                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.phone || '—'}</div>
-                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co.email || '—'}</div>
+                <div className="min-w-0 text-sm font-medium text-white truncate">{co.name}</div>
+                <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{co.primaryContact || '—'}</div>
+                <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{co.phone || '—'}</div>
+                <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{co.email || '—'}</div>
                 <div className="min-w-0"><StagePill stageKey={co?.crm?.salesStage} /></div>
-                <div className="min-w-0 text-[13px] text-gray-600 truncate">{co?.crm?.assignedTo || '—'}</div>
-                <div className="min-w-0 text-[13px] text-gray-600 truncate">{fmtFirst(co?.crm?.firstContact)}</div>
-                <div className="min-w-0 text-[13px] text-gray-700 truncate">{co?.crm?.nextAction || '—'}</div>
-                <div className={`min-w-0 text-[13px] truncate ${isOverdue(co?.crm?.chaseDate) ? 'text-[#993C1D] font-medium' : 'text-gray-600'}`}>
+                <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{co?.crm?.assignedTo || '—'}</div>
+                <div className="min-w-0 text-[13px] text-[#94a3b8] truncate">{fmtFirst(co?.crm?.firstContact)}</div>
+                <div className="min-w-0 text-[13px] text-[#cbd5e1] truncate">{co?.crm?.nextAction || '—'}</div>
+                <div className={`min-w-0 text-[13px] truncate ${isOverdue(co?.crm?.chaseDate) ? 'text-[#993C1D] font-medium' : 'text-[#94a3b8]'}`}>
                   {fmtChase(co?.crm?.chaseDate)}
                 </div>
                 <div className="min-w-0 flex items-center justify-end gap-3">
@@ -314,13 +315,13 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
                     <>
                       <button title="Notes" aria-label="Notes"
                         onClick={(e) => { e.stopPropagation(); setNotesLead(co); }}
-                        className="text-gray-400 hover:text-[#0C447C]"><MessageSquare className="w-4 h-4" /></button>
+                        className="text-[#6b7280] hover:text-[#0C447C]"><MessageSquare className="w-4 h-4" /></button>
                       <button title="Convert to customer" aria-label="Convert to customer"
                         onClick={(e) => { e.stopPropagation(); setConvertLead(co); }}
                         className="text-[#0F6E56] hover:text-[#0a4f3e]"><UserPlus className="w-4 h-4" /></button>
                       <button title="Delete (archive)" aria-label="Delete lead"
                         onClick={(e) => { e.stopPropagation(); archiveLead(co); }}
-                        className="text-gray-400 hover:text-[#A32D2D]"><Trash2 className="w-4 h-4" /></button>
+                        className="text-[#6b7280] hover:text-[#A32D2D]"><Trash2 className="w-4 h-4" /></button>
                     </>
                   ) : (
                     <>
@@ -329,7 +330,7 @@ export default function LeadsList({ onOpenCompany, currentUser, isManager = fals
                         className="text-[#0F6E56] hover:text-[#0a4f3e]"><RotateCcw className="w-4 h-4" /></button>
                       <button title="Delete permanently" aria-label="Delete permanently"
                         onClick={(e) => { e.stopPropagation(); deleteForever(co); }}
-                        className="text-gray-400 hover:text-[#A32D2D]"><Trash2 className="w-4 h-4" /></button>
+                        className="text-[#6b7280] hover:text-[#A32D2D]"><Trash2 className="w-4 h-4" /></button>
                     </>
                   )}
                 </div>

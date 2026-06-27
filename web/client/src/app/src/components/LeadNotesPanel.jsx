@@ -115,7 +115,7 @@ export default function LeadNotesPanel({ lead, onClose, onChanged }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white h-full shadow-xl flex flex-col">
+      <div className="relative w-full max-w-md bg-[#242438] h-full shadow-xl flex flex-col">
         {/* Header */}
         <div className="bg-[#E1F5EE] px-5 py-4 flex items-center gap-3">
           <div className="min-w-0">
@@ -128,19 +128,19 @@ export default function LeadNotesPanel({ lead, onClose, onChanged }) {
         </div>
 
         {/* Add note + email drop */}
-        <div className="px-5 py-4 border-b border-gray-100">
+        <div className="px-5 py-4 border-b border-[#2e2e4a]">
           <textarea
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Add a note…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#0F6E56] min-h-[60px]"
+            className="w-full border border-[#2e2e4a] rounded-lg px-3 py-2 text-[13px] outline-none focus:border-[#0F6E56] min-h-[60px]"
           />
           <div className="flex items-center gap-2 mt-2">
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              className={`flex-1 border border-dashed rounded-lg px-3 py-2 text-[12px] flex items-center gap-2 ${dragOver ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-gray-300 text-gray-500'}`}
+              className={`flex-1 border border-dashed rounded-lg px-3 py-2 text-[12px] flex items-center gap-2 ${dragOver ? 'border-[#0F6E56] bg-[#E1F5EE] text-[#0F6E56]' : 'border-[#2e2e4a] text-[#94a3b8]'}`}
             >
               <Mail className="w-4 h-4" /> Drag an email here to log it
             </div>
@@ -156,10 +156,10 @@ export default function LeadNotesPanel({ lead, onClose, onChanged }) {
 
         {/* Activity timeline */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400 mb-3">Activity</div>
-          {loading && <div className="text-[13px] text-gray-500">Loading…</div>}
+          <div className="text-[11px] uppercase tracking-wide text-[#6b7280] mb-3">Activity</div>
+          {loading && <div className="text-[13px] text-[#94a3b8]">Loading…</div>}
           {!loading && items.length === 0 && (
-            <div className="text-[13px] text-gray-500">No activity yet. Add a note or drag in an email.</div>
+            <div className="text-[13px] text-[#94a3b8]">No activity yet. Add a note or drag in an email.</div>
           )}
           <div className="space-y-3">
             {items.map((it) => {
@@ -171,11 +171,11 @@ export default function LeadNotesPanel({ lead, onClose, onChanged }) {
                     <Icon className={`w-3.5 h-3.5 ${st.fg}`} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[13px] text-gray-800">
-                      {it.kind === 'email' && <span className="text-gray-500">Email — </span>}
+                    <div className="text-[13px] text-white">
+                      {it.kind === 'email' && <span className="text-[#94a3b8]">Email — </span>}
                       {it.title || '(no text)'}
                     </div>
-                    <div className="text-[11px] text-gray-400">
+                    <div className="text-[11px] text-[#6b7280]">
                       {[it.actor, fmtDate(it.at)].filter(Boolean).join(' · ')}
                     </div>
                   </div>
