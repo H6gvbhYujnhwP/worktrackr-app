@@ -2,6 +2,8 @@
 // Sales › Orders — orders list + entry to the order form. Encapsulates open/create
 // state so the Dashboard only renders <OrdersList/>. Reads /api/orders.
 // Props: initialNewCompanyId (open a fresh order for this company), onConsumeInitial().
+//        initialOpenOrderId (open an existing order by id, e.g. one just created
+//        from a quote), onConsumeOpen().
 //
 // v3.6 — DARK reskin to match the redesigned Sales group. Same data, same
 // search/filters/columns, same "new order for company" entry and row → order
@@ -26,7 +28,7 @@ const FILTERS = ['draft', 'submitted', 'approved', 'ordered', 'invoiced', 'paid'
 const money = (n) => `£${(Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 const GRID = 'grid grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_28px] gap-2';
 
-export default function OrdersList({ initialNewCompanyId, onConsumeInitial }) {
+export default function OrdersList({ initialNewCompanyId, onConsumeInitial, initialOpenOrderId, onConsumeOpen }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -46,7 +48,10 @@ export default function OrdersList({ initialNewCompanyId, onConsumeInitial }) {
 
   useEffect(() => {
     load();
-    if (initialNewCompanyId) {
+    if (initialOpenOrderId) {
+      setOpen({ orderId: initialOpenOrderId });
+      onConsumeOpen && onConsumeOpen();
+    } else if (initialNewCompanyId) {
       setOpen({ newCompanyId: initialNewCompanyId });
       onConsumeInitial && onConsumeInitial();
     }

@@ -98,6 +98,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   const [addingCompany, setAddingCompany]     = useState(false);
   const [openLeadCompanyId, setOpenLeadCompanyId] = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
+  const [ordersOpenId, setOrdersOpenId]       = useState(null);
   const [contractsInitial, setContractsInitial] = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
   const [priorityFilter, setPriorityFilter]   = useState('all');
@@ -449,7 +450,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
                 onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
             : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} isManager={isManager} />
       )}
-      {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} />}
+      {currentView === 'orders'         && <OrdersList initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} initialOpenOrderId={ordersOpenId} onConsumeOpen={() => setOrdersOpenId(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
       {currentView === 'leads'          && (
         openLeadCompanyId
@@ -466,7 +467,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" singleSection /></ErrorBoundary>}
-      {currentView === 'quotes'         && <ErrorBoundary><SalesQuotes /></ErrorBoundary>}
+      {currentView === 'quotes'         && <ErrorBoundary><SalesQuotes onOrderCreated={(orderId) => { setOrdersOpenId(orderId); onViewChange('orders'); }} /></ErrorBoundary>}
       {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" singleSection /></ErrorBoundary>}
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}

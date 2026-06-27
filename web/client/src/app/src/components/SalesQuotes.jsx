@@ -132,7 +132,7 @@ function NativeQuotes() {
 }
 
 // ── connected (IDYQ) — read-only list, reusing IdyqQuotesView ─────────────────
-function IdyqQuotes() {
+function IdyqQuotes({ onOrderCreated }) {
   // IdyqQuotesView is self-contained (read-only badge, search, line-item expand,
   // act-on-quote). We only add the dark page title + width so it sits in the
   // Sales tab like the others — no stat cards, no sub-tabs.
@@ -144,12 +144,12 @@ function IdyqQuotes() {
           <Lock className="w-3.5 h-3.5 text-[#6b7280]" /> Read-only · from IdoYourQuotes
         </div>
       </div>
-      <IdyqQuotesView />
+      <IdyqQuotesView onOrderCreated={onOrderCreated} />
     </div>
   );
 }
 
-export default function SalesQuotes() {
+export default function SalesQuotes({ onOrderCreated }) {
   const { connected, loading } = useIdyqConnection();
 
   if (loading) {
@@ -163,5 +163,5 @@ export default function SalesQuotes() {
     );
   }
 
-  return connected ? <IdyqQuotes /> : <NativeQuotes />;
+  return connected ? <IdyqQuotes onOrderCreated={onOrderCreated} /> : <NativeQuotes />;
 }

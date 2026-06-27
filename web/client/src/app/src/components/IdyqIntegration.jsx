@@ -197,7 +197,7 @@ const statusStyle = (s) => {
   return map[(s || '').toLowerCase()] || 'bg-[#1f1f33] text-[#94a3b8]';
 };
 
-function QuoteRow({ quote }) {
+function QuoteRow({ quote, onOrderCreated }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -225,6 +225,14 @@ function QuoteRow({ quote }) {
         if (pulled.linkedOrder) m += ` ${pulled.linkedOrder.lineCount} one-off item${pulled.linkedOrder.lineCount === 1 ? '' : 's'} also started as an order.`;
         setActMsg({ ok: true, text: m });
       } else {
+        // If the host gave us a jump-to-order handler (the Sales › Quotes tab),
+        // hand off the new order id so the app switches to the Orders tab and
+        // opens this order for review. Otherwise (e.g. the CRM settings quotes
+        // view) fall back to the old "go look at Orders" message.
+        if (onOrderCreated) {
+          onOrderCreated(created.id);
+          return; // this row is about to unmount as the view switches
+        }
         setActMsg({ ok: true, text: 'Draft order created — open Orders to review.' });
       }
     } catch (e) {
@@ -307,7 +315,7 @@ function QuoteRow({ quote }) {
   );
 }
 
-export function IdyqQuotesView() {
+export function IdyqQuotesView({ onOrderCreated } = {}) {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -359,7 +367,7 @@ export function IdyqQuotesView() {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-[13px] text-[#6b7280]">Loading quotes…</td></tr>
             ) : filtered.length === 0 ? (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-[13px] text-[#6b7280]">No quotes found.</td></tr>
-            ) : filtered.map((q) => <QuoteRow key={q.idyqId} quote={q} />)}
+            ) : filtered.map((q) => <QuoteRow key={q.idyqId} quote={q} onOrderCreated={onOrderCreated} />)}
           </tbody>
         </table>
       </div>
