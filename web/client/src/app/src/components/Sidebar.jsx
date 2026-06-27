@@ -7,7 +7,7 @@ import React from 'react';
 import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
-  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target,
+  DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target, Palmtree,
   ChevronsLeft, ChevronsRight, PanelLeftClose,
 } from 'lucide-react';
 import { useIdyqConnection } from './IdyqIntegration.jsx';
@@ -15,9 +15,10 @@ import AppVersion from './AppVersion.jsx';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
 const WORKSPACE_ITEMS = [
-  { id: 'my-tasks',  label: 'My Tasks', icon: ListChecks, view: 'my-tasks' },
-  { id: 'my-pay',    label: 'My Pay',   icon: Wallet,     view: 'my-pay'   },
-  { id: 'my-notes',  label: 'My Notes', icon: StickyNote, view: 'my-notes' },
+  { id: 'my-tasks',    label: 'My Tasks',   icon: ListChecks, view: 'my-tasks'    },
+  { id: 'my-pay',      label: 'My Pay',     icon: Wallet,     view: 'my-pay'      },
+  { id: 'my-holiday',  label: 'My Holiday', icon: Palmtree,   view: 'my-holiday'  },
+  { id: 'my-notes',    label: 'My Notes',   icon: StickyNote, view: 'my-notes'    },
 ];
 
 const DELIVERY_ITEMS = [

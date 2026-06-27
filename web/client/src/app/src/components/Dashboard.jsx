@@ -45,6 +45,7 @@ import LeadsList from './LeadsList.jsx';
 import SalesQuotes from './SalesQuotes.jsx';
 import SalesTabs from './SalesTabs.jsx';
 import MyPay from './MyPay.jsx';
+import MyHoliday from './MyHoliday.jsx';
 import OrderQueues from './OrderQueues.jsx';
 import BonusScreen from './BonusScreen.jsx';
 import CommissionRules from './CommissionRules.jsx';
@@ -87,7 +88,7 @@ const StatCard = ({ label, count, iconBg, iconColor, Icon, onClick, active }) =>
 // else (Sales/Finance/Settings — anything that can show company/order/contract/
 // quote/invoice profit) is bounced to Tickets. Deny-by-default keeps the rule safe
 // if new views are added later.
-const ENGINEER_ALLOWED_VIEWS = ['tickets', 'jobs', 'calendar', 'my-tasks', 'my-pay', 'my-wage', 'my-notes'];
+const ENGINEER_ALLOWED_VIEWS = ['tickets', 'jobs', 'calendar', 'my-tasks', 'my-pay', 'my-wage', 'my-notes', 'my-holiday'];
 
 const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, ref) => {
   const { user, membership, logout } = useAuth();
@@ -138,7 +139,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
     // The redesigned dark Sales pages (Companies list/profile/add, Quotes, Orders)
     // go edge-to-edge, plus the dark Workspace screens (My Tasks, Approvals,
     // My Pay). The Calendar tab, My Notes, Leads/Contracts are still light.
-    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay', 'my-notes', 'jobs', 'calendar', 'sales-calendar', 'crm-calendar'].includes(currentView);
+    const fb = ['companies', 'quotes', 'orders', 'my-tasks', 'order-queues', 'my-pay', 'my-holiday', 'my-notes', 'jobs', 'calendar', 'sales-calendar', 'crm-calendar'].includes(currentView);
     if (onFullBleedChange) onFullBleedChange(fb);
   }, [currentView, openCompanyId, addingCompany, onFullBleedChange]);
 
@@ -461,6 +462,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'order-queues'   && <OrderQueues />}
       {currentView === 'my-commission'  && <BonusScreen />}
       {currentView === 'my-pay'         && <MyPay />}
+      {currentView === 'my-holiday'     && <MyHoliday />}
       {currentView === 'commission-rules' && <CommissionRules />}
       {currentView === 'my-wage'        && <EngineerWage />}
       {currentView === 'engineer-wages' && <EngineerWageAdmin />}

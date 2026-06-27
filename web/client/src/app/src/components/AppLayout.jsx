@@ -42,6 +42,7 @@ const VIEW_TO_PAGE = {
   'email-intake':   'email-intake',
   'company-notes':  'company-notes',
   'my-notes':       'my-notes',
+  'my-holiday':     'my-holiday',
 };
 
 const SIDEBAR_MODE_KEY = 'wt_sidebar_mode';
