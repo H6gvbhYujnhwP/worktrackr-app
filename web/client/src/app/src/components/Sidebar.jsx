@@ -8,6 +8,7 @@ import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
   DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target,
+  ChevronsLeft, ChevronsRight, PanelLeftClose,
 } from 'lucide-react';
 import { useIdyqConnection } from './IdyqIntegration.jsx';
 
@@ -81,7 +82,7 @@ const NavItem = ({ item, isActive, isCollapsed, onClick, badge }) => {
 // ─── SectionLabel ────────────────────────────────────────────────────────────
 const SectionLabel = ({ label, isCollapsed }) => {
   if (isCollapsed) {
-    return <div className="w-5 h-px bg-[#222228] mx-auto my-2" />;
+    return <div className="w-5 h-px bg-[#2e2e4a] mx-auto my-2" />;
   }
   return (
     <div className="text-[10px] font-semibold text-[#9ca3af] uppercase tracking-[1px] px-3 pt-4 pb-1.5">
@@ -91,7 +92,7 @@ const SectionLabel = ({ label, isCollapsed }) => {
 };
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
-const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer, isCollapsed = false }) => {
+const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer, isCollapsed = false, onToggleWidth, onHide }) => {
 
   // When IdoYourQuotes is connected the WorkTrackr Catalogue is just a read-only
   // window onto IDYQ's catalogue (managed in IDYQ), so we hide that menu item for
@@ -111,22 +112,50 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
   const openBadge = 0; // wired up in Push 2 when Dashboard passes count down
 
   return (
-    <div className="h-full bg-[#111113] border-r border-[#222228] flex flex-col select-none">
+    <div className="h-full bg-[#1a1a2e] border-r border-[#2e2e4a] flex flex-col select-none">
 
-      {/* ── Logo ── */}
-      <div className={`flex items-center gap-2.5 border-b border-[#222228] flex-shrink-0
-        ${isCollapsed ? 'justify-center px-0 py-[18px]' : 'px-5 py-[18px]'}`}>
-        <div className="w-[30px] h-[30px] bg-[#d4a017] rounded-[7px] flex items-center justify-center flex-shrink-0">
-          <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
-            <rect x="3" y="5"  width="14" height="1.8" rx="0.9" fill="#111"/>
-            <rect x="3" y="9"  width="14" height="1.8" rx="0.9" fill="#111"/>
-            <rect x="3" y="13" width="8"  height="1.8" rx="0.9" fill="#111"/>
-          </svg>
+      {/* ── Logo + sidebar controls ── */}
+      <div className={`border-b border-[#2e2e4a] flex-shrink-0
+        ${isCollapsed ? 'flex flex-col items-center gap-2.5 py-[14px]' : 'flex items-center justify-between px-5 py-[18px]'}`}>
+        <div className={`flex items-center ${isCollapsed ? '' : 'gap-2.5'}`}>
+          <div className="w-[30px] h-[30px] bg-[#d4a017] rounded-[7px] flex items-center justify-center flex-shrink-0">
+            <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+              <rect x="3" y="5"  width="14" height="1.8" rx="0.9" fill="#111"/>
+              <rect x="3" y="9"  width="14" height="1.8" rx="0.9" fill="#111"/>
+              <rect x="3" y="13" width="8"  height="1.8" rx="0.9" fill="#111"/>
+            </svg>
+          </div>
+          {!isCollapsed && (
+            <span className="text-[15px] font-bold text-white leading-none">
+              Work<span className="text-[#d4a017]">Trackr</span>
+            </span>
+          )}
         </div>
-        {!isCollapsed && (
-          <span className="text-[15px] font-bold text-white leading-none">
-            Work<span className="text-[#d4a017]">Trackr</span>
-          </span>
+
+        {/* Collapse-to-icons + hide controls (desktop/tablet only) */}
+        {(onToggleWidth || onHide) && (
+          <div className={`hidden md:flex ${isCollapsed ? 'flex-col items-center gap-1.5' : 'items-center gap-1'}`}>
+            {onToggleWidth && (
+              <button
+                onClick={onToggleWidth}
+                title={isCollapsed ? 'Expand menu' : 'Collapse to icons'}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-[#94a3b8] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-colors"
+              >
+                {isCollapsed
+                  ? <ChevronsRight className="w-4 h-4" strokeWidth={1.8} />
+                  : <ChevronsLeft className="w-4 h-4" strokeWidth={1.8} />}
+              </button>
+            )}
+            {onHide && (
+              <button
+                onClick={onHide}
+                title="Hide menu (full width)"
+                className="w-7 h-7 rounded-md flex items-center justify-center text-[#94a3b8] hover:bg-[rgba(255,255,255,0.06)] hover:text-white transition-colors"
+              >
+                <PanelLeftClose className="w-4 h-4" strokeWidth={1.8} />
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -192,7 +221,7 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
       </nav>
 
       {/* ── User footer ── */}
-      <div className={`border-t border-[#222228] flex-shrink-0
+      <div className={`border-t border-[#2e2e4a] flex-shrink-0
         ${isCollapsed ? 'p-3 flex justify-center' : 'p-4 flex items-center gap-2.5'}`}>
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600
                         flex items-center justify-center text-[12px] font-semibold text-white flex-shrink-0">

@@ -1,11 +1,14 @@
 // web/client/src/app/src/components/AppLayout.jsx
-// REDESIGN: Dark sidebar, clean top bar, NO double content wrapper.
-// All views render directly on #f5f5f7 bg — no inner white card.
-// Sidebar collapse: auto-icon-only on tablet (768-1023px), drawer on mobile (<768px).
-// Props unchanged: { children, user, isAdmin, onNavigate, lastUpdate, currentView }
+// REDESIGN: Dark navy sidebar, full-bleed content, 3-state sidebar.
+// Desktop/tablet sidebar has three modes (remembered between visits):
+//   'rail'     – slim icon-only bar (default)
+//   'expanded' – full labelled menu
+//   'hidden'   – tucked away for 100% full width (floating button restores it)
+// Mobile (<768px) keeps the slide-out drawer.
+// Props unchanged: { children, user, isAdmin, onNavigate, lastUpdate, currentView, fullBleed }
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, PanelLeftOpen } from 'lucide-react';
 import Sidebar from './Sidebar';
 import VoiceAssistant from './VoiceAssistant';
 
@@ -41,9 +44,11 @@ const VIEW_TO_PAGE = {
   'my-notes':       'my-notes',
 };
 
+const SIDEBAR_MODE_KEY = 'wt_sidebar_mode';
+
 // ─── MobileHeader ─────────────────────────────────────────────────────────────
 const MobileHeader = ({ user, onMenuToggle }) => (
-  <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#111113]
+  <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#1a1a2e]
                   px-4 flex items-center justify-between flex-shrink-0">
     <button
       onClick={onMenuToggle}
@@ -66,17 +71,33 @@ const MobileHeader = ({ user, onMenuToggle }) => (
 
 // ─── AppLayout ────────────────────────────────────────────────────────────────
 const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate, lastUpdate, currentView = 'tickets', fullBleed = false }) => {
-  // v3.1 redesign: every view is full-bleed dark — fullBleed prop kept for API compat but ignored
+  // fullBleed kept for API compatibility; every view is full-bleed dark now.
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Detect tablet breakpoint for auto-collapsed sidebar
+  // Desktop/tablet sidebar mode, remembered between visits.
+  const [desktopMode, setDesktopMode] = useState(() => {
+    try {
+      const v = localStorage.getItem(SIDEBAR_MODE_KEY);
+      if (v === 'rail' || v === 'expanded' || v === 'hidden') return v;
+    } catch (e) { /* ignore */ }
+    return 'rail';
+  });
+  // Mode to restore to when un-hiding.
+  const [restoreMode, setRestoreMode] = useState('rail');
+
+  // Track mobile breakpoint
   useEffect(() => {
-    const check = () => setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  // Persist the chosen mode
+  useEffect(() => {
+    try { localStorage.setItem(SIDEBAR_MODE_KEY, desktopMode); } catch (e) { /* ignore */ }
+  }, [desktopMode]);
 
   // Close mobile drawer on navigation
   const handleNavigation = (view) => {
@@ -86,13 +107,24 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
 
   const currentPage = VIEW_TO_PAGE[currentView] || 'all-tickets';
 
-  // Sidebar width: desktop=240px, tablet=64px, mobile=off-screen
-  const sidebarWidth = isTablet ? 64 : 240;
+  // ── Sidebar mode controls ──
+  const toggleWidth = () => setDesktopMode((m) => (m === 'expanded' ? 'rail' : 'expanded'));
+  const hideSidebar = () => setDesktopMode((m) => { if (m !== 'hidden') setRestoreMode(m); return 'hidden'; });
+  const showSidebar = () => setDesktopMode(restoreMode || 'rail');
+
+  const hiddenDesktop = !isMobile && desktopMode === 'hidden';
+  const collapsed     = !isMobile && desktopMode === 'rail';
+  const desktopWidth  = desktopMode === 'expanded' ? 240 : desktopMode === 'rail' ? 64 : 0;
+  const asideWidth    = isMobile ? 240 : desktopWidth;
+  const contentMargin = isMobile ? 0 : desktopWidth;
+  const asideTransform = isMobile
+    ? (isMobileMenuOpen ? 'translateX(0)' : 'translateX(-100%)')
+    : (hiddenDesktop ? 'translateX(-100%)' : 'translateX(0)');
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#1a1a2e]">
 
-      {/* Mobile header — fixed top, dark, matches sidebar */}
+      {/* Mobile header — fixed top, navy, matches sidebar */}
       <MobileHeader user={user} onMenuToggle={() => setIsMobileMenuOpen(o => !o)} />
 
       {/* Mobile overlay */}
@@ -103,14 +135,23 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
         />
       )}
 
+      {/* Floating "show menu" button when the sidebar is hidden on desktop */}
+      {hiddenDesktop && (
+        <button
+          onClick={showSidebar}
+          title="Show menu"
+          className="hidden md:flex fixed top-3 left-3 z-50 w-9 h-9 rounded-lg items-center justify-center
+                     bg-[#242438] border border-[#2e2e4a] text-[#cbd5e1] hover:text-white hover:bg-[#2a2a48]
+                     transition-colors shadow-lg"
+        >
+          <PanelLeftOpen className="w-[18px] h-[18px]" strokeWidth={1.8} />
+        </button>
+      )}
+
       {/* Sidebar */}
       <aside
-        style={{ width: sidebarWidth }}
-        className={`
-          fixed inset-y-0 left-0 z-50
-          transition-transform duration-300 ease-in-out
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}
+        style={{ width: asideWidth, transform: asideTransform }}
+        className="fixed inset-y-0 left-0 z-50 overflow-hidden transition-all duration-300 ease-in-out"
       >
         <Sidebar
           currentPage={currentPage}
@@ -119,22 +160,23 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
           isAdmin={isAdmin}
           isManager={isManager}
           isEngineer={isEngineer}
-          isCollapsed={isTablet}
+          isCollapsed={isMobile ? false : collapsed}
+          onToggleWidth={isMobile ? undefined : toggleWidth}
+          onHide={isMobile ? undefined : hideSidebar}
         />
       </aside>
 
       {/* Main content area — offset by sidebar width on md+ */}
       <div
         className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
-        style={{ marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? sidebarWidth : 0 }}
+        style={{ marginLeft: contentMargin }}
       >
-        {/* Content — NO double wrapper. Children render directly on gray bg. */}
         <main className="flex-1 overflow-y-auto pt-14 md:pt-0 bg-[#1a1a2e]">
           <div className="min-h-full">{children}</div>
         </main>
       </div>
 
-      {/* ── Global Voice Assistant FAB — floats above all content ─────────── */}
+      {/* ── Global Voice Assistant FAB ─────────────────────────────────────── */}
       <VoiceAssistant currentView={currentView} user={user} />
     </div>
   );
