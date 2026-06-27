@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
-import AppVersion from './AppVersion.jsx';
 import TicketCard from './TicketCard.jsx';
 import TicketDetailModal from './TicketDetailModal.jsx';
 import CreateTicketModal from './CreateTicketModal.jsx';
@@ -499,7 +498,6 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
         <EmailLogModal emailLogs={emailLogs} onClose={() => setShowEmailModal(false)} />
       )}
       <TicketFieldCustomizer isOpen={showTicketCustomizer} onClose={() => setShowTicketCustomizer(false)} />
-      <AppVersion />
     </div>
   );
 });

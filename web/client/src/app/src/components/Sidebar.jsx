@@ -11,6 +11,7 @@ import {
   ChevronsLeft, ChevronsRight, PanelLeftClose,
 } from 'lucide-react';
 import { useIdyqConnection } from './IdyqIntegration.jsx';
+import AppVersion from './AppVersion.jsx';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
 const WORKSPACE_ITEMS = [
@@ -245,6 +246,8 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
           </>
         )}
       </div>
+
+      {!isCollapsed && <AppVersion />}
     </div>
   );
 };
