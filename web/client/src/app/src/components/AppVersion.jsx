@@ -1,7 +1,7 @@
 import React from 'react';
 
 const AppVersion = () => {
-  const APP_VERSION = '2026-06-27.note-to-calendar'; // Manus dark redesign round 2 integrated + verified
+  const APP_VERSION = '2026-06-27.company-archive'; // Manus dark redesign round 2 integrated + verified
   
   return (
     <div className="text-xs text-gray-400 text-center py-2">

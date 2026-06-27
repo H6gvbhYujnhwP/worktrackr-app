@@ -97,7 +97,7 @@ function nextActionOf(co) {
 const ukDate = (d) => (d ? new Date(d).toLocaleDateString('en-GB') : '');
 
 // ── card ⋯ menu (Open + safe stage move) ─────────────────────────────────────
-function CardMenu({ co, onOpen, onMove, onClose }) {
+function CardMenu({ co, onOpen, onMove, onClose, onArchive }) {
   const cur = co?.crm?.salesStage;
   return (
     <>
@@ -124,13 +124,24 @@ function CardMenu({ co, onOpen, onMove, onClose }) {
             {s.label}
           </button>
         ))}
+        {onArchive && (
+          <>
+            <div className="my-1 border-t border-[#2e2e4a]" />
+            <button
+              className="w-full text-left px-3 py-1.5 text-[13px] text-[#fca5a5] hover:bg-[#2a2a48]"
+              onClick={(e) => { e.stopPropagation(); onClose(); onArchive(); }}
+            >
+              Delete company
+            </button>
+          </>
+        )}
       </div>
     </>
   );
 }
 
 // ── a single pipeline card ───────────────────────────────────────────────────
-function PipelineCard({ co, isCustomer, menuOpen, onMenu, onOpen, onMove, onCloseMenu }) {
+function PipelineCard({ co, isCustomer, menuOpen, onMenu, onOpen, onMove, onCloseMenu, onArchive }) {
   const owner = co?.crm?.assignedTo;
   return (
     <div
@@ -173,12 +184,12 @@ function PipelineCard({ co, isCustomer, menuOpen, onMenu, onOpen, onMove, onClos
         {isCustomer ? `Active ${timeAgo(co.updatedAt)}` : timeAgo(co.updatedAt)}
       </div>
 
-      {menuOpen && <CardMenu co={co} onOpen={() => onOpen(co.id)} onMove={(k) => onMove(co, k)} onClose={onCloseMenu} />}
+      {menuOpen && <CardMenu co={co} onOpen={() => onOpen(co.id)} onMove={(k) => onMove(co, k)} onClose={onCloseMenu} onArchive={onArchive ? () => onArchive(co) : undefined} />}
     </div>
   );
 }
 
-export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
+export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isManager = false }) {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -189,13 +200,15 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
   const [showImport, setShowImport] = useState(false);
   const [reload, setReload] = useState(0);
   const [menuOpen, setMenuOpen] = useState(null);
+  const [archivedMode, setArchivedMode] = useState(false); // managers/admins: view archived companies
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setLoading(true);
-        const r = await fetch('/api/contacts?type=company', { credentials: 'include' });
+        const url = archivedMode ? '/api/contacts?type=company&archived=only' : '/api/contacts?type=company';
+        const r = await fetch(url, { credentials: 'include' });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = await r.json();
         if (alive) setCompanies(Array.isArray(data) ? data : []);
@@ -206,7 +219,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
       }
     })();
     return () => { alive = false; };
-  }, [reload]);
+  }, [reload, archivedMode]);
 
   // distinct sources present, for the "All sources" dropdown
   const sources = useMemo(() => {
@@ -255,6 +268,34 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
     }
   };
 
+  // Soft-delete safety net: "Delete" archives the company (PUT crm.archived).
+  // Hidden from staff; managers/admins can view the archive and restore or
+  // permanently delete. Reuses existing endpoints — no backend change.
+  const patchCrm = async (co, patch) => {
+    const r = await fetch(`/api/contacts/${co.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ crm: { ...(co.crm || {}), ...patch } }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  };
+  const archiveCompany = async (co) => {
+    if (!window.confirm(`Delete ${co.name}? It moves to the archive — managers and admins can restore it.`)) return;
+    try { await patchCrm(co, { archived: true, archivedAt: new Date().toISOString() }); setMenuOpen(null); setReload((n) => n + 1); }
+    catch (e) { setError(e.message || 'Could not delete company'); }
+  };
+  const restoreCompany = async (co) => {
+    try { await patchCrm(co, { archived: false, archivedAt: null }); setReload((n) => n + 1); }
+    catch (e) { setError(e.message || 'Could not restore company'); }
+  };
+  const deleteForever = async (co) => {
+    if (!window.confirm(`Permanently delete ${co.name}? This cannot be undone.`)) return;
+    try {
+      const r = await fetch(`/api/contacts/${co.id}`, { method: 'DELETE', credentials: 'include' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setReload((n) => n + 1);
+    } catch (e) { setError(e.message || 'Could not delete company'); }
+  };
+
   if (showImport) {
     return <CsvImport onBack={() => setShowImport(false)} onDone={() => setReload((n) => n + 1)} />;
   }
@@ -275,6 +316,11 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
       </div>
       <SalesSecondaryButton dark icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
       <SalesPrimaryButton dark onClick={() => onAddCompany && onAddCompany()}>Add company</SalesPrimaryButton>
+      {isManager && (
+        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => !v); setViewMode('list'); setActiveStage(null); }}>
+          {archivedMode ? 'Active companies' : 'Archived'}
+        </SalesSecondaryButton>
+      )}
     </>
   );
 
@@ -354,6 +400,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
                   onCloseMenu={() => setMenuOpen(null)}
                   onOpen={(id) => onOpenCompany && onOpenCompany(id)}
                   onMove={moveStage}
+                  onArchive={archiveCompany}
                 />
               ))}
               <button
@@ -420,17 +467,46 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany }) {
     </>
   );
 
+  // ── ARCHIVED (managers/admins) ─────────────────────────────────────────────
+  const archivedList = (
+    <div className="rounded-xl border border-[#2e2e4a] overflow-hidden">
+      {loading && <div className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">Loading archive…</div>}
+      {error && !loading && <div className="px-4 py-8 text-center text-[13px] text-[#fca5a5]">Couldn’t load archive: {error}</div>}
+      {!loading && !error && listVisible.length === 0 && (
+        <div className="px-4 py-10 text-center text-[13px] text-[#94a3b8]">No archived companies.</div>
+      )}
+      {!loading && !error && listVisible.map((co) => (
+        <div key={co.id} className="flex items-center gap-3 px-4 py-3 border-t border-[#2e2e4a] first:border-t-0">
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-white truncate">{co.name}</div>
+            <div className="text-[11px] text-[#6b7280]">
+              Archived{co?.crm?.archivedAt ? ` ${ukDate(co.crm.archivedAt)}` : ''}{co?.crm?.assignedTo ? ` · ${co.crm.assignedTo}` : ''}
+            </div>
+          </div>
+          <button onClick={() => restoreCompany(co)}
+            className="shrink-0 rounded-lg border border-[#2e2e4a] text-[#cbd5e1] hover:bg-[#2a2a48] text-[12px] px-3 py-1.5">
+            Restore
+          </button>
+          <button onClick={() => deleteForever(co)}
+            className="shrink-0 rounded-lg border border-[rgba(239,68,68,0.4)] text-[#fca5a5] hover:bg-[rgba(239,68,68,0.12)] text-[12px] px-3 py-1.5">
+            Delete permanently
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <SalesPageLayout
       dark
-      bare={viewMode === 'pipeline'}
-      title="Companies"
-      subtitle={subtitle}
+      bare={!archivedMode && viewMode === 'pipeline'}
+      title={archivedMode ? 'Archived companies' : 'Companies'}
+      subtitle={archivedMode ? `${companies.length} archived` : subtitle}
       icon={Building2}
       actions={actions}
-      filters={filters}
+      filters={archivedMode ? null : filters}
     >
-      {viewMode === 'pipeline' ? pipeline : list}
+      {archivedMode ? archivedList : (viewMode === 'pipeline' ? pipeline : list)}
     </SalesPageLayout>
   );
 }

@@ -10,7 +10,7 @@
 // Props: companyId (required), onBack(), onNewOrder(), onNewContract().
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowLeft, Check, Plus, Lock, X, Pencil,
+  ArrowLeft, Check, Plus, Lock, X, Pencil, Trash2,
   Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck, Repeat,
   CalendarPlus, Calendar, User, Box, Globe,
 } from 'lucide-react';
@@ -168,6 +168,22 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   };
   const setStage = (stage) => saveCrm({ salesStage: stage });
   const setSource = (source) => saveCrm({ source });
+
+  // Delete = soft archive (safety net). Hidden from staff; managers/admins can
+  // restore it from the Companies → Archived view. Then return to the list.
+  const deleteCompany = async () => {
+    if (!window.confirm(`Delete ${company?.name || 'this company'}? It moves to the archive — managers and admins can restore it.`)) return;
+    try {
+      const nextCrm = { ...(company.crm || {}), archived: true, archivedAt: new Date().toISOString() };
+      const r = await fetch(`/api/contacts/${companyId}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ crm: nextCrm }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      onBack && onBack();
+    } catch (e) { setError(e.message || 'Could not delete company'); }
+  };
 
   const savePeople = async (people) => {
     const prev = company;
@@ -385,6 +401,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
       <HeroButtonOutline icon={Check} onClick={() => setStage('customer')}>Mark won</HeroButtonOutline>
       <HeroButtonOutline icon={Plus} onClick={() => onNewOrder && onNewOrder(company)}>New order</HeroButtonOutline>
       <HeroButtonOutline icon={Repeat} onClick={() => onNewContract && onNewContract(company)}>New contract</HeroButtonOutline>
+      <HeroButtonOutline icon={Trash2} onClick={deleteCompany}>Delete</HeroButtonOutline>
     </>
   );
 
