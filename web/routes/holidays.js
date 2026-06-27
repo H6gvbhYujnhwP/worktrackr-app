@@ -414,6 +414,35 @@ router.put('/settings', async (req, res) => {
   }
 });
 
+// ── GET /calendar — approved holidays org-wide (any signed-in user) ──────────
+// Powers the shared team calendar (Delivery + Sales). Names + dates only, no
+// notes/reasons. Not gated to managers — everyone can see who's off.
+router.get('/calendar', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    const r = await query(
+      `SELECT hr.id, hr.user_id, hr.start_date, hr.end_date, hr.half_start, hr.half_end, hr.days, u.name AS user_name
+         FROM holiday_requests hr JOIN users u ON u.id = hr.user_id
+        WHERE hr.organisation_id = $1 AND hr.status = 'approved'
+        ORDER BY hr.start_date ASC`,
+      [ctx.organizationId]
+    );
+    res.json(r.rows.map((h) => ({
+      id: h.id,
+      userId: h.user_id,
+      userName: h.user_name,
+      startDate: h.start_date,
+      endDate: h.end_date,
+      halfStart: h.half_start,
+      halfEnd: h.half_end,
+      days: Number(h.days),
+    })));
+  } catch (err) {
+    console.error('Error fetching holiday calendar:', err);
+    res.status(500).json({ error: 'Failed to load holiday calendar' });
+  }
+});
+
 // ── adjustments (manager) — entitlement overrides with a reason ──────────────
 //   GET    /allowances/:userId/adjustments       — list a person's adjustments
 //   POST   /allowances/:userId/adjustments        — add one (+/- days + reason)

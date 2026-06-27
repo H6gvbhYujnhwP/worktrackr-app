@@ -7,7 +7,7 @@ import {
   Calendar, Clock, Plus, Phone, Users, Target,
   AlertTriangle, CheckCircle, X, Edit, Trash2,
   ChevronLeft, ChevronRight, Briefcase, ExternalLink,
-  Sparkles, Ticket, FileText, CalendarPlus
+  Sparkles, Ticket, FileText, CalendarPlus, Palmtree
 } from 'lucide-react';
 import { useSimulation } from '../App.jsx';
 import PageHero, { HeroButtonPrimary, HeroButtonOutline } from './PageHero.jsx';
@@ -21,6 +21,7 @@ const eventTypes = [
   { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[rgba(245,158,11,0.16)] text-[#fcd34d]' },
   { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[rgba(99,102,241,0.20)] text-[#a5b4fc]' },
   { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[rgba(71,85,105,0.30)] text-[#cbd5e1]' },
+  { value: 'holiday',    label: 'Holiday',     icon: Palmtree,      color: 'bg-[rgba(20,184,166,0.22)] text-[#5eead4]' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,10 +136,13 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   const [events, setEvents] = useState([]);
   const [jobEvents, setJobEvents] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [holidayEvents, setHolidayEvents] = useState([]);
   // Source toggles. Defaults to all-on (the Delivery blended calendar). The Sales
   // Calendar tab passes defaultSources to open pre-scoped to sales activity; the
   // user can still switch Projects/Schedule on — it's the same calendar.
-  const [sources, setSources] = useState({ sales: true, projects: true, schedule: true, ...(defaultSources || {}) });
+  // Holidays default ON everywhere (incl. the Sales calendar) so the whole team
+  // can see who's off; it isn't overridden by defaultSources unless asked.
+  const [sources, setSources] = useState({ sales: true, projects: true, schedule: true, holidays: true, ...(defaultSources || {}) });
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -209,6 +213,17 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
         }
       } catch (err) {
         console.error('[CRMCalendar] Failed to load calendar events:', err);
+      }
+
+      // Load approved holidays (read-only) so the whole team sees who's off.
+      try {
+        const holRes = await fetch('/api/holidays/calendar', { credentials: 'include' });
+        if (holRes.ok) {
+          const holData = await holRes.json();
+          setHolidayEvents(Array.isArray(holData) ? holData : []);
+        }
+      } catch (err) {
+        console.error('[CRMCalendar] Failed to load holidays:', err);
       }
     };
     init();
@@ -285,7 +300,22 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     }) : [];
     const jobs = sources.projects ? jobEvents.filter(j => j.start_at && j.start_at.split('T')[0] === dateStr) : [];
     const sched = sources.schedule ? scheduleItems.filter(s => s.start_at && s.start_at.split('T')[0] === dateStr) : [];
-    return [...crm, ...jobs, ...sched];
+    // Holidays span a date range, so show them on every day from start to end.
+    const hols = sources.holidays ? holidayEvents
+      .filter(h => {
+        const start = String(h.startDate).slice(0, 10);
+        const end = String(h.endDate).slice(0, 10);
+        return dateStr >= start && dateStr <= end;
+      })
+      .map(h => ({
+        id: `hol-${h.id}-${dateStr}`,
+        _isHoliday: true,
+        type: 'holiday',
+        title: `${h.userName} — Holiday`,
+        start_at: `${String(h.startDate).slice(0, 10)}T00:00:00`,
+        company: '', contact: '', notes: '',
+      })) : [];
+    return [...crm, ...jobs, ...sched, ...hols];
   };
 
   const getEventTypeConfig = (type) => eventTypes.find(t => t.value === type) || eventTypes[0];
@@ -295,6 +325,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   const openEvent = (event) => {
     if (event._isTicket) { if (onTicketClick && event._ticket) onTicketClick(event._ticket); return; }
     if (event._isSchedule) return;
+    if (event._isHoliday) return;
     setSelectedEvent(event);
   };
 
@@ -615,6 +646,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
             { key: 'sales',    label: 'Sales',    dot: '#15803d' },
             { key: 'projects', label: 'Projects', dot: '#b8860b' },
             { key: 'schedule', label: 'Schedule', dot: '#4338ca' },
+            { key: 'holidays', label: 'Holidays', dot: '#14b8a6' },
           ].map((s) => (
             <button
               key={s.key}
