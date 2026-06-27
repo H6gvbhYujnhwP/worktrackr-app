@@ -103,6 +103,8 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [noteToCal, setNoteToCal] = useState(false);
+  const [noteCalDate, setNoteCalDate] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [reminderForm, setReminderForm] = useState(null); // null = closed
   const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
@@ -267,6 +269,8 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   };
 
   // Save a note → POST /api/contacts/:id/notes (shows in the timeline below).
+  // If "Add to calendar" is ticked, also drop it on the CRM calendar as a
+  // follow-up for the chosen date (reuses the existing /api/crm-events endpoint).
   const saveNote = async () => {
     const body = noteText.trim();
     if (!body) return;
@@ -278,7 +282,18 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
         body: JSON.stringify({ kind: 'note', body }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      setNoteText('');
+      if (noteToCal && noteCalDate) {
+        const startAt = new Date(`${noteCalDate}T09:00:00`).toISOString();
+        await fetch('/api/crm-events', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contact_id: companyId, title: body.slice(0, 120), type: 'follow_up',
+            start_at: startAt, end_at: startAt, all_day: true, status: 'planned',
+          }),
+        });
+      }
+      setNoteText(''); setNoteToCal(false); setNoteCalDate('');
       loadHistory();
     } catch (e) { setError(e.message || 'Could not save note'); }
     finally { setSavingNote(false); }
@@ -534,7 +549,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
           )}
           <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Log a call, note or meeting…"
             style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }} />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button onClick={saveNote} disabled={savingNote || !noteText.trim()}
               style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !noteText.trim() ? 0.6 : 1 }}>
               <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Save note
@@ -543,6 +558,14 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>
               <CalendarPlus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add calendar reminder
             </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.sub, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={noteToCal} onChange={(e) => setNoteToCal(e.target.checked)} style={{ accentColor: T.accent, cursor: 'pointer' }} />
+              Add to calendar
+            </label>
+            {noteToCal && (
+              <input type="date" value={noteCalDate} onChange={(e) => setNoteCalDate(e.target.value)}
+                style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+            )}
           </div>
 
           {reminderForm && (
