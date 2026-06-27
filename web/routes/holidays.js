@@ -87,7 +87,8 @@ async function getAllowance(organizationId, userId) {
 }
 
 // Build the balance summary for one user from their requests + allowance + year.
-function summarise(rows, allowanceRow, settings) {
+// `adjustmentsTotal` is the net of any manual entitlement overrides (+/-).
+function summarise(rows, allowanceRow, settings, adjustmentsTotal = 0) {
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
   const inYear = (d) => {
     if (!settings || !settings.year_start || !settings.year_end) return true;
@@ -107,21 +108,31 @@ function summarise(rows, allowanceRow, settings) {
   }
   const round = (n) => Math.round(n * 2) / 2;
   taken = round(taken); booked = round(booked); pending = round(pending);
+  const adjustments = round(Number(adjustmentsTotal) || 0);
 
   const allowanceSet = !!(allowanceRow && allowanceRow.allowance_days != null);
   const base = allowanceSet ? Number(allowanceRow.allowance_days) : null;
   const carriedOver = allowanceRow ? Number(allowanceRow.carry_over_days || 0) : 0;
-  const allowance = allowanceSet ? round(base + carriedOver) : null;
+  const allowance = allowanceSet ? round(base + carriedOver + adjustments) : null;
   const remaining = allowanceSet ? round(allowance - taken - booked - pending) : null;
 
   return {
     allowanceSet,
     baseAllowance: base,
     carriedOver,
+    adjustments,
     allowance,
     workingDays: (allowanceRow && allowanceRow.working_days) || DEFAULT_WORKING,
     taken, booked, pending, remaining,
   };
+}
+
+async function getAdjustmentsTotal(organizationId, userId) {
+  const r = await query(
+    'SELECT COALESCE(SUM(days),0) AS total FROM holiday_adjustments WHERE organisation_id = $1 AND user_id = $2',
+    [organizationId, userId]
+  );
+  return Number(r.rows[0].total || 0);
 }
 
 // ── GET /me ──────────────────────────────────────────────────────────────────
@@ -139,7 +150,8 @@ router.get('/me', async (req, res) => {
       [organizationId, req.user.userId]
     );
 
-    const summary = summarise(reqs.rows, allowanceRow, settings);
+    const summary = summarise(reqs.rows, allowanceRow, settings,
+      await getAdjustmentsTotal(organizationId, req.user.userId));
     res.json({
       ...summary,
       yearStart: settings ? settings.year_start : null,
@@ -235,9 +247,14 @@ router.get('/staff', async (req, res) => {
     );
     const allowByUser = {}; allowances.rows.forEach((a) => { allowByUser[a.user_id] = a; });
     const reqsByUser = {}; reqs.rows.forEach((r) => { (reqsByUser[r.user_id] = reqsByUser[r.user_id] || []).push(r); });
+    const adjRows = await query(
+      'SELECT user_id, COALESCE(SUM(days),0) AS total FROM holiday_adjustments WHERE organisation_id = $1 GROUP BY user_id',
+      [organizationId]
+    );
+    const adjByUser = {}; adjRows.rows.forEach((a) => { adjByUser[a.user_id] = Number(a.total || 0); });
 
     const staff = people.rows.map((p) => {
-      const summary = summarise(reqsByUser[p.id] || [], allowByUser[p.id] || null, settings);
+      const summary = summarise(reqsByUser[p.id] || [], allowByUser[p.id] || null, settings, adjByUser[p.id] || 0);
       return { userId: p.id, name: p.name, email: p.email, role: p.role, ...summary };
     });
     res.json({ staff, yearStart: settings ? settings.year_start : null, yearEnd: settings ? settings.year_end : null });
@@ -394,6 +411,80 @@ router.put('/settings', async (req, res) => {
     if (err.name === 'ZodError') return res.status(400).json({ error: 'Invalid settings', details: err.errors });
     console.error('Error saving holiday settings:', err);
     res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
+// ── adjustments (manager) — entitlement overrides with a reason ──────────────
+//   GET    /allowances/:userId/adjustments       — list a person's adjustments
+//   POST   /allowances/:userId/adjustments        — add one (+/- days + reason)
+//   DELETE /allowances/:userId/adjustments/:adjId — remove one
+const adjustmentSchema = z.object({
+  days: z.number().refine((n) => n !== 0, 'Days cannot be zero').refine((n) => Math.abs(n) <= 366, 'Out of range'),
+  reason: z.string().min(1, 'A reason is required'),
+});
+
+router.get('/allowances/:userId/adjustments', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    if (!isManager(ctx)) return res.status(403).json({ error: 'Manager access required' });
+    const r = await query(
+      `SELECT a.*, u.name AS created_by_name
+         FROM holiday_adjustments a LEFT JOIN users u ON u.id = a.created_by
+        WHERE a.organisation_id = $1 AND a.user_id = $2
+        ORDER BY a.created_at DESC`,
+      [ctx.organizationId, req.params.userId]
+    );
+    res.json(r.rows.map((a) => ({
+      id: a.id, days: Number(a.days), reason: a.reason,
+      createdBy: a.created_by, createdByName: a.created_by_name || null, createdAt: a.created_at,
+    })));
+  } catch (err) {
+    console.error('Error listing adjustments:', err);
+    res.status(500).json({ error: 'Failed to load adjustments' });
+  }
+});
+
+router.post('/allowances/:userId/adjustments', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    if (!isManager(ctx)) return res.status(403).json({ error: 'Manager access required' });
+    const organizationId = ctx.organizationId;
+    const data = adjustmentSchema.parse(req.body);
+
+    const member = await query(
+      'SELECT 1 FROM memberships WHERE organisation_id = $1 AND user_id = $2',
+      [organizationId, req.params.userId]
+    );
+    if (member.rows.length === 0) return res.status(404).json({ error: 'User not in organisation' });
+
+    const days = Math.round(Number(data.days) * 2) / 2;
+    const ins = await query(
+      `INSERT INTO holiday_adjustments (organisation_id, user_id, days, reason, created_by)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [organizationId, req.params.userId, days, data.reason, req.user.userId]
+    );
+    const a = ins.rows[0];
+    res.status(201).json({ id: a.id, days: Number(a.days), reason: a.reason, createdAt: a.created_at });
+  } catch (err) {
+    if (err.name === 'ZodError') return res.status(400).json({ error: 'Invalid adjustment', details: err.errors });
+    console.error('Error adding adjustment:', err);
+    res.status(500).json({ error: 'Failed to add adjustment' });
+  }
+});
+
+router.delete('/allowances/:userId/adjustments/:adjId', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    if (!isManager(ctx)) return res.status(403).json({ error: 'Manager access required' });
+    const del = await query(
+      'DELETE FROM holiday_adjustments WHERE id = $1 AND organisation_id = $2 AND user_id = $3',
+      [req.params.adjId, ctx.organizationId, req.params.userId]
+    );
+    if (del.rowCount === 0) return res.status(404).json({ error: 'Adjustment not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting adjustment:', err);
+    res.status(500).json({ error: 'Failed to delete adjustment' });
   }
 });
 

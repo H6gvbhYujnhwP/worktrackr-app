@@ -43,6 +43,7 @@ const VIEW_TO_PAGE = {
   'company-notes':  'company-notes',
   'my-notes':       'my-notes',
   'my-holiday':     'my-holiday',
+  'holiday-admin':  'holiday-admin',
 };
 
 const SIDEBAR_MODE_KEY = 'wt_sidebar_mode';

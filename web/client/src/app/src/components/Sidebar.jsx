@@ -8,7 +8,7 @@ import {
   Home, Ticket, Calendar, UserCircle, Package,
   FileText, UserCog, CreditCard, Shield, Mail,
   DollarSign, LogOut, StickyNote, BookOpen, Briefcase, Receipt, Building2, ListChecks, ClipboardList, ClipboardCheck, Wallet, SlidersHorizontal, TrendingUp, Gauge, Repeat, Target, Palmtree,
-  ChevronsLeft, ChevronsRight, PanelLeftClose,
+  ChevronsLeft, ChevronsRight, PanelLeftClose, CalendarCheck,
 } from 'lucide-react';
 import { useIdyqConnection } from './IdyqIntegration.jsx';
 import AppVersion from './AppVersion.jsx';
@@ -175,6 +175,15 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
                 key="order-queues"
                 item={{ id: 'order-queues', label: 'Approvals', icon: ClipboardCheck, view: 'order-queues' }}
                 isActive={currentPage === 'order-queues'} isCollapsed={isCollapsed} onClick={handleNav}
+              />
+            );
+          }
+          if (item.id === 'my-holiday' && isManager) {
+            els.push(
+              <NavItem
+                key="holiday-admin"
+                item={{ id: 'holiday-admin', label: 'Holiday admin', icon: CalendarCheck, view: 'holiday-admin' }}
+                isActive={currentPage === 'holiday-admin'} isCollapsed={isCollapsed} onClick={handleNav}
               />
             );
           }
