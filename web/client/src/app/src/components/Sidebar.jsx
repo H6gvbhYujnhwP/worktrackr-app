@@ -11,6 +11,7 @@ import {
   ChevronsLeft, ChevronsRight, PanelLeftClose, CalendarCheck,
 } from 'lucide-react';
 import { useIdyqConnection } from './IdyqIntegration.jsx';
+import useSalesPermissions from '../hooks/useSalesPermissions.js';
 import AppVersion from './AppVersion.jsx';
 
 // ─── Navigation structure — flat, sectioned, no sub-items ───────────────────
@@ -101,6 +102,10 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
   // connected orgs. Non-IDYQ orgs keep it — it's their product price-book. If the
   // check fails it defaults to not-connected, so the item stays visible (safe).
   const { connected: idyqConnected } = useIdyqConnection();
+  const { can: canSales } = useSalesPermissions();
+  // Which Sales tabs this user may reach, and where the "Sales" item should land.
+  const SALES_TAB_PERM = { companies: 'companies', quotes: 'quotes', orders: 'orders', 'sales-calendar': 'calendar' };
+  const firstSalesView = ['companies', 'quotes', 'orders', 'sales-calendar'].find((v) => canSales(SALES_TAB_PERM[v]));
   const adminItems = SETTINGS_ADMIN_ITEMS.filter(
     (item) => !(item.id === 'product-catalog' && idyqConnected)
   );
@@ -204,13 +209,17 @@ const Sidebar = ({ currentPage, onNavigate, user, isAdmin, isManager, isEngineer
 
         {/* Engineers are delivery-only: no Sales (company/order/quote profit) or
             Finance (invoices). Salesmen, managers and admins see these as before. */}
-        {!isEngineer && (
+        {!isEngineer && firstSalesView && (
           <>
             <SectionLabel label="Sales" isCollapsed={isCollapsed} />
             {SALES_ITEMS.map(item => (
-              <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
+              <NavItem key={item.id} item={{ ...item, view: firstSalesView }} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />
             ))}
+          </>
+        )}
 
+        {!isEngineer && (
+          <>
             <SectionLabel label="Finance" isCollapsed={isCollapsed} />
             {FINANCE_ITEMS.map(item => (
               <NavItem key={item.id} item={item} isActive={currentPage === item.id} isCollapsed={isCollapsed} onClick={handleNav} />

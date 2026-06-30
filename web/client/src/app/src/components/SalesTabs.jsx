@@ -10,20 +10,23 @@
 // the Dashboard passes dark=false there and the bar stays light over the light
 // calendar — no half-dark state. Default (no prop) = the original light look.
 import React from 'react';
+import useSalesPermissions from '../hooks/useSalesPermissions.js';
 
 const TABS = [
-  { view: 'companies', label: 'Companies' },
-  { view: 'quotes',    label: 'Quotes' },
-  { view: 'orders',    label: 'Orders' },
-  { view: 'sales-calendar', label: 'Calendar' },
+  { view: 'companies', label: 'Companies', perm: 'companies' },
+  { view: 'quotes',    label: 'Quotes',    perm: 'quotes' },
+  { view: 'orders',    label: 'Orders',    perm: 'orders' },
+  { view: 'sales-calendar', label: 'Calendar', perm: 'calendar' },
 ];
 
 export default function SalesTabs({ current, onChange, dark = false }) {
+  const { can } = useSalesPermissions();
+  const tabs = TABS.filter((t) => can(t.perm));
   return (
     <div className={`px-4 md:px-7 pt-4 ${dark ? 'max-w-none bg-[#1a1a2e]' : 'max-w-5xl mx-auto'}`}>
       <div className={`text-lg font-medium mb-2 ${dark ? 'text-white' : 'text-gray-900'}`}>Sales</div>
       <div className={`flex gap-5 border-b overflow-x-auto ${dark ? 'border-[#2e2e4a]' : 'border-gray-200'}`}>
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = current === t.view;
           const cls = dark
             ? (active ? 'border-[#f59e0b] text-white' : 'border-transparent text-[#94a3b8] hover:text-white')

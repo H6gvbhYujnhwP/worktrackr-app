@@ -44,6 +44,7 @@ import ContractsList from './ContractsList.jsx';
 import LeadsList from './LeadsList.jsx';
 import SalesQuotes from './SalesQuotes.jsx';
 import SalesTabs from './SalesTabs.jsx';
+import useSalesPermissions from '../hooks/useSalesPermissions.js';
 import MyPay from './MyPay.jsx';
 import MyHoliday from './MyHoliday.jsx';
 import HolidayManager from './HolidayManager.jsx';
@@ -101,6 +102,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
   const [openLeadCompanyId, setOpenLeadCompanyId] = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
   const [ordersOpenId, setOrdersOpenId]       = useState(null);
+  const { can: salesCan } = useSalesPermissions();
+  const SALES_VIEW_PERM = { companies: 'companies', quotes: 'quotes', orders: 'orders', 'sales-calendar': 'calendar' };
   const [contractsInitial, setContractsInitial] = useState(null);
   const [searchTerm, setSearchTerm]           = useState('');
   const [priorityFilter, setPriorityFilter]   = useState('all');
@@ -432,7 +435,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
           onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />
       )}
-      {currentView === 'sales-calendar' && (
+      {currentView === 'sales-calendar' && salesCan('calendar') && (
         <CRMCalendar
           timezone={selectedTimezone}
           defaultSources={{ sales: true, projects: false, schedule: false }}
@@ -441,7 +444,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       )}
       {currentView === 'billing' && isAdmin && <XeroIntegration />}
       {currentView === 'contacts'       && <ContactManager />}
-      {currentView === 'companies'      && (
+      {currentView === 'companies'      && salesCan('companies') && (
         addingCompany
           ? <AddCompanyPage
               onCancel={() => setAddingCompany(false)}
@@ -452,7 +455,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
                 onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
             : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} isManager={isManager} />
       )}
-      {currentView === 'orders'         && <OrdersList isManager={isManager} initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} initialOpenOrderId={ordersOpenId} onConsumeOpen={() => setOrdersOpenId(null)} />}
+      {currentView === 'orders'         && salesCan('orders') && <OrdersList isManager={isManager} initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} initialOpenOrderId={ordersOpenId} onConsumeOpen={() => setOrdersOpenId(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}
       {currentView === 'leads'          && (
         openLeadCompanyId
@@ -471,7 +474,10 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'my-tasks'       && <MyTasks />}
       {currentView === 'crm'            && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} /></ErrorBoundary>}
       {currentView === 'product-catalog'&& <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="catalog" singleSection /></ErrorBoundary>}
-      {currentView === 'quotes'         && <ErrorBoundary><SalesQuotes onOrderCreated={(orderId) => { setOrdersOpenId(orderId); onViewChange('orders'); }} /></ErrorBoundary>}
+      {currentView === 'quotes'         && salesCan('quotes') && <ErrorBoundary><SalesQuotes onOrderCreated={(orderId) => { setOrdersOpenId(orderId); onViewChange('orders'); }} /></ErrorBoundary>}
+      {['companies', 'quotes', 'orders', 'sales-calendar'].includes(currentView) && !salesCan(SALES_VIEW_PERM[currentView]) && (
+        <div className="p-10 text-center text-[13px] text-[#94a3b8] bg-[#1a1a2e] min-h-full">You don’t have access to this area. Ask an admin if you need it.</div>
+      )}
       {currentView === 'crm-settings'   && <ErrorBoundary><CRMDashboard timezone={selectedTimezone} defaultTab="settings" singleSection /></ErrorBoundary>}
       {currentView === 'crm-calendar'   && <CRMCalendar timezone={selectedTimezone} />}
       {currentView === 'security'       && <SecuritySettings />}
