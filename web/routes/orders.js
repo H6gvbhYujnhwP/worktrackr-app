@@ -58,6 +58,7 @@ function mapOrder(r) {
     commissionCategory: r.commission_category || 'standard',
     invoicedAt: r.invoiced_at,
     paidAt: r.paid_at,
+    archivedAt: r.archived_at || null,
     totals: { cost, profit, value: cost + profit },
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -116,6 +117,15 @@ router.get('/', async (req, res) => {
     if (req.query.mine) { params.push(req.user.userId); conditions.push(`o.salesperson_user_id = $${params.length}`); }
     if (req.query.queue === 'approval') conditions.push(`o.status = 'submitted'`);
     if (req.query.queue === 'purchasing') conditions.push(`o.status = 'approved'`);
+
+    // Archive visibility: archived orders are hidden from the normal list; only
+    // managers/admins can request the archived set (?archived=only).
+    if (req.query.archived === 'only') {
+      if (!isManager(ctx)) return res.json([]);
+      conditions.push(`o.archived_at IS NOT NULL`);
+    } else {
+      conditions.push(`o.archived_at IS NULL`);
+    }
 
     const result = await query(`${LIST_SELECT} WHERE ${conditions.join(' AND ')} ORDER BY o.created_at DESC`, params);
     res.json(result.rows.map(mapOrder));
@@ -300,13 +310,51 @@ router.post('/:id/pull-quote', async (req, res) => {
   }
 });
 
-// DELETE /api/orders/:id  (draft/rejected only)
+// POST /api/orders/:id/archive  — soft-delete (hide from the normal list).
+// Reversible; available to any org user. Works on an order at any status.
+router.post('/:id/archive', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    const upd = await query(
+      `UPDATE orders SET archived_at = NOW(), archived_by = $1, updated_at = NOW()
+        WHERE id = $2 AND organisation_id = $3 AND archived_at IS NULL RETURNING id`,
+      [req.user.userId, req.params.id, ctx.organizationId]
+    );
+    if (upd.rowCount === 0) return res.status(404).json({ error: 'Order not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error archiving order:', err);
+    res.status(500).json({ error: 'Failed to archive order' });
+  }
+});
+
+// POST /api/orders/:id/restore  — bring an archived order back (managers only).
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const ctx = await getOrgContext(req.user.userId);
+    if (!isManager(ctx)) return res.status(403).json({ error: 'Manager access required' });
+    const upd = await query(
+      `UPDATE orders SET archived_at = NULL, archived_by = NULL, updated_at = NOW()
+        WHERE id = $1 AND organisation_id = $2 AND archived_at IS NOT NULL RETURNING id`,
+      [req.params.id, ctx.organizationId]
+    );
+    if (upd.rowCount === 0) return res.status(404).json({ error: 'Archived order not found' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error restoring order:', err);
+    res.status(500).json({ error: 'Failed to restore order' });
+  }
+});
+
+// DELETE /api/orders/:id  — permanently remove an *archived* order (managers only).
+// Orders must be archived first, so deletion is always a deliberate two-step action.
 router.delete('/:id', async (req, res) => {
   try {
     const ctx = await getOrgContext(req.user.userId);
-    const cur = await query('SELECT status FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
+    if (!isManager(ctx)) return res.status(403).json({ error: 'Manager access required' });
+    const cur = await query('SELECT archived_at FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
     if (cur.rows.length === 0) return res.status(404).json({ error: 'Order not found' });
-    if (!['draft', 'rejected'].includes(cur.rows[0].status)) return res.status(409).json({ error: 'Only drafts can be deleted' });
+    if (!cur.rows[0].archived_at) return res.status(409).json({ error: 'Archive the order before deleting it permanently' });
     await query('DELETE FROM orders WHERE id = $1 AND organisation_id = $2', [req.params.id, ctx.organizationId]);
     res.json({ success: true });
   } catch (err) {

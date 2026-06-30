@@ -119,6 +119,20 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
 
+  // "Delete" archives the order (soft-delete). It's reversible from the Archived
+  // view by a manager/admin; it doesn't destroy anything.
+  const archiveOrder = async () => {
+    if (!id) return;
+    if (!window.confirm('Delete this order? It moves to the archive, where a manager can restore it.')) return;
+    setSaving(true); setError(null);
+    try {
+      const r = await fetch(`/api/orders/${id}/archive`, { method: 'POST', credentials: 'include' });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+      onSaved && onSaved();
+      onBack && onBack();
+    } catch (e) { setError(e.message); setSaving(false); }
+  };
+
   if (loading) return <div className="p-6 text-[13px] text-[#94a3b8]">Loading order…</div>;
 
   return (
@@ -133,14 +147,23 @@ export default function OrderForm({ orderId, initialCompanyId, onBack, onSaved }
             <div className="text-lg font-medium text-white">{id ? 'Order' : 'New order'}</div>
             <div className="text-[13px] text-[#94a3b8]">One-off job · all figures ex-VAT</div>
           </div>
-          {editable && (
+          {(editable || id) && (
             <div className="flex gap-2">
-              <button onClick={saveDraft} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2e2e4a] px-3 py-1.5 text-[13px] hover:bg-[#1f1f33]">
-                <Save className="w-4 h-4" /> Save draft
-              </button>
-              <button onClick={submit} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#378add] text-[#185fa5] px-3 py-1.5 text-[13px] hover:bg-[#e6f1fb]">
-                <Send className="w-4 h-4" /> Submit for approval
-              </button>
+              {editable && (
+                <>
+                  <button onClick={saveDraft} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#2e2e4a] px-3 py-1.5 text-[13px] hover:bg-[#1f1f33]">
+                    <Save className="w-4 h-4" /> Save draft
+                  </button>
+                  <button onClick={submit} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[#378add] text-[#185fa5] px-3 py-1.5 text-[13px] hover:bg-[#e6f1fb]">
+                    <Send className="w-4 h-4" /> Submit for approval
+                  </button>
+                </>
+              )}
+              {id && (
+                <button onClick={archiveOrder} disabled={saving} className="inline-flex items-center gap-1.5 rounded-lg border border-[rgba(239,68,68,0.45)] text-[#fca5a5] px-3 py-1.5 text-[13px] hover:bg-[rgba(239,68,68,0.12)]">
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              )}
             </div>
           )}
         </div>
