@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import {
   X, Plus, Users, Mail, Trash2, Crown,
-  User, Edit, Save, AlertTriangle, Phone, Settings
+  User, Edit, Save, AlertTriangle, Phone, Settings, Lock
 } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
@@ -21,6 +21,16 @@ const ROLE_OPTIONS = [
 ];
 const roleLabel = (role) => (ROLE_OPTIONS.find((r) => r.value === role)?.label) || 'Staff';
 
+// Controllable Sales elements (must match the server's ELEMENTS list).
+const SALES_ELEMENTS = [
+  { key: 'companies',        label: 'Companies (CRM)' },
+  { key: 'quotes',           label: 'Quotes' },
+  { key: 'orders',           label: 'Orders' },
+  { key: 'calendar',         label: 'Sales Calendar' },
+  { key: 'figures',          label: 'Profit & commission figures' },
+  { key: 'commission_rules', label: 'Commission rules' },
+];
+
 export default function UserManagementImproved({ users, currentUser }) {
   const { setUsers, organization, updateOrganization, emailService } = useSimulation();
   const {
@@ -32,6 +42,8 @@ export default function UserManagementImproved({ users, currentUser }) {
   const [activeTab, setActiveTab] = useState('users');
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [editPerms, setEditPerms] = useState(null);          // { companies:bool, ... } | null
+  const [permsUnrestricted, setPermsUnrestricted] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '', email: '', mobile: '', role: 'staff',
     emailNotifications: true, password: '', sendInvitation: true
@@ -89,7 +101,22 @@ export default function UserManagementImproved({ users, currentUser }) {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, emailNotifications: !u.emailNotifications } : u));
   };
 
-  const handleEditUser = (user) => setEditingUser({ ...user });
+  const handleEditUser = (user) => {
+    setEditingUser({ ...user });
+    setEditPerms(null);
+    setPermsUnrestricted(false);
+    fetch(`/api/sales-permissions/${user.id}`, {
+      credentials: 'include',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setEditPerms(d.perms || {});
+        setPermsUnrestricted(!!d.unrestricted);
+      })
+      .catch(() => {});
+  };
 
   const handleSaveUser = async () => {
     try {
@@ -104,8 +131,19 @@ export default function UserManagementImproved({ users, currentUser }) {
         body: JSON.stringify(updateData)
       });
       if (!response.ok) throw new Error('Failed to update user');
+
+      // Save Sales permissions too (unless this person is unrestricted by role).
+      if (editPerms && !permsUnrestricted) {
+        await fetch(`/api/sales-permissions/${editingUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ perms: editPerms }),
+        }).catch(() => {});
+      }
+
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...editingUser, newPassword: undefined } : u));
       setEditingUser(null);
+      setEditPerms(null);
       alert(updateData.password ? 'User updated! Password has been changed.' : 'User updated successfully!');
     } catch (error) {
       console.error('Error updating user:', error);
@@ -251,11 +289,40 @@ export default function UserManagementImproved({ users, currentUser }) {
                           />
                           <p className="text-[11px] text-[#6b7280]">Leave empty to keep the current password.</p>
                         </div>
+
+                        {/* Sales permissions */}
+                        <div className="border border-[#2e2e4a] rounded-lg p-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Lock className="w-4 h-4 text-[#94a3b8]" />
+                            <label className={labelClass + " mb-0"}>Sales permissions</label>
+                          </div>
+                          {permsUnrestricted ? (
+                            <p className="text-[12px] text-[#94a3b8]">Admins and managers always have full Sales access — there's nothing to restrict here.</p>
+                          ) : editPerms === null ? (
+                            <p className="text-[12px] text-[#6b7280]">Loading…</p>
+                          ) : (
+                            <>
+                              <p className="text-[12px] text-[#6b7280]">Choose which Sales areas this person can access.</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                                {SALES_ELEMENTS.map((el) => (
+                                  <div key={el.key} className="flex items-center justify-between gap-3">
+                                    <span className="text-[13px] text-[#cbd5e1]">{el.label}</span>
+                                    <Switch
+                                      checked={!!editPerms[el.key]}
+                                      onCheckedChange={(checked) => setEditPerms((p) => ({ ...p, [el.key]: checked }))}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+
                         <div className="flex gap-2">
                           <button onClick={handleSaveUser} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-white bg-[#f59e0b] hover:bg-[#d97706] rounded-lg">
                             <Save className="w-4 h-4" /> Save
                           </button>
-                          <button onClick={() => setEditingUser(null)} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">
+                          <button onClick={() => { setEditingUser(null); setEditPerms(null); }} className="flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]">
                             <X className="w-4 h-4" /> Cancel
                           </button>
                         </div>
