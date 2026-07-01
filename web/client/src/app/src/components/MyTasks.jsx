@@ -15,6 +15,7 @@
 // Status is DERIVED from the real model (open/done) — Done / Overdue / To do —
 // with no invented "in progress" state the backend can't store.
 import React, { useEffect, useState } from 'react';
+import DatePicker from './DatePicker.jsx';
 import { Plus, Calendar, Building2, Check, ChevronDown, CheckCircle2, ListChecks } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
@@ -230,7 +231,7 @@ export default function MyTasks() {
             <option value="">Assign to (optional)</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
           </select>
-          <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className={inputCls} />
+          <DatePicker value={form.dueDate} onChange={(v) => setForm({ ...form, dueDate: v })} className={inputCls} />
           <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={inputCls}>
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
           </select>

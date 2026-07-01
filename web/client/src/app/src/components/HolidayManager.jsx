@@ -8,6 +8,7 @@
 //   • Settings — the company-wide holiday year + carry-over policy.
 // All data from /api/holidays/* (manager endpoints; the backend 403s non-managers).
 import React, { useEffect, useMemo, useState } from 'react';
+import DatePicker from './DatePicker.jsx';
 import {
   CalendarCheck, Check, X, Plus, Trash2, Loader2, AlertCircle, Save, Users, Settings as SettingsIcon, Palmtree,
 } from 'lucide-react';
@@ -452,11 +453,11 @@ function SettingsTab({ settings, onChanged }) {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div>
           <label className="block text-[11px] text-[#94a3b8] mb-1.5">From</label>
-          <input type="date" value={yearStart} onChange={(e) => setYearStart(e.target.value)} className={`${inputCls} w-full`} />
+          <DatePicker value={yearStart} onChange={setYearStart} className={`${inputCls} w-full`} />
         </div>
         <div>
           <label className="block text-[11px] text-[#94a3b8] mb-1.5">To</label>
-          <input type="date" value={yearEnd} onChange={(e) => setYearEnd(e.target.value)} className={`${inputCls} w-full`} />
+          <DatePicker value={yearEnd} onChange={setYearEnd} className={`${inputCls} w-full`} />
         </div>
       </div>
 

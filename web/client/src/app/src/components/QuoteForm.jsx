@@ -1,5 +1,6 @@
 import PageHero from './PageHero.jsx';
 import React, { useState, useEffect, useCallback } from 'react';
+import DatePicker from './DatePicker.jsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ArrowLeft, Plus, Trash2, Save, FileText, Package, Wrench, StickyNote, Sparkles, Tag } from 'lucide-react';
@@ -719,8 +720,8 @@ export default function QuoteForm({ mode = 'create', initialData = null, onClear
 
             <div>
               <label className={LABEL_CLS}>Valid Until *</label>
-              <input type="date" className={INPUT_CLS} value={formData.valid_until}
-                onChange={e => setFormData({ ...formData, valid_until: e.target.value })} />
+              <DatePicker className={INPUT_CLS} value={formData.valid_until}
+                onChange={(v) => setFormData({ ...formData, valid_until: v })} />
             </div>
 
             {isEditMode && (

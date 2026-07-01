@@ -1,7 +1,7 @@
 # WorkTrackr — Handover (read me first)
 
 **Last updated: end of the post-Manus integration + feature session.**
-**Current deployed build stamp: `2026-06-27.version-stamp-quiet`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
+**Current build stamp: `2026-06-27.datepicker-phase1`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
 
 This file is the quick orientation for anyone (or any AI assistant) picking up WorkTrackr. The full detail is in the roadmap; this is the map.
 
@@ -17,11 +17,62 @@ The big visual redesign is **DONE and live**. **Manus AI's dark "Relationship Hu
 
 ---
 
+## 🗓️ SHARED DATE-PICKER ROLLOUT — Phase 1 DONE, **Phase 2 is the next task**
+
+The owner wants the fiddly native `<input type="date">` boxes replaced with a **pop-up calendar** across the app, done **in phases**. Phase 1 shipped this session; **Phase 2 is what a fresh session should pick up.**
+
+**The shared component:** `web/client/src/app/src/components/DatePicker.jsx` (**NEW** this session).
+- Props: `value` = `'YYYY-MM-DD'` string · `onChange(v)` = receives the **string directly (NOT an event)** · `className` = pass the form's existing input classes so the trigger looks identical · optional `placeholder`.
+- **No minimum date on purpose — past dates ARE allowed** (holiday and other past-dated requests must go through the normal approval flow). Do **not** add a `min`.
+- The pop-up is always dark-themed; the trigger button inherits `className`.
+
+**Apply pattern (per field):**
+1. `import DatePicker from './DatePicker.jsx';`
+2. Swap `<input type="date" value={X} onChange={(e)=>setX(e.target.value)} className={CLS} />`
+   → `<DatePicker value={X} onChange={setX} className={CLS} />`.
+   If it sets an object field: `onChange={(v)=>setForm({ ...form, field: v })}`.
+3. Keep the **same `className`** the input used.
+
+**✅ Phase 1 (DONE — stamp `2026-06-27.datepicker-phase1`):**
+`MyHoliday.jsx` (request From/To), `HolidayManager.jsx` (Holiday admin → Settings company-year From/To — the field the owner flagged), `MyTasks.jsx` (due date), `PersonalNotes.jsx` (note due date), `EngineerWageAdmin.jsx` (started-at), `InvoicesList.jsx` (issue + due), `QuoteForm.jsx` (valid-until).
+
+**🔜 Phase 2 (NOT started — remaining native date inputs):**
+*Plain day-pickers (same easy swap):*
+- `AddLeadModal.jsx` — firstContact, chaseDate (~110, 114); uses `className={INPUT}`.
+- `CompanyProfile.jsx` — chaseDate (~466), noteCalDate (~605), reminderForm.date (~656), taskForm.dueDate (~714). ⚠️ These use inline **`style={inputStyle}`**, not a className — either wrap with a matching class or extend DatePicker to accept a `style` prop.
+- `CRMDashboard.jsx` (~977), `InvoiceDetail.jsx` (~431).
+- Ticket screens — `EnhancedCreateTicketModal.jsx` (~330), `CreateTicketModalFixed.jsx` (~368), `TicketDetailModal.jsx` (~153), `TicketDetailView.jsx` (~256), `TicketDetailViewTabbed.jsx` (~1769). ⚠️ **Confirm which ticket screens are actually live** before editing — several variants exist and some use the shadcn `<Input>` wrapper.
+- H&S — `SafetyTab.jsx` (~376, 527) and `SafetyTabComprehensive.jsx` (~13 fields). ⚠️ SafetyTabComprehensive uses a `<FormField type="date">` abstraction, so the swap goes through FormField — its own bigger batch.
+
+*Date **+ time** fields (DatePicker is day-only — need a time-aware `DateTimePicker` variant, or leave):*
+- `CRMCalendar.jsx` (~927 datetime-local, ~1185, ~1251, ~1361), `IntegratedCalendar.jsx` (~497), `BookingCalendar.jsx` (~535), `JobForm.jsx` (~301, ~310 datetime-local), `XeroIntegration.jsx` (~268), `VoiceAssistant.jsx` (~409, ~525, ~534, ~570).
+
+Ignore the dead `*_broken.jsx` files (`CreateTicketModal_broken`, `TicketFieldCustomizer_broken`).
+⚠️ Modal caveat: the pop-up is absolutely-positioned; inside a modal with `overflow-hidden`, a picker near the bottom edge could clip. None seen so far in Phase 1; if it happens in Phase 2, render the pop-up via a portal.
+
+---
+
+## Work shipped THIS session (post-Manus, feature/fix session)
+All frontend unless flagged **backend**. Each shipped as changed-files only and bumped the stamp. Newest first:
+- **Date-picker Phase 1** — shared `DatePicker.jsx` + 7 screens (above). `datepicker-phase1`.
+- **My Notes full-width** — removed a `max-w-3xl mx-auto` cap in `PersonalNotes.jsx`. `notes-full-width`.
+- **Plan/billing moved to Pricing** — the `PlanManagement` block (plan tiers + Additional Seats + Delete-Account Danger Zone) moved from User Management to the **Pricing** page (`Dashboard.jsx` renders it for `pricing-config`, admin-only; removed from `UserManagementImproved.jsx`). `plan-moved-to-pricing`.
+- **Delete-user actually works** (**backend**) — the bin only removed from local state before. Added admin-only `DELETE /api/organizations/:id/users/:userId` (`organizations.js`) that removes the membership + deletes the person's org-scoped personal data (holiday allowances/requests/adjustments, `user_sales_permissions`, `personal_notes`, `engineer_wage_records`, `commission_period_locks`) via best-effort per-table try/catch, and **preserves the `users` row + all tickets/history** (tickets FK is RESTRICT, so the row must stay). Frontend now confirms + calls the server + only removes on success. `user-delete-fix`.
+- **Holiday admin 500 fix** (**backend**) — `/staff` query filtered `m.status='active'` but the **live `memberships` table has no `status` column** (schema.sql lists it; live DB predates it — trust the live DB). Removed the clause. `holiday-staff-fix`.
+- **Per-user Sales permissions (full feature)** — control which Sales areas each staff member can access. (a) `104_create_sales_permissions.sql` (**backend NEW**, `user_sales_permissions(org,user_id,perms jsonb)`) + `sales-permissions.js` (**backend NEW**, `/me`, admin `/:userId` GET+PUT, exports `effectiveFor`; defaults seeded from role so nobody's locked out; admins/managers/owner always unrestricted) mounted in `server.js`. (b) Users edit modal got the permission toggles (`UserManagementImproved.jsx`). (c) Frontend enforcement via `hooks/useSalesPermissions.js` (**NEW**, module-cached `/me`): `SalesTabs.jsx` shows only allowed tabs, `Sidebar.jsx` hides/retargets the Sales item, `Dashboard.jsx` guards the 4 sales sub-views. (d) **Server lock**: `orders.js` `ordersGuard` (403 without `orders`) + strips cost/profit from the **orders LIST** for users without `figures`; `OrdersList.jsx`/`OrderForm.jsx` hide profit columns and make no-figures users **read-only** on orders. Stamps `sales-permissions-setup` → `sales-perms-enforced-ui` → `sales-perms-server-lock`. **Elements:** companies, quotes, orders, calendar, figures, commission_rules. **Note:** companies/quotes/calendar are **UI-gated only** — their endpoints are shared with the order/calendar pickers (`/api/contacts`, `/api/idyq/quotes`), so hard-blocking them would break the pickers; **orders** is the one cleanly server-locked area. Possible follow-up: split "view" vs "picker" reads to server-lock companies/quotes too.
+- **Sales order archive** — `103_add_orders_archived.sql` (**backend NEW**, `orders.archived_at/archived_by`) + `orders.js` (**backend**, archive/restore/permanent-delete + list hides archived, `?archived=only` for managers). `OrderForm.jsx` red **Delete**=archive; `OrdersList.jsx` manager-only **Archived** toggle with Restore/Delete-permanently. `order-archive`.
+- **Holiday feature (staff + manager + calendar)** — migrations `101`/`102` (**backend NEW**, holiday_settings/allowances/requests/adjustments), `holidays.js` (**backend NEW**, mounted `/api/holidays`), `MyHoliday.jsx` (staff page + request form), `HolidayManager.jsx` (Approvals/Team/Settings), holidays shown on `CRMCalendar.jsx` (teal), sidebar items (My Holiday all-staff; Holiday admin manager-only). Working-week is a `'1111100'` Mon–Sun string; half-days supported.
+- **Quote→Order open** — creating an order from an IDYQ quote jumps to Orders and opens the new order (`IdyqIntegration.jsx`/`SalesQuotes.jsx`/`OrdersList.jsx`/`Dashboard.jsx`).
+
+**Recurring gotcha proven twice this session:** the checked-in `database/schema.sql` has **drifted from the live Render DB** (e.g. `memberships.status` exists in the file but NOT live). **Trust the live DB / real queries over the schema file.** When a new query references a column, confirm it exists live (or wrap cleanup deletes in try/catch as the user-delete endpoint does).
+
+---
+
 ## What WorkTrackr is
 A CRM / ordering / commission app.
 - **Backend:** Node/Express (CommonJS) + PostgreSQL (`pg`). Routes in `web/routes/`, mounted in `web/server.js`.
 - **Frontend:** React + Vite, at `web/client/src/app/src/`. Vite alias `@` → that folder. Entry `web/client/src/main.jsx` → `AppEntrypoint` → `DashboardWithLayout` → `AppLayout` + `Sidebar` + `Dashboard` (Dashboard switches the visible "view").
-- **Build:** `npm run build` inside `web/client` — a clean build is **"1846 modules transformed, zero errors."** Always build before handing over frontend.
+- **Build:** `npm run build` inside `web/client` — a clean build is currently **~1850 modules transformed, zero errors** (the baseline grows as new component files are added; it was 1846 at the Manus handover). Always build before handing over frontend.
 - **Migrations:** auto-run on every server boot via `web/run-migrations.js`. It runs any new `.sql` in `web/migrations/` **once** (tracked in the `schema_migrations` table) in alphabetical order. **A failing migration crashes boot**, so every migration must be idempotent — use `CREATE TABLE IF NOT EXISTS`, `gen_random_uuid()` (already available; the `contacts` table uses it), and never depend on uncertain state. New tables appear automatically on the next deploy — the owner runs no SQL.
 - **Hosting:** Render (Starter). **Auto-deploys** when the owner pushes from **GitHub Desktop** at `C:\repos\worktrackr-app`. Live at **worktrackr.cloud**. (The LF→CRLF warning in GitHub Desktop is harmless.)
 

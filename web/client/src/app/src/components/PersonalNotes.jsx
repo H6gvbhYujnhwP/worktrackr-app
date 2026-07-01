@@ -13,6 +13,7 @@
 // Flows verified against mounted routes: GET/POST/PATCH/DELETE /api/notes/personal,
 // POST /api/tickets, GET /api/tickets, POST /api/tickets/:id/comments.
 import React, { useState, useEffect, useCallback } from 'react';
+import DatePicker from './DatePicker.jsx';
 import {
   Plus, Pin, Trash2, Edit2, X,
   StickyNote, Bell, CheckCircle2, Circle,
@@ -241,7 +242,7 @@ function NoteForm({ initial, onSave, onCancel, saving }) {
         </div>
         <div className="w-44">
           <label className={LABEL_CLS}>Due date</label>
-          <input type="date" className={INPUT_CLS} value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          <DatePicker className={INPUT_CLS} value={dueDate} onChange={setDueDate} />
         </div>
       </div>
       <div>

@@ -1,5 +1,6 @@
 // web/client/src/app/src/components/InvoicesList.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import DatePicker from './DatePicker.jsx';
 import { useNavigate } from 'react-router-dom';
 import { Receipt, Plus, Search, ChevronRight, Loader2, X, Calendar } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
@@ -139,11 +140,11 @@ function NewInvoiceModal({ onClose, onCreated }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLS}>Issue Date</label>
-              <input type="date" value={issueDate} onChange={e => setIssueDate(e.target.value)} className={INPUT_CLS} />
+              <DatePicker value={issueDate} onChange={setIssueDate} className={INPUT_CLS} />
             </div>
             <div>
               <label className={LABEL_CLS}>Due Date</label>
-              <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className={INPUT_CLS} />
+              <DatePicker value={dueDate} onChange={setDueDate} className={INPUT_CLS} />
             </div>
           </div>
           <div>

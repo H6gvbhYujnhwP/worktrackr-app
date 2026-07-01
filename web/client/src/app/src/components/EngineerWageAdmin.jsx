@@ -4,6 +4,7 @@
 // engineer, enter the neutral delivered-deal count, set the manual £ rise/new rate,
 // and confirm. No hardcoded money. Reads/writes /api/engineer-wage.
 import React, { useEffect, useState } from 'react';
+import DatePicker from './DatePicker.jsx';
 import { SlidersHorizontal, Save, Plus, Check, Trash2, BadgeCheck } from 'lucide-react';
 import PageHero from './PageHero.jsx';
 
@@ -115,7 +116,7 @@ export default function EngineerWageAdmin() {
             <option value="">Select engineer…</option>
             {candidates.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
-          <input type="date" value={form.startedAt} onChange={(e) => setForm({ ...form, startedAt: e.target.value })} className={inputCls} />
+          <DatePicker value={form.startedAt} onChange={(v) => setForm({ ...form, startedAt: v })} className={inputCls} />
           <input type="number" placeholder="Current rate £" value={form.currentRate} onChange={(e) => setForm({ ...form, currentRate: e.target.value })} className={inputCls} />
           <input type="number" placeholder={`Deal target (default ${config.dealCountTarget || 0})`} value={form.dealTarget} onChange={(e) => setForm({ ...form, dealTarget: e.target.value })} className={inputCls} />
         </div>
