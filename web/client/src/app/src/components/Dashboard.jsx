@@ -18,7 +18,7 @@ import {
   Plus, Search, Users, Ticket, Clock, CheckCircle, AlertCircle,
   X, User, Mail, Settings, Workflow, Bell, RefreshCw, Calendar,
   Trash2, UserPlus, Flag, GitMerge, ChevronDown, Package, LogOut,
-  Building2
+  Building2, DollarSign
 } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
@@ -29,6 +29,7 @@ import AssignTicketsModal from './AssignTicketsModal.jsx';
 import EmailLogModal from './EmailLogModal.jsx';
 import TicketFieldCustomizer from './TicketFieldCustomizer.jsx';
 import UserManagementImproved from './UserManagementImproved.jsx';
+import PlanManagement from './PlanManagement.jsx';
 import IntegratedCalendar from './IntegratedCalendar.jsx';
 import XeroIntegration from './XeroIntegration.jsx';
 import CRMDashboard from './CRMDashboard.jsx';
@@ -486,14 +487,18 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'company-notes'  && <CompanyNotes />}
       {currentView === 'jobs'           && <JobsList />}
       {currentView === 'invoices'       && <InvoicesList />}
-      {currentView === 'pricing-config' && (
+      {currentView === 'pricing-config' && isAdmin && (
         <ErrorBoundary>
           <div className="p-5 md:p-7 min-h-full bg-[#1a1a2e]">
-            <div className="rounded-xl border border-[#2e2e4a] bg-[#242438] p-8 text-center">
-              <Settings className="w-10 h-10 text-[#f59e0b] mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-white mb-2">Pricing Configuration</h2>
-              <p className="text-[#94a3b8] text-sm">Configure your organisation's pricing settings and tiers. Feature under active development.</p>
+            <div className="mb-5">
+              <PageHero
+                title="Pricing & plan"
+                icon={DollarSign}
+                meta={[{ label: 'Your plan, seats, payment and account' }]}
+                compact
+              />
             </div>
+            <PlanManagement totalUsers={users.length} />
           </div>
         </ErrorBoundary>
       )}

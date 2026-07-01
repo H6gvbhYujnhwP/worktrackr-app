@@ -1,7 +1,6 @@
 // web/client/src/app/src/components/UserManagementImproved.jsx
 import React, { useState } from 'react';
 import { useAuth, useSimulation } from '../App.jsx';
-import PlanManagement from './PlanManagement.jsx';
 import useUserLimits from '../hooks/useUserLimits.js';
 import { Switch } from '@/components/ui/switch.jsx';
 import { Label } from '@/components/ui/label.jsx';
@@ -181,9 +180,6 @@ export default function UserManagementImproved({ users, currentUser }) {
         meta={[{ label: 'Manage team members and notification preferences' }]}
         compact
       />
-
-      {/* Plan management */}
-      <PlanManagement currentPlan="pro" additionalSeats={0} totalUsers={users.length} />
 
       {/* Tabs */}
       <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] overflow-hidden">
