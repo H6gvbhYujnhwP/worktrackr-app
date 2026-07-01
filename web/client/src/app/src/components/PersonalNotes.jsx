@@ -480,7 +480,7 @@ const PersonalNotes = () => {
 
   return (
     <div className="min-h-full bg-[#1a1a2e] p-5 md:p-7">
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="space-y-4">
 
         {/* Modals */}
         {newTicketNote && (
