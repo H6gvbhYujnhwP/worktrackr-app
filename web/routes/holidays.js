@@ -236,7 +236,7 @@ router.get('/staff', async (req, res) => {
     const people = await query(
       `SELECT u.id, u.name, u.email, m.role
          FROM memberships m JOIN users u ON u.id = m.user_id
-        WHERE m.organisation_id = $1 AND m.status = 'active'
+        WHERE m.organisation_id = $1
         ORDER BY u.name`,
       [organizationId]
     );
