@@ -299,6 +299,71 @@ router.put('/:id/users/:userId', async (req, res) => {
   }
 });
 
+// DELETE /api/organizations/:id/users/:userId
+// Removes a user from the organisation and deletes their personal/org data
+// (holidays, wages, commission locks, sales permissions, personal notes).
+// Everything historical — tickets they raised/were assigned, comments, jobs,
+// orders, contracts — is deliberately LEFT INTACT (the users row is preserved
+// so those references stay valid). Admin only.
+router.delete('/:id/users/:userId', async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const { type, partnerId, organizationId, role: userRole } = req.orgContext;
+
+    // Only an admin (or a partner admin for their own orgs) may remove a user.
+    if (type === 'partner_admin') {
+      const orgCheck = await query('SELECT id FROM organisations WHERE id = $1 AND partner_id = $2', [id, partnerId]);
+      if (orgCheck.rows.length === 0) return res.status(403).json({ error: 'Access denied' });
+    } else if (id !== organizationId || userRole !== 'admin') {
+      return res.status(403).json({ error: 'Only an admin can remove a user' });
+    }
+
+    // Can't remove your own account.
+    if (req.user && userId === req.user.userId) {
+      return res.status(400).json({ error: 'You cannot remove your own account' });
+    }
+
+    // Must actually be a member of this org.
+    const membership = await query(
+      'SELECT id FROM memberships WHERE user_id = $1 AND organisation_id = $2',
+      [userId, id]
+    );
+    if (membership.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found in organization' });
+    }
+
+    // Best-effort cleanup of this user's personal / per-user data in THIS org.
+    // Each delete runs independently so a table that differs on the live database
+    // can never block the removal itself. All are org-scoped, so a user who also
+    // belongs to another org keeps their data there.
+    const cleanups = [
+      ['holiday_allowances',      'user_id'],
+      ['holiday_requests',        'user_id'],
+      ['holiday_adjustments',     'user_id'],
+      ['user_sales_permissions',  'user_id'],
+      ['personal_notes',          'user_id'],
+      ['engineer_wage_records',   'engineer_user_id'],
+      ['commission_period_locks', 'salesperson_user_id'],
+    ];
+    for (const [table, col] of cleanups) {
+      try {
+        await query(`DELETE FROM ${table} WHERE organisation_id = $1 AND ${col} = $2`, [id, userId]);
+      } catch (e) {
+        console.warn(`[user-delete] cleanup skipped for ${table}: ${e.message}`);
+      }
+    }
+
+    // Remove them from the organisation — this is the essential step that frees
+    // the seat and drops them from user lists.
+    await query('DELETE FROM memberships WHERE user_id = $1 AND organisation_id = $2', [userId, id]);
+
+    res.json({ success: true, message: 'User removed from organisation' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to remove user' });
+  }
+});
+
 // Invite user to organization
 router.post('/:id/users/invite', async (req, res) => {
   try {

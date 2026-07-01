@@ -92,9 +92,26 @@ export default function UserManagementImproved({ users, currentUser }) {
     }
   };
 
-  const handleDeleteUser = (userId) => {
-    if (userId === currentUser.id) return;
-    setUsers(prev => prev.filter(u => u.id !== userId));
+  const handleDeleteUser = async (user) => {
+    if (user.id === currentUser.id) return;
+    const ok = window.confirm(
+      `Delete ${user.name || 'this user'}?\n\nThey'll be removed from the organisation and their holiday, wage, bonus and permission data will be deleted. Any tickets they raised or worked on stay in place. This cannot be undone.`
+    );
+    if (!ok) return;
+    try {
+      const r = await fetch(`/api/organizations/${organization.id}/users/${user.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        credentials: 'include',
+      });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        throw new Error(body.error || `Failed (HTTP ${r.status})`);
+      }
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (e) {
+      alert(`Could not delete the user: ${e.message}`);
+    }
   };
 
   const handleToggleEmailNotifications = (userId) => {
@@ -356,7 +373,7 @@ export default function UserManagementImproved({ users, currentUser }) {
                               <Edit className="w-4 h-4" />
                             </button>
                             {!user.isOrgOwner && user.id !== currentUser.id && (
-                              <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded-lg border border-red-200 hover:bg-red-50 text-red-600">
+                              <button onClick={() => handleDeleteUser(user)} className="p-2 rounded-lg border border-red-200 hover:bg-red-50 text-red-600">
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             )}
