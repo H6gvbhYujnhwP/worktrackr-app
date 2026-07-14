@@ -283,6 +283,14 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     return [...cal, ...tkt];
   }, [calendarEvents, tickets]);
 
+  // Sort a day's blended events earliest-first by their start time. Entries
+  // with no time (all-day) fall back to their date, so they sort to the top.
+  const sortByTime = (arr) => [...arr].sort((a, b) => {
+    const ta = new Date(a.start_at || a.startAt || a.date || 0).getTime();
+    const tb = new Date(b.start_at || b.startAt || b.date || 0).getTime();
+    return (isNaN(ta) ? 0 : ta) - (isNaN(tb) ? 0 : tb);
+  });
+
   // FIX 7: check start_at (snake_case — what backend returns)
   const getEventsForDate = (date) => {
     const year = date.getFullYear();
@@ -315,7 +323,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
         start_at: `${String(h.startDate).slice(0, 10)}T00:00:00`,
         company: '', contact: '', notes: '',
       })) : [];
-    return [...crm, ...jobs, ...sched, ...hols];
+    return sortByTime([...crm, ...jobs, ...sched, ...hols]);
   };
 
   const getEventTypeConfig = (type) => eventTypes.find(t => t.value === type) || eventTypes[0];
@@ -327,6 +335,17 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     if (event._isSchedule) return;
     if (event._isHoliday) return;
     setSelectedEvent(event);
+  };
+
+  // Clicking an empty space on the calendar opens the New Activity form,
+  // pre-filled to that day (default 09:00 start — adjustable in the form).
+  const openCreateForDate = (day, time = '09:00') => {
+    const y = day.getFullYear();
+    const m = String(day.getMonth() + 1).padStart(2, '0');
+    const d = String(day.getDate()).padStart(2, '0');
+    setSelectedDate(day);
+    setNewEvent({ title: '', type: 'call', company: '', contact: '', scheduleTask: `${y}-${m}-${d}T${time}`, assignedUser: '', notes: '' });
+    setShowCreateModal(true);
   };
 
   const formatTime = (dateTimeStr) => {
@@ -691,9 +710,12 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                   </p>
                 </div>
                 {todayEvents.length === 0 ? (
-                  <div className="text-center py-10 text-[13px] text-[#6b7280]">
+                  <div
+                    onClick={() => openCreateForDate(selectedDate)}
+                    className="text-center py-10 text-[13px] text-[#6b7280] rounded-lg border border-dashed border-[#2e2e4a] cursor-pointer hover:bg-[rgba(245,158,11,0.08)] hover:text-[#cbd5e1] transition-colors"
+                  >
                     <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    No events scheduled for this day
+                    No events scheduled — click to add one
                   </div>
                 ) : (
                   todayEvents.map(event => {
@@ -720,6 +742,14 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                     );
                   })
                 )}
+                {todayEvents.length > 0 && (
+                  <div
+                    onClick={() => openCreateForDate(selectedDate)}
+                    className="text-center py-3 text-[12px] text-[#6b7280] rounded-lg border border-dashed border-[#2e2e4a] cursor-pointer hover:bg-[rgba(245,158,11,0.08)] hover:text-[#cbd5e1] transition-colors"
+                  >
+                    + Add an activity on this day
+                  </div>
+                )}
               </div>
             )}
 
@@ -730,7 +760,12 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                   const dayEvents = getEventsForDate(day);
                   const isToday = day.toDateString() === new Date().toDateString();
                   return (
-                    <div key={index} className="border border-[#2e2e4a] rounded-lg p-2 min-h-[100px]">
+                    <div
+                      key={index}
+                      onClick={() => openCreateForDate(day)}
+                      title="Click an empty space to add an activity"
+                      className="border border-[#2e2e4a] rounded-lg p-2 min-h-[100px] cursor-pointer hover:bg-[rgba(245,158,11,0.08)] transition-colors"
+                    >
                       <div className={`text-center mb-2 ${isToday ? 'text-[#f59e0b] font-bold' : 'text-[#94a3b8]'}`}>
                         <div className="text-[10px] font-semibold uppercase tracking-wider">
                           {day.toLocaleDateString('en-GB', { weekday: 'short' })}
@@ -746,7 +781,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                           return (
                             <div
                               key={event.id}
-                              onClick={() => openEvent(event)}
+                              onClick={(e) => { e.stopPropagation(); openEvent(event); }}
                               className={`text-[10px] p-1 rounded cursor-pointer truncate ${tc.color}`}
                               title={`${event.title} — ${ts && formatTime(ts)}`}
                             >
@@ -755,7 +790,12 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                           );
                         })}
                         {dayEvents.length > 3 && (
-                          <div className="text-[10px] text-[#6b7280] text-center">+{dayEvents.length - 3} more</div>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); setSelectedDate(day); setViewMode('day'); }}
+                            className="text-[10px] text-[#6b7280] text-center cursor-pointer hover:text-[#cbd5e1]"
+                          >
+                            +{dayEvents.length - 3} more
+                          </div>
                         )}
                       </div>
                     </div>
@@ -781,7 +821,8 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                     return (
                       <div
                         key={index}
-                        onClick={() => setSelectedDate(day)}
+                        onClick={() => openCreateForDate(day)}
+                        title="Click an empty space to add an activity"
                         className={`min-h-[72px] p-1 border rounded-lg cursor-pointer transition-colors
                           ${isCurrentMonth ? 'bg-[#242438]' : 'bg-[#1f1f33] text-[#6b7280]'}
                           ${isToday ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.16)]' : 'border-[#2e2e4a]'}
@@ -793,13 +834,23 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                           {dayEvents.slice(0, 2).map(event => {
                             const tc = getEventTypeConfig(event.type);
                             return (
-                              <div key={event.id} className={`text-[10px] px-1 py-0.5 rounded truncate ${tc.color}`} title={event.title}>
+                              <div
+                                key={event.id}
+                                onClick={(e) => { e.stopPropagation(); openEvent(event); }}
+                                className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer ${tc.color}`}
+                                title={event.title}
+                              >
                                 {event.title}
                               </div>
                             );
                           })}
                           {dayEvents.length > 2 && (
-                            <div className="text-[10px] text-[#6b7280]">+{dayEvents.length - 2} more</div>
+                            <div
+                              onClick={(e) => { e.stopPropagation(); setSelectedDate(day); }}
+                              className="text-[10px] text-[#6b7280] cursor-pointer hover:text-[#cbd5e1]"
+                            >
+                              +{dayEvents.length - 2} more
+                            </div>
                           )}
                         </div>
                       </div>
