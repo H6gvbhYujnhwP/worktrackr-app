@@ -95,7 +95,8 @@ function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
   );
 }
 
-export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick, defaultSources }) {
+export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick, defaultSources, calendarKind = 'sales' }) {
+  const isDelivery = calendarKind === 'delivery';
   const { tickets = [] } = useSimulation() || {};
 
   const navigate = useNavigate();
@@ -121,6 +122,20 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     } catch (error) {
       console.error('Error loading CRM events:', error);
       return [];
+    }
+  };
+
+  // Reload the work/schedule (calendar_events) stream — used by the Delivery
+  // calendar after it creates, edits or deletes one of its own entries.
+  const loadCalendarEvents = async () => {
+    try {
+      const calRes = await fetch('/api/calendar/events', { credentials: 'include' });
+      if (calRes.ok) {
+        const calData = await calRes.json();
+        setCalendarEvents(calData.events || []);
+      }
+    } catch (err) {
+      console.error('[CRMCalendar] Failed to reload calendar events:', err);
     }
   };
 
@@ -265,7 +280,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
       const dateStr = raw.includes('T') ? raw.split('T')[0] : raw.substring(0, 10);
       const t = (e.startTime || '00:00').substring(0, 5);
       return {
-        id: `cal-${e.id}`, _isSchedule: true, title: e.title, type: 'schedule',
+        id: `cal-${e.id}`, _isSchedule: true, _calId: e.id, title: e.title, type: 'schedule',
         start_at: `${dateStr}T${t}:00`, end_at: `${dateStr}T${(e.endTime || t).substring(0, 5)}:00`,
         company: '', contact: '', notes: e.notes || e.description || '',
       };
@@ -347,7 +362,6 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   // ticket; schedule (work calendar) entries are display-only.
   const openEvent = (event) => {
     if (event._isTicket) { if (onTicketClick && event._ticket) onTicketClick(event._ticket); return; }
-    if (event._isSchedule) return;
     if (event._isHoliday) return;
     setSelectedEvent(event);
   };
@@ -451,12 +465,20 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   const deleteEvent = async () => {
     if (!selectedEvent) return;
     try {
-      await fetch(`/api/crm-events/${selectedEvent.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      const eventsData = await loadEventsFromAPI();
-      setEvents(eventsData);
+      if (selectedEvent._isSchedule) {
+        await fetch(`/api/calendar/events/${selectedEvent._calId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        await loadCalendarEvents();
+      } else {
+        await fetch(`/api/crm-events/${selectedEvent.id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        const eventsData = await loadEventsFromAPI();
+        setEvents(eventsData);
+      }
     } catch (error) {
       console.error('Error deleting event:', error);
     }
@@ -487,6 +509,34 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     }
     const startDateTime = createDateInTimezone(editingEvent.date, editingEvent.time);
     const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+
+    // Delivery/schedule entries live in calendar_events — update via that route.
+    if (editingEvent._isSchedule) {
+      const pad = (n) => String(n).padStart(2, '0');
+      const endTime = `${pad(endDateTime.getHours())}:${pad(endDateTime.getMinutes())}`;
+      try {
+        await fetch(`/api/calendar/events/${editingEvent._calId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            title: editingEvent.title,
+            description: editingEvent.notes || '',
+            eventDate: editingEvent.date,
+            startTime: editingEvent.time,
+            endTime,
+            notes: editingEvent.notes || ''
+          })
+        });
+        await loadCalendarEvents();
+      } catch (error) {
+        console.error('Error updating calendar event:', error);
+      }
+      setShowEditModal(false);
+      setEditingEvent(null);
+      return;
+    }
+
     const updatedEvent = {
       ...editingEvent,
       start_at: startDateTime.toISOString(),
@@ -631,12 +681,14 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <SelectItem value="month">Month</SelectItem>
               </SelectContent>
             </Select>
-            <HeroButtonPrimary icon={Plus} onClick={() => setShowCreateModal(true)}>Add Activity</HeroButtonPrimary>
-            <HeroButtonOutline icon={Calendar} onClick={() => {
-              const dateStr = selectedDate.toISOString().split('T')[0];
-              setNewMeeting(prev => ({ ...prev, date: dateStr, time: '09:00' }));
-              setShowMeetingModal(true);
-            }}>Book Meeting</HeroButtonOutline>
+            <HeroButtonPrimary icon={Plus} onClick={() => setShowCreateModal(true)}>{isDelivery ? 'Add Entry' : 'Add Activity'}</HeroButtonPrimary>
+            {!isDelivery && (
+              <HeroButtonOutline icon={Calendar} onClick={() => {
+                const dateStr = selectedDate.toISOString().split('T')[0];
+                setNewMeeting(prev => ({ ...prev, date: dateStr, time: '09:00' }));
+                setShowMeetingModal(true);
+              }}>Book Meeting</HeroButtonOutline>
+            )}
           </>
         }
         compact
@@ -961,7 +1013,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
-              <h2 className="text-[15px] font-semibold text-white">Add CRM Activity</h2>
+              <h2 className="text-[15px] font-semibold text-white">{isDelivery ? 'Add Calendar Entry' : 'Add CRM Activity'}</h2>
               <button onClick={() => setShowCreateModal(false)} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
@@ -969,27 +1021,31 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
             <div className="p-6 space-y-4">
               <div>
                 <label className={labelClass}>Title</label>
-                <input className={inputClass} value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} placeholder="Activity title" />
+                <input className={inputClass} value={newEvent.title} onChange={e => setNewEvent({...newEvent, title: e.target.value})} placeholder={isDelivery ? 'Entry title' : 'Activity title'} />
               </div>
+              {!isDelivery && (
+                <>
+                  <div>
+                    <label className={labelClass}>Type</label>
+                    <Select value={newEvent.type} onValueChange={v => setNewEvent({...newEvent, type: v})}>
+                      <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
+                        {eventTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Company</label>
+                    <input className={inputClass} value={newEvent.company} onChange={e => setNewEvent({...newEvent, company: e.target.value})} placeholder="Company name" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Contact</label>
+                    <input className={inputClass} value={newEvent.contact} onChange={e => setNewEvent({...newEvent, contact: e.target.value})} placeholder="Contact person" />
+                  </div>
+                </>
+              )}
               <div>
-                <label className={labelClass}>Type</label>
-                <Select value={newEvent.type} onValueChange={v => setNewEvent({...newEvent, type: v})}>
-                  <SelectTrigger className="text-[13px] border-[#2e2e4a] bg-[#242438] text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-[#242438] border-[#2e2e4a] text-white">
-                    {eventTypes.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className={labelClass}>Company</label>
-                <input className={inputClass} value={newEvent.company} onChange={e => setNewEvent({...newEvent, company: e.target.value})} placeholder="Company name" />
-              </div>
-              <div>
-                <label className={labelClass}>Contact</label>
-                <input className={inputClass} value={newEvent.contact} onChange={e => setNewEvent({...newEvent, contact: e.target.value})} placeholder="Contact person" />
-              </div>
-              <div>
-                <label className={labelClass}>Schedule Task *</label>
+                <label className={labelClass}>{isDelivery ? 'Date & time *' : 'Schedule Task *'}</label>
                 <input className={inputClass} type="datetime-local" step="900" value={newEvent.scheduleTask} onChange={e => setNewEvent({...newEvent, scheduleTask: e.target.value})} />
               </div>
               <div>
@@ -1002,32 +1058,53 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <button
                 onClick={async () => {
                   if (!newEvent.title.trim() || !newEvent.scheduleTask) {
-                    alert('Please fill in Title and Schedule Task');
+                    alert(isDelivery ? 'Please fill in Title and Date & time' : 'Please fill in Title and Schedule Task');
                     return;
                   }
                   const scheduleDateTime = new Date(newEvent.scheduleTask);
                   const endDateTime = new Date(scheduleDateTime.getTime() + 60 * 60 * 1000);
-                  // FIX 1 + FIX 2: lowercase type, snake_case field names
-                  const activityEntry = {
-                    title: newEvent.title,
-                    type: newEvent.type,
-                    company: newEvent.company,
-                    contact: newEvent.contact,
-                    start_at: scheduleDateTime.toISOString(),
-                    end_at: endDateTime.toISOString(),
-                    assigned_user: newEvent.assignedUser,
-                    status: 'planned',
-                    notes: newEvent.notes
-                  };
                   try {
-                    await fetch('/api/crm-events', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      credentials: 'include',
-                      body: JSON.stringify(activityEntry)
-                    });
-                    const eventsData = await loadEventsFromAPI();
-                    setEvents(eventsData);
+                    if (isDelivery) {
+                      // Delivery calendar → create a schedule (calendar_events) entry.
+                      const pad = (n) => String(n).padStart(2, '0');
+                      const eventDate = `${scheduleDateTime.getFullYear()}-${pad(scheduleDateTime.getMonth() + 1)}-${pad(scheduleDateTime.getDate())}`;
+                      const startTime = `${pad(scheduleDateTime.getHours())}:${pad(scheduleDateTime.getMinutes())}`;
+                      const endTime = `${pad(endDateTime.getHours())}:${pad(endDateTime.getMinutes())}`;
+                      await fetch('/api/calendar/events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                          title: newEvent.title,
+                          description: newEvent.notes,
+                          eventDate, startTime, endTime,
+                          notes: newEvent.notes,
+                          eventType: 'work'
+                        })
+                      });
+                      await loadCalendarEvents();
+                    } else {
+                      // Sales calendar → create a CRM activity.
+                      const activityEntry = {
+                        title: newEvent.title,
+                        type: newEvent.type,
+                        company: newEvent.company,
+                        contact: newEvent.contact,
+                        start_at: scheduleDateTime.toISOString(),
+                        end_at: endDateTime.toISOString(),
+                        assigned_user: newEvent.assignedUser,
+                        status: 'planned',
+                        notes: newEvent.notes
+                      };
+                      await fetch('/api/crm-events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(activityEntry)
+                      });
+                      const eventsData = await loadEventsFromAPI();
+                      setEvents(eventsData);
+                    }
                   } catch (error) {
                     console.error('Error creating event:', error);
                   }
@@ -1036,7 +1113,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 }}
                 className="px-4 py-2 text-[13px] font-medium text-[#1a1a2e] bg-[#f59e0b] hover:bg-[#d97706] rounded-lg"
               >
-                Create Activity
+                {isDelivery ? 'Create Entry' : 'Create Activity'}
               </button>
             </div>
           </div>
@@ -1049,15 +1126,69 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
           <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
               <h2 className="text-[15px] font-semibold text-white">
-                {selectedEvent._isJob ? 'Scheduled Project' : 'Event Details'}
+                {selectedEvent._isSchedule ? 'Calendar Entry' : selectedEvent._isJob ? 'Scheduled Project' : 'Event Details'}
               </h2>
               <button onClick={() => { setSelectedEvent(null); setNextAction(null); }} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* ── JOB variant ── */}
-            {selectedEvent._isJob ? (
+            {/* ── SCHEDULE (calendar_events) variant ── */}
+            {selectedEvent._isSchedule ? (
+              <>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-[rgba(100,116,139,0.20)] border border-[#64748b]/30 flex-shrink-0">
+                      <Clock className="w-4 h-4 text-[#cbd5e1]" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Calendar Entry</p>
+                      <h3 className="text-[14px] font-semibold text-white mt-0.5">{selectedEvent.title}</h3>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-[13px]">
+                    {(selectedEvent.start_at) && (
+                      <>
+                        <div><span className="font-medium text-[#cbd5e1]">Date:</span> <span className="text-[#94a3b8]">{formatDate(selectedEvent.start_at)}</span></div>
+                        <div>
+                          <span className="font-medium text-[#cbd5e1]">Time:</span>{' '}
+                          <span className="text-[#94a3b8]">
+                            {formatTime(selectedEvent.start_at)}
+                            {selectedEvent.end_at && selectedEvent.end_at !== selectedEvent.start_at ? ` – ${formatTime(selectedEvent.end_at)}` : ''}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {selectedEvent.notes && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Notes</p>
+                      <p className="text-[13px] text-[#94a3b8]">{selectedEvent.notes}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap justify-end gap-2 px-6 py-4 border-t border-[#2e2e4a]">
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#fca5a5] border border-[rgba(239,68,68,0.4)] rounded-lg hover:bg-[rgba(239,68,68,0.15)]"
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                  <button
+                    onClick={() => { setSelectedEvent(null); setNextAction(null); }}
+                    className="px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => openEditModal(selectedEvent)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium text-[#cbd5e1] border border-[#2e2e4a] rounded-lg hover:bg-[#1f1f33]"
+                  >
+                    <Edit className="w-4 h-4" /> Edit
+                  </button>
+                </div>
+              </>
+            ) : selectedEvent._isJob ? (
               <>
                 <div className="p-6 space-y-4">
                   <div className="flex items-start gap-3">
@@ -1401,7 +1532,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#242438] rounded-xl border border-[#2e2e4a] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2e2e4a]">
-              <h3 className="text-[15px] font-semibold text-white">Edit Event</h3>
+              <h3 className="text-[15px] font-semibold text-white">{editingEvent._isSchedule ? 'Edit Calendar Entry' : 'Edit Event'}</h3>
               <button onClick={() => { setShowEditModal(false); setEditingEvent(null); }} className="p-1.5 rounded-lg hover:bg-[#1f1f33] text-[#94a3b8]">
                 <X className="w-4 h-4" />
               </button>
@@ -1411,16 +1542,18 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 <label className={labelClass}>Event Title *</label>
                 <input className={inputClass} value={editingEvent.title} onChange={e => setEditingEvent(p => ({...p, title: e.target.value}))} placeholder="Enter event title" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Company</label>
-                  <input className={inputClass} value={editingEvent.company || ''} onChange={e => setEditingEvent(p => ({...p, company: e.target.value}))} placeholder="Company name" />
+              {!editingEvent._isSchedule && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Company</label>
+                    <input className={inputClass} value={editingEvent.company || ''} onChange={e => setEditingEvent(p => ({...p, company: e.target.value}))} placeholder="Company name" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Contact</label>
+                    <input className={inputClass} value={editingEvent.contact || ''} onChange={e => setEditingEvent(p => ({...p, contact: e.target.value}))} placeholder="Contact person" />
+                  </div>
                 </div>
-                <div>
-                  <label className={labelClass}>Contact</label>
-                  <input className={inputClass} value={editingEvent.contact || ''} onChange={e => setEditingEvent(p => ({...p, contact: e.target.value}))} placeholder="Contact person" />
-                </div>
-              </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Date *</label>
@@ -1437,33 +1570,37 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                 </div>
               </div>
               {/* FIX 5: real users from contacts API in edit modal */}
-              <div>
-                <label className={labelClass}>Assign Users</label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {getAvailableUsers().map(user => (
-                    <label key={user} className="flex items-center gap-2 cursor-pointer text-[13px]">
-                      <input
-                        type="checkbox"
-                        checked={(editingEvent.assignedUsers || []).includes(user)}
-                        onChange={e => {
-                          setEditingEvent(p => ({
-                            ...p,
-                            assignedUsers: e.target.checked
-                              ? [...(p.assignedUsers || []), user]
-                              : (p.assignedUsers || []).filter(u => u !== user)
-                          }));
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-[#cbd5e1]">{user}</span>
-                    </label>
-                  ))}
+              {!editingEvent._isSchedule && (
+                <div>
+                  <label className={labelClass}>Assign Users</label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    {getAvailableUsers().map(user => (
+                      <label key={user} className="flex items-center gap-2 cursor-pointer text-[13px]">
+                        <input
+                          type="checkbox"
+                          checked={(editingEvent.assignedUsers || []).includes(user)}
+                          onChange={e => {
+                            setEditingEvent(p => ({
+                              ...p,
+                              assignedUsers: e.target.checked
+                                ? [...(p.assignedUsers || []), user]
+                                : (p.assignedUsers || []).filter(u => u !== user)
+                            }));
+                          }}
+                          className="rounded"
+                        />
+                        <span className="text-[#cbd5e1]">{user}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className={labelClass}>Location</label>
-                <input className={inputClass} value={editingEvent.location || ''} onChange={e => setEditingEvent(p => ({...p, location: e.target.value}))} placeholder="Event location" />
-              </div>
+              )}
+              {!editingEvent._isSchedule && (
+                <div>
+                  <label className={labelClass}>Location</label>
+                  <input className={inputClass} value={editingEvent.location || ''} onChange={e => setEditingEvent(p => ({...p, location: e.target.value}))} placeholder="Event location" />
+                </div>
+              )}
               <div>
                 <label className={labelClass}>Notes</label>
                 <textarea className={inputClass} value={editingEvent.notes || ''} onChange={e => setEditingEvent(p => ({...p, notes: e.target.value}))} rows={3} placeholder="Additional notes" />

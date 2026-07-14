@@ -433,12 +433,15 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       {currentView === 'calendar'       && (
         <CRMCalendar
           timezone={selectedTimezone}
+          calendarKind="delivery"
+          defaultSources={{ sales: false, projects: true, schedule: true }}
           onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />
       )}
       {currentView === 'sales-calendar' && salesCan('calendar') && (
         <CRMCalendar
           timezone={selectedTimezone}
+          calendarKind="sales"
           defaultSources={{ sales: true, projects: false, schedule: false }}
           onTicketClick={(ticket) => { setViewingTicketId(ticket.id); onViewChange('tickets'); }}
         />
