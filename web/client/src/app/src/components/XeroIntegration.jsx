@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import BillingQueueManager from './BillingQueueManager.jsx';
 import ManualBillingProcessor from './ManualBillingProcessor.jsx';
+import DatePicker from './DatePicker.jsx';
 
 const XeroIntegration = ({ businessType = 'service' }) => {
   const [xeroConnected, setXeroConnected] = useState(true);
+  const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showManualProcessor, setShowManualProcessor] = useState(false);
   const [selectedTicketData, setSelectedTicketData] = useState(null);
@@ -265,7 +267,7 @@ const XeroIntegration = ({ businessType = 'service' }) => {
                 </div>
                 <div>
                   <Label htmlFor="invoiceDate">Invoice Date</Label>
-                  <Input id="invoiceDate" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                  <DatePicker value={invoiceDate} onChange={setInvoiceDate} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" />
                 </div>
               </div>
               

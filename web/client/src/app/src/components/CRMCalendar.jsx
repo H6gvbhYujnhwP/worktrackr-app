@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useSimulation } from '../App.jsx';
 import PageHero, { HeroButtonPrimary, HeroButtonOutline } from './PageHero.jsx';
+import DatePicker from './DatePicker.jsx';
+import DateTimePicker from './DateTimePicker.jsx';
 
 // FIX 1: type values are lowercase to match backend Zod schema
 const eventTypes = [
@@ -1046,7 +1048,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               )}
               <div>
                 <label className={labelClass}>{isDelivery ? 'Date & time *' : 'Schedule Task *'}</label>
-                <input className={inputClass} type="datetime-local" step="900" value={newEvent.scheduleTask} onChange={e => setNewEvent({...newEvent, scheduleTask: e.target.value})} />
+                <DateTimePicker value={newEvent.scheduleTask} onChange={(v) => setNewEvent({...newEvent, scheduleTask: v})} className={inputClass} />
               </div>
               <div>
                 <label className={labelClass}>Notes</label>
@@ -1379,7 +1381,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Date</label>
-                  <input className={inputClass} type="date" value={newMeeting.date} onChange={e => setNewMeeting(p => ({...p, date: e.target.value}))} />
+                  <DatePicker value={newMeeting.date} onChange={(v) => setNewMeeting(p => ({...p, date: v}))} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Time</label>
@@ -1445,7 +1447,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Date</label>
-                  <input className={inputClass} type="date" value={scheduleMeeting.date} onChange={e => setScheduleMeeting(p => ({...p, date: e.target.value}))} />
+                  <DatePicker value={scheduleMeeting.date} onChange={(v) => setScheduleMeeting(p => ({...p, date: v}))} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Time</label>
@@ -1557,7 +1559,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>Date *</label>
-                  <input className={inputClass} type="date" value={editingEvent.date} onChange={e => setEditingEvent(p => ({...p, date: e.target.value}))} />
+                  <DatePicker value={editingEvent.date} onChange={(v) => setEditingEvent(p => ({...p, date: v}))} className={inputClass} />
                 </div>
                 <div>
                   <label className={labelClass}>Time *</label>

@@ -3,6 +3,7 @@ import PageHero from './PageHero.jsx';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Loader2, Save } from 'lucide-react';
+import DateTimePicker from './DateTimePicker.jsx';
 
 // ── Design system constants ────────────────────────────────────────────────────
 const INPUT_CLS = 'w-full px-3 py-2 text-[13px] border border-[#2e2e4a] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]';
@@ -297,19 +298,17 @@ export default function JobForm() {
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={LABEL_CLS}>Scheduled Start</label>
-                <input
-                  type="datetime-local"
+                <DateTimePicker
                   value={formData.scheduled_start}
-                  onChange={set('scheduled_start')}
+                  onChange={(v) => setFormData(prev => ({ ...prev, scheduled_start: v }))}
                   className={INPUT_CLS}
                 />
               </div>
               <div>
                 <label className={LABEL_CLS}>Scheduled End</label>
-                <input
-                  type="datetime-local"
+                <DateTimePicker
                   value={formData.scheduled_end}
-                  onChange={set('scheduled_end')}
+                  onChange={(v) => setFormData(prev => ({ ...prev, scheduled_end: v }))}
                   className={`${INPUT_CLS} ${errors.scheduled_end ? 'border-red-400' : ''}`}
                 />
                 {errors.scheduled_end && <p className="text-[12px] text-red-500 mt-1">{errors.scheduled_end}</p>}

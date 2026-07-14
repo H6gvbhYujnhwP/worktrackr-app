@@ -16,6 +16,8 @@ import {
   Mic, MicOff, X, Check, RefreshCw, Loader2,
   FileText, Ticket, Calendar, Bell, Users, Briefcase,
 } from 'lucide-react';
+import DatePicker from './DatePicker.jsx';
+import DateTimePicker, { TimePicker } from './DateTimePicker.jsx';
 
 // ─── Web Speech API availability ─────────────────────────────────────────────
 const SpeechRecognitionAPI =
@@ -405,10 +407,9 @@ function PersonalNoteFields({ data, showDueDate, onChange }) {
       {showDueDate && (
         <div>
           <FieldLabel>Due / Reminder date</FieldLabel>
-          <input
-            type="datetime-local"
+          <DateTimePicker
             value={data.due_date ? data.due_date.slice(0, 16) : ''}
-            onChange={e => onChange({ ...data, due_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
+            onChange={(v) => onChange({ ...data, due_date: v ? new Date(v).toISOString() : null })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
@@ -521,19 +522,17 @@ function CrmCalendarFields({ data, onChange }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Start</FieldLabel>
-          <input
-            type="datetime-local"
+          <DateTimePicker
             value={startLocal}
-            onChange={e => onChange({ ...data, start_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+            onChange={(v) => onChange({ ...data, start_at: v ? new Date(v).toISOString() : '' })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[12px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
           <FieldLabel>End</FieldLabel>
-          <input
-            type="datetime-local"
+          <DateTimePicker
             value={endLocal}
-            onChange={e => onChange({ ...data, end_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+            onChange={(v) => onChange({ ...data, end_at: v ? new Date(v).toISOString() : '' })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[12px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
@@ -566,28 +565,25 @@ function TicketCalendarFields({ data, onChange }) {
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-3 sm:col-span-1">
           <FieldLabel>Date</FieldLabel>
-          <input
-            type="date"
+          <DatePicker
             value={data.eventDate || ''}
-            onChange={e => onChange({ ...data, eventDate: e.target.value })}
+            onChange={(v) => onChange({ ...data, eventDate: v })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
           <FieldLabel>Start</FieldLabel>
-          <input
-            type="time"
+          <TimePicker
             value={data.startTime || ''}
-            onChange={e => onChange({ ...data, startTime: e.target.value })}
+            onChange={(v) => onChange({ ...data, startTime: v })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>
         <div>
           <FieldLabel>End</FieldLabel>
-          <input
-            type="time"
+          <TimePicker
             value={data.endTime || ''}
-            onChange={e => onChange({ ...data, endTime: e.target.value })}
+            onChange={(v) => onChange({ ...data, endTime: v })}
             className="w-full rounded-lg border border-[#2e2e4a] px-3 py-2 text-[13px] text-white focus:outline-none focus:ring-2 focus:ring-[#f59e0b]/40"
           />
         </div>

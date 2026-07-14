@@ -33,6 +33,7 @@ import { priorities, categories } from '../data/mockData.js';
 import ContactSelector from './ContactSelector.jsx';
 import ContactCreationModal from './ContactCreationModal.jsx';
 import { loadTemplate, getRenderableFieldCount, RENDERABLE_FIELDS } from '../shared/template.js';
+import DateTimePicker from './DateTimePicker.jsx';
 
 export default function CreateTicketModal({ onClose, users, currentUser }) {
   const { createTicket } = useSimulation();
@@ -422,13 +423,10 @@ export default function CreateTicketModal({ onClose, users, currentUser }) {
                 <Calendar className="w-3.5 h-3.5" />
                 Scheduled Date
               </Label>
-              <Input 
-                type="datetime-local"
-                step="900"
+              <DateTimePicker
                 value={formData.scheduled_date}
-                onChange={(e) => handleInputChange('scheduled_date', e.target.value)}
-                placeholder="Select date and time"
-                className="border-[#2e2e4a] focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
+                onChange={(v) => handleInputChange('scheduled_date', v)}
+                className="w-full h-9 rounded-md border border-[#2e2e4a] bg-[#242438] px-3 text-[13px] text-white focus:ring-[#f59e0b]/30 focus:border-[#f59e0b]"
               />
             </div>
           );

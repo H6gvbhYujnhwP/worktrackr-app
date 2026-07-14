@@ -15,6 +15,8 @@ import {
   CalendarPlus, Calendar, User, Box, Globe,
 } from 'lucide-react';
 import PageHero, { HeroButtonOutline } from './PageHero.jsx';
+import DatePicker from './DatePicker.jsx';
+import { TimePicker } from './DateTimePicker.jsx';
 
 // Stage values are unchanged in the DB; only the FIRST label is shown as
 // "Suspect" (value stays 'new' so existing data is untouched).
@@ -463,8 +465,8 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
           {naForm ? (
             <>
               <input value={naForm.nextAction} onChange={(e) => setNaForm({ ...naForm, nextAction: e.target.value })} placeholder="e.g. call back" style={{ ...inputStyle, width: 150, padding: '5px 8px' }} />
-              <input type="date" value={naForm.chaseDate || ''} onChange={(e) => setNaForm({ ...naForm, chaseDate: e.target.value })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
-              <input type="time" value={naForm.chaseTime || '09:00'} onChange={(e) => setNaForm({ ...naForm, chaseTime: e.target.value })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              <DatePicker value={naForm.chaseDate || ''} onChange={(v) => setNaForm({ ...naForm, chaseDate: v })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
+              <TimePicker value={naForm.chaseTime || '09:00'} onChange={(v) => setNaForm({ ...naForm, chaseTime: v })} style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
               <button onClick={saveNextAction} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Save</button>
               <button onClick={bookNextAction} style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}><CalendarPlus size={13} style={{ verticalAlign: -2, marginRight: 3 }} />Book in calendar</button>
               <button onClick={() => setNaForm(null)} style={{ background: 'transparent', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 12 }}>Cancel</button>
@@ -602,9 +604,9 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             </label>
             {noteToCal && (
               <>
-                <input type="date" value={noteCalDate} onChange={(e) => setNoteCalDate(e.target.value)}
+                <DatePicker value={noteCalDate} onChange={(v) => setNoteCalDate(v)}
                   style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
-                <input type="time" value={noteCalTime} onChange={(e) => setNoteCalTime(e.target.value)}
+                <TimePicker value={noteCalTime} onChange={(v) => setNoteCalTime(v)}
                   style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }} />
               </>
             )}
@@ -653,8 +655,8 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginTop: 8, display: 'grid', gap: 8 }}>
               <input autoFocus value={reminderForm.title} onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })} placeholder="Reminder (e.g. call back)" style={inputStyle} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <input type="date" value={reminderForm.date} onChange={(e) => setReminderForm({ ...reminderForm, date: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
-                <input type="time" value={reminderForm.time || '09:00'} onChange={(e) => setReminderForm({ ...reminderForm, time: e.target.value })} style={{ ...inputStyle, width: 'auto' }} />
+                <DatePicker value={reminderForm.date} onChange={(v) => setReminderForm({ ...reminderForm, date: v })} style={{ ...inputStyle, flex: 1 }} />
+                <TimePicker value={reminderForm.time || '09:00'} onChange={(v) => setReminderForm({ ...reminderForm, time: v })} style={{ ...inputStyle, width: 'auto' }} />
               </div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button onClick={() => setReminderForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
@@ -711,7 +713,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginBottom: 8, display: 'grid', gap: 8 }}>
                 <input autoFocus value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="What needs doing?" style={inputStyle} />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input type="date" value={taskForm.dueDate} onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} style={{ ...inputStyle, flex: 1 }} />
+                  <DatePicker value={taskForm.dueDate} onChange={(v) => setTaskForm({ ...taskForm, dueDate: v })} style={{ ...inputStyle, flex: 1 }} />
                   <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
                     <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
                   </select>
