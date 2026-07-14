@@ -1,7 +1,7 @@
 # WorkTrackr — Handover (read me first)
 
 **Last updated: end of the post-Manus integration + feature session.**
-**Current build stamp: `2026-07-01.admin-theme-and-ticket-datepickers`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
+**Current build stamp: `2026-07-01.hs-datepickers`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
 
 This file is the quick orientation for anyone (or any AI assistant) picking up WorkTrackr. The full detail is in the roadmap; this is the map.
 
@@ -42,14 +42,12 @@ The owner wants the fiddly native `<input type="date">` boxes replaced with a **
 - `CRMDashboard.jsx` — per-service Renewal date (className swap).
 - `InvoiceDetail.jsx` — Due date (className swap; keeps `setDirty(true)`).
 
-**🔜 Phase 2 remaining (NOT started):**
-*Health & Safety (plain day-pickers):*
-- `SafetyTab.jsx` (~376, 527) and `SafetyTabComprehensive.jsx` (~13 fields). ⚠️ SafetyTabComprehensive uses a `<FormField type="date">` abstraction, so the swap goes through FormField — its own bigger batch.
-
+**🔜 Phase 2 remaining — ONLY the date + time batch left:**
 *Date **+ time** fields — need a time-aware picker (owner wants minutes = **00 / 15 / 30 / 45** only):*
 - Build a shared `DateTimePicker` (day calendar + a 15-min time list) OR reuse `DatePicker` + a 15-min time `Select`. Then swap the `datetime-local` fields: `CreateTicketModal.jsx` (~426), `CRMCalendar.jsx` (create + edit modals), `JobForm.jsx`, `IntegratedCalendar.jsx`/`BookingCalendar.jsx` (dead — skip), `XeroIntegration.jsx`, `VoiceAssistant.jsx`. Also constrain any kept native `type="time"` boxes (e.g. `CompanyProfile.jsx`) with `step="900"`. Note: `CRMCalendar`'s own time dropdown (`generateTimeOptions`) is **already** 15-min.
 
 **✅ Ticket screens (plain day-pickers) — DONE** (`admin-theme-and-ticket-datepickers`): `TicketDetailModal.jsx` + `TicketDetailViewTabbed.jsx` scheduled_date. Live ticket screens confirmed = `CreateTicketModal`, `TicketDetailModal`, `TicketDetailViewTabbed`.
+**✅ Health & Safety (plain day-pickers) — DONE** (`hs-datepickers`): all 11 `type="date"` fields in `SafetyTabComprehensive.jsx` via one `FormField` date branch. `SafetyTab.jsx` is dead — skip.
 
 *Date **+ time** fields (DatePicker is day-only — need a time-aware `DateTimePicker` variant, or leave):*
 - `CRMCalendar.jsx` (~927 datetime-local, ~1185, ~1251, ~1361), `IntegratedCalendar.jsx` (~497), `BookingCalendar.jsx` (~535), `JobForm.jsx` (~301, ~310 datetime-local), `XeroIntegration.jsx` (~268), `VoiceAssistant.jsx` (~409, ~525, ~534, ~570).
@@ -61,6 +59,7 @@ Ignore the dead `*_broken.jsx` files (`CreateTicketModal_broken`, `TicketFieldCu
 
 ## Work shipped THIS session (post-Manus, feature/fix session)
 All frontend unless flagged **backend**. Each shipped as changed-files only and bumped the stamp. Newest first:
+- **Health & Safety date-pickers.** The live H&S screen is `SafetyTabComprehensive.jsx` (rendered by `TicketDetailViewTabbed.jsx` as `SafetyTab`); the standalone `SafetyTab.jsx` is **dead/unimported** — ignore it. All 11 date fields go through the module-level `FormField` abstraction, so a single new `type === 'date'` branch in `FormField` (rendering the shared `DatePicker`, `onChange={(v) => updateFormData(name, v)}`) converted **all 11** at once (Date, Assessment/Review/Action/Service/Effective dates, etc.). `hs-datepickers`.
 - **Admin dashboard light-theme fix + ticket date-pickers.** (a) **Admin fix:** same white-body-text leak the public pages had also hit the light admin pages — wrapped `/admin87476463/dashboard` (`AdminDashboard.jsx`) and `/admin87476463/users/:userId` (`UserDetailPage.jsx`) in the `.wt-public` guard in `main.jsx` (AdminLogin is intentionally dark, left alone). (b) **Ticket day-pickers:** confirmed the **live** ticket screens are `CreateTicketModal.jsx`, `TicketDetailModal.jsx`, `TicketDetailViewTabbed.jsx` (the `Enhanced*`/`*Fixed`/`TicketDetailView`/`*_broken` variants are **dead/unrendered**). Swapped the plain `type="date"` (scheduled_date) in **TicketDetailModal** and **TicketDetailViewTabbed** to the shared `DatePicker`. Both screens' `onChange = (field) => (e) => { const v = e?.target ? e.target.value : e; ... }` already accept a raw value, so `onChange={onChange('scheduled_date')}` works directly. `CreateTicketModal`'s field is a **`datetime-local`** (date+time) → left for the date-time batch. `admin-theme-and-ticket-datepickers`.
 - **Two separate calendars — Sales vs Delivery** (`CRMCalendar.jsx` + `Dashboard.jsx`). Both the Delivery "Calendar" (sidebar, view `calendar`) and the Sales "Calendar" tab (view `sales-calendar`) render the **same `CRMCalendar` engine** (so both already got Pass 1 + Pass 2 behaviour); this change makes them genuinely two calendars by **content** and by **what "Add" creates**. New prop `calendarKind` (`'sales'` default | `'delivery'`), `isDelivery` derived. Dashboard now passes: Delivery = `calendarKind="delivery"` + `defaultSources={{sales:false,projects:true,schedule:true}}` (holidays stays on); Sales = `calendarKind="sales"` + sales-only sources (`crm-calendar` view left on the `'sales'` default). On the **Delivery** calendar: "Add Activity" becomes **"Add Entry"** and creates a **calendar_events** schedule entry (`POST /api/calendar/events`) instead of a CRM event; the sales-only "Book Meeting" button and the Type/Company/Contact fields are hidden. Schedule/`calendar_events` entries are **no longer read-only** — they open a "Calendar Entry" detail modal and can be **edited** (`PUT /api/calendar/events/:id`) and **deleted** (`DELETE /api/calendar/events/:id`); scheduleItems now carries `_calId` (the real row id, since the calendar id is prefixed `cal-`), and `deleteEvent`/`saveEditedEvent` branch by `_isSchedule`. All calendar endpoints **already existed** — no backend change. Both calendars keep the source-toggle chips, so anyone can still flip on a combined view. **The other two calendar files (`IntegratedCalendar.jsx`, `BookingCalendar.jsx`) remain dead/unwired** — not rendered anywhere. `calendars-split-sales-delivery`.
   - Minor/known: editing a schedule entry reuses the shared edit modal (sales-only fields hidden); its Date field is still a native `type="date"` (part of the later date-picker date+time batch). Tickets/jobs on the Delivery calendar open as before (ticket screen / project).
