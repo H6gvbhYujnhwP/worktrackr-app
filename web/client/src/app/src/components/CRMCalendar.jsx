@@ -14,14 +14,14 @@ import PageHero, { HeroButtonPrimary, HeroButtonOutline } from './PageHero.jsx';
 
 // FIX 1: type values are lowercase to match backend Zod schema
 const eventTypes = [
-  { value: 'call',       label: 'Call',       icon: Phone,         color: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]' },
-  { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]' },
-  { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]' },
-  { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[rgba(249,115,22,0.20)] text-[#fdba74]' },
-  { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[rgba(245,158,11,0.16)] text-[#fcd34d]' },
-  { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[rgba(99,102,241,0.20)] text-[#a5b4fc]' },
-  { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[rgba(71,85,105,0.30)] text-[#cbd5e1]' },
-  { value: 'holiday',    label: 'Holiday',     icon: Palmtree,      color: 'bg-[rgba(20,184,166,0.22)] text-[#5eead4]' },
+  { value: 'call',       label: 'Call',       icon: Phone,         color: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]', accent: '#3b82f6' },
+  { value: 'meeting',    label: 'Meeting',     icon: Users,         color: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]', accent: '#10b981' },
+  { value: 'follow_up',  label: 'Follow Up',   icon: Target,        color: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]', accent: '#8b5cf6' },
+  { value: 'renewal',    label: 'Renewal',     icon: AlertTriangle, color: 'bg-[rgba(249,115,22,0.20)] text-[#fdba74]', accent: '#f97316' },
+  { value: 'job',        label: 'Project',     icon: Briefcase,     color: 'bg-[rgba(245,158,11,0.16)] text-[#fcd34d]', accent: '#f59e0b' },
+  { value: 'ticket',     label: 'Ticket',      icon: Ticket,        color: 'bg-[rgba(99,102,241,0.20)] text-[#a5b4fc]', accent: '#6366f1' },
+  { value: 'schedule',   label: 'Schedule',    icon: Clock,         color: 'bg-[rgba(71,85,105,0.30)] text-[#cbd5e1]', accent: '#64748b' },
+  { value: 'holiday',    label: 'Holiday',     icon: Palmtree,      color: 'bg-[rgba(20,184,166,0.22)] text-[#5eead4]', accent: '#14b8a6' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -327,6 +327,21 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   };
 
   const getEventTypeConfig = (type) => eventTypes.find(t => t.value === type) || eventTypes[0];
+
+  // Group an already-time-sorted day list into buckets that share the same
+  // displayed time, so same-time entries can render side-by-side ("split").
+  // Returns an array of arrays, in time order; all-day items bucket under '—'.
+  const groupByTime = (dayEvents) => {
+    const order = [];
+    const map = new Map();
+    for (const ev of dayEvents) {
+      const ts = ev.start_at || ev.startAt;
+      const key = ts ? formatTime(ts) : '—';
+      if (!map.has(key)) { map.set(key, []); order.push(key); }
+      map.get(key).push(ev);
+    }
+    return order.map(k => map.get(k));
+  };
 
   // Read-only blended items don't open the CRM edit modal: tickets open the
   // ticket; schedule (work calendar) entries are display-only.
@@ -718,29 +733,34 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                     No events scheduled — click to add one
                   </div>
                 ) : (
-                  todayEvents.map(event => {
-                    const tc = getEventTypeConfig(event.type);
-                    const ts = event.start_at || event.startAt;
-                    return (
-                      <div
-                        key={event.id}
-                        onClick={() => openEvent(event)}
-                        className="p-4 border border-[#2e2e4a] rounded-lg hover:bg-[rgba(245,158,11,0.16)] cursor-pointer transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${tc.color}`}>{tc.label}</span>
-                            <span className="text-[13px] font-medium text-white">{event.title}</span>
+                  groupByTime(todayEvents).map((grp, gi) => (
+                    <div key={gi} className="flex gap-3">
+                      {grp.map(event => {
+                        const tc = getEventTypeConfig(event.type);
+                        const ts = event.start_at || event.startAt;
+                        return (
+                          <div
+                            key={event.id}
+                            onClick={() => openEvent(event)}
+                            style={{ borderLeft: `4px solid ${tc.accent}` }}
+                            className="flex-1 min-w-0 p-4 border border-[#2e2e4a] rounded-lg hover:bg-[rgba(245,158,11,0.16)] cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${tc.color}`}>{tc.label}</span>
+                                <span className="text-[13px] font-medium text-white truncate">{event.title}</span>
+                              </div>
+                              <span className="text-[12px] text-[#6b7280] flex-shrink-0 ml-2">{ts && formatTime(ts)}</span>
+                            </div>
+                            <div className="mt-2 text-[12px] text-[#94a3b8] space-y-0.5">
+                              <p><span className="font-medium">Company:</span> {event.company}</p>
+                              {event.contact && <p><span className="font-medium">Contact:</span> {event.contact}</p>}
+                            </div>
                           </div>
-                          <span className="text-[12px] text-[#6b7280]">{ts && formatTime(ts)}</span>
-                        </div>
-                        <div className="mt-2 text-[12px] text-[#94a3b8] space-y-0.5">
-                          <p><span className="font-medium">Company:</span> {event.company}</p>
-                          {event.contact && <p><span className="font-medium">Contact:</span> {event.contact}</p>}
-                        </div>
-                      </div>
-                    );
-                  })
+                        );
+                      })}
+                    </div>
+                  ))
                 )}
                 {todayEvents.length > 0 && (
                   <div
@@ -775,28 +795,25 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                         </div>
                       </div>
                       <div className="space-y-1">
-                        {dayEvents.slice(0, 3).map(event => {
-                          const tc = getEventTypeConfig(event.type);
-                          const ts = event.start_at || event.startAt;
-                          return (
-                            <div
-                              key={event.id}
-                              onClick={(e) => { e.stopPropagation(); openEvent(event); }}
-                              className={`text-[10px] p-1 rounded cursor-pointer truncate ${tc.color}`}
-                              title={`${event.title} — ${ts && formatTime(ts)}`}
-                            >
-                              {event.title}
-                            </div>
-                          );
-                        })}
-                        {dayEvents.length > 3 && (
-                          <div
-                            onClick={(e) => { e.stopPropagation(); setSelectedDate(day); setViewMode('day'); }}
-                            className="text-[10px] text-[#6b7280] text-center cursor-pointer hover:text-[#cbd5e1]"
-                          >
-                            +{dayEvents.length - 3} more
+                        {groupByTime(dayEvents).map((grp, gi) => (
+                          <div key={gi} className="flex gap-1">
+                            {grp.map(event => {
+                              const tc = getEventTypeConfig(event.type);
+                              const ts = event.start_at || event.startAt;
+                              return (
+                                <div
+                                  key={event.id}
+                                  onClick={(e) => { e.stopPropagation(); openEvent(event); }}
+                                  style={{ borderLeft: `3px solid ${tc.accent}` }}
+                                  className={`flex-1 min-w-0 text-[10px] p-1 rounded cursor-pointer truncate ${tc.color}`}
+                                  title={`${event.title} — ${ts && formatTime(ts)}`}
+                                >
+                                  {event.title}
+                                </div>
+                              );
+                            })}
                           </div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   );
@@ -831,27 +848,24 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                       >
                         <div className="text-[12px] font-medium mb-1">{day.getDate()}</div>
                         <div className="space-y-0.5">
-                          {dayEvents.slice(0, 2).map(event => {
-                            const tc = getEventTypeConfig(event.type);
-                            return (
-                              <div
-                                key={event.id}
-                                onClick={(e) => { e.stopPropagation(); openEvent(event); }}
-                                className={`text-[10px] px-1 py-0.5 rounded truncate cursor-pointer ${tc.color}`}
-                                title={event.title}
-                              >
-                                {event.title}
-                              </div>
-                            );
-                          })}
-                          {dayEvents.length > 2 && (
-                            <div
-                              onClick={(e) => { e.stopPropagation(); setSelectedDate(day); }}
-                              className="text-[10px] text-[#6b7280] cursor-pointer hover:text-[#cbd5e1]"
-                            >
-                              +{dayEvents.length - 2} more
+                          {groupByTime(dayEvents).map((grp, gi) => (
+                            <div key={gi} className="flex gap-0.5">
+                              {grp.map(event => {
+                                const tc = getEventTypeConfig(event.type);
+                                return (
+                                  <div
+                                    key={event.id}
+                                    onClick={(e) => { e.stopPropagation(); openEvent(event); }}
+                                    style={{ borderLeft: `3px solid ${tc.accent}` }}
+                                    className={`flex-1 min-w-0 text-[10px] pl-1 pr-1 py-0.5 rounded truncate cursor-pointer ${tc.color}`}
+                                    title={event.title}
+                                  >
+                                    {event.title}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     );
@@ -886,6 +900,7 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
                       <div
                         key={event.id}
                         onClick={() => openEvent(event)}
+                        style={{ borderLeft: `4px solid ${tc.accent}` }}
                         className="border border-[#2e2e4a] rounded-lg p-3 hover:bg-[rgba(245,158,11,0.16)] cursor-pointer transition-colors"
                       >
                         <div className="flex items-start justify-between">
