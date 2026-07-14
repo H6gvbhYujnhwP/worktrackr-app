@@ -35,8 +35,8 @@ createRoot(document.getElementById('root')).render(
 
           {/* Master Admin (secret URL) */}
           <Route path="/admin87476463" element={<AdminLogin />} />
-          <Route path="/admin87476463/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin87476463/users/:userId" element={<UserDetailPage />} />
+          <Route path="/admin87476463/dashboard" element={<div className="wt-public"><AdminDashboard /></div>} />
+          <Route path="/admin87476463/users/:userId" element={<div className="wt-public"><UserDetailPage /></div>} />
 
           {/* Protected app area */}
           <Route

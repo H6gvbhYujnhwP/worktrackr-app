@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select.jsx';
 import SafetyTab  from './SafetyTabComprehensive.jsx';
 import PageHero from './PageHero.jsx';
+import DatePicker from './DatePicker.jsx';
 import QuotesTab  from './QuotesTab.jsx';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1765,8 +1766,7 @@ export default function TicketDetailViewTabbed({ ticketId, onBack }) {
             </div>
             <div>
               <div className="text-[11px] text-[#6b7280] mb-1">Scheduled date</div>
-              <input
-                type="date"
+              <DatePicker
                 value={form.scheduled_date}
                 onChange={onChange('scheduled_date')}
                 className="w-full border border-[#2e2e4a] rounded-md h-8 px-2 text-[12px] text-white bg-[#242438] focus:outline-none focus:ring-1 focus:ring-[#f59e0b]"

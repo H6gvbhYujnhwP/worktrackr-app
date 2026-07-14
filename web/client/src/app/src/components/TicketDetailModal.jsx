@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Textarea } from '@/components/ui/textarea.jsx'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select.jsx'
+import DatePicker from './DatePicker.jsx'
 
 const SECTORS = ['General','IT','Maintenance','Construction','Manufacturing','Facilities']
 
@@ -150,7 +151,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="scheduled_date" className="flex items-center gap-2"><CalIcon className="w-4 h-4" /> Scheduled Date</Label>
-                  <Input id="scheduled_date" type="date" value={form.scheduled_date} onChange={onChange('scheduled_date')} />
+                  <DatePicker value={form.scheduled_date} onChange={onChange('scheduled_date')} className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" />
                 </div>
                 <div>
                   <Label htmlFor="scheduled_duration_mins" className="flex items-center gap-2"><Clock className="w-4 h-4" /> Duration (mins)</Label>
