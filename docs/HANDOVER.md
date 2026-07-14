@@ -1,7 +1,7 @@
 # WorkTrackr — Handover (read me first)
 
 **Last updated: end of the post-Manus integration + feature session.**
-**Current build stamp: `2026-06-27.datepicker-phase1`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
+**Current build stamp: `2026-07-01.public-pages-theme-fix`** (shown faintly in the sidebar footer when the sidebar is expanded — use it to confirm a deploy went live).
 
 This file is the quick orientation for anyone (or any AI assistant) picking up WorkTrackr. The full detail is in the roadmap; this is the map.
 
@@ -17,14 +17,14 @@ The big visual redesign is **DONE and live**. **Manus AI's dark "Relationship Hu
 
 ---
 
-## 🗓️ SHARED DATE-PICKER ROLLOUT — Phase 1 DONE, **Phase 2 is the next task**
+## 🗓️ SHARED DATE-PICKER ROLLOUT — Phase 1 DONE, Phase 2 plain-pickers DONE, **tickets / H&S / date-time remain**
 
-The owner wants the fiddly native `<input type="date">` boxes replaced with a **pop-up calendar** across the app, done **in phases**. Phase 1 shipped this session; **Phase 2 is what a fresh session should pick up.**
+The owner wants the fiddly native `<input type="date">` boxes replaced with a **pop-up calendar** across the app, done **in phases**. Phase 1 and the Phase-2 plain day-pickers have shipped; **what remains is the ticket screens, Health & Safety, and the date+time fields.**
 
-**The shared component:** `web/client/src/app/src/components/DatePicker.jsx` (**NEW** this session).
-- Props: `value` = `'YYYY-MM-DD'` string · `onChange(v)` = receives the **string directly (NOT an event)** · `className` = pass the form's existing input classes so the trigger looks identical · optional `placeholder`.
+**The shared component:** `web/client/src/app/src/components/DatePicker.jsx` (NEW in Phase 1).
+- Props: `value` = `'YYYY-MM-DD'` string · `onChange(v)` = receives the **string directly (NOT an event)** · `className` = pass the form's existing input classes so the trigger looks identical · optional `style` = pass the form's inline `style` object for screens that style inputs inline instead of with classes (added Phase 2, used by `CompanyProfile.jsx`; layout hints like `width`/`flex`/`alignSelf`/`minWidth` are lifted onto the wrapper so the trigger sizes right in a flex row) · optional `placeholder`.
 - **No minimum date on purpose — past dates ARE allowed** (holiday and other past-dated requests must go through the normal approval flow). Do **not** add a `min`.
-- The pop-up is always dark-themed; the trigger button inherits `className`.
+- The pop-up is always dark-themed; the trigger button inherits `className` and/or `style`.
 
 **Apply pattern (per field):**
 1. `import DatePicker from './DatePicker.jsx';`
@@ -36,13 +36,17 @@ The owner wants the fiddly native `<input type="date">` boxes replaced with a **
 **✅ Phase 1 (DONE — stamp `2026-06-27.datepicker-phase1`):**
 `MyHoliday.jsx` (request From/To), `HolidayManager.jsx` (Holiday admin → Settings company-year From/To — the field the owner flagged), `MyTasks.jsx` (due date), `PersonalNotes.jsx` (note due date), `EngineerWageAdmin.jsx` (started-at), `InvoicesList.jsx` (issue + due), `QuoteForm.jsx` (valid-until).
 
-**🔜 Phase 2 (NOT started — remaining native date inputs):**
-*Plain day-pickers (same easy swap):*
-- `AddLeadModal.jsx` — firstContact, chaseDate (~110, 114); uses `className={INPUT}`.
-- `CompanyProfile.jsx` — chaseDate (~466), noteCalDate (~605), reminderForm.date (~656), taskForm.dueDate (~714). ⚠️ These use inline **`style={inputStyle}`**, not a className — either wrap with a matching class or extend DatePicker to accept a `style` prop.
-- `CRMDashboard.jsx` (~977), `InvoiceDetail.jsx` (~431).
-- Ticket screens — `EnhancedCreateTicketModal.jsx` (~330), `CreateTicketModalFixed.jsx` (~368), `TicketDetailModal.jsx` (~153), `TicketDetailView.jsx` (~256), `TicketDetailViewTabbed.jsx` (~1769). ⚠️ **Confirm which ticket screens are actually live** before editing — several variants exist and some use the shadcn `<Input>` wrapper.
-- H&S — `SafetyTab.jsx` (~376, 527) and `SafetyTabComprehensive.jsx` (~13 fields). ⚠️ SafetyTabComprehensive uses a `<FormField type="date">` abstraction, so the swap goes through FormField — its own bigger batch.
+**✅ Phase 2 — plain day-pickers (DONE — stamp `2026-07-01.datepicker-phase2`):**
+- `AddLeadModal.jsx` — firstContact, chaseDate (className swap).
+- `CompanyProfile.jsx` — chaseDate, noteCalDate, reminderForm.date, taskForm.dueDate. These used inline `style={inputStyle}`, so DatePicker was extended with a `style` prop (see above); the **date** halves were swapped and the neighbouring native **time** boxes were left as-is (those become the date+time batch below).
+- `CRMDashboard.jsx` — per-service Renewal date (className swap).
+- `InvoiceDetail.jsx` — Due date (className swap; keeps `setDirty(true)`).
+
+**🔜 Phase 2 remaining (NOT started):**
+*Ticket screens (plain day-pickers):*
+- `EnhancedCreateTicketModal.jsx` (~330), `CreateTicketModalFixed.jsx` (~368), `TicketDetailModal.jsx` (~153), `TicketDetailView.jsx` (~256), `TicketDetailViewTabbed.jsx` (~1769). ⚠️ **Confirm which ticket screens are actually live** before editing — several variants exist and some use the shadcn `<Input>` wrapper.
+*Health & Safety (plain day-pickers):*
+- `SafetyTab.jsx` (~376, 527) and `SafetyTabComprehensive.jsx` (~13 fields). ⚠️ SafetyTabComprehensive uses a `<FormField type="date">` abstraction, so the swap goes through FormField — its own bigger batch.
 
 *Date **+ time** fields (DatePicker is day-only — need a time-aware `DateTimePicker` variant, or leave):*
 - `CRMCalendar.jsx` (~927 datetime-local, ~1185, ~1251, ~1361), `IntegratedCalendar.jsx` (~497), `BookingCalendar.jsx` (~535), `JobForm.jsx` (~301, ~310 datetime-local), `XeroIntegration.jsx` (~268), `VoiceAssistant.jsx` (~409, ~525, ~534, ~570).
@@ -54,6 +58,10 @@ Ignore the dead `*_broken.jsx` files (`CreateTicketModal_broken`, `TicketFieldCu
 
 ## Work shipped THIS session (post-Manus, feature/fix session)
 All frontend unless flagged **backend**. Each shipped as changed-files only and bumped the stamp. Newest first:
+- **Public front-pages theme fix** — the dark in-app stylesheet (`src/app/src/App.css`) is bundled **globally** (it's reached via `main.jsx → AppEntrypoint → src/app/src/App.jsx → './App.css'`, all static imports, and the build emits **one** combined CSS file), so its `body { background:#1a1a2e; color:#fff }` base rule + dark `:root` colour tokens also landed on the **light** public pages — turning headings and button labels invisible (only text/tokens with an explicit colour survived, e.g. `text-gray-600`, the feature-card titles). Fix: a `.wt-public` **light-theme guard** in `src/App.css` (re-asserts the original light `:root` tokens + dark `color` for its subtree; custom props resolve from the nearest ancestor so the wrapper wins), and each public route in `main.jsx` is wrapped `<div className="wt-public">…</div>` (landing `/`, `/pricing`, `/signup`, `/login`, `/welcome`, `/forgot-password`, `/reset-password`). The dark app is **untouched**. `public-pages-theme-fix`.
+  - ⚠️ **Not yet fixed (same root cause):** the secret **admin dashboard** (`admin/AdminDashboard.jsx`) is also a light page (`bg-gray-50`) and will show the same washed-out text; wrap it in `.wt-public` too if/when the owner wants it. (`AdminLogin.jsx` is intentionally dark and is fine.)
+  - Deeper option (flagged, not done — higher risk to the working dark app): scope the dark app's global `body{}`/`:root{}` under an app-root class instead of guarding each public page.
+- **Date-picker Phase 2 (plain day-pickers)** — extended `DatePicker.jsx` with an optional `style` prop (additive; Phase-1 screens unaffected) + swapped 8 date boxes across 4 screens: `AddLeadModal.jsx` (2), `CompanyProfile.jsx` (4 date halves; time boxes left), `CRMDashboard.jsx` (renewal date), `InvoiceDetail.jsx` (due date). `datepicker-phase2`.
 - **Date-picker Phase 1** — shared `DatePicker.jsx` + 7 screens (above). `datepicker-phase1`.
 - **My Notes full-width** — removed a `max-w-3xl mx-auto` cap in `PersonalNotes.jsx`. `notes-full-width`.
 - **Plan/billing moved to Pricing** — the `PlanManagement` block (plan tiers + Additional Seats + Delete-Account Danger Zone) moved from User Management to the **Pricing** page (`Dashboard.jsx` renders it for `pricing-config`, admin-only; removed from `UserManagementImproved.jsx`). `plan-moved-to-pricing`.

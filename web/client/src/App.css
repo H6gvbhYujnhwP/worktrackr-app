@@ -119,6 +119,40 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PUBLIC-PAGE LIGHT-THEME GUARD
+   The dark in-app stylesheet (src/app/src/App.css) is bundled globally, so its
+   `body { background:#1a1a2e; color:#fff }` and its dark `:root` colour tokens
+   also land on the public marketing/auth pages, which are designed LIGHT. That
+   turned headings and button labels invisible.
+   Wrapping each public page in `.wt-public` re-asserts the original light theme
+   for that page's subtree only (custom properties resolve from the nearest
+   ancestor, so these win inside the wrapper). The dark app is untouched.
+   ───────────────────────────────────────────────────────────────────────── */
+.wt-public {
+  color: oklch(0.145 0 0);            /* dark text — beats the global body{color:#fff} */
+  background-color: oklch(1 0 0);     /* white base so no navy peeks through */
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+}
+
 /* WorkTrackr Cloud Custom Styles */
 .worktrackr-yellow {
   color: #FFD700;

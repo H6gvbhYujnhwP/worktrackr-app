@@ -23,14 +23,15 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<App />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/welcome" element={<Welcome />} />
+          {/* Public (wrapped in .wt-public so the dark in-app theme, which is
+              bundled globally, can't bleed onto these light pages) */}
+          <Route path="/" element={<div className="wt-public"><App /></div>} />
+          <Route path="/pricing" element={<div className="wt-public"><Pricing /></div>} />
+          <Route path="/signup" element={<div className="wt-public"><SignUp /></div>} />
+          <Route path="/login" element={<div className="wt-public"><Login /></div>} />
+          <Route path="/forgot-password" element={<div className="wt-public"><ForgotPassword /></div>} />
+          <Route path="/reset-password" element={<div className="wt-public"><ResetPassword /></div>} />
+          <Route path="/welcome" element={<div className="wt-public"><Welcome /></div>} />
 
           {/* Master Admin (secret URL) */}
           <Route path="/admin87476463" element={<AdminLogin />} />
