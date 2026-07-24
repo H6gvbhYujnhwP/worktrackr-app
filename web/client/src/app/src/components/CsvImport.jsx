@@ -61,7 +61,7 @@ const FIELDS = [
   },
   {
     key: 'primaryContact', label: 'Contact person',
-    exact: ['contact', 'contact person', 'contact name', 'primary contact', 'owner', 'full name'],
+    exact: ['contact', 'contact person', 'contact name', 'primary contact', 'owner', 'full name', 'name'],
     weak: ['contact', 'person', 'owner'],
     avoid: ['company', 'business', 'account', 'email', 'phone', 'number', 'id', 'url'],
   },
@@ -70,6 +70,24 @@ const FIELDS = [
     exact: ['website', 'web site', 'url', 'site', 'web', 'domain', 'company website', 'homepage'],
     weak: ['web', 'url', 'site', 'domain'],
     avoid: ['linkedin', 'navigator', 'profile', 'picture', 'logo', 'email'],
+  },
+  {
+    key: 'address', label: 'Address',
+    exact: ['address', 'company address', 'company location', 'registered address', 'town', 'city', 'postcode', 'post code', 'zip'],
+    weak: ['address', 'location'],
+    avoid: ['email', 'ip', 'url', 'web'],
+  },
+  {
+    key: 'industry', label: 'Industry',
+    exact: ['industry', 'company industry', 'sector', 'trade', 'vertical'],
+    weak: ['industry', 'sector'],
+    avoid: [],
+  },
+  {
+    key: 'employees', label: 'Number of employees',
+    exact: ['number of employees', 'employees', 'employee count', 'company employee count', 'headcount', 'staff', 'company size', 'size'],
+    weak: ['employee', 'headcount', 'staff'],
+    avoid: ['range', 'description'],
   },
   {
     key: 'salesStage', label: 'Sales stage',
@@ -177,6 +195,22 @@ const findNamePair = (headers) => {
   return first >= 0 && last >= 0 ? [String(first), String(last)] : null;
 };
 
+// Spreadsheets exported from Excel often lose the leading zero on UK phone
+// numbers (Excel treats them as numbers), so "01892 807001" arrives as
+// "1892807001". This restores it — but ONLY where it is unambiguous: a bare
+// 10-digit number starting 1/2/3/7/8/9 (UK landline/mobile ranges). Anything
+// already starting 0, +, or 00, anything with a different digit count, and
+// anything non-numeric is left exactly as it was.
+const fixUkPhone = (raw) => {
+  const v = String(raw || '').trim();
+  if (!v) return v;
+  if (/^(\+|00|0)/.test(v)) return v;              // already fine / international
+  const digits = v.replace(/\D/g, '');
+  if (digits.length !== 10) return v;              // not a zero-stripped UK number
+  if (!/^[123789]/.test(digits[0])) return v;      // not a UK landline/mobile prefix
+  return `0${v}`;
+};
+
 const blankMap = () => {
   const m = {};
   FIELDS.forEach((f) => { m[f.key] = { col: '', col2: '', fixed: '' }; });
@@ -227,6 +261,7 @@ export default function CsvImport({ onBack, onDone }) {
   const [mapping, setMapping] = useState(blankMap);
   const [reusedMapping, setReusedMapping] = useState(false);
   const [skipJunk, setSkipJunk] = useState(true);
+  const [fixPhones, setFixPhones] = useState(true);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(null);
   const [result, setResult] = useState(null);
@@ -240,6 +275,13 @@ export default function CsvImport({ onBack, onDone }) {
     if (!m.primaryContact.col) {
       const pair = findNamePair(hdrs);
       if (pair) m.primaryContact = { col: pair[0], col2: pair[1], fixed: '' };
+    }
+    // Safety net: a bare "Name" column matches Contact person, but if the file
+    // has no company-ish column at all then "Name" almost certainly IS the
+    // company name — and that field is required, so it wins.
+    if (!m.name.col && m.primaryContact.col && m.primaryContact.col2 === '') {
+      m.name = { col: m.primaryContact.col, col2: '', fixed: '' };
+      m.primaryContact = { col: '', col2: '', fixed: '' };
     }
     return m;
   };
@@ -283,10 +325,10 @@ export default function CsvImport({ onBack, onDone }) {
 
   // Build the rows we will actually send, and count what got left out.
   const prepared = useMemo(() => {
-    const empty = { rows: [], junk: 0, dupes: 0, blank: 0 };
+    const empty = { rows: [], junk: 0, dupes: 0, blank: 0, phonesFixed: 0 };
     if (!mapping.name || !mapping.name.col) return empty;
     const out = [];
-    let junk = 0; let dupes = 0; let blank = 0;
+    let junk = 0; let dupes = 0; let blank = 0; let phonesFixed = 0;
     const seen = new Set();
     for (let i = 0; i < dataRows.length; i++) {
       const r = dataRows[i];
@@ -300,6 +342,10 @@ export default function CsvImport({ onBack, onDone }) {
           const v2 = (r[Number(m.col2)] || '').trim();
           v = [v, v2].filter(Boolean).join(' ');
         }
+        if (f.key === 'phone' && fixPhones && v) {
+          const fixed = fixUkPhone(v);
+          if (fixed !== v) { v = fixed; phonesFixed++; }
+        }
         if (v) obj[f.key] = v;
       }
       const nm = obj.name;
@@ -310,8 +356,8 @@ export default function CsvImport({ onBack, onDone }) {
       seen.add(key);
       out.push(obj);
     }
-    return { rows: out, junk, dupes, blank };
-  }, [dataRows, mapping, skipJunk]);
+    return { rows: out, junk, dupes, blank, phonesFixed };
+  }, [dataRows, mapping, skipJunk, fixPhones]);
 
   const previewRows = useMemo(() => prepared.rows.slice(0, 5), [prepared.rows]);
   const previewCols = useMemo(
@@ -468,6 +514,11 @@ export default function CsvImport({ onBack, onDone }) {
             <label className="flex items-center gap-2 mt-3 text-[12.5px] text-[#cbd5e1] cursor-pointer">
               <input type="checkbox" checked={skipJunk} onChange={(e) => setSkipJunk(e.target.checked)} />
               Skip rows that aren’t real companies (“Self-employed”, “Freelance”, “Retired”, blanks)
+            </label>
+            <label className="flex items-center gap-2 mt-1.5 text-[12.5px] text-[#cbd5e1] cursor-pointer">
+              <input type="checkbox" checked={fixPhones} onChange={(e) => setFixPhones(e.target.checked)} />
+              Put back the leading 0 on UK phone numbers that lost it in Excel
+              {prepared.phonesFixed > 0 && <span className="text-[#94a3b8]">({nf(prepared.phonesFixed)} in this file)</span>}
             </label>
 
             {/* What will actually happen */}

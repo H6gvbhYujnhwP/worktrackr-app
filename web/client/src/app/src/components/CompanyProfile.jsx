@@ -12,7 +12,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   ArrowLeft, Check, Plus, Lock, X, Pencil, Trash2, Paperclip, Download,
   Phone, Users, Mail, FileText, RefreshCw, CornerUpRight, SquareCheck, Repeat,
-  CalendarPlus, Calendar, User, Box, Globe,
+  CalendarPlus, Calendar, User, Box, Globe, MapPin, Building2, UsersRound,
 } from 'lucide-react';
 import PageHero, { HeroButtonOutline } from './PageHero.jsx';
 import DatePicker from './DatePicker.jsx';
@@ -79,6 +79,19 @@ const stamp = (iso) => {
   if (days === 1) return `Yesterday · ${date}, ${time}`;
   return `${date}, ${time}`;
 };
+// Company address. Stored in the `addresses` JSONB array on the contact record.
+// Older records may hold objects rather than plain strings, so read both shapes.
+const addressText = (addresses) => {
+  if (!Array.isArray(addresses) || addresses.length === 0) return '';
+  const a = addresses[0];
+  if (typeof a === 'string') return a.trim();
+  if (a && typeof a === 'object') {
+    return [a.line1, a.line2, a.city, a.county, a.region, a.postcode, a.country]
+      .filter(Boolean).join(', ');
+  }
+  return '';
+};
+
 const emptyPerson = { name: '', role: '', email: '', phone: '', isDecisionMaker: false, editIndex: -1 };
 
 // ── dark surface helpers (use the --wt-* tokens added in v3.1) ──
@@ -367,10 +380,19 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const saveDetails = async () => {
     const prev = company;
     const w = (detailsForm.website || '').trim();
+    const address = (detailsForm.address || '').trim();
+    // `crm` replaces the whole column on save, so merge onto what's already there.
+    const nextCrm = {
+      ...(company.crm || {}),
+      industry: (detailsForm.industry || '').trim(),
+      companySize: (detailsForm.employees || '').trim(),
+    };
     const patch = {
       phone: (detailsForm.phone || '').trim(),
       email: (detailsForm.email || '').trim(),
       website: w && !/^https?:\/\//i.test(w) ? `https://${w}` : w,
+      addresses: address ? [address] : [],
+      crm: nextCrm,
     };
     setCompany({ ...company, ...patch });
     setDetailsForm(null);
@@ -501,7 +523,14 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.muted }}>Company details</span>
               {!detailsForm && (
-                <button onClick={() => setDetailsForm({ phone: company.phone || '', email: company.email || '', website: company.website || '' })} style={{ ...linkBtn, color: T.muted }}><Pencil size={13} /></button>
+                <button onClick={() => setDetailsForm({
+                  phone: company.phone || '',
+                  email: company.email || '',
+                  website: company.website || '',
+                  address: addressText(company.addresses),
+                  industry: (company.crm || {}).industry || '',
+                  employees: (company.crm || {}).companySize || '',
+                })} style={{ ...linkBtn, color: T.muted }}><Pencil size={13} /></button>
               )}
             </div>
             {detailsForm ? (
@@ -509,6 +538,9 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
                 <input value={detailsForm.phone} onChange={(e) => setDetailsForm({ ...detailsForm, phone: e.target.value })} placeholder="Telephone" style={inputStyle} />
                 <input value={detailsForm.email} onChange={(e) => setDetailsForm({ ...detailsForm, email: e.target.value })} placeholder="Email" style={inputStyle} />
                 <input value={detailsForm.website} onChange={(e) => setDetailsForm({ ...detailsForm, website: e.target.value })} placeholder="Website" style={inputStyle} />
+                <input value={detailsForm.address} onChange={(e) => setDetailsForm({ ...detailsForm, address: e.target.value })} placeholder="Address" style={inputStyle} />
+                <input value={detailsForm.industry} onChange={(e) => setDetailsForm({ ...detailsForm, industry: e.target.value })} placeholder="Industry" style={inputStyle} />
+                <input value={detailsForm.employees} onChange={(e) => setDetailsForm({ ...detailsForm, employees: e.target.value })} placeholder="Number of employees" style={inputStyle} />
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   <button onClick={() => setDetailsForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
                   <button onClick={saveDetails} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Save</button>
@@ -523,6 +555,30 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
                     ? <a href={company.website} target="_blank" rel="noreferrer" style={{ color: T.text, textDecoration: 'none' }}>{company.website.replace(/^https?:\/\//, '')}</a>
                     : <span style={{ color: T.muted }}>No website</span>}
                 </span>
+                {(() => {
+                  const addr = addressText(company.addresses);
+                  return (
+                    <span style={{ color: addr ? T.text : T.muted, display: 'inline-flex', alignItems: 'flex-start', gap: 7 }}>
+                      <MapPin size={13} style={{ color: T.accent, flexShrink: 0, marginTop: 2 }} />{addr || 'No address'}
+                    </span>
+                  );
+                })()}
+                {(() => {
+                  const ind = (company.crm || {}).industry || '';
+                  return (
+                    <span style={{ color: ind ? T.text : T.muted, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                      <Building2 size={13} style={{ color: T.accent, flexShrink: 0 }} />{ind || 'No industry'}
+                    </span>
+                  );
+                })()}
+                {(() => {
+                  const emp = (company.crm || {}).companySize || '';
+                  return (
+                    <span style={{ color: emp ? T.text : T.muted, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                      <UsersRound size={13} style={{ color: T.accent, flexShrink: 0 }} />{emp ? `${emp} employees` : 'No employee count'}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>

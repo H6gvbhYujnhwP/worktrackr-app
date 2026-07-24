@@ -301,12 +301,19 @@ router.post('/import', async (req, res) => {
       let stage = String(row.salesStage || '').trim().toLowerCase().replace(/\s+/g, '_');
       if (stage === 'suspect') stage = 'new'; // legacy alias from older imports/spreadsheets
       if (VALID_STAGES.includes(stage)) crm.salesStage = stage;
+      const industry = String(row.industry || '').trim();
+      if (industry) crm.industry = industry;
+      const employees = String(row.employees || '').trim();
+      if (employees) crm.companySize = employees;
+      // Address is stored on the contact's `addresses` JSONB array (one entry).
+      const address = String(row.address || '').trim();
+      const addresses = address ? [address] : [];
 
       try {
         await query(
-          `INSERT INTO contacts (organisation_id, "type", name, display_name, primary_contact, email, phone, website, crm, notes, created_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-          [organizationId, type, name, name, String(row.primaryContact || ''), email, String(row.phone || ''), String(row.website || ''), JSON.stringify(crm), String(row.notes || ''), req.user.userId]
+          `INSERT INTO contacts (organisation_id, "type", name, display_name, primary_contact, email, phone, website, addresses, crm, notes, created_by)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+          [organizationId, type, name, name, String(row.primaryContact || ''), email, String(row.phone || ''), String(row.website || ''), JSON.stringify(addresses), JSON.stringify(crm), String(row.notes || ''), req.user.userId]
         );
         created++;
       } catch (e) {

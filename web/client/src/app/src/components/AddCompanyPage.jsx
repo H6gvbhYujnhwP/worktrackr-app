@@ -49,6 +49,9 @@ export default function AddCompanyPage({ onCancel, onCreated }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [website, setWebsite] = useState('');
+  const [address, setAddress] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [employees, setEmployees] = useState('');
   const [source, setSource] = useState('');
   const [stage, setStage] = useState('new');
   const [contacts, setContacts] = useState([{ ...emptyContact }]);
@@ -77,7 +80,13 @@ export default function AddCompanyPage({ onCancel, onCreated }) {
       phone: phone.trim(),
       website: normalizeUrl(website),
       primaryContact: primary,
-      crm: { salesStage: stage || undefined, source: source || undefined },
+      addresses: address.trim() ? [address.trim()] : [],
+      crm: {
+        salesStage: stage || undefined,
+        source: source || undefined,
+        industry: industry.trim() || undefined,
+        companySize: employees.trim() || undefined,
+      },
       contactPersons: people,
     };
     try {
@@ -135,6 +144,18 @@ export default function AddCompanyPage({ onCancel, onCreated }) {
           <div>
             <span style={label}>Website</span>
             <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="abcltd.com" style={input} />
+          </div>
+          <div>
+            <span style={label}>Address</span>
+            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Solihull, England, United Kingdom" style={input} />
+          </div>
+          <div>
+            <span style={label}>Industry</span>
+            <input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Construction" style={input} />
+          </div>
+          <div>
+            <span style={label}>Number of employees</span>
+            <input value={employees} onChange={(e) => setEmployees(e.target.value)} placeholder="e.g. 25" style={input} />
           </div>
           <div>
             <span style={label}>Source</span>
