@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/CompanyPipelineList.jsx
 // Sales › Companies. The salesperson's home: companies by sales stage.
 // Reads live data from GET /api/contacts?type=company (cookie auth). Sales stage
-// lives in contact.crm.salesStage (new|prospect|hot_prospect|customer); account
+// lives in contact.crm.salesStage (new|contacted|prospect|hot_prospect|customer); account
 // manager in contact.crm.assignedTo.
 //
 // v3.6 — rebuilt to Manus's DARK design (Concept-3 "Relationship Hub"):
@@ -31,6 +31,7 @@ import SalesPageLayout, {
 // stage ladder — value `new` is shown as "Suspect" (the approved rename)
 const STAGES = [
   { key: 'new',          label: 'Suspect',      pill: 'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]', dot: '#6b7280' },
+  { key: 'contacted',    label: 'Contacted',    pill: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]',  dot: '#8b5cf6' },
   { key: 'prospect',     label: 'Prospect',     pill: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',  dot: '#3b82f6' },
   { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',  dot: '#f59e0b' },
   { key: 'customer',     label: 'Customer',     pill: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',  dot: '#10b981' },

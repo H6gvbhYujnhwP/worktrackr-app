@@ -30,6 +30,7 @@ const MAP_KEY = 'wt_csv_import_map';
 // The sales stages the server will accept.
 const STAGE_OPTIONS = [
   { value: 'new', label: 'Suspect' },
+  { value: 'contacted', label: 'Contacted' },
   { value: 'prospect', label: 'Prospect' },
   { value: 'hot_prospect', label: 'Hot prospect' },
   { value: 'customer', label: 'Customer' },

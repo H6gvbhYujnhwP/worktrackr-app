@@ -22,6 +22,7 @@ import { TimePicker } from './DateTimePicker.jsx';
 // "Suspect" (value stays 'new' so existing data is untouched).
 const STAGES = [
   { key: 'new',          label: 'Suspect' },
+  { key: 'contacted',    label: 'Contacted' },
   { key: 'prospect',     label: 'Prospect' },
   { key: 'hot_prospect', label: 'Hot prospect' },
   { key: 'customer',     label: 'Customer' },
@@ -64,16 +65,19 @@ const eventWindow = (date, time) => {
 // Human-readable file size.
 const fmtSize = (b) => (b == null ? '' : b < 1024 ? `${b} B` : b < 1048576 ? `${Math.round(b / 1024)} KB` : `${(b / 1048576).toFixed(1)} MB`);
 
-// Precise, compact date+time stamp for the timeline (e.g. "Today 14:32",
-// "Yesterday 09:05", "27 Jun 2026 14:32"). Full date/time available on hover.
+// Precise date+time stamp for the timeline. The full date is ALWAYS shown
+// alongside the time (e.g. "Today · 24 Jul 2026, 14:32", "Yesterday · 23 Jul
+// 2026, 09:05", "27 Jun 2026, 14:32") so a note can be dated at a glance
+// without hovering. Full date/time still available on hover.
 const stamp = (iso) => {
   if (!iso) return '';
   const dt = new Date(iso);
   const time = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const date = dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const days = Math.floor((Date.now() - dt.getTime()) / 86400000);
-  if (days <= 0) return `Today ${time}`;
-  if (days === 1) return `Yesterday ${time}`;
-  return `${dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} ${time}`;
+  if (days <= 0) return `Today · ${date}, ${time}`;
+  if (days === 1) return `Yesterday · ${date}, ${time}`;
+  return `${date}, ${time}`;
 };
 const emptyPerson = { name: '', role: '', email: '', phone: '', isDecisionMaker: false, editIndex: -1 };
 

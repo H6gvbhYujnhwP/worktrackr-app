@@ -11,6 +11,7 @@ import PageHero, { HeroButtonOutline, HeroButtonPrimary } from './PageHero.jsx';
 
 const STAGES = [
   { key: 'new',          label: 'Suspect' },
+  { key: 'contacted',    label: 'Contacted' },
   { key: 'prospect',     label: 'Prospect' },
   { key: 'hot_prospect', label: 'Hot prospect' },
   { key: 'customer',     label: 'Customer' },
