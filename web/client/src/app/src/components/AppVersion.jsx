@@ -4,7 +4,7 @@ import React from 'react';
 // went live. Inline + dim; it lives in the persistent sidebar, so it never
 // flashes during navigation.
 const AppVersion = () => {
-  const APP_VERSION = '2026-07-01.datetime-picker-all';
+  const APP_VERSION = '2026-07-24.csv-import-bulk';
   return (
     <div className="px-4 pb-2 text-[10px] text-[#6b7280] opacity-60 truncate select-none">
       Build {APP_VERSION}
