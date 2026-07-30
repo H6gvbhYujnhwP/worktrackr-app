@@ -274,11 +274,60 @@ router.post('/import', async (req, res) => {
     if (rows.length === 0) return res.status(400).json({ error: 'No rows to import' });
     if (rows.length > 5000) return res.status(400).json({ error: 'Too many rows (max 5000)' });
 
-    const existing = await query('SELECT lower(name) AS name, lower(email) AS email FROM contacts WHERE organisation_id = $1', [organizationId]);
+    // Duplicate matching keys: name, email (exact), website/email DOMAIN, and
+    // phone (digits-only, UK-aware). MUST mirror the helpers in the client's
+    // CsvImport.jsx so the preview count and the actual import agree.
+    const GENERIC_EMAIL_DOMAINS = new Set([
+      'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'outlook.co.uk',
+      'live.com', 'live.co.uk', 'yahoo.com', 'yahoo.co.uk', 'ymail.com', 'aol.com', 'icloud.com',
+      'me.com', 'mac.com', 'btinternet.com', 'btconnect.com', 'sky.com', 'virginmedia.com',
+      'talktalk.net', 'msn.com', 'protonmail.com', 'proton.me', 'gmx.com', 'gmx.co.uk', 'mail.com', 'yandex.com',
+    ]);
+    const domainFromWebsite = (website) => {
+      let s = String(website || '').trim().toLowerCase();
+      if (!s) return '';
+      s = s.replace(/^https?:\/\//, '').replace(/^www\./, '');
+      s = s.split('/')[0].split('?')[0].split('#')[0].split(':')[0].trim().replace(/\.+$/, '');
+      return s.includes('.') ? s : '';
+    };
+    const domainFromEmail = (email) => {
+      const s = String(email || '').trim().toLowerCase();
+      const at = s.lastIndexOf('@');
+      if (at < 0) return '';
+      const d = s.slice(at + 1).trim();
+      return (d.includes('.') && !GENERIC_EMAIL_DOMAINS.has(d)) ? d : '';
+    };
+    const domainsOf = (website, email) => {
+      const arr = [];
+      const w = domainFromWebsite(website);
+      if (w) arr.push(w);
+      const e = domainFromEmail(email);
+      if (e && e !== w) arr.push(e);
+      return arr;
+    };
+    const phoneKey = (phone) => {
+      let d = String(phone || '').replace(/\D/g, '');
+      if (!d) return '';
+      if (d.startsWith('0044')) d = `0${d.slice(4)}`;
+      else if (d.startsWith('44') && d.length >= 11) d = `0${d.slice(2)}`;
+      if (d.length === 10 && /^[123789]/.test(d)) d = `0${d}`;
+      return d.length >= 10 ? d : '';
+    };
+
+    const existing = await query('SELECT lower(name) AS name, lower(email) AS email, website, phone FROM contacts WHERE organisation_id = $1', [organizationId]);
     const haveName = new Set(existing.rows.map((r) => r.name).filter(Boolean));
     const haveEmail = new Set(existing.rows.map((r) => r.email).filter(Boolean));
+    const haveDomain = new Set();
+    const havePhone = new Set();
+    for (const r of existing.rows) {
+      domainsOf(r.website, r.email).forEach((d) => haveDomain.add(d));
+      const pk = phoneKey(r.phone);
+      if (pk) havePhone.add(pk);
+    }
     const seenName = new Set();
     const seenEmail = new Set();
+    const seenDomain = new Set();
+    const seenPhone = new Set();
     const VALID_STAGES = ['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer'];
 
     let created = 0;
@@ -292,10 +341,19 @@ router.post('/import', async (req, res) => {
       const emailKey = email.toLowerCase();
       const nameKey = name.toLowerCase();
       if (!name) { errors.push({ row: i + 1, error: 'Missing name' }); continue; }
-      const dup = haveName.has(nameKey) || (emailKey && haveEmail.has(emailKey)) || seenName.has(nameKey) || (emailKey && seenEmail.has(emailKey));
+      const domKeys = domainsOf(row.website, email);
+      const phKey = phoneKey(row.phone);
+      const dup = haveName.has(nameKey)
+        || (emailKey && haveEmail.has(emailKey))
+        || domKeys.some((d) => haveDomain.has(d) || seenDomain.has(d))
+        || (phKey && (havePhone.has(phKey) || seenPhone.has(phKey)))
+        || seenName.has(nameKey)
+        || (emailKey && seenEmail.has(emailKey));
       if (dup) { skipped++; continue; }
       seenName.add(nameKey);
       if (emailKey) seenEmail.add(emailKey);
+      domKeys.forEach((d) => seenDomain.add(d));
+      if (phKey) seenPhone.add(phKey);
 
       const crm = {};
       let stage = String(row.salesStage || '').trim().toLowerCase().replace(/\s+/g, '_');

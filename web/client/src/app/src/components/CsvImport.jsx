@@ -9,7 +9,8 @@
 //   • two columns can be joined into one field (First name + Last name);
 //   • a field can be given one fixed value for every row (e.g. Sales stage);
 //   • non-company rows ("Self-employed", "Freelance", blanks) can be skipped;
-//   • repeated company names within the file are merged before sending;
+//   • repeated rows within the file are merged before sending (same company
+//     name, website domain, or phone number);
 //   • a preview of the first rows, so the mapping can be checked before import;
 //   • the mapping is remembered for the next spreadsheet.
 // Duplicates against companies already in the system are skipped server-side.
@@ -324,13 +325,69 @@ export default function CsvImport({ onBack, onDone }) {
     setReusedMapping(false);
   };
 
-  // Build the rows we will actually send, and count what got left out.
+// ── Duplicate-matching helpers ──────────────────────────────────────────────
+// A row is a duplicate if its company name, its website/email DOMAIN, or its
+// phone number matches something already seen (in this file or already in
+// WorkTrackr). The backend applies the SAME rules against existing records;
+// these must stay in step with the copies in web/routes/contacts.js.
+
+// Free/consumer email providers — never treated as a company domain, or every
+// company with a gmail contact would collapse into one.
+const GENERIC_EMAIL_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'outlook.co.uk',
+  'live.com', 'live.co.uk', 'yahoo.com', 'yahoo.co.uk', 'ymail.com', 'aol.com', 'icloud.com',
+  'me.com', 'mac.com', 'btinternet.com', 'btconnect.com', 'sky.com', 'virginmedia.com',
+  'talktalk.net', 'msn.com', 'protonmail.com', 'proton.me', 'gmx.com', 'gmx.co.uk', 'mail.com', 'yandex.com',
+]);
+
+// Bare domain from a website URL: "http://www.acme.co.uk/about" -> "acme.co.uk".
+const domainFromWebsite = (website) => {
+  let s = String(website || '').trim().toLowerCase();
+  if (!s) return '';
+  s = s.replace(/^https?:\/\//, '').replace(/^www\./, '');
+  s = s.split('/')[0].split('?')[0].split('#')[0].split(':')[0].trim().replace(/\.+$/, '');
+  return s.includes('.') ? s : '';
+};
+
+// Domain from an email, but only if it's a real company domain (not gmail etc.).
+const domainFromEmail = (email) => {
+  const s = String(email || '').trim().toLowerCase();
+  const at = s.lastIndexOf('@');
+  if (at < 0) return '';
+  const d = s.slice(at + 1).trim();
+  return (d.includes('.') && !GENERIC_EMAIL_DOMAINS.has(d)) ? d : '';
+};
+
+// All company domains a row implies (website + non-generic email domain).
+const domainsOf = (obj) => {
+  const set = [];
+  const w = domainFromWebsite(obj.website);
+  if (w) set.push(w);
+  const e = domainFromEmail(obj.email);
+  if (e && e !== w) set.push(e);
+  return set;
+};
+
+// Canonical UK-aware phone key for comparison; '' if too short to trust.
+// "+44 1233 539501", "01233 539501" and "01233539501" all collapse to one key.
+const phoneKey = (phone) => {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('0044')) d = `0${d.slice(4)}`;
+  else if (d.startsWith('44') && d.length >= 11) d = `0${d.slice(2)}`;
+  if (d.length === 10 && /^[123789]/.test(d)) d = `0${d}`; // restore a dropped leading 0
+  return d.length >= 10 ? d : '';
+};
+
+// Build the rows we will actually send, and count what got left out.
   const prepared = useMemo(() => {
     const empty = { rows: [], junk: 0, dupes: 0, blank: 0, phonesFixed: 0 };
     if (!mapping.name || !mapping.name.col) return empty;
     const out = [];
     let junk = 0; let dupes = 0; let blank = 0; let phonesFixed = 0;
-    const seen = new Set();
+    const seenName = new Set();
+    const seenDomain = new Set();
+    const seenPhone = new Set();
     for (let i = 0; i < dataRows.length; i++) {
       const r = dataRows[i];
       const obj = {};
@@ -352,9 +409,17 @@ export default function CsvImport({ onBack, onDone }) {
       const nm = obj.name;
       if (!nm) { blank++; continue; }
       if (skipJunk && isJunkName(nm)) { junk++; continue; }
-      const key = nm.toLowerCase();
-      if (seen.has(key)) { dupes++; continue; }
-      seen.add(key);
+      // Duplicate if the name, ANY domain, or the phone was already seen.
+      const nameKey = nm.toLowerCase();
+      const domKeys = domainsOf(obj);
+      const phKey = phoneKey(obj.phone);
+      const isDup = seenName.has(nameKey)
+        || domKeys.some((d) => seenDomain.has(d))
+        || (phKey && seenPhone.has(phKey));
+      if (isDup) { dupes++; continue; }
+      seenName.add(nameKey);
+      domKeys.forEach((d) => seenDomain.add(d));
+      if (phKey) seenPhone.add(phKey);
       out.push(obj);
     }
     return { rows: out, junk, dupes, blank, phonesFixed };
@@ -525,10 +590,10 @@ export default function CsvImport({ onBack, onDone }) {
             {/* What will actually happen */}
             <div className="text-[12px] text-[#94a3b8] mt-3 leading-relaxed">
               <span className="text-white">{nf(prepared.rows.length)}</span> {prepared.rows.length === 1 ? 'company' : 'companies'} ready to import
-              {prepared.dupes > 0 && <> · {nf(prepared.dupes)} repeated {prepared.dupes === 1 ? 'row' : 'rows'} merged</>}
+              {prepared.dupes > 0 && <> · {nf(prepared.dupes)} repeated {prepared.dupes === 1 ? 'row' : 'rows'} merged (same name, website or phone)</>}
               {prepared.junk > 0 && <> · {nf(prepared.junk)} skipped as not a real company</>}
               {prepared.blank > 0 && <> · {nf(prepared.blank)} skipped with no company name</>}
-              .{' '}Companies already in WorkTrackr (same name or email) are skipped automatically.
+              .{' '}Companies already in WorkTrackr (matching name, email, website or phone) are skipped automatically.
             </div>
 
             {/* Preview so the matching can be checked before committing */}
