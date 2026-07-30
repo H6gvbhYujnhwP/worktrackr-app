@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/CompanyPipelineList.jsx
 // Sales › Companies. The salesperson's home: companies by sales stage.
 // Reads live data from GET /api/contacts?type=company (cookie auth). Sales stage
-// lives in contact.crm.salesStage (new|contacted|prospect|hot_prospect|customer); account
+// lives in contact.crm.salesStage (new|contacted|voicemail|prospect|hot_prospect|customer); account
 // manager in contact.crm.assignedTo.
 //
 // v3.6 — rebuilt to Manus's DARK design (Concept-3 "Relationship Hub"):
@@ -32,11 +32,17 @@ import SalesPageLayout, {
 const STAGES = [
   { key: 'new',          label: 'Suspect',      pill: 'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]', dot: '#6b7280' },
   { key: 'contacted',    label: 'Contacted',    pill: 'bg-[rgba(139,92,246,0.20)] text-[#c4b5fd]',  dot: '#8b5cf6' },
+  { key: 'voicemail',    label: 'Voicemail',    pill: 'bg-[rgba(6,182,212,0.20)] text-[#67e8f9]',   dot: '#06b6d4' },
   { key: 'prospect',     label: 'Prospect',     pill: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',  dot: '#3b82f6' },
   { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',  dot: '#f59e0b' },
   { key: 'customer',     label: 'Customer',     pill: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',  dot: '#10b981' },
 ];
 const STAGE_BY_KEY = Object.fromEntries(STAGES.map((s) => [s.key, s]));
+
+// Sentinel for the "No stage" filter chip: companies whose salesStage is missing
+// or unrecognised (exactly the rows that render the grey "No stage" pill).
+const NO_STAGE = '__nostage__';
+const isNoStage = (co) => !STAGE_BY_KEY[co?.crm?.salesStage];
 
 // source → pill colour (dark, translucent). Unknown sources fall back to grey.
 const SOURCE_PILL = {
@@ -245,16 +251,18 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
     });
   }, [companies, search, sourceFilter]);
 
-  const listVisible = useMemo(
-    () => (activeStage ? filtered.filter((co) => co?.crm?.salesStage === activeStage) : filtered),
-    [filtered, activeStage]
-  );
+  const listVisible = useMemo(() => {
+    if (activeStage === NO_STAGE) return filtered.filter(isNoStage);
+    return activeStage ? filtered.filter((co) => co?.crm?.salesStage === activeStage) : filtered;
+  }, [filtered, activeStage]);
 
   const counts = useMemo(() => {
     const c = {};
-    for (const co of filtered) { const k = co?.crm?.salesStage; if (k) c[k] = (c[k] || 0) + 1; }
+    for (const co of filtered) { const k = co?.crm?.salesStage; if (STAGE_BY_KEY[k]) c[k] = (c[k] || 0) + 1; }
     return c;
   }, [filtered]);
+
+  const noStageCount = useMemo(() => filtered.filter(isNoStage).length, [filtered]);
 
   // move stage safely: re-send the WHOLE crm object with only salesStage changed
   const moveStage = async (co, newKey) => {
@@ -364,6 +372,12 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
             }`}
           >
             All <span className="opacity-60">{filtered.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveStage(activeStage === NO_STAGE ? null : NO_STAGE)}
+            className={`rounded-full px-3 py-1.5 text-[13px] bg-[rgba(107,114,128,0.20)] text-[#cbd5e1] ${activeStage === NO_STAGE ? 'outline outline-2 outline-[#f59e0b]' : ''}`}
+          >
+            No stage <span className="opacity-60">{noStageCount}</span>
           </button>
           {STAGES.map((s) => (
             <button
