@@ -16,7 +16,7 @@
 // with no invented "in progress" state the backend can't store.
 import React, { useEffect, useState } from 'react';
 import DatePicker from './DatePicker.jsx';
-import { Plus, Calendar, Building2, Check, ChevronDown, CheckCircle2, ListChecks } from 'lucide-react';
+import { Plus, Calendar, Building2, Check, ChevronDown, CheckCircle2, ListChecks, X } from 'lucide-react';
 import PageHero, { HeroButtonPrimary } from './PageHero.jsx';
 
 const PRIORITY = {
@@ -25,6 +25,14 @@ const PRIORITY = {
   low:    'bg-[rgba(107,114,128,0.20)] text-[#cbd5e1]',
 };
 const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// A task's name can be multi-line (e.g. a pasted list). Show the first real line
+// in the table row; the full text is shown/edited in the pop-up.
+const firstLine = (s) => {
+  const parts = String(s || '').split('\n').map((x) => x.trim()).filter(Boolean);
+  return parts[0] || '';
+};
+const isMultiline = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean).length > 1;
 
 // time-bucket tabs (Manus)
 const TABS = [
@@ -54,6 +62,51 @@ export default function MyTasks() {
   const [statusFilter, setStatusFilter] = useState('all'); // all | todo | completed
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ title: '', contactId: '', assignedUserId: '', dueDate: '', priority: 'medium' });
+  const [editForm, setEditForm] = useState(null); // the task open in the pop-up, or null
+
+  const openEdit = (t) => setEditForm({
+    id: t.id,
+    title: t.title || '',
+    contactId: t.contactId || '',
+    assignedUserId: t.assignedUserId || '',
+    dueDate: t.dueDate || '',
+    priority: t.priority || 'medium',
+    status: t.status || 'open',
+  });
+
+  const saveEdit = async () => {
+    if (!editForm || !editForm.title.trim()) return;
+    try {
+      const r = await fetch(`/api/tasks/${editForm.id}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          contactId: editForm.contactId || null,
+          assignedUserId: editForm.assignedUserId || null,
+          dueDate: editForm.dueDate || null,
+          priority: editForm.priority,
+          status: editForm.status,
+        }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const updated = await r.json();
+      setTasks((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      setEditForm(null);
+    } catch (e) { setError(e.message || 'Could not save task'); }
+  };
+
+  const deleteTask = async () => {
+    if (!editForm) return;
+    if (!window.confirm('Delete this task? This cannot be undone.')) return;
+    const id = editForm.id;
+    try {
+      const r = await fetch(`/api/tasks/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setTasks((prev) => prev.filter((x) => x.id !== id));
+      setEditForm(null);
+    } catch (e) { setError(e.message || 'Could not delete task'); }
+  };
 
   const load = async () => {
     try {
@@ -157,11 +210,15 @@ export default function MyTasks() {
     const overdue = isOverdue(t);
     const sp = statusPill(t);
     return (
-      <div className={`${GRID} items-center px-4 py-3 border-t border-[#2e2e4a] ${t.status === 'done' ? 'opacity-60' : 'hover:bg-[#2a2a48]'}`}>
-        <button onClick={() => toggle(t)} className="w-5 h-5 rounded border border-[#3a3a5c] flex items-center justify-center hover:border-[#f59e0b]">
+      <div className={`${GRID} items-center px-4 py-3 border-t border-[#2e2e4a] cursor-pointer ${t.status === 'done' ? 'opacity-60' : 'hover:bg-[#2a2a48]'}`}
+        onClick={() => openEdit(t)}>
+        <button onClick={(e) => { e.stopPropagation(); toggle(t); }} className="w-5 h-5 rounded border border-[#3a3a5c] flex items-center justify-center hover:border-[#f59e0b]">
           {t.status === 'done' && <Check className="w-3.5 h-3.5 text-[#10b981]" />}
         </button>
-        <div className={`text-sm truncate ${t.status === 'done' ? 'line-through text-[#6b7280]' : 'text-white'}`}>{t.title}</div>
+        <div className={`text-sm truncate ${t.status === 'done' ? 'line-through text-[#6b7280]' : 'text-white'}`} title={t.title}>
+          {firstLine(t.title)}
+          {isMultiline(t.title) && <span className="ml-1.5 text-[11px] text-[#6b7280]">＋more</span>}
+        </div>
         <div className="text-[13px] text-[#94a3b8] truncate inline-flex items-center gap-1.5">
           {t.companyName ? <><Building2 className="w-3.5 h-3.5 text-[#6b7280] shrink-0" />{t.companyName}</> : <span className="text-[#6b7280]">—</span>}
         </div>
@@ -221,8 +278,9 @@ export default function MyTasks() {
       {/* add form */}
       {adding && (
         <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl p-4 mb-4 grid gap-2 sm:grid-cols-2">
-          <input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="What needs doing?" className={`sm:col-span-2 ${inputCls}`} />
+          <textarea autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="What needs doing? (you can paste a list — each line is kept)" rows={3}
+            className={`sm:col-span-2 ${inputCls} resize-y leading-relaxed`} />
           <select value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value })} className={inputCls}>
             <option value="">Company (optional)</option>
             {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -272,6 +330,64 @@ export default function MyTasks() {
           </>
         )}
       </div>
+
+      {/* task pop-up — view / edit / save / delete */}
+      {editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditForm(null)}>
+          <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[15px] font-medium text-white">Task</h3>
+              <button onClick={() => setEditForm(null)} className="text-[#94a3b8] hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="grid gap-2.5">
+              <div>
+                <label className="text-[12px] text-[#94a3b8] block mb-1">Task</label>
+                <textarea value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  rows={5} className={`w-full ${inputCls} resize-y leading-relaxed`} />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[12px] text-[#94a3b8] block mb-1">Company</label>
+                  <select value={editForm.contactId} onChange={(e) => setEditForm({ ...editForm, contactId: e.target.value })} className={`w-full ${inputCls}`}>
+                    <option value="">None</option>
+                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[12px] text-[#94a3b8] block mb-1">Assigned to</label>
+                  <select value={editForm.assignedUserId} onChange={(e) => setEditForm({ ...editForm, assignedUserId: e.target.value })} className={`w-full ${inputCls}`}>
+                    <option value="">Unassigned</option>
+                    {users.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[12px] text-[#94a3b8] block mb-1">Due date</label>
+                  <DatePicker value={editForm.dueDate} onChange={(v) => setEditForm({ ...editForm, dueDate: v })} className={`w-full ${inputCls}`} />
+                </div>
+                <div>
+                  <label className="text-[12px] text-[#94a3b8] block mb-1">Priority</label>
+                  <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })} className={`w-full ${inputCls}`}>
+                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[12px] text-[#94a3b8] block mb-1">Status</label>
+                  <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className={`w-full ${inputCls}`}>
+                    <option value="open">To do</option><option value="done">Done</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-4">
+              <button onClick={deleteTask} className="rounded-lg border border-[rgba(239,68,68,0.4)] text-[#fca5a5] px-3 py-1.5 text-[13px] hover:bg-[rgba(239,68,68,0.12)]">Delete</button>
+              <div className="flex gap-2">
+                <button onClick={() => setEditForm(null)} className="rounded-lg border border-[#2e2e4a] text-[#94a3b8] px-3 py-1.5 text-[13px] hover:bg-[#2a2a48]">Cancel</button>
+                <button onClick={saveEdit} className="rounded-lg bg-[#f59e0b] text-[#1a1a2e] font-medium px-3 py-1.5 text-[13px] hover:bg-[#d97706]">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

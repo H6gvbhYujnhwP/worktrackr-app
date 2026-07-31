@@ -102,8 +102,16 @@ const AppLayout = ({ children, user, isAdmin, isManager, isEngineer, onNavigate,
   }, [desktopMode]);
 
   // Close mobile drawer on navigation
-  const handleNavigation = (view) => {
+  const handleNavigation = async (view) => {
     setIsMobileMenuOpen(false);
+    // The sidebar's Logout item routes here as '/logout'. Actually end the
+    // session (clear the auth cookie server-side) and hard-redirect to the
+    // login screen — a full reload guarantees all in-memory state is cleared.
+    if (view === '/logout') {
+      try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch { /* redirect regardless */ }
+      window.location.href = '/login';
+      return;
+    }
     if (onNavigate) onNavigate(view);
   };
 
