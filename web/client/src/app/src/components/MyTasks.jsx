@@ -34,6 +34,17 @@ const firstLine = (s) => {
 };
 const isMultiline = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean).length > 1;
 
+// The picker only understands 'YYYY-MM-DD'. A saved task's dueDate comes back as
+// a full timestamp (e.g. '2026-07-31T00:00:00.000Z'), which the picker reads as
+// "Invalid Date" — so normalise to the plain date part before handing it over.
+const ymd = (d) => {
+  if (!d) return '';
+  const s = String(d);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const dt = new Date(s);
+  return Number.isNaN(dt.getTime()) ? '' : dt.toISOString().slice(0, 10);
+};
+
 // time-bucket tabs (Manus)
 const TABS = [
   { key: 'all',     label: 'All' },
@@ -69,7 +80,7 @@ export default function MyTasks() {
     title: t.title || '',
     contactId: t.contactId || '',
     assignedUserId: t.assignedUserId || '',
-    dueDate: t.dueDate || '',
+    dueDate: ymd(t.dueDate),
     priority: t.priority || 'medium',
     status: t.status || 'open',
   });
@@ -331,54 +342,57 @@ export default function MyTasks() {
         )}
       </div>
 
-      {/* task pop-up — view / edit / save / delete */}
+      {/* task pop-up — notes-first: the text area fills the window; fields sit compactly below */}
       {editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditForm(null)}>
-          <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-[#242438] border border-[#2e2e4a] rounded-xl w-full max-w-2xl max-h-[88vh] flex flex-col p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 shrink-0">
               <h3 className="text-[15px] font-medium text-white">Task</h3>
               <button onClick={() => setEditForm(null)} className="text-[#94a3b8] hover:text-white"><X className="w-4 h-4" /></button>
             </div>
-            <div className="grid gap-2.5">
+
+            {/* notes — the main event; grows to fill the available height */}
+            <div className="flex-1 min-h-0 flex flex-col mb-3">
+              <label className="text-[12px] text-[#94a3b8] block mb-1 shrink-0">Task / notes</label>
+              <textarea value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className={`flex-1 min-h-[220px] w-full ${inputCls} resize-none leading-relaxed`} />
+            </div>
+
+            {/* compact details row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-2 shrink-0">
               <div>
-                <label className="text-[12px] text-[#94a3b8] block mb-1">Task</label>
-                <textarea value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  rows={5} className={`w-full ${inputCls} resize-y leading-relaxed`} />
+                <label className="text-[11px] text-[#6b7280] block mb-0.5">Company</label>
+                <select value={editForm.contactId} onChange={(e) => setEditForm({ ...editForm, contactId: e.target.value })} className={`w-full ${inputCls} py-1.5`}>
+                  <option value="">None</option>
+                  {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
-              <div className="grid sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="text-[12px] text-[#94a3b8] block mb-1">Company</label>
-                  <select value={editForm.contactId} onChange={(e) => setEditForm({ ...editForm, contactId: e.target.value })} className={`w-full ${inputCls}`}>
-                    <option value="">None</option>
-                    {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[12px] text-[#94a3b8] block mb-1">Assigned to</label>
-                  <select value={editForm.assignedUserId} onChange={(e) => setEditForm({ ...editForm, assignedUserId: e.target.value })} className={`w-full ${inputCls}`}>
-                    <option value="">Unassigned</option>
-                    {users.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[12px] text-[#94a3b8] block mb-1">Due date</label>
-                  <DatePicker value={editForm.dueDate} onChange={(v) => setEditForm({ ...editForm, dueDate: v })} className={`w-full ${inputCls}`} />
-                </div>
-                <div>
-                  <label className="text-[12px] text-[#94a3b8] block mb-1">Priority</label>
-                  <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })} className={`w-full ${inputCls}`}>
-                    <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[12px] text-[#94a3b8] block mb-1">Status</label>
-                  <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className={`w-full ${inputCls}`}>
-                    <option value="open">To do</option><option value="done">Done</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-[11px] text-[#6b7280] block mb-0.5">Assigned to</label>
+                <select value={editForm.assignedUserId} onChange={(e) => setEditForm({ ...editForm, assignedUserId: e.target.value })} className={`w-full ${inputCls} py-1.5`}>
+                  <option value="">Unassigned</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#6b7280] block mb-0.5">Due date</label>
+                <DatePicker value={editForm.dueDate} onChange={(v) => setEditForm({ ...editForm, dueDate: v })} className={`w-full ${inputCls} py-1.5`} />
+              </div>
+              <div>
+                <label className="text-[11px] text-[#6b7280] block mb-0.5">Priority</label>
+                <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })} className={`w-full ${inputCls} py-1.5`}>
+                  <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] text-[#6b7280] block mb-0.5">Status</label>
+                <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })} className={`w-full ${inputCls} py-1.5`}>
+                  <option value="open">To do</option><option value="done">Done</option>
+                </select>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4">
+
+            <div className="flex items-center justify-between mt-4 shrink-0">
               <button onClick={deleteTask} className="rounded-lg border border-[rgba(239,68,68,0.4)] text-[#fca5a5] px-3 py-1.5 text-[13px] hover:bg-[rgba(239,68,68,0.12)]">Delete</button>
               <div className="flex gap-2">
                 <button onClick={() => setEditForm(null)} className="rounded-lg border border-[#2e2e4a] text-[#94a3b8] px-3 py-1.5 text-[13px] hover:bg-[#2a2a48]">Cancel</button>
