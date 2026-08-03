@@ -40,6 +40,7 @@ const contactSchema = z.object({
     openOppsCount: z.number().optional().default(0),
     totalProfit: z.number().optional().default(0),
     assignedTo: z.string().optional().nullable(),
+    spotterUserId: z.string().uuid().optional().nullable(), // who spotted/found this company (sales)
     source: z.string().optional(),
     industry: z.string().optional(),
     companySize: z.string().optional()

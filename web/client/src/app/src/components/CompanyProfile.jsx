@@ -125,6 +125,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const [saving, setSaving] = useState(false);
 
   const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]); // all users, for the Spotter dropdown
   const [history, setHistory] = useState([]);
 
   const [personForm, setPersonForm] = useState(null); // null = closed
@@ -185,6 +186,10 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     loadHistory();
     loadAttachments();
     loadServices();
+    fetch('/api/tickets/users/list', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { users: [] }))
+      .then((d) => { if (alive) setUsers(d.users || []); })
+      .catch(() => {});
     return () => { alive = false; };
   }, [companyId]);
 
@@ -207,6 +212,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   };
   const setStage = (stage) => saveCrm({ salesStage: stage });
   const setSource = (source) => saveCrm({ source });
+  const setSpotter = (spotterUserId) => saveCrm({ spotterUserId: spotterUserId || null });
 
   // Delete = soft archive (safety net). Hidden from staff; managers/admins can
   // restore it from the Companies → Archived view. Then return to the list.
@@ -485,6 +491,14 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
             <option value="">—</option>
             {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          Spotter
+          <select value={crm.spotterUserId || ''} onChange={(e) => setSpotter(e.target.value)} disabled={saving}
+            style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
+            <option value="">—</option>
+            {users.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
           </select>
         </label>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
