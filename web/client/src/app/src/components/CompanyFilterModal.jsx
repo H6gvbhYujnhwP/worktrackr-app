@@ -16,7 +16,8 @@
 // Props:
 //   open       — bool
 //   groups     — [{ key, label, options: [{ value, label, count }] }]
-//   value      — { [groupKey]: [selected values] }
+//   textFields — [{ key, label, placeholder, hint }] free-text boxes shown on top
+//   value      — { [groupKey]: [selected values], [textKey]: 'string' }
 //   onApply(next) — called with the new selection when Search is pressed
 //   onClose()  — dismiss without applying
 import React, { useEffect, useMemo, useState } from 'react';
@@ -96,7 +97,7 @@ function Group({ group, selected, onToggle }) {
   );
 }
 
-export default function CompanyFilterModal({ open, groups = [], value = {}, onApply, onClose }) {
+export default function CompanyFilterModal({ open, groups = [], textFields = [], value = {}, onApply, onClose }) {
   // Draft selection — so Cancel discards and only Search commits.
   const [draft, setDraft] = useState(value);
 
@@ -116,15 +117,17 @@ export default function CompanyFilterModal({ open, groups = [], value = {}, onAp
     });
   };
 
-  const totalChosen = Object.values(draft).reduce(
-    (n, arr) => n + (Array.isArray(arr) ? arr.length : 0),
-    0
-  );
+  const setText = (key, v) => setDraft((prev) => ({ ...prev, [key]: v }));
+
+  const totalChosen =
+    Object.values(draft).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0) +
+    textFields.reduce((n, f) => n + (String(draft[f.key] || '').trim() ? 1 : 0), 0);
 
   const clearAll = () => {
     const cleared = {};
     for (const g of groups) cleared[g.key] = [];
-    setDraft(cleared);
+    for (const f of textFields) cleared[f.key] = '';
+    setDraft((prev) => ({ ...prev, ...cleared }));
   };
 
   return (
@@ -156,6 +159,26 @@ export default function CompanyFilterModal({ open, groups = [], value = {}, onAp
 
         {/* groups */}
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {textFields.length > 0 && (
+            <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {textFields.map((f) => (
+                <div key={f.key} className="rounded-lg border border-[#2e2e4a] bg-[#1f1f33] p-3">
+                  <div className="mb-2 text-[12px] font-medium uppercase tracking-wide text-[#94a3b8]">
+                    {f.label}
+                  </div>
+                  <input
+                    value={draft[f.key] || ''}
+                    onChange={(e) => setText(f.key, e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') onApply(draft); }}
+                    placeholder={f.placeholder || ''}
+                    className="h-8 w-full rounded-md border border-[#2e2e4a] bg-[#242438] px-2 text-[13px] text-white placeholder-[#6b7280] outline-none focus:border-[#f59e0b]"
+                  />
+                  {f.hint && <div className="mt-1.5 text-[11px] leading-snug text-[#6b7280]">{f.hint}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
           {groups.length === 0 ? (
             <div className="py-8 text-center text-[13px] text-[#6b7280]">
               Nothing to filter on yet.

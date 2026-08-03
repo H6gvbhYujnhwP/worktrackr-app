@@ -62,7 +62,40 @@ const GROUP_DEFS = [
   { key: 'missing',    label: 'Missing details' },
   { key: 'chase',      label: 'Chase date' },
 ];
-const EMPTY_FILTERS = Object.fromEntries(GROUP_DEFS.map((g) => [g.key, []]));
+const EMPTY_FILTERS = {
+  ...Object.fromEntries(GROUP_DEFS.map((g) => [g.key, []])),
+  addressQuery: '', // free-text "Address contains" (county/town/postcode)
+};
+
+// ── "Address contains" search ───────────────────────────────────────────────
+// There is no county field — the whole address is one free-text line — and the
+// source spreadsheets never had a county column, so searching INSIDE the
+// address text is the only thing that can work on the real data.
+// Comma-separated terms mean ANY of them ("essex, kent, london").
+// Matching is on WHOLE WORDS so "Kent" doesn't drag in "Kentish Town", and it
+// makes no assumption about country, so it works anywhere in the world.
+const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// every address entry flattened to one searchable string (tolerates the plain
+// string shape AND the legacy {line1,city,postcode,…} object shape)
+const addressTextOf = (co) => {
+  const list = Array.isArray(co?.addresses) ? co.addresses : [];
+  return list.map((a) => {
+    if (typeof a === 'string') return a;
+    if (a && typeof a === 'object') {
+      return Object.values(a).filter((v) => typeof v === 'string' || typeof v === 'number').join(' ');
+    }
+    return '';
+  }).join(' ');
+};
+
+function matchesAddressQuery(co, q) {
+  const terms = String(q || '').split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+  if (!terms.length) return true;              // nothing typed = no restriction
+  const hay = addressTextOf(co).toLowerCase();
+  if (!hay.trim()) return false;               // no address = can't match a place
+  return terms.some((t) => new RegExp(`(^|[^a-z0-9])${escapeRe(t)}([^a-z0-9]|$)`).test(hay));
+}
 
 const STATUS_LABEL  = { active: 'Active', inactive: 'Inactive', at_risk: 'At risk', prospect: 'Prospect', archived: 'Archived' };
 const MISSING_LABEL = { no_phone: 'No phone', no_email: 'No email', no_website: 'No website', no_address: 'No address' };
@@ -128,6 +161,8 @@ function valuesFor(co, key) {
 // AND across groups, OR within a group. `skipKey` lets the caller leave one
 // group out (used so the stage badge counts ignore the stage filter itself).
 function matchesFilters(co, sel, skipKey) {
+  // the address search always applies, whichever group is being skipped
+  if (!matchesAddressQuery(co, sel?.addressQuery)) return false;
   for (const g of GROUP_DEFS) {
     if (g.key === skipKey) continue;
     const chosen = sel?.[g.key] || [];
@@ -415,7 +450,10 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   }, [searched, userName]);
 
   const activeFilterCount = useMemo(
-    () => Object.values(filterSel).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0),
+    () => Object.entries(filterSel).reduce((n, [k, v]) => {
+      if (k === 'addressQuery') return n + (String(v || '').trim() ? 1 : 0);
+      return n + (Array.isArray(v) ? v.length : 0);
+    }, 0),
     [filterSel]
   );
 
@@ -724,6 +762,12 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       <CompanyFilterModal
         open={showFilter}
         groups={filterGroups}
+        textFields={[{
+          key: 'addressQuery',
+          label: 'Address contains',
+          placeholder: 'Essex, Kent, London',
+          hint: 'Searches inside the company address — county, town or postcode. Separate with commas to match any of them.',
+        }]}
         value={filterSel}
         onApply={(next) => { setFilterSel(next); setShowFilter(false); }}
         onClose={() => setShowFilter(false)}
