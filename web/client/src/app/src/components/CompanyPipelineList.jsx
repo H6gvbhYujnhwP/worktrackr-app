@@ -22,8 +22,9 @@
 //
 // Props (unchanged): onOpenCompany(id), onAddCompany().
 import React, { useEffect, useMemo, useState } from 'react';
-import { Upload, MoreHorizontal, Clock, List, Columns3, Phone, Mail, ChevronDown, Building2 } from 'lucide-react';
+import { Upload, MoreHorizontal, Clock, List, Columns3, Phone, Mail, ChevronDown, Building2, SlidersHorizontal } from 'lucide-react';
 import CsvImport from './CsvImport.jsx';
+import CompanyFilterModal from './CompanyFilterModal.jsx';
 import SalesPageLayout, {
   SalesSearch, SalesPrimaryButton, SalesSecondaryButton,
 } from './SalesPageLayout.jsx';
@@ -43,6 +44,99 @@ const STAGE_BY_KEY = Object.fromEntries(STAGES.map((s) => [s.key, s]));
 // or unrecognised (exactly the rows that render the grey "No stage" pill).
 const NO_STAGE = '__nostage__';
 const isNoStage = (co) => !STAGE_BY_KEY[co?.crm?.salesStage];
+
+// ── Filter pop-up plumbing ──────────────────────────────────────────────────
+// Every option offered in the Filter pop-up is derived from the companies that
+// are actually loaded, so the user can never tick something that matches
+// nothing (and nothing is invented). Within a group ticks are OR; across
+// groups they are AND.
+const GROUP_DEFS = [
+  { key: 'stages',     label: 'Stage' },
+  { key: 'sources',    label: 'Source' },
+  { key: 'industries', label: 'Industry' },
+  { key: 'sizes',      label: 'Employees' },
+  { key: 'managers',   label: 'Account manager' },
+  { key: 'spotters',   label: 'Spotter' },
+  { key: 'statuses',   label: 'Customer status' },
+  { key: 'tags',       label: 'Tags' },
+  { key: 'missing',    label: 'Missing details' },
+  { key: 'chase',      label: 'Chase date' },
+];
+const EMPTY_FILTERS = Object.fromEntries(GROUP_DEFS.map((g) => [g.key, []]));
+
+const STATUS_LABEL  = { active: 'Active', inactive: 'Inactive', at_risk: 'At risk', prospect: 'Prospect', archived: 'Archived' };
+const MISSING_LABEL = { no_phone: 'No phone', no_email: 'No email', no_website: 'No website', no_address: 'No address' };
+const CHASE_LABEL   = { overdue: 'Overdue', today: 'Due today', future: 'Upcoming', none: 'No chase date' };
+// groups whose options read best in a fixed order rather than alphabetically
+const FIXED_ORDER = {
+  stages:  [NO_STAGE, ...STAGES.map((s) => s.key)],
+  missing: ['no_phone', 'no_email', 'no_website', 'no_address'],
+  chase:   ['overdue', 'today', 'future', 'none'],
+};
+
+const hasText = (v) => String(v ?? '').trim() !== '';
+
+// Address lives in contacts.addresses (JSONB array) and can legitimately be a
+// plain string OR a {line1,city,postcode,…} object — tolerate both.
+const hasAddress = (co) => {
+  const list = Array.isArray(co?.addresses) ? co.addresses : [];
+  return list.some((a) => {
+    if (typeof a === 'string') return hasText(a);
+    if (a && typeof a === 'object') return Object.values(a).some(hasText);
+    return false;
+  });
+};
+
+const chaseBucket = (co) => {
+  const raw = co?.crm?.chaseDate;
+  if (!raw) return 'none';
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return 'none';
+  d.setHours(23, 59, 59, 999);
+  const endToday = new Date();
+  endToday.setHours(23, 59, 59, 999);
+  if (d.getTime() < Date.now()) return 'overdue';
+  if (d.getTime() <= endToday.getTime()) return 'today';
+  return 'future';
+};
+
+// the value(s) a company contributes to a given filter group
+function valuesFor(co, key) {
+  const crm = co?.crm || {};
+  switch (key) {
+    case 'stages':     return [STAGE_BY_KEY[crm.salesStage] ? crm.salesStage : NO_STAGE];
+    case 'sources':    return hasText(crm.source)        ? [String(crm.source).trim()]      : [];
+    case 'industries': return hasText(crm.industry)      ? [String(crm.industry).trim()]    : [];
+    case 'sizes':      return hasText(crm.companySize)   ? [String(crm.companySize).trim()] : [];
+    case 'managers':   return hasText(crm.assignedTo)    ? [String(crm.assignedTo).trim()]  : [];
+    case 'spotters':   return hasText(crm.spotterUserId) ? [String(crm.spotterUserId)]      : [];
+    case 'statuses':   return hasText(crm.status)        ? [String(crm.status)]             : [];
+    case 'tags':       return Array.isArray(co?.tags) ? co.tags.filter(hasText).map((t) => String(t).trim()) : [];
+    case 'missing': {
+      const out = [];
+      if (!hasText(co?.phone))   out.push('no_phone');
+      if (!hasText(co?.email))   out.push('no_email');
+      if (!hasText(co?.website)) out.push('no_website');
+      if (!hasAddress(co))       out.push('no_address');
+      return out;
+    }
+    case 'chase':      return [chaseBucket(co)];
+    default:           return [];
+  }
+}
+
+// AND across groups, OR within a group. `skipKey` lets the caller leave one
+// group out (used so the stage badge counts ignore the stage filter itself).
+function matchesFilters(co, sel, skipKey) {
+  for (const g of GROUP_DEFS) {
+    if (g.key === skipKey) continue;
+    const chosen = sel?.[g.key] || [];
+    if (!chosen.length) continue;
+    const vals = valuesFor(co, g.key);
+    if (!vals.some((v) => chosen.includes(v))) return false;
+  }
+  return true;
+}
 
 // source → pill colour (dark, translucent). Unknown sources fall back to grey.
 const SOURCE_PILL = {
@@ -200,9 +294,12 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeStage, setActiveStage] = useState(null); // list-view stage filter (null = all)
   const [search, setSearch] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('all');
+  // Unified tick-box selection driving BOTH the stage badges (quick shortcuts)
+  // and the Filter pop-up, so the two can never disagree.
+  const [filterSel, setFilterSel] = useState(EMPTY_FILTERS);
+  const [showFilter, setShowFilter] = useState(false);
+  const [users, setUsers] = useState([]); // for readable Spotter names
   const [viewMode, setViewMode] = useState(() => {
     try { const v = localStorage.getItem('wt_companies_view'); if (v === 'list' || v === 'pipeline') return v; } catch (e) { /* ignore */ }
     return 'pipeline';
@@ -232,6 +329,21 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
     return () => { alive = false; };
   }, [reload, archivedMode]);
 
+  // staff list — turns the stored Spotter reference into a readable name
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/tickets/users/list', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { users: [] }))
+      .then((d) => { if (alive) setUsers(d.users || []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  const userName = useMemo(() => {
+    const m = new Map(users.map((u) => [String(u.id), u.name || u.email || 'Unnamed user']));
+    return (id) => m.get(String(id)) || 'Unknown user';
+  }, [users]);
+
   // distinct sources present, for the "All sources" dropdown
   const sources = useMemo(() => {
     const set = new Set();
@@ -239,22 +351,30 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
     return Array.from(set).sort();
   }, [companies]);
 
-  // search + source filter (applies to both views); stage filter applies in list view
-  const filtered = useMemo(() => {
+  // text search only — the base set the pop-up counts are measured against, so
+  // the numbers beside each tick box don't jump around as you tick things.
+  const searched = useMemo(() => {
     const q = search.trim().toLowerCase();
+    if (!q) return companies;
     return companies.filter((co) => {
-      if (sourceFilter !== 'all' && String(co?.crm?.source || '') !== sourceFilter) return false;
-      if (!q) return true;
       const hay = [co.name, co?.crm?.assignedTo, co.primaryContact, co.email, co.phone]
         .filter(Boolean).join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [companies, search, sourceFilter]);
+  }, [companies, search]);
+
+  // search + every ticked group EXCEPT stage (so the stage badge counts stay
+  // meaningful while a stage is selected)
+  const filtered = useMemo(
+    () => searched.filter((co) => matchesFilters(co, filterSel, 'stages')),
+    [searched, filterSel]
+  );
 
   const listVisible = useMemo(() => {
-    if (activeStage === NO_STAGE) return filtered.filter(isNoStage);
-    return activeStage ? filtered.filter((co) => co?.crm?.salesStage === activeStage) : filtered;
-  }, [filtered, activeStage]);
+    const chosen = filterSel.stages || [];
+    if (!chosen.length) return filtered;
+    return filtered.filter((co) => chosen.includes(valuesFor(co, 'stages')[0]));
+  }, [filtered, filterSel]);
 
   const counts = useMemo(() => {
     const c = {};
@@ -263,6 +383,47 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   }, [filtered]);
 
   const noStageCount = useMemo(() => filtered.filter(isNoStage).length, [filtered]);
+
+  // Build the pop-up's tick-box groups from the loaded companies. Options with
+  // a zero count are dropped, and a group with no options at all is hidden.
+  const filterGroups = useMemo(() => {
+    const labelFor = (key, v) => {
+      if (key === 'stages')   return v === NO_STAGE ? 'No stage' : (STAGE_BY_KEY[v]?.label || v);
+      if (key === 'statuses') return STATUS_LABEL[v] || v;
+      if (key === 'missing')  return MISSING_LABEL[v] || v;
+      if (key === 'chase')    return CHASE_LABEL[v] || v;
+      if (key === 'spotters') return userName(v);
+      return v;
+    };
+    const out = [];
+    for (const g of GROUP_DEFS) {
+      const tally = new Map();
+      for (const co of searched) {
+        for (const v of valuesFor(co, g.key)) tally.set(v, (tally.get(v) || 0) + 1);
+      }
+      if (tally.size === 0) continue;
+      let options = Array.from(tally, ([value, count]) => ({ value, count, label: labelFor(g.key, value) }));
+      const order = FIXED_ORDER[g.key];
+      if (order) {
+        options.sort((a, b) => order.indexOf(a.value) - order.indexOf(b.value));
+      } else {
+        options.sort((a, b) => String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base' }));
+      }
+      out.push({ key: g.key, label: g.label, options });
+    }
+    return out;
+  }, [searched, userName]);
+
+  const activeFilterCount = useMemo(
+    () => Object.values(filterSel).reduce((n, arr) => n + (Array.isArray(arr) ? arr.length : 0), 0),
+    [filterSel]
+  );
+
+  // toggle one stage from a badge (the pop-up writes the same state)
+  const toggleStage = (key) => setFilterSel((prev) => {
+    const cur = prev.stages || [];
+    return { ...prev, stages: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key] };
+  });
 
   // move stage safely: re-send the WHOLE crm object with only salesStage changed
   const moveStage = async (co, newKey) => {
@@ -318,11 +479,18 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       <SalesSearch dark value={search} onChange={setSearch} placeholder="Search companies…" />
       <div className="relative">
         <select
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
+          value={(filterSel.sources || []).length === 1 ? filterSel.sources[0] : ((filterSel.sources || []).length ? '__multi__' : 'all')}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === '__multi__') return; // display-only marker
+            setFilterSel((prev) => ({ ...prev, sources: v === 'all' ? [] : [v] }));
+          }}
           className="h-9 appearance-none rounded-lg border border-[#2e2e4a] bg-[#242438] text-white text-[13px] pl-3 pr-8 outline-none"
         >
           <option value="all">All sources</option>
+          {(filterSel.sources || []).length > 1 && (
+            <option value="__multi__">{filterSel.sources.length} sources selected</option>
+          )}
           {sources.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <ChevronDown className="w-4 h-4 text-[#6b7280] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -330,7 +498,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       <SalesSecondaryButton dark icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
       <SalesPrimaryButton dark onClick={() => onAddCompany && onAddCompany()}>Add company</SalesPrimaryButton>
       {isManager && (
-        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => { const next = !v; if (next) setViewMode('list'); else { try { const sv = localStorage.getItem('wt_companies_view'); setViewMode(sv === 'list' || sv === 'pipeline' ? sv : 'pipeline'); } catch (e) { setViewMode('pipeline'); } } return next; }); setActiveStage(null); }}>
+        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => { const next = !v; if (next) setViewMode('list'); else { try { const sv = localStorage.getItem('wt_companies_view'); setViewMode(sv === 'list' || sv === 'pipeline' ? sv : 'pipeline'); } catch (e) { setViewMode('pipeline'); } } return next; }); setFilterSel(EMPTY_FILTERS); }}>
           {archivedMode ? 'Active companies' : 'Archived'}
         </SalesSecondaryButton>
       )}
@@ -366,28 +534,50 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
         <>
           <span className="mx-1 h-5 w-px bg-[#2e2e4a]" />
           <button
-            onClick={() => setActiveStage(null)}
+            onClick={() => setFilterSel((prev) => ({ ...prev, stages: [] }))}
             className={`rounded-full px-3 py-1.5 text-[13px] border ${
-              activeStage === null ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.15)] text-[#fcd34d]' : 'border-transparent bg-[#242438] text-[#94a3b8]'
+              (filterSel.stages || []).length === 0 ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.15)] text-[#fcd34d]' : 'border-transparent bg-[#242438] text-[#94a3b8]'
             }`}
           >
             All <span className="opacity-60">{filtered.length}</span>
           </button>
           <button
-            onClick={() => setActiveStage(activeStage === NO_STAGE ? null : NO_STAGE)}
-            className={`rounded-full px-3 py-1.5 text-[13px] bg-[rgba(107,114,128,0.20)] text-[#cbd5e1] ${activeStage === NO_STAGE ? 'outline outline-2 outline-[#f59e0b]' : ''}`}
+            onClick={() => toggleStage(NO_STAGE)}
+            className={`rounded-full px-3 py-1.5 text-[13px] bg-[rgba(107,114,128,0.20)] text-[#cbd5e1] ${(filterSel.stages || []).includes(NO_STAGE) ? 'outline outline-2 outline-[#f59e0b]' : ''}`}
           >
             No stage <span className="opacity-60">{noStageCount}</span>
           </button>
           {STAGES.map((s) => (
             <button
               key={s.key}
-              onClick={() => setActiveStage(activeStage === s.key ? null : s.key)}
-              className={`rounded-full px-3 py-1.5 text-[13px] ${s.pill} ${activeStage === s.key ? 'outline outline-2 outline-[#f59e0b]' : ''}`}
+              onClick={() => toggleStage(s.key)}
+              className={`rounded-full px-3 py-1.5 text-[13px] ${s.pill} ${(filterSel.stages || []).includes(s.key) ? 'outline outline-2 outline-[#f59e0b]' : ''}`}
             >
               {s.label} <span className="opacity-60">{counts[s.key] || 0}</span>
             </button>
           ))}
+
+          {/* advanced tick-box filter — sits right after the badges */}
+          <span className="mx-1 h-5 w-px bg-[#2e2e4a]" />
+          <button
+            onClick={() => setShowFilter(true)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] border ${
+              activeFilterCount > 0
+                ? 'border-[#f59e0b] bg-[rgba(245,158,11,0.15)] text-[#fcd34d]'
+                : 'border-[#2e2e4a] bg-[#242438] text-[#94a3b8] hover:text-white'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filter{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
+          </button>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={() => setFilterSel(EMPTY_FILTERS)}
+              className="text-[13px] text-[#94a3b8] hover:text-white underline underline-offset-2"
+            >
+              Clear filters
+            </button>
+          )}
         </>
       )}
     </>
@@ -447,7 +637,9 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       {error && !loading && <div className="px-4 py-8 text-center text-[13px] text-[#fca5a5]">Couldn’t load companies: {error}</div>}
       {!loading && !error && listVisible.length === 0 && (
         <div className="px-4 py-10 text-center text-[13px] text-[#94a3b8]">
-          No companies {activeStage ? `at stage “${STAGE_BY_KEY[activeStage]?.label}”` : 'yet'}. Add your first one to start the pipeline.
+          {activeFilterCount > 0 || search.trim()
+            ? 'No companies match your filters. Try clearing a few.'
+            : 'No companies yet. Add your first one to start the pipeline.'}
         </div>
       )}
       {!loading && !error && listVisible.map((co) => {
@@ -516,16 +708,26 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   );
 
   return (
-    <SalesPageLayout
-      dark
-      bare={!archivedMode && viewMode === 'pipeline'}
-      title={archivedMode ? 'Archived companies' : 'Companies'}
-      subtitle={archivedMode ? `${companies.length} archived` : subtitle}
-      icon={Building2}
-      actions={actions}
-      filters={archivedMode ? null : filters}
-    >
-      {archivedMode ? archivedList : (viewMode === 'pipeline' ? pipeline : list)}
-    </SalesPageLayout>
+    <>
+      <SalesPageLayout
+        dark
+        bare={!archivedMode && viewMode === 'pipeline'}
+        title={archivedMode ? 'Archived companies' : 'Companies'}
+        subtitle={archivedMode ? `${companies.length} archived` : subtitle}
+        icon={Building2}
+        actions={actions}
+        filters={archivedMode ? null : filters}
+      >
+        {archivedMode ? archivedList : (viewMode === 'pipeline' ? pipeline : list)}
+      </SalesPageLayout>
+
+      <CompanyFilterModal
+        open={showFilter}
+        groups={filterGroups}
+        value={filterSel}
+        onApply={(next) => { setFilterSel(next); setShowFilter(false); }}
+        onClose={() => setShowFilter(false)}
+      />
+    </>
   );
 }
