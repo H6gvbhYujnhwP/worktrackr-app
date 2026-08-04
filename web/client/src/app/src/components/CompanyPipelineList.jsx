@@ -173,6 +173,39 @@ function matchesFilters(co, sel, skipKey) {
   return true;
 }
 
+// ── Remembering the filter between visits ───────────────────────────────────
+// Opening a company UNMOUNTS this whole screen (Dashboard swaps in
+// CompanyProfile), so any state held here is destroyed and rebuilt from
+// scratch on the way back. The view toggle already survived because it was
+// saved to the browser under 'wt_companies_view' — the filters now do the same.
+const FILTERS_KEY = 'wt_companies_filters';
+const SEARCH_KEY  = 'wt_companies_search';
+
+// Rebuilt against the CURRENT filter shape rather than trusted as-is, so a
+// stale or corrupted saved value can never break the Companies screen (which
+// would otherwise be very hard for a user to get out of).
+function loadFilters() {
+  try {
+    const raw = localStorage.getItem(FILTERS_KEY);
+    if (!raw) return EMPTY_FILTERS;
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return EMPTY_FILTERS;
+    const out = { ...EMPTY_FILTERS };
+    for (const g of GROUP_DEFS) {
+      if (Array.isArray(saved[g.key])) out[g.key] = saved[g.key].filter((v) => typeof v === 'string');
+    }
+    if (typeof saved.addressQuery === 'string') out.addressQuery = saved.addressQuery;
+    return out;
+  } catch (e) {
+    return EMPTY_FILTERS;
+  }
+}
+
+function loadSearch() {
+  try { const v = localStorage.getItem(SEARCH_KEY); return typeof v === 'string' ? v : ''; }
+  catch (e) { return ''; }
+}
+
 // source → pill colour (dark, translucent). Unknown sources fall back to grey.
 const SOURCE_PILL = {
   'telesales':       'bg-[rgba(245,158,11,0.18)] text-[#fcd34d]',
@@ -329,10 +362,11 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(loadSearch);
   // Unified tick-box selection driving BOTH the stage badges (quick shortcuts)
-  // and the Filter pop-up, so the two can never disagree.
-  const [filterSel, setFilterSel] = useState(EMPTY_FILTERS);
+  // and the Filter pop-up, so the two can never disagree. Remembered between
+  // visits — it only resets when the user presses "Clear filters".
+  const [filterSel, setFilterSel] = useState(loadFilters);
   const [showFilter, setShowFilter] = useState(false);
   const [users, setUsers] = useState([]); // for readable Spotter names
   const [viewMode, setViewMode] = useState(() => {
@@ -344,6 +378,17 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const [reload, setReload] = useState(0);
   const [menuOpen, setMenuOpen] = useState(null);
   const [archivedMode, setArchivedMode] = useState(false); // managers/admins: view archived companies
+
+  // keep the saved copy in step with what's on screen
+  useEffect(() => {
+    try { localStorage.setItem(FILTERS_KEY, JSON.stringify(filterSel)); } catch (e) { /* ignore */ }
+  }, [filterSel]);
+  useEffect(() => {
+    try { localStorage.setItem(SEARCH_KEY, search); } catch (e) { /* ignore */ }
+  }, [search]);
+
+  // the one and only reset — "Clear filters" puts the list back to everything
+  const clearFilters = () => { setFilterSel(EMPTY_FILTERS); setSearch(''); };
 
   useEffect(() => {
     let alive = true;
@@ -536,7 +581,7 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
       <SalesSecondaryButton dark icon={Upload} onClick={() => setShowImport(true)}>Import</SalesSecondaryButton>
       <SalesPrimaryButton dark onClick={() => onAddCompany && onAddCompany()}>Add company</SalesPrimaryButton>
       {isManager && (
-        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => { const next = !v; if (next) setViewMode('list'); else { try { const sv = localStorage.getItem('wt_companies_view'); setViewMode(sv === 'list' || sv === 'pipeline' ? sv : 'pipeline'); } catch (e) { setViewMode('pipeline'); } } return next; }); setFilterSel(EMPTY_FILTERS); }}>
+        <SalesSecondaryButton dark onClick={() => { setArchivedMode((v) => { const next = !v; if (next) setViewMode('list'); else { try { const sv = localStorage.getItem('wt_companies_view'); setViewMode(sv === 'list' || sv === 'pipeline' ? sv : 'pipeline'); } catch (e) { setViewMode('pipeline'); } } return next; }); clearFilters(); }}>
           {archivedMode ? 'Active companies' : 'Archived'}
         </SalesSecondaryButton>
       )}
@@ -608,9 +653,9 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
             <SlidersHorizontal className="w-4 h-4" />
             Filter{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ''}
           </button>
-          {activeFilterCount > 0 && (
+          {(activeFilterCount > 0 || search.trim()) && (
             <button
-              onClick={() => setFilterSel(EMPTY_FILTERS)}
+              onClick={clearFilters}
               className="text-[13px] text-[#94a3b8] hover:text-white underline underline-offset-2"
             >
               Clear filters
