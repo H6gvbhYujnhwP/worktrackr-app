@@ -82,6 +82,24 @@ const stamp = (iso) => {
 };
 // Company address. Stored in the `addresses` JSONB array on the contact record.
 // Older records may hold objects rather than plain strings, so read both shapes.
+// ── Website links ───────────────────────────────────────────────────────────
+// A website saved WITHOUT "https://" — which is every one that came in via CSV
+// import, since only the Add Company form tidied it up — is treated by the
+// browser as a page INSIDE this app. Clicking it reloaded WorkTrackr at
+// /app/www.example.com, which the app doesn't recognise, dumping the user on
+// the default view (tickets) after a white flash. Prefixing at the point of use
+// fixes every existing record at once, with no data change.
+// It also neutralises anything odd in the stored value (e.g. a "javascript:"
+// address from a dodgy spreadsheet), because it can no longer act as a scheme.
+const webHref = (w) => {
+  const s = String(w || '').trim();
+  if (!s) return '';
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
+};
+
+// what the user reads — scheme and any trailing slash stripped off
+const webLabel = (w) => String(w || '').trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+
 const addressText = (addresses) => {
   if (!Array.isArray(addresses) || addresses.length === 0) return '';
   const a = addresses[0];
@@ -567,7 +585,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
                 <span style={{ color: company.email ? T.text : T.muted, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Mail size={13} style={{ color: T.accent, flexShrink: 0 }} />{company.email || 'No email'}</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Globe size={13} style={{ color: T.accent, flexShrink: 0 }} />
                   {company.website
-                    ? <a href={company.website} target="_blank" rel="noreferrer" style={{ color: T.text, textDecoration: 'none' }}>{company.website.replace(/^https?:\/\//, '')}</a>
+                    ? <a href={webHref(company.website)} target="_blank" rel="noreferrer" style={{ color: T.text, textDecoration: 'none' }}>{webLabel(company.website)}</a>
                     : <span style={{ color: T.muted }}>No website</span>}
                 </span>
                 {(() => {
