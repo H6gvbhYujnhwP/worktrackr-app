@@ -1,7 +1,7 @@
 // web/client/src/app/src/components/CompanyPipelineList.jsx
 // Sales › Companies. The salesperson's home: companies by sales stage.
 // Reads live data from GET /api/contacts?type=company (cookie auth). Sales stage
-// lives in contact.crm.salesStage (new|contacted|voicemail|prospect|hot_prospect|customer); account
+// lives in contact.crm.salesStage (new|contacted|voicemail|prospect|hot_prospect|customer|dead); account
 // manager in contact.crm.assignedTo.
 //
 // v3.6 — rebuilt to Manus's DARK design (Concept-3 "Relationship Hub"):
@@ -37,6 +37,7 @@ const STAGES = [
   { key: 'prospect',     label: 'Prospect',     pill: 'bg-[rgba(59,130,246,0.20)] text-[#93c5fd]',  dot: '#3b82f6' },
   { key: 'hot_prospect', label: 'Hot prospect', pill: 'bg-[rgba(245,158,11,0.20)] text-[#fcd34d]',  dot: '#f59e0b' },
   { key: 'customer',     label: 'Customer',     pill: 'bg-[rgba(16,185,129,0.20)] text-[#6ee7b7]',  dot: '#10b981' },
+  { key: 'dead',         label: 'Dead',         pill: 'bg-[rgba(239,68,68,0.20)] text-[#fca5a5]',   dot: '#ef4444' },
 ];
 const STAGE_BY_KEY = Object.fromEntries(STAGES.map((s) => [s.key, s]));
 

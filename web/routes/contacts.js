@@ -27,7 +27,7 @@ const contactSchema = z.object({
     status: z.enum(['active', 'inactive', 'at_risk', 'prospect', 'archived']).default('prospect'),
     // Sales pipeline stage (Phase 1) — kept separate from `status` (customer health).
     // Suspect (value 'new') → Contacted → Prospect → Hot Prospect → Customer.
-    salesStage: z.enum(['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer']).optional(),
+    salesStage: z.enum(['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer', 'dead']).optional(),
     // Leads workflow fields (stored on the company's crm JSONB, like salesStage).
     firstContact: z.string().optional().nullable(),   // date first actually spoke (yyyy-mm-dd)
     chaseDate: z.string().optional().nullable(),       // date to next chase (yyyy-mm-dd)
@@ -329,7 +329,7 @@ router.post('/import', async (req, res) => {
     const seenEmail = new Set();
     const seenDomain = new Set();
     const seenPhone = new Set();
-    const VALID_STAGES = ['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer'];
+    const VALID_STAGES = ['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer', 'dead'];
 
     let created = 0;
     let skipped = 0;

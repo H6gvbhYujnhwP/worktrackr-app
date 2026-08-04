@@ -36,6 +36,7 @@ const STAGE_OPTIONS = [
   { value: 'prospect', label: 'Prospect' },
   { value: 'hot_prospect', label: 'Hot prospect' },
   { value: 'customer', label: 'Customer' },
+  { value: 'dead', label: 'Dead' },
 ];
 
 // Target fields we can import into. `name` is required.

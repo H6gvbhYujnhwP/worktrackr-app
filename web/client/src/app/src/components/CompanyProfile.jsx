@@ -27,6 +27,7 @@ const STAGES = [
   { key: 'prospect',     label: 'Prospect' },
   { key: 'hot_prospect', label: 'Hot prospect' },
   { key: 'customer',     label: 'Customer' },
+  { key: 'dead',         label: 'Dead' },
 ];
 const SOURCES = ['Telesales', 'Door knocking', 'E-shot', 'Social media', 'Website', 'Referral'];
 
