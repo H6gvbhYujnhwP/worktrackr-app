@@ -182,20 +182,25 @@ const FILTERS_KEY = 'wt_companies_filters';
 const SEARCH_KEY  = 'wt_companies_search';
 
 // Rebuilt against the CURRENT filter shape rather than trusted as-is, so a
-// stale or corrupted saved value can never break the Companies screen (which
-// would otherwise be very hard for a user to get out of).
+// stale or corrupted value can never break the Companies screen (which would
+// otherwise be very hard for a user to get out of). Used for BOTH the browser's
+// remembered filter AND saved searches coming back from the server, since a
+// saved search may have been created before a filter group existed.
+function coerceFilters(saved) {
+  const out = { ...EMPTY_FILTERS };
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return out;
+  for (const g of GROUP_DEFS) {
+    if (Array.isArray(saved[g.key])) out[g.key] = saved[g.key].filter((v) => typeof v === 'string');
+  }
+  if (typeof saved.addressQuery === 'string') out.addressQuery = saved.addressQuery;
+  return out;
+}
+
 function loadFilters() {
   try {
     const raw = localStorage.getItem(FILTERS_KEY);
     if (!raw) return EMPTY_FILTERS;
-    const saved = JSON.parse(raw);
-    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return EMPTY_FILTERS;
-    const out = { ...EMPTY_FILTERS };
-    for (const g of GROUP_DEFS) {
-      if (Array.isArray(saved[g.key])) out[g.key] = saved[g.key].filter((v) => typeof v === 'string');
-    }
-    if (typeof saved.addressQuery === 'string') out.addressQuery = saved.addressQuery;
-    return out;
+    return coerceFilters(JSON.parse(raw));
   } catch (e) {
     return EMPTY_FILTERS;
   }
@@ -358,7 +363,7 @@ function PipelineCard({ co, isCustomer, menuOpen, onMenu, onOpen, onMove, onClos
   );
 }
 
-export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isManager = false }) {
+export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isManager = false, currentUser = null }) {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -369,6 +374,29 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
   const [filterSel, setFilterSel] = useState(loadFilters);
   const [showFilter, setShowFilter] = useState(false);
   const [users, setUsers] = useState([]); // for readable Spotter names
+
+  // ── Shared saved searches ────────────────────────────────────────────────
+  const [saved, setSaved] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedError, setSavedError] = useState('');
+
+  const loadSaved = React.useCallback(async () => {
+    setSavedLoading(true);
+    setSavedError('');
+    try {
+      const r = await fetch('/api/saved-searches?scope=companies', { credentials: 'include' });
+      if (!r.ok) throw new Error('Could not load saved searches');
+      const d = await r.json();
+      setSaved(Array.isArray(d.savedSearches) ? d.savedSearches : []);
+    } catch (e) {
+      setSavedError(e.message || 'Could not load saved searches');
+      setSaved([]);
+    } finally {
+      setSavedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSaved(); }, [loadSaved]);
   const [viewMode, setViewMode] = useState(() => {
     try { const v = localStorage.getItem('wt_companies_view'); if (v === 'list' || v === 'pipeline') return v; } catch (e) { /* ignore */ }
     return 'pipeline';
@@ -507,6 +535,75 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
     const cur = prev.stages || [];
     return { ...prev, stages: cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key] };
   });
+
+  // ── Saved searches: readable summary + actions ───────────────────────────
+  // Built from the labels currently on screen and stored WITH the search, so an
+  // entry stays readable forever. Generated later, a Spotter saved by internal
+  // reference could come back as "Unknown user" if that person's record changed.
+  const summarise = (sel) => {
+    const parts = [];
+    const labelsFor = (key) => {
+      const g = filterGroups.find((x) => x.key === key);
+      const chosen = sel?.[key] || [];
+      if (!g || !chosen.length) return null;
+      return chosen.map((v) => g.options.find((o) => o.value === v)?.label || v).join(' + ');
+    };
+    const stages = labelsFor('stages');
+    if (stages) parts.push(stages);
+    const aq = String(sel?.addressQuery || '').trim();
+    if (aq) parts.push(aq);
+    for (const g of filterGroups) {
+      if (g.key === 'stages') continue;
+      const s = labelsFor(g.key);
+      if (s) parts.push(s);
+    }
+    return parts.join(' · ');
+  };
+
+  // picking one runs it immediately and closes the pop-up
+  const applySaved = (s) => {
+    setFilterSel(coerceFilters(s?.filters));
+    setShowFilter(false);
+  };
+
+  // resolves to an error string, or null on success
+  const saveSearch = async (name, sel) => {
+    try {
+      const r = await fetch('/api/saved-searches', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: 'companies', name, filters: sel, summary: summarise(sel) }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) return d.error || 'Could not save this search';
+      await loadSaved();
+      return null;
+    } catch (e) {
+      return e?.message || 'Could not save this search';
+    }
+  };
+
+  const deleteSaved = async (s) => {
+    // shared with the team, so confirm before removing it for everyone
+    if (!window.confirm(`Delete the saved search “${s.name}” for everyone in your team?`)) return;
+    try {
+      const r = await fetch(`/api/saved-searches/${s.id}`, { method: 'DELETE', credentials: 'include' });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        setSavedError(d.error || 'Could not delete this search');
+        return;
+      }
+      await loadSaved();
+    } catch (e) {
+      setSavedError(e?.message || 'Could not delete this search');
+    }
+  };
+
+  // only the person who saved it, or a manager, sees the delete control —
+  // matching what the server actually allows, so it's never a dead button
+  const canDeleteSaved = (s) =>
+    isManager || (currentUser?.id && String(s?.createdBy || '') === String(currentUser.id));
 
   // move stage safely: re-send the WHOLE crm object with only salesStage changed
   const moveStage = async (co, newKey) => {
@@ -814,6 +911,13 @@ export default function CompanyPipelineList({ onOpenCompany, onAddCompany, isMan
           hint: 'Searches inside the company address — county, town or postcode. Separate with commas to match any of them.',
         }]}
         value={filterSel}
+        saved={saved}
+        savedLoading={savedLoading}
+        savedError={savedError}
+        onPickSaved={applySaved}
+        onSaveSearch={saveSearch}
+        onDeleteSaved={deleteSaved}
+        canDeleteSaved={canDeleteSaved}
         onApply={(next) => { setFilterSel(next); setShowFilter(false); }}
         onClose={() => setShowFilter(false)}
       />

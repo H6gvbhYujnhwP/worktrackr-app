@@ -457,7 +457,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
             ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
                 onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
                 onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
-            : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} isManager={isManager} />
+            : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} isManager={isManager} currentUser={user} />
       )}
       {currentView === 'orders'         && salesCan('orders') && <OrdersList isManager={isManager} initialNewCompanyId={ordersInitial} onConsumeInitial={() => setOrdersInitial(null)} initialOpenOrderId={ordersOpenId} onConsumeOpen={() => setOrdersOpenId(null)} />}
       {currentView === 'contracts'      && <ContractsList initialNewCompanyId={contractsInitial} onConsumeInitial={() => setContractsInitial(null)} isManager={isManager} />}

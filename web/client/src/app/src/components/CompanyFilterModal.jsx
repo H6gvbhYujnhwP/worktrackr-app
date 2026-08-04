@@ -20,8 +20,75 @@
 //   value      — { [groupKey]: [selected values], [textKey]: 'string' }
 //   onApply(next) — called with the new selection when Search is pressed
 //   onClose()  — dismiss without applying
-import React, { useEffect, useMemo, useState } from 'react';
-import { X, Search as SearchIcon, Check } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { X, Search as SearchIcon, Check, Bookmark, ChevronDown, Trash2 } from 'lucide-react';
+
+// ── Saved searches (shared with the whole organisation) ─────────────────────
+// A named filter combination anyone in Sales can save and everyone can re-run.
+// Picking one applies it and closes the pop-up immediately.
+function SavedSearchMenu({ saved, loading, error, onPick, onDelete, canDelete }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // click-away to close
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-[#2e2e4a] bg-[#242438] px-3 py-1.5 text-[13px] text-[#cbd5e1] hover:bg-[#2a2a48]"
+      >
+        <Bookmark className="h-4 w-4" />
+        Saved searches
+        {saved.length > 0 && <span className="text-[#6b7280]">({saved.length})</span>}
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 z-10 mt-1 max-h-72 w-80 overflow-y-auto rounded-lg border border-[#2e2e4a] bg-[#242438] py-1 shadow-2xl">
+          {loading && <div className="px-3 py-2 text-[12px] text-[#6b7280]">Loading…</div>}
+          {error && !loading && <div className="px-3 py-2 text-[12px] text-[#fca5a5]">{error}</div>}
+          {!loading && !error && saved.length === 0 && (
+            <div className="px-3 py-2 text-[12px] text-[#6b7280]">
+              Nothing saved yet. Tick some filters, then name and save them below.
+            </div>
+          )}
+          {!loading && saved.map((s) => (
+            <div key={s.id} className="group flex items-start gap-1 px-1">
+              <button
+                type="button"
+                onClick={() => { setOpen(false); onPick(s); }}
+                className="min-w-0 flex-1 rounded px-2 py-1.5 text-left hover:bg-[#2a2a48]"
+              >
+                <div className="truncate text-[13px] text-white">{s.name}</div>
+                {s.summary && (
+                  <div className="truncate text-[11px] text-[#6b7280]">{s.summary}</div>
+                )}
+              </button>
+              {canDelete(s) && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(s)}
+                  title="Delete this saved search"
+                  className="mt-1 shrink-0 rounded p-1 text-[#6b7280] opacity-0 hover:bg-[#3a2a2a] hover:text-[#fca5a5] group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Show the type-to-narrow box once a group gets long enough to be a scroll-hunt.
 const NARROW_AT = 8;
@@ -97,13 +164,21 @@ function Group({ group, selected, onToggle }) {
   );
 }
 
-export default function CompanyFilterModal({ open, groups = [], textFields = [], value = {}, onApply, onClose }) {
+export default function CompanyFilterModal({
+  open, groups = [], textFields = [], value = {}, onApply, onClose,
+  // saved searches (shared across the organisation)
+  saved = [], savedLoading = false, savedError = '',
+  onPickSaved, onSaveSearch, onDeleteSaved, canDeleteSaved = () => false,
+}) {
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
   // Draft selection — so Cancel discards and only Search commits.
   const [draft, setDraft] = useState(value);
 
   // Re-seed the draft each time the modal is opened.
   useEffect(() => {
-    if (open) setDraft(value);
+    if (open) { setDraft(value); setName(''); setSaveMsg(''); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -130,6 +205,27 @@ export default function CompanyFilterModal({ open, groups = [], textFields = [],
     setDraft((prev) => ({ ...prev, ...cleared }));
   };
 
+  const doSave = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || totalChosen === 0 || saving) return;
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      // onSaveSearch resolves with an error string, or nothing on success
+      const err = await onSaveSearch(trimmed, draft);
+      if (err) {
+        setSaveMsg({ ok: false, text: err });
+      } else {
+        setSaveMsg({ ok: true, text: 'Saved for the team' });
+        setName('');
+      }
+    } catch (e) {
+      setSaveMsg({ ok: false, text: e?.message || 'Could not save' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -147,14 +243,24 @@ export default function CompanyFilterModal({ open, groups = [], textFields = [],
               Tick anything you like, then press Search
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-[#94a3b8] hover:bg-[#2a2a48] hover:text-white"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <SavedSearchMenu
+              saved={saved}
+              loading={savedLoading}
+              error={savedError}
+              onPick={onPickSaved}
+              onDelete={onDeleteSaved}
+              canDelete={canDeleteSaved}
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1 text-[#94a3b8] hover:bg-[#2a2a48] hover:text-white"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* groups */}
@@ -194,6 +300,36 @@ export default function CompanyFilterModal({ open, groups = [], textFields = [],
                 />
               ))}
             </div>
+          )}
+        </div>
+
+        {/* save this combination for the whole team */}
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-[#2e2e4a] px-5 py-3">
+          <span className="text-[12px] text-[#94a3b8]">Save this search</span>
+          <input
+            value={name}
+            onChange={(e) => { setName(e.target.value); setSaveMsg(''); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim() && totalChosen > 0) doSave(); }}
+            placeholder="e.g. Kent chase list"
+            maxLength={60}
+            className="h-8 w-56 rounded-md border border-[#2e2e4a] bg-[#242438] px-2 text-[13px] text-white placeholder-[#6b7280] outline-none focus:border-[#f59e0b]"
+          />
+          <button
+            type="button"
+            onClick={doSave}
+            disabled={saving || !name.trim() || totalChosen === 0}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#2e2e4a] bg-[#242438] px-3 py-1.5 text-[13px] text-[#cbd5e1] hover:bg-[#2a2a48] disabled:opacity-40 disabled:hover:bg-[#242438]"
+          >
+            <Bookmark className="h-4 w-4" />
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+          {totalChosen === 0 && !saveMsg && (
+            <span className="text-[11px] text-[#6b7280]">Tick something first</span>
+          )}
+          {saveMsg && (
+            <span className={`text-[11px] ${saveMsg.ok ? 'text-[#86efac]' : 'text-[#fca5a5]'}`}>
+              {saveMsg.text}
+            </span>
           )}
         </div>
 

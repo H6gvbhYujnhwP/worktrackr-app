@@ -31,6 +31,7 @@ const contactsRoutes = require('./routes/contacts');
 const contactAttachmentsRoutes = require('./routes/contact-attachments');
 const holidaysRoutes = require('./routes/holidays');
 const salesPermissionsRoutes = require('./routes/sales-permissions');
+const savedSearchesRoutes = require('./routes/saved-searches');
 const pricingRoutes = require('./routes/pricing');
 
 const app = express();
@@ -167,6 +168,7 @@ app.use('/api/contacts', authenticateToken, contactsRoutes);
 app.use('/api/contacts', authenticateToken, contactAttachmentsRoutes);
 app.use('/api/holidays', authenticateToken, holidaysRoutes);
 app.use('/api/sales-permissions', authenticateToken, salesPermissionsRoutes);
+app.use('/api/saved-searches', authenticateToken, savedSearchesRoutes);
 app.use('/api/pricing', authenticateToken, pricingRoutes);
 
 app.use('/api/billing', authenticateToken, billingRoutes);
