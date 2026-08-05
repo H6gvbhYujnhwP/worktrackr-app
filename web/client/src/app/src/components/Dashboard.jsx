@@ -99,6 +99,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
 
   const [activeTab, setActiveTab]             = useState('all_open');
   const [openCompanyId, setOpenCompanyId]     = useState(null);
+  const [calendarInitial, setCalendarInitial] = useState(null); // 'YYYY-MM-DD' for "View in calendar"
   const [addingCompany, setAddingCompany]     = useState(false);
   const [openLeadCompanyId, setOpenLeadCompanyId] = useState(null);
   const [ordersInitial, setOrdersInitial]     = useState(null);
@@ -440,6 +441,8 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
       )}
       {currentView === 'sales-calendar' && salesCan('calendar') && (
         <CRMCalendar
+          key={calendarInitial || 'today'}
+          initialDate={calendarInitial}
           timezone={selectedTimezone}
           calendarKind="sales"
           defaultSources={{ sales: true, projects: false, schedule: false }}
@@ -456,6 +459,7 @@ const Dashboard = forwardRef(({ currentView, onViewChange, onFullBleedChange }, 
           : openCompanyId
             ? <CompanyProfile companyId={openCompanyId} onBack={() => setOpenCompanyId(null)}
                 onNewOrder={(company) => { setOrdersInitial(company.id); onViewChange('orders'); }}
+                onOpenCalendar={(dayStr) => { setCalendarInitial(dayStr); onViewChange('sales-calendar'); }}
                 onNewContract={(company) => { setContractsInitial(company.id); onViewChange('contracts'); }} />
             : <CompanyPipelineList onOpenCompany={setOpenCompanyId} onAddCompany={() => setAddingCompany(true)} isManager={isManager} currentUser={user} />
       )}

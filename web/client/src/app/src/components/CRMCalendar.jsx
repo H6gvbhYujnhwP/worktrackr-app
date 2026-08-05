@@ -97,7 +97,7 @@ function NextActionBox({ suggestion, actions, loading, onAction, onDismiss }) {
   );
 }
 
-export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick, defaultSources, calendarKind = 'sales' }) {
+export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick, defaultSources, calendarKind = 'sales', initialDate = null }) {
   const isDelivery = calendarKind === 'delivery';
   const { tickets = [] } = useSimulation() || {};
 
@@ -120,7 +120,15 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
     try {
       const response = await fetch('/api/crm-events', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch events');
-      return await response.json();
+      const rows = await response.json();
+      // The API returns the company as contact_name (joined from contacts), but
+      // the event detail panel reads `company`. Without this the Contact line
+      // and Notes section were always blank on CRM reminders.
+      return (Array.isArray(rows) ? rows : []).map((ev) => ({
+        ...ev,
+        company: ev.company || ev.contact_name || '',
+        notes: ev.notes || ev.description || '',
+      }));
     } catch (error) {
       console.error('Error loading CRM events:', error);
       return [];
@@ -160,7 +168,16 @@ export default function CRMCalendar({ timezone = 'Europe/London', onTicketClick,
   // Holidays default ON everywhere (incl. the Sales calendar) so the whole team
   // can see who's off; it isn't overridden by defaultSources unless asked.
   const [sources, setSources] = useState({ sales: true, projects: true, schedule: true, holidays: true, ...(defaultSources || {}) });
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // initialDate ('YYYY-MM-DD') lets "View in calendar" on a company's timeline
+  // land on the reminder's own date — a September follow-up opens September,
+  // not today, which previously made created reminders look missing.
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (initialDate) {
+      const d0 = new Date(`${initialDate}T12:00:00`);
+      if (Number.isFinite(d0.getTime())) return d0;
+    }
+    return new Date();
+  });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showScheduleMeetingModal, setShowScheduleMeetingModal] = useState(false);

@@ -58,6 +58,15 @@ const timeAgo = (iso) => {
 };
 
 // Build a 1-hour timed event window from a date + HH:mm time (local → ISO).
+// Local YYYY-MM-DD. Using toISOString() here would shift a 00:00 event back a
+// day for UK summer time, opening the calendar on the wrong date.
+const ymdLocal = (iso) => {
+  if (!iso) return '';           // new Date(null) is the 1970 epoch, not invalid
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const eventWindow = (date, time) => {
   const start = new Date(`${date}T${time || '09:00'}:00`);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
@@ -137,7 +146,7 @@ const inputStyle = {
 };
 const linkBtn = { background: 'transparent', border: 'none', color: T.accent, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 };
 
-export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewContract }) {
+export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewContract, onOpenCalendar }) {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -368,6 +377,13 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
       return;
     }
     setNoteHint('');
+    // "Add to calendar" ticked but no date chosen used to save the note and
+    // SKIP the calendar entry silently — you'd believe a reminder existed when
+    // none did. Check before saving anything, so nothing is half-done.
+    if (noteToCal && !noteCalDate) {
+      setNoteHint('Pick a date for the calendar reminder, or untick “Add to calendar”.');
+      return;
+    }
     setSavingNote(true);
     try {
       const r = await fetch(`/api/contacts/${companyId}/notes`, {
@@ -383,10 +399,15 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contact_id: companyId, title: body.slice(0, 120), type: 'follow_up',
+            // carry the note through so the calendar entry explains itself
+            // instead of showing a bare title with an empty Notes section
+            description: body, notes: body,
             start_at, end_at, all_day: false, status: 'planned',
           }),
         });
         if (!cr.ok) throw new Error(`Saved the note, but the calendar entry failed (HTTP ${cr.status})`);
+        // an already-open calendar listens for this and reloads itself
+        window.dispatchEvent(new Event('worktrackr:crm-event-created'));
       }
       setNoteText(''); setNoteToCal(false); setNoteCalDate(''); setNoteCalTime('09:00');
       loadHistory();
@@ -412,16 +433,19 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     }
     setReminderHint('');
     const { start_at, end_at } = eventWindow(date, time);
+    const detail = (reminderForm.notes || '').trim();
     try {
       const r = await fetch('/api/crm-events', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contact_id: companyId, title, type: 'follow_up',
+          description: detail || null, notes: detail || null,
           start_at, end_at, all_day: false, status: 'planned',
         }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      window.dispatchEvent(new Event('worktrackr:crm-event-created'));
       setReminderForm(null);
       loadHistory();
     } catch (e) { setError(e.message || 'Could not add reminder'); }
@@ -713,7 +737,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: savingNote ? 'default' : 'pointer', opacity: (!noteText.trim() || savingNote) ? 0.5 : 1 }}>
               <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />{savingNote ? 'Saving…' : 'Save note'}
             </button>
-            <button onClick={() => setReminderForm({ title: '', date: '', time: '09:00' })}
+            <button onClick={() => setReminderForm({ title: '', date: '', time: '09:00', notes: '' })}
               style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>
               <CalendarPlus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add calendar reminder
             </button>
@@ -790,6 +814,9 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
                 <DatePicker value={reminderForm.date} onChange={(v) => { setReminderForm({ ...reminderForm, date: v }); if (reminderHint) setReminderHint(''); }} style={{ ...inputStyle, flex: 1 }} />
                 <TimePicker value={reminderForm.time || '09:00'} onChange={(v) => setReminderForm({ ...reminderForm, time: v })} style={{ ...inputStyle, width: 'auto' }} />
               </div>
+              <textarea value={reminderForm.notes || ''} onChange={(e) => setReminderForm({ ...reminderForm, notes: e.target.value })}
+                placeholder="What's it about? (optional — shows on the calendar entry)"
+                style={{ ...inputStyle, minHeight: 44, resize: 'vertical' }} />
               {reminderHint && (
                 <div style={{ fontSize: 12.5, color: T.accent }}>{reminderHint}</div>
               )}
@@ -805,12 +832,25 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
             {history.map((h) => {
               const cfg = HISTORY[h.kind] || HISTORY.other;
               const Icon = cfg.icon;
+              // History ids are prefixed by source: e_ = a crm_events row (a
+              // calendar entry), n_ = a note, t_ = a completed task. Only the
+              // calendar ones can be opened in the calendar.
+              const isCalendarEntry = String(h.id || '').startsWith('e_') && h.at;
+              const dayStr = isCalendarEntry ? ymdLocal(h.at) : '';
               return (
                 <div key={h.id} style={{ display: 'flex', gap: 9, fontSize: 13 }}>
                   <Icon size={15} style={{ color: T.accent, marginTop: 2, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ color: T.text }}><span style={{ fontWeight: 600 }}>{cfg.label}</span>{h.title ? ` — ${h.title}` : ''}</div>
                     <div style={{ fontSize: 12, color: T.muted }} title={h.at ? new Date(h.at).toLocaleString() : ''}>{h.actor ? `${h.actor} · ` : ''}{stamp(h.at)}</div>
+                    {isCalendarEntry && onOpenCalendar && (
+                      <button
+                        onClick={() => onOpenCalendar(dayStr)}
+                        style={{ background: 'none', border: 'none', padding: 0, marginTop: 2, cursor: 'pointer', color: T.accent, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        <CalendarPlus size={12} /> View in calendar
+                      </button>
+                    )}
                   </div>
                 </div>
               );
