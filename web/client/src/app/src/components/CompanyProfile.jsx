@@ -161,6 +161,14 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const [attachNote, setAttachNote] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  // Neither Save note nor Add to calendar used to say anything when they
+  // couldn't act — they just stopped, which reads as a broken button. These
+  // hold a short explanation, and the refs let us put the cursor in the box
+  // that actually needs filling in.
+  const noteRef = useRef(null);
+  const reminderTitleRef = useRef(null);
+  const [noteHint, setNoteHint] = useState('');
+  const [reminderHint, setReminderHint] = useState('');
   const [reminderForm, setReminderForm] = useState(null); // null = closed
   const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
   const [naForm, setNaForm] = useState(null);             // next action + chase date edit; null = closed
@@ -352,7 +360,14 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   // follow-up for the chosen date (reuses the existing /api/crm-events endpoint).
   const saveNote = async () => {
     const body = noteText.trim();
-    if (!body) return;
+    if (!body) {
+      // Was a silent no-op. The most common cause is typing into the
+      // attachment note box lower down, so point at the right one.
+      setNoteHint('Type your note in the box above first, then press Save note.');
+      if (noteRef.current) noteRef.current.focus();
+      return;
+    }
+    setNoteHint('');
     setSavingNote(true);
     try {
       const r = await fetch(`/api/contacts/${companyId}/notes`, {
@@ -385,7 +400,17 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     const title = (reminderForm.title || '').trim();
     const date = reminderForm.date;
     const time = reminderForm.time || '09:00';
-    if (!title || !date) return;
+    if (!title || !date) {
+      // Was a silent no-op — name the missing field rather than just stopping.
+      if (!title) {
+        setReminderHint('Give the reminder a name (e.g. “Call back for Christina”).');
+        if (reminderTitleRef.current) reminderTitleRef.current.focus();
+      } else {
+        setReminderHint('Pick a date for the reminder.');
+      }
+      return;
+    }
+    setReminderHint('');
     const { start_at, end_at } = eventWindow(date, time);
     try {
       const r = await fetch('/api/crm-events', {
@@ -681,12 +706,12 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               Drop files here to attach them
             </div>
           )}
-          <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="Log a call, note or meeting…"
+          <textarea ref={noteRef} value={noteText} onChange={(e) => { setNoteText(e.target.value); if (noteHint) setNoteHint(''); }} placeholder="Log a call, note or meeting…"
             style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button onClick={saveNote} disabled={savingNote || !noteText.trim()}
-              style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: !noteText.trim() ? 0.6 : 1 }}>
-              <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Save note
+            <button onClick={saveNote} disabled={savingNote}
+              style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: savingNote ? 'default' : 'pointer', opacity: (!noteText.trim() || savingNote) ? 0.5 : 1 }}>
+              <FileText size={14} style={{ verticalAlign: -2, marginRight: 4 }} />{savingNote ? 'Saving…' : 'Save note'}
             </button>
             <button onClick={() => setReminderForm({ title: '', date: '', time: '09:00' })}
               style={{ background: 'transparent', color: T.accent, border: `1px solid ${T.accent}88`, borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>
@@ -705,9 +730,19 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               </>
             )}
           </div>
+          {noteHint && (
+            <div style={{ marginTop: 6, fontSize: 12.5, color: T.accent }}>{noteHint}</div>
+          )}
 
           {/* ── Attachments ── */}
-          <div style={{ marginTop: 12 }}>
+          {/* The note field below belongs to the FILE uploader, not to History &
+              notes. It used to sit loose under the drop zone and was easily
+              mistaken for the main note box, so it is now boxed in and labelled
+              with the attachments it belongs to. */}
+          <div style={{ marginTop: 12, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.4, color: T.muted, textTransform: 'uppercase', marginBottom: 8 }}>
+              Attachments
+            </div>
             <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }}
               onChange={(e) => { uploadFiles(e.target.files); e.target.value = ''; }} />
             <div
@@ -720,8 +755,11 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               <Paperclip size={15} style={{ color: T.accent, verticalAlign: -2, marginRight: 6 }} />
               <span style={{ fontSize: 13, color: T.sub }}>{uploading ? 'Uploading…' : 'Drag files here, or click to browse'}</span>
             </div>
-            <input value={attachNote} onChange={(e) => setAttachNote(e.target.value)} placeholder="Optional note to attach with the file(s)…"
+            <input value={attachNote} onChange={(e) => setAttachNote(e.target.value)} placeholder="Optional label for the file(s) above…"
               style={{ ...inputStyle, marginTop: 8 }} />
+            <div style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
+              Only used when you attach a file. To log a call or note, use the box at the top.
+            </div>
             {attachments.length > 0 && (
               <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {attachments.map((a) => (
@@ -747,14 +785,17 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
 
           {reminderForm && (
             <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginTop: 8, display: 'grid', gap: 8 }}>
-              <input autoFocus value={reminderForm.title} onChange={(e) => setReminderForm({ ...reminderForm, title: e.target.value })} placeholder="Reminder (e.g. call back)" style={inputStyle} />
+              <input ref={reminderTitleRef} autoFocus value={reminderForm.title} onChange={(e) => { setReminderForm({ ...reminderForm, title: e.target.value }); if (reminderHint) setReminderHint(''); }} placeholder="Reminder (e.g. call back)" style={inputStyle} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <DatePicker value={reminderForm.date} onChange={(v) => setReminderForm({ ...reminderForm, date: v })} style={{ ...inputStyle, flex: 1 }} />
+                <DatePicker value={reminderForm.date} onChange={(v) => { setReminderForm({ ...reminderForm, date: v }); if (reminderHint) setReminderHint(''); }} style={{ ...inputStyle, flex: 1 }} />
                 <TimePicker value={reminderForm.time || '09:00'} onChange={(v) => setReminderForm({ ...reminderForm, time: v })} style={{ ...inputStyle, width: 'auto' }} />
               </div>
+              {reminderHint && (
+                <div style={{ fontSize: 12.5, color: T.accent }}>{reminderHint}</div>
+              )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => setReminderForm(null)} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
-                <button onClick={submitReminder} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Add to calendar</button>
+                <button onClick={() => { setReminderForm(null); setReminderHint(''); }} style={{ ...inputStyle, width: 'auto', cursor: 'pointer', color: T.sub }}>Cancel</button>
+                <button onClick={submitReminder} style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: (reminderForm.title || '').trim() && reminderForm.date ? 1 : 0.5 }}>Add to calendar</button>
               </div>
             </div>
           )}
