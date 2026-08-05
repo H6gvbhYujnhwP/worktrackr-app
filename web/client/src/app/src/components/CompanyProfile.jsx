@@ -178,6 +178,44 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
   const reminderTitleRef = useRef(null);
   const [noteHint, setNoteHint] = useState('');
   const [reminderHint, setReminderHint] = useState('');
+  // Editing an existing note in the timeline. Holds { id, body } while open.
+  const [editingNote, setEditingNote] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Save an edit to an existing note → PUT /api/contacts/:id/notes/:noteId
+  const saveNoteEdit = async () => {
+    if (!editingNote) return;
+    const body = (editingNote.body || '').trim();
+    if (!body) { setError('A note cannot be empty.'); return; }
+    setSavingEdit(true);
+    try {
+      const r = await fetch(`/api/contacts/${companyId}/notes/${editingNote.id}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error || `HTTP ${r.status}`);
+      }
+      setEditingNote(null);
+      loadHistory();
+    } catch (e) { setError(e.message || 'Could not save the change'); }
+    finally { setSavingEdit(false); }
+  };
+
+  // "Add reminder" on a note → open the reminder box pre-filled from that note,
+  // so a written follow-up becomes a dated calendar entry in two clicks.
+  const remindAboutNote = (text) => {
+    const t = String(text || '').trim();
+    setReminderHint('');
+    setReminderForm({
+      title: t.slice(0, 80),
+      date: '',
+      time: '09:00',
+      notes: t,
+    });
+  };
   const [reminderForm, setReminderForm] = useState(null); // null = closed
   const [detailsForm, setDetailsForm] = useState(null);   // company phone/email/website edit; null = closed
   const [naForm, setNaForm] = useState(null);             // next action + chase date edit; null = closed
@@ -246,7 +284,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
     } catch (e) { setCompany(prev); setError(e.message || 'Could not save'); }
     finally { setSaving(false); }
   };
-  const setStage = (stage) => saveCrm({ salesStage: stage });
+  const setStage = (stage) => saveCrm({ salesStage: stage || null }); // '' → null = No stage
   const setSource = (source) => saveCrm({ source });
   const setSpotter = (spotterUserId) => saveCrm({ spotterUserId: spotterUserId || null });
 
@@ -549,7 +587,7 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
           Stage
           <select value={crm.salesStage || ''} onChange={(e) => setStage(e.target.value)} disabled={saving}
             style={{ ...inputStyle, width: 'auto', padding: '5px 8px' }}>
-            <option value="" disabled>Set stage…</option>
+            <option value="">No stage</option>
             {STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </label>
@@ -837,19 +875,67 @@ export default function CompanyProfile({ companyId, onBack, onNewOrder, onNewCon
               // calendar ones can be opened in the calendar.
               const isCalendarEntry = String(h.id || '').startsWith('e_') && h.at;
               const dayStr = isCalendarEntry ? ymdLocal(h.at) : '';
+              // n_ = a contact_notes row — the only kind that can be edited.
+              const isNote = String(h.id || '').startsWith('n_');
+              const rawNoteId = isNote ? String(h.id).slice(2) : '';
+              const isEditing = isNote && editingNote && editingNote.id === rawNoteId;
               return (
                 <div key={h.id} style={{ display: 'flex', gap: 9, fontSize: 13 }}>
                   <Icon size={15} style={{ color: T.accent, marginTop: 2, flexShrink: 0 }} />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: T.text }}><span style={{ fontWeight: 600 }}>{cfg.label}</span>{h.title ? ` — ${h.title}` : ''}</div>
-                    <div style={{ fontSize: 12, color: T.muted }} title={h.at ? new Date(h.at).toLocaleString() : ''}>{h.actor ? `${h.actor} · ` : ''}{stamp(h.at)}</div>
-                    {isCalendarEntry && onOpenCalendar && (
-                      <button
-                        onClick={() => onOpenCalendar(dayStr)}
-                        style={{ background: 'none', border: 'none', padding: 0, marginTop: 2, cursor: 'pointer', color: T.accent, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                      >
-                        <CalendarPlus size={12} /> View in calendar
-                      </button>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    {isEditing ? (
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <textarea
+                          autoFocus
+                          value={editingNote.body}
+                          onChange={(e) => setEditingNote({ ...editingNote, body: e.target.value })}
+                          style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }}
+                        />
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={saveNoteEdit} disabled={savingEdit || !editingNote.body.trim()}
+                            style={{ background: T.accent, color: T.base, border: 'none', borderRadius: 8, padding: '5px 11px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer', opacity: (savingEdit || !editingNote.body.trim()) ? 0.5 : 1 }}>
+                            {savingEdit ? 'Saving…' : 'Save changes'}
+                          </button>
+                          <button onClick={() => setEditingNote(null)}
+                            style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 8, padding: '5px 11px', fontSize: 12.5, color: T.sub, cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ color: T.text }}><span style={{ fontWeight: 600 }}>{cfg.label}</span>{h.title ? ` — ${h.title}` : ''}</div>
+                        <div style={{ fontSize: 12, color: T.muted }} title={h.at ? new Date(h.at).toLocaleString() : ''}>
+                          {h.actor ? `${h.actor} · ` : ''}{stamp(h.at)}
+                          {h.editedAt ? ` · edited${h.editor ? ` by ${h.editor}` : ''} ${stamp(h.editedAt)}` : ''}
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginTop: 2, flexWrap: 'wrap' }}>
+                          {isCalendarEntry && onOpenCalendar && (
+                            <button
+                              onClick={() => onOpenCalendar(dayStr)}
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: T.accent, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            >
+                              <CalendarPlus size={12} /> View in calendar
+                            </button>
+                          )}
+                          {isNote && (
+                            <>
+                              <button
+                                onClick={() => setEditingNote({ id: rawNoteId, body: h.body || h.title || '' })}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: T.accent, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              >
+                                <Pencil size={12} /> Edit
+                              </button>
+                              <button
+                                onClick={() => remindAboutNote(h.body || h.title || '')}
+                                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: T.accent, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              >
+                                <CalendarPlus size={12} /> Add reminder
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>

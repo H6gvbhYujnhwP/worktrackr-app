@@ -27,7 +27,7 @@ const contactSchema = z.object({
     status: z.enum(['active', 'inactive', 'at_risk', 'prospect', 'archived']).default('prospect'),
     // Sales pipeline stage (Phase 1) — kept separate from `status` (customer health).
     // Suspect (value 'new') → Contacted → Prospect → Hot Prospect → Customer.
-    salesStage: z.enum(['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer', 'dead']).optional(),
+    salesStage: z.enum(['new', 'contacted', 'voicemail', 'prospect', 'hot_prospect', 'customer', 'dead']).optional().nullable(), // null = back to "No stage"
     // Leads workflow fields (stored on the company's crm JSONB, like salesStage).
     firstContact: z.string().optional().nullable(),   // date first actually spoke (yyyy-mm-dd)
     chaseDate: z.string().optional().nullable(),       // date to next chase (yyyy-mm-dd)
@@ -203,9 +203,11 @@ router.get('/:id/history', async (req, res) => {
     let noteRows = [];
     try {
       const notes = await query(
-        `SELECT n.id, n.kind, n.subject, n.body, n.created_at AS at, u.name AS actor
+        `SELECT n.id, n.kind, n.subject, n.body, n.created_at AS at,
+                n.updated_at, u.name AS actor, eu.name AS editor
            FROM contact_notes n
-           LEFT JOIN users u ON u.id = n.created_by
+           LEFT JOIN users u  ON u.id  = n.created_by
+           LEFT JOIN users eu ON eu.id = n.updated_by
           WHERE n.contact_id = $1 AND n.organisation_id = $2`,
         [id, organizationId]
       );
@@ -225,6 +227,9 @@ router.get('/:id/history', async (req, res) => {
         subject: r.subject || '',
         actor: r.actor || null,
         at: r.at,
+        // present only if the note has been edited — lets the timeline say so
+        editedAt: r.updated_at || null,
+        editor: r.editor || null,
       })),
     ]
       .filter((x) => x.at)
@@ -262,8 +267,45 @@ router.post('/:id/notes', async (req, res) => {
   }
 });
 
-// POST /api/contacts - Create a new contact
-// POST /api/contacts/import — bulk-create companies/people from a parsed CSV.
+// PUT /api/contacts/:id/notes/:noteId — edit an existing note.
+// Body: { body?, subject? }.
+// Anyone in the organisation may edit any note (owner's decision — sales work
+// as a shared log, and a colleague correcting a typo shouldn't need a manager).
+// Scoped by organisation_id AND contact_id so a note can only ever be edited
+// through the company it belongs to. Records who changed it and when, which is
+// what the timeline uses to show an "edited" marker.
+router.put('/:id/notes/:noteId', async (req, res) => {
+  try {
+    const { organizationId } = await getOrgContext(req.user.userId);
+    const { id, noteId } = req.params;
+
+    const parsed = z.object({
+      body: z.string().max(20000).optional(),
+      subject: z.string().max(500).optional().nullable(),
+    }).safeParse(req.body || {});
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input' });
+
+    const body = (parsed.data.body ?? '').trim();
+    if (!body) return res.status(400).json({ error: 'A note cannot be empty' });
+
+    const r = await query(
+      `UPDATE contact_notes
+          SET body = $1,
+              subject = COALESCE($2, subject),
+              updated_at = NOW(),
+              updated_by = $3
+        WHERE id = $4 AND contact_id = $5 AND organisation_id = $6
+      RETURNING id, body, subject, created_at, updated_at`,
+      [body, parsed.data.subject ?? null, req.user.userId, noteId, id, organizationId]
+    );
+
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Note not found' });
+    res.json({ note: r.rows[0] });
+  } catch (error) {
+    console.error('Error updating contact note:', error);
+    res.status(500).json({ error: 'Failed to update note' });
+  }
+});
 // Body: { type: 'company'|'individual', rows: [{name,email,phone,primaryContact,website,notes,salesStage}] }
 // Skips duplicates by name or email (against existing org contacts and within the file).
 router.post('/import', async (req, res) => {
